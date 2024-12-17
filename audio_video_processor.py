@@ -44,8 +44,17 @@ def resize_and_crop_image(image_path, target_size):
         print(f"Error processing image {image_path}: {str(e)}")
 
 # Video Creation Logic
-def create_video(audio_files, image_files, target_size, background_music):
-    output_file = "final_video.mp4"
+def create_video(audio_files, image_files, target_size, background_music, output_file="final_video.mp4"):
+    """
+    Creates a video from audio files, images, and background music.
+
+    Args:
+        audio_files (list): List of audio file paths.
+        image_files (list): List of image file paths.
+        target_size (tuple): Target video size (width, height).
+        background_music (str): Background music file path.
+        output_file (str): Output video file path.
+    """
     buffer_seconds = 3
 
     if len(audio_files) != len(image_files):
@@ -92,4 +101,6 @@ def create_video(audio_files, image_files, target_size, background_music):
 
     # Clean up input list
     os.remove(input_list)
-    print(f"Video created: {output_file}, Duration: {formatted_duration}")
+    #print(f"Video created: {output_file}, Duration: {formatted_duration}")
+    # Return the output file path
+    return output_file

@@ -82,4 +82,10 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings)
     # Create the Video with Captions
     video = VideoFileClip(video_path)
     styled_video = create_stylish_subtitles(video, subtitles, style, fontsize, y_pos, font_settings)
-    styled_video.write_videofile(output_video_path, codec="libx264", audio_codec="aac")
+    try:
+        # Write output and ensure file closure
+        styled_video.write_videofile(output_video_path, codec="libx264", audio_codec="aac")
+    finally:
+        # Ensure proper resource release
+        styled_video.close()
+        video.close()

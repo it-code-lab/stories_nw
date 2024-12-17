@@ -1,4 +1,5 @@
 import os
+import subprocess
 import shutil
 import requests
 from bs4 import BeautifulSoup
@@ -10,14 +11,18 @@ from settings import sizes, background_music_options, font_settings
 from tkinter import messagebox
 import re
 from text_to_speech_google import synthesize_speech_google
-from split_for_short import check_and_split_video
+#from split_for_short import check_and_split_video
+from pathlib import Path
+from moviepy.editor import VideoFileClip
+import time
+import shutil
 
 # Initialize Amazon Polly
 polly_client = boto3.client('polly', region_name='us-east-1')
 
-# Set Google Application Credentials using a relative path
+# Set Google Application Credentials using a relative path (one level up)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(
-    os.path.dirname(__file__), "tts-secret", "notes-imgtotxt-7b07c59d85c6.json"
+    os.path.dirname(__file__), os.path.pardir, "tts-secret", "notes-imgtotxt-7b07c59d85c6.json"
 )
 
 def clear_folders():
@@ -36,24 +41,148 @@ def clean_text(text):
     return cleaned_text
 
 
-def scrape_and_process(url, selected_size, selected_music, max_words, fontsize, y_pos, style, 
+def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize, y_pos, style, 
 selected_voice, language, gender):
-    if not url or selected_size not in sizes or selected_music not in background_music_options:
+    if not urls or selected_size not in sizes or selected_music not in background_music_options:
         raise ValueError("Invalid input parameters")
 
     #print("Received scrape_and_process Arguments:", locals())
 
     # Clear folders
     clear_folders()
+ 
+    # Correct function call
+    target_size = sizes.get(selected_size)  # Ensure it gets a tuple like (1080, 1920)
+    if not target_size:
+        print(f"Error: Invalid video type {selected_size}. Cannot process the image.")
 
+    # Create a directory for processed videos
+    output_folder = "processed_videos"
+    os.makedirs(output_folder, exist_ok=True)
+
+    for url in urls.split(";"):
+        url = url.strip()
+        if not url:
+            continue
+
+        # Extract the base file name
+        base_file_name = Path(url).name
+
+        text_image_pairs = scrape_page(url)
+
+        # Generate audio and video
+        audio_files, image_files = generate_audio_images(text_image_pairs, target_size, "audios", "images", language, gender)
+        
+        # Create the video
+        output_file = create_video(audio_files, image_files, target_size, background_music_options[selected_music])
+
+        website_text = " ".join(text for text, _ in text_image_pairs)
+        add_captions(max_words, fontsize, y_pos, style, website_text, font_settings)
+        output_file = "output_video.mp4"
+
+        #check_and_split_video(output_file, selected_size)
+
+        # Handle splits if needed
+        if selected_size == "YouTube Shorts":
+            video = VideoFileClip(output_file)
+            duration_minutes = video.duration / 60
+
+            # Split video if duration exceeds 3 minutes
+            if duration_minutes > 3:
+                print(f"Video duration {duration_minutes:.2f} minutes. Splitting required.")
+                split_files = split_video(output_file, video.duration, max_duration=130)  # 2m 10s
+                for idx, split_file in enumerate(split_files, start=1):
+                    split_output_name = f"{output_folder}/{base_file_name}-{idx}.mp4"
+                    safe_copy(split_file, split_output_name)
+            else:
+                print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")       
+                output_name = f"{output_folder}/{base_file_name}.mp4"
+                safe_copy(output_file, output_name)                  
+        else:
+            output_name = f"{output_folder}/{base_file_name}.mp4"
+            safe_copy(output_file, output_name)
+
+        print(f"Processing complete for {url}")
+
+def safe_copy(src, dst, retries=5, delay=2):
+    """
+    Safely copy a file from `src` to `dst`, retrying if the file is locked.
+    """
+    for attempt in range(retries):
+        try:
+            shutil.copy2(src, dst)
+            print(f"Copied {src} to {dst}")
+            return
+        except PermissionError as e:
+            print(f"PermissionError: {e}. Retrying in {delay} seconds...")
+            time.sleep(delay)
+
+    raise PermissionError(f"Failed to copy {src} to {dst} after {retries} retries.")
+
+def scrape_page(url):
+    """
+    Scrapes text and images from a given webpage URL.
+
+    Args:
+        url (str): The webpage URL.
+
+    Returns:
+        list of tuples: Each tuple contains extracted text and image URL pairs.
+    """    
     # Scrape the page
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
-
     # Extract text-image pairs
     text_image_pairs = []
     current_text = ""
     last_image_url = None
+    # Select all `div.paragraph2-desc` blocks
+    content_blocks = soup.select("div.paragraph2-desc")
+
+    # Process each block
+    for block in content_blocks:
+        # Recursively process all descendants
+        for element in block.descendants:
+            # Collect text from text nodes or <p> tags
+            if isinstance(element, str) and element.strip() and element.parent.name not in {"p", "img"}:  # Direct text node
+                current_text += " " + element.strip()
+
+            elif element.name == "p" and element.get_text(strip=True):
+                current_text += " " + element.get_text(separator=" ").strip()
+
+            # Collect images from <img class="movieImageCls">
+            elif element.name == "img" and "movieImageCls" in element.get("class", []):
+                last_image_url = element["src"]
+
+                # Save text-image pair if text exists
+                if current_text.strip():
+                    text_image_pairs.append((current_text.strip(), last_image_url))
+                    current_text = ""  # Reset text after pairing
+
+    # Handle remaining text if no image follows
+    if current_text.strip():
+        text_image_pairs.append((current_text.strip(), last_image_url))
+
+    return text_image_pairs
+
+def generate_audio_images(text_image_pairs, target_size, audio_dir="audios", image_dir="images", language="en-US", gender="Female"):
+    """
+    Generate audio files using TTS and download images.
+
+    Args:
+        pairs (list): List of (text, image_url) pairs.
+        target_size (tuple): Target image size (width, height).
+        audio_dir (str): Directory to save audio files.
+        image_dir (str): Directory to save image files.
+
+    Returns:
+        tuple: List of generated audio file paths and image file paths.
+    """
+    os.makedirs(audio_dir, exist_ok=True)
+    os.makedirs(image_dir, exist_ok=True)
+    audio_files = []
+    image_files = []
+
     language_code = ""
     gender_code = ""
     voice_code = ""
@@ -84,41 +213,6 @@ selected_voice, language, gender):
                 voice_code = "Matthew"
             elif(gender == "Female"):
                 voice_code = "Joanna"
- 
-    # Correct function call
-    target_size = sizes.get(selected_size)  # Ensure it gets a tuple like (1080, 1920)
-    if not target_size:
-        print(f"Error: Invalid video type {selected_size}. Cannot process the image.")
-
-    # Select all `div.paragraph2-desc` blocks
-    content_blocks = soup.select("div.paragraph2-desc")
-
-    # Process each block
-    for block in content_blocks:
-        # Recursively process all descendants
-        for element in block.descendants:
-            # Collect text from text nodes or <p> tags
-            if isinstance(element, str) and element.strip() and element.parent.name not in {"p", "img"}:  # Direct text node
-                current_text += " " + element.strip()
-
-            elif element.name == "p" and element.get_text(strip=True):
-                current_text += " " + element.get_text(separator=" ").strip()
-
-            # Collect images from <img class="movieImageCls">
-            elif element.name == "img" and "movieImageCls" in element.get("class", []):
-                last_image_url = element["src"]
-
-                # Save text-image pair if text exists
-                if current_text.strip():
-                    text_image_pairs.append((current_text.strip(), last_image_url))
-                    current_text = ""  # Reset text after pairing
-
-    # Handle remaining text if no image follows
-    if current_text.strip():
-        text_image_pairs.append((current_text.strip(), last_image_url))
-
-    audio_files = []
-    image_files = []
 
     # Print pairs for verification
     for idx, (text, img_url) in enumerate(text_image_pairs):
@@ -176,10 +270,49 @@ selected_voice, language, gender):
     if len(audio_files) != len(image_files):
         messagebox.showerror("Error", "Mismatch between audio and image counts.")
         return
+    return audio_files, image_files
 
-    create_video(audio_files, image_files, target_size, background_music_options[selected_music])
+def split_video(input_file, video_duration, max_duration=130):
+    """
+    Splits a video into multiple segments if its duration exceeds max_duration.
 
-    website_text = " ".join(text for text, _ in text_image_pairs)
-    add_captions(max_words, fontsize, y_pos, style, website_text, font_settings)
-    output_file = "output_video.mp4"
-    check_and_split_video(output_file, selected_size)
+    Args:
+        input_file (str): Path to the input video file.
+        video_duration (int): Total video duration in seconds.
+        max_duration (int): Maximum allowed duration in seconds.
+
+    Returns:
+        list: List of generated split video file paths.
+    """
+    try:
+        # Prepare output directory for splits
+        splits_dir = os.path.join(os.getcwd(), "splits")
+        os.makedirs(splits_dir, exist_ok=True)
+
+        # Prepare file naming
+        file_basename = os.path.splitext(os.path.basename(input_file))[0]
+        output_files = []
+
+        # FFmpeg split command
+        split_command = [
+            "ffmpeg", "-i", input_file,
+            "-c", "copy", "-map", "0",
+            "-segment_time", str(max_duration),
+            "-f", "segment", "-reset_timestamps", "1",
+            os.path.join(splits_dir, f"{file_basename}-%02d.mp4")
+        ]
+
+        subprocess.run(split_command, check=True)
+
+        # Collect generated files
+        for idx in range(int(video_duration // max_duration) + 1):
+            split_file = os.path.join(splits_dir, f"{file_basename}-{idx:02d}.mp4")
+            if os.path.exists(split_file):
+                output_files.append(split_file)
+
+        print(f"Split videos generated: {output_files}")
+        return output_files
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error splitting video: {e}")
+        return []
