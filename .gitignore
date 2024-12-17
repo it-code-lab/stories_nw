@@ -1,0 +1,12 @@
+tts-secret/notes-imgtotxt-7b07c59d85c6.json
+*.mp3
+*.mp4
+*.jpg
+__pycache__
+.vscode
+audios
+images
+splits
+venv
+0.SM-Reference.docx
+*.wav
