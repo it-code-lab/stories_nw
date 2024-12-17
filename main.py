@@ -49,7 +49,7 @@ def update_ui_based_on_video_type(*args):
         fontsize.set(90)
 
 size_var.trace("w", update_ui_based_on_video_type)
-gender_var.trace("w", update_voice_menu)
+#gender_var.trace("w", update_voice_menu)
 
 # Create Labeled Inputs
 def create_dropdown(frame, label_text, variable, options, row, col=0):
