@@ -6,8 +6,51 @@ from effects import add_ken_burns_effect
 from moviepy.editor import CompositeVideoClip, VideoFileClip, CompositeAudioClip, AudioFileClip, concatenate_videoclips
 from moviepy.audio.AudioClip import concatenate_audioclips
 
-# Resize and Crop Logic
 def resize_and_crop_image(image_path, target_size):
+    """
+    Resize and crop an image to the target size without stretching or squeezing.
+    - Resizes the image to the minimum size needed to cover the target size.
+    - Crops the image to fit the target size while maintaining the aspect ratio.
+    - Keeps the central part of the image, cropping from the sides if needed.
+    """
+    try:
+        if not isinstance(target_size, (tuple, list)) or len(target_size) != 2:
+            raise ValueError(f"Invalid target size: {target_size}. Expected a tuple (width, height).")
+
+        target_width, target_height = target_size
+
+        with Image.open(image_path) as img:
+            img_width, img_height = img.size
+
+            # Calculate scale factors
+            width_scale = target_width / img_width
+            height_scale = target_height / img_height
+
+            # Use the larger scale factor to ensure coverage
+            scale_factor = max(width_scale, height_scale)
+            new_size = (int(img_width * scale_factor), int(img_height * scale_factor))
+            
+            # Resize the image
+            img_resized = img.resize(new_size, Image.LANCZOS)
+
+            # Calculate cropping coordinates
+            crop_left = (new_size[0] - target_width) // 2
+            crop_top = (new_size[1] - target_height) // 2
+            crop_right = crop_left + target_width
+            crop_bottom = crop_top + target_height
+
+            # Crop the centered region
+            img_cropped = img_resized.crop((crop_left, crop_top, crop_right, crop_bottom))
+
+            # Save the cropped image
+            img_cropped.save(image_path)
+            print(f"Processed {image_path} to {target_size}")
+
+    except Exception as e:
+        print(f"Error processing image {image_path}: {str(e)}")
+
+# Resize and Crop Logic
+def resize_and_crop_image_old(image_path, target_size):
     """
     Resize and crop an image to the target size without stretching or squeezing.
     - Resizes the image to double its size first to increase resolution.
