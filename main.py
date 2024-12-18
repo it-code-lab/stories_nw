@@ -44,7 +44,7 @@ def update_ui_based_on_video_type(*args):
         fontsize.set(90)
     elif selected_type == "Regular YouTube Video":
         max_words.set(5)
-        y_pos.set("bottom")
+        y_pos.set("center")
         style_var.set("Style 4")
         fontsize.set(90)
 
