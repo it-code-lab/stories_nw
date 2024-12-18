@@ -2,6 +2,9 @@ import os
 import subprocess
 from pydub import AudioSegment
 from PIL import Image
+from effects import add_ken_burns_effect 
+from moviepy.editor import CompositeVideoClip, VideoFileClip, CompositeAudioClip, AudioFileClip, concatenate_videoclips
+from moviepy.audio.AudioClip import concatenate_audioclips
 
 # Resize and Crop Logic
 def resize_and_crop_image(image_path, target_size):
@@ -43,8 +46,63 @@ def resize_and_crop_image(image_path, target_size):
     except Exception as e:
         print(f"Error processing image {image_path}: {str(e)}")
 
-# Video Creation Logic
+# New video creation logic that supports pan, zoom and ken burns effects        
 def create_video(audio_files, image_files, target_size, background_music, output_file="final_video.mp4"):
+    """
+    Creates a video from audio files, images, and background music, applying the Ken Burns effect.
+    """
+    buffer_seconds = 3
+
+
+    if len(audio_files) != len(image_files):
+        raise ValueError("Mismatch between audio and image counts")
+
+    # Initialize list for video clips
+    video_clips = []
+    total_audio_duration = 0
+
+    for audio_file, image_file in zip(audio_files, image_files):
+        audio_clip = AudioFileClip(audio_file)
+        img_duration = audio_clip.duration
+        total_audio_duration += img_duration
+
+        # Apply Ken Burns effect
+        video_clip = add_ken_burns_effect(image_file, img_duration)
+        video_clip = video_clip.set_audio(audio_clip)
+
+        video_clips.append(video_clip)
+
+    # Concatenate video clips
+    final_video = concatenate_videoclips(video_clips, method="compose")
+    
+    # Add background music
+    background_audio = AudioFileClip(background_music).volumex(0.5)
+
+    if background_audio.duration > total_audio_duration:
+        background_audio = background_audio.subclip(0, total_audio_duration)
+    else:
+        background_audio = concatenate_audioclips(
+            [background_audio] * int(total_audio_duration // background_audio.duration + 1)
+        ).subclip(0, total_audio_duration)
+
+    # Create mixed audio using CompositeAudioClip
+    #mixed_audio = CompositeAudioClip([final_video.audio, background_audio]).volumex(1.5)
+    mixed_audio = CompositeAudioClip(
+        [final_video.audio.volumex(1.5), background_audio.volumex(0.5)]
+    )
+
+    # Attach the mixed audio back to the final video
+    final_video = final_video.set_audio(mixed_audio)
+
+    
+    # Write output file
+    final_video.write_videofile(output_file, codec="libx264", audio_codec="aac", fps=24)
+
+    # Return the output file path
+    return output_file
+
+# Old Video Creation Logic
+def create_video_Old(audio_files, image_files, target_size, background_music, output_file="final_video.mp4"):
     """
     Creates a video from audio files, images, and background music.
 
