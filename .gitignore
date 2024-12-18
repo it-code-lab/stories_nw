@@ -10,3 +10,5 @@ splits
 venv
 0.SM-Reference.docx
 *.wav
+*.gif
+*.png

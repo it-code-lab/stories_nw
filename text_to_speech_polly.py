@@ -23,6 +23,7 @@ def synthesize_speech_polly(
         str: The path to the generated audio file or None on error.
     """
     try:
+        print("Received amazon polly tts Arguments:", locals())
         # Initialize Polly client
         polly_client = boto3.client('polly', region_name='us-east-1')
 

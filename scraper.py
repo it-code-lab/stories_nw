@@ -3,27 +3,19 @@ import subprocess
 import shutil
 import requests
 from bs4 import BeautifulSoup
-import boto3
 import urllib.request
 from audio_video_processor import create_video, resize_and_crop_image
 from caption_generator import add_captions
 from settings import sizes, background_music_options, font_settings
 from tkinter import messagebox
 import re
-from text_to_speech_google import synthesize_speech_google
-#from split_for_short import check_and_split_video
 from pathlib import Path
 from moviepy.editor import VideoFileClip
 import time
 import shutil
-
-# Initialize Amazon Polly
-polly_client = boto3.client('polly', region_name='us-east-1')
-
-# Set Google Application Credentials using a relative path (one level up)
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, "tts-secret", "notes-imgtotxt-7b07c59d85c6.json"
-)
+from get_audio import get_audio_file
+from moviepy.editor import VideoFileClip
+from call_to_action import add_gif_to_video
 
 def clear_folders():
     shutil.rmtree("audios", ignore_errors=True)
@@ -78,8 +70,21 @@ selected_voice, language, gender):
 
         website_text = " ".join(text for text, _ in text_image_pairs)
         add_captions(max_words, fontsize, y_pos, style, website_text, font_settings)
-        output_file = "output_video.mp4"
+        #output_file = "output_video.mp4"
 
+        video_clip = VideoFileClip("output_video.mp4")
+
+        # Apply GIF overlay
+        final_video = add_gif_to_video(
+            video_clip, 5, icon_path="subscribe.gif"
+        )
+
+        # Export the final video
+        final_video.write_videofile(
+            "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
+        )
+
+        output_file = "output_video_with_gif.mp4"
         #check_and_split_video(output_file, selected_size)
 
         # Handle splits if needed
@@ -119,8 +124,8 @@ def safe_copy(src, dst, retries=5, delay=2):
 
     raise PermissionError(f"Failed to copy {src} to {dst} after {retries} retries.")
 
-# From Gemini - Simpler implementation
-def scrape_page(url):
+# From Gemini - Simpler implementation but has duplicates issue
+def scrape_page_old(url):
     """
     Scrapes text and images from a given webpage URL.
 
@@ -167,7 +172,7 @@ def scrape_page(url):
     return text_image_pairs
 
 #DND-Working from ChatGPT
-def scrape_page_old(url):
+def scrape_page(url):
     """
     Scrapes text and images from a given webpage URL, avoiding duplicates 
     caused by nested 'paragraph2-desc' blocks.
@@ -227,7 +232,7 @@ def scrape_page_old(url):
 
     return text_image_pairs
 
-def generate_audio_images(text_image_pairs, target_size, audio_dir="audios", image_dir="images", language="en-US", gender="Female"):
+def generate_audio_images(text_image_pairs, target_size, audio_dir="audios", image_dir="images", language="english", gender="Female"):
     """
     Generate audio files using TTS and download images.
 
@@ -245,36 +250,6 @@ def generate_audio_images(text_image_pairs, target_size, audio_dir="audios", ima
     audio_files = []
     image_files = []
 
-    language_code = ""
-    gender_code = ""
-    voice_code = ""
-    tts_engine = "google"
-
-    if (tts_engine == "google"):
-        if (language == "english"):
-            language_code = "en-US"
-            if(gender == "Male"):
-                voice_code = "en-US-Neural2-J"
-                gender_code = "MALE"
-
-            elif(gender == "Female"):
-                voice_code = "en-US-Neural2-F"
-                gender_code = "FEMALE"            
-        elif(language == "hindi"):
-            language_code = "hi-IN"
-            if(gender == "Male"):
-                voice_code = "hi-IN-Neural2-B"
-                gender_code = "MALE"
-
-            elif(gender == "Female"):
-                voice_code = "hi-IN-Neural2-A"
-                gender_code = "FEMALE"            
-    elif (tts_engine == "amazon"):
-        if (language == "english"):
-            if(gender == "Male"):
-                voice_code = "Matthew"
-            elif(gender == "Female"):
-                voice_code = "Joanna"
 
     # Print pairs for verification
     for idx, (text, img_url) in enumerate(text_image_pairs):
@@ -284,37 +259,10 @@ def generate_audio_images(text_image_pairs, target_size, audio_dir="audios", ima
         # Generate audio using Amazon Polly
         audio_file = f"audios/audio{idx+1}.mp3"
 
-        generated_audio = synthesize_speech_google(
-            text=text, 
-            output_file= audio_file, 
-            language=language_code, 
-            gender=gender_code, 
-            voice_name=voice_code, 
-            speaking_rate=1          #speaking_rate=0.9
-        )
+        generated_audio = get_audio_file(text, audio_file,"amazon",language,gender, "generative")
+        
         if generated_audio:
             audio_files.append(generated_audio)
-
-        # working sample for aws neural engine
-        # response = polly_client.synthesize_speech(
-        #     TextType="ssml",  # Use SSML for customization
-        #     Text=f'<speak><prosody rate="80%">{clean_text(text)}</prosody></speak>',
-        #     OutputFormat="mp3",
-        #     VoiceId=selected_voice,
-        #     Engine="neural"   
-        # )
-
-        # working sample for aws generative engine. ssml does not work for generative
-        # response = polly_client.synthesize_speech(
-        #     Text=text,
-        #     OutputFormat="mp3",
-        #     VoiceId=selected_voice,
-        #     Engine="generative"  
-        # )
-
-        # with open(audio_file, "wb") as file:
-        #     file.write(response['AudioStream'].read())
-        # audio_files.append(audio_file)
 
         # Download image if valid and not already processed
         if img_url:
