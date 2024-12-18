@@ -119,6 +119,7 @@ def safe_copy(src, dst, retries=5, delay=2):
 
     raise PermissionError(f"Failed to copy {src} to {dst} after {retries} retries.")
 
+# From Gemini - Simpler implementation
 def scrape_page(url):
     """
     Scrapes text and images from a given webpage URL.
@@ -128,7 +129,7 @@ def scrape_page(url):
 
     Returns:
         list of tuples: Each tuple contains extracted text and image URL pairs.
-    """    
+    """
     # Scrape the page
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
@@ -136,16 +137,77 @@ def scrape_page(url):
     text_image_pairs = []
     current_text = ""
     last_image_url = None
-    # Select all `div.paragraph2-desc` blocks
+
+    # Find all paragraphs or text nodes within "songLyrics" div
+    for element in soup.select_one(".songLyrics").descendants:
+        # Skip irrelevant elements (script, styles, etc.)
+        if element.name in ("script", "style"):
+            continue
+
+        # Collect text from text nodes or <p> tags
+        if isinstance(element, str) and element.strip():
+            current_text += " " + element.strip()
+
+        elif element.name == "p" and element.get_text(strip=True):
+            current_text += " " + element.get_text(separator=" ").strip()
+
+        # Collect images from <img class="movieImageCls">
+        elif element.name == "img" and "movieImageCls" in element.get("class", []):
+            last_image_url = element["src"]
+
+            # Save text-image pair if text and image exist
+            if current_text.strip() and last_image_url:
+                text_image_pairs.append((current_text.strip(), last_image_url))
+                current_text = ""  # Reset text after pairing
+
+    # Handle remaining text if no image follows
+    if current_text.strip():
+        text_image_pairs.append((current_text.strip(), last_image_url))
+
+    return text_image_pairs
+
+#DND-Working from ChatGPT
+def scrape_page_old(url):
+    """
+    Scrapes text and images from a given webpage URL, avoiding duplicates 
+    caused by nested 'paragraph2-desc' blocks.
+
+    Args:
+        url (str): The webpage URL.
+
+    Returns:
+        list of tuples: Extracted text and image URL pairs.
+    """    
+    # Scrape the page
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    
+    # Extract text-image pairs
+    text_image_pairs = []
+    current_text = ""
+    last_image_url = None
+
+    # Use a set to track processed divs to prevent duplicates
+    processed_blocks = set()
+
+    # Select all `paragraph2-desc` divs, including nested ones
     content_blocks = soup.select("div.paragraph2-desc")
 
-    # Process each block
     for block in content_blocks:
-        # Recursively process all descendants
+        # Skip already processed nested blocks
+        if block in processed_blocks:
+            continue
+        
+        # Mark this block as processed
+        processed_blocks.add(block)
+
+        # Traverse descendants
         for element in block.descendants:
-            # Collect text from text nodes or <p> tags
-            if isinstance(element, str) and element.strip() and element.parent.name not in {"p", "img"}:  # Direct text node
-                current_text += " " + element.strip()
+            # Collect text directly from text nodes or text-like tags
+            if isinstance(element, str) and element.strip():
+                parent_classes = element.parent.get("class", [])
+                if "paragraph2-desc" in parent_classes:
+                    current_text += " " + element.strip()
 
             elif element.name == "p" and element.get_text(strip=True):
                 current_text += " " + element.get_text(separator=" ").strip()
@@ -157,8 +219,8 @@ def scrape_page(url):
                 # Save text-image pair if text exists
                 if current_text.strip():
                     text_image_pairs.append((current_text.strip(), last_image_url))
-                    current_text = ""  # Reset text after pairing
-
+                    current_text = ""  # Reset after pairing
+    
     # Handle remaining text if no image follows
     if current_text.strip():
         text_image_pairs.append((current_text.strip(), last_image_url))
