@@ -40,7 +40,7 @@ def add_pan_effect(image_path, audio_duration, start_x=0, end_x=1920, start_y=0,
                                             start_y + (end_y - start_y) * t / audio_duration))
     return pan_clip
 
-#working on Dell latitude and woring on precision - Non smooth motion  
+#working on Dell latitude and woring on precision  
 def add_ken_burns_effect(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
     """Adds a Ken Burns effect with smooth pan and zoom."""
     clip = ImageClip(image_path, duration=audio_duration)

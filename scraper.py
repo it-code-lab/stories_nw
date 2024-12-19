@@ -68,17 +68,21 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
             website_text = " ".join(text for text, _ in text_image_pairs)
             add_captions(max_words, fontsize, y_pos, style, website_text, font_settings)
 
-            video_clip = VideoFileClip("output_video.mp4")
+            try:
+                video_clip = VideoFileClip("output_video.mp4")
 
-            final_video = add_gif_to_video(
-                video_clip, 5, icon_path="subscribe.gif"
-            )
+                final_video = add_gif_to_video(
+                    video_clip, 5, icon_path="subscribe.gif"
+                )
 
-            final_video.write_videofile(
-                "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
-            )
+                final_video.write_videofile(
+                    "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
+                )
 
-            output_file = "output_video_with_gif.mp4"
+                output_file = "output_video_with_gif.mp4"
+            except Exception as e:
+                print("Error adding gif. Proceeding without gif")
+                output_file = "output_video.mp4"
 
             if selected_size == "YouTube Shorts":
                 video = VideoFileClip(output_file)
@@ -101,7 +105,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
             print(f"Processing complete for {url}")
 
         except Exception as e:
-            print(f"Error processing {url}: {e}")
+            print(f"Error processing {url}: {e}. Proceeding to next")
 
 
 def safe_copy(src, dst, retries=5, delay=2):
