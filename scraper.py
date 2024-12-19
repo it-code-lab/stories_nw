@@ -33,22 +33,22 @@ def clean_text(text):
     return cleaned_text
 
 
+import os
+from pathlib import Path
+from moviepy.editor import VideoFileClip
+
 def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize, y_pos, style, 
-selected_voice, language, gender):
+                       selected_voice, language, gender):
     if not urls or selected_size not in sizes or selected_music not in background_music_options:
         raise ValueError("Invalid input parameters")
 
-    #print("Received scrape_and_process Arguments:", locals())
-
-    # Clear folders
     clear_folders()
- 
-    # Correct function call
+
     target_size = sizes.get(selected_size)  # Ensure it gets a tuple like (1080, 1920)
     if not target_size:
         print(f"Error: Invalid video type {selected_size}. Cannot process the image.")
+        return
 
-    # Create a directory for processed videos
     output_folder = "processed_videos"
     os.makedirs(output_folder, exist_ok=True)
 
@@ -57,57 +57,52 @@ selected_voice, language, gender):
         if not url:
             continue
 
-        # Extract the base file name
-        base_file_name = Path(url).name
+        try:
+            base_file_name = Path(url).name
+            text_image_pairs = scrape_page(url)
 
-        text_image_pairs = scrape_page(url)
+            audio_files, image_files = generate_audio_images(text_image_pairs, target_size, "audios", "images", language, gender)
 
-        # Generate audio and video
-        audio_files, image_files = generate_audio_images(text_image_pairs, target_size, "audios", "images", language, gender)
-        
-        # Create the video
-        output_file = create_video(audio_files, image_files, target_size, background_music_options[selected_music])
+            output_file = create_video(audio_files, image_files, target_size, background_music_options[selected_music])
 
-        website_text = " ".join(text for text, _ in text_image_pairs)
-        add_captions(max_words, fontsize, y_pos, style, website_text, font_settings)
-        #output_file = "output_video.mp4"
+            website_text = " ".join(text for text, _ in text_image_pairs)
+            add_captions(max_words, fontsize, y_pos, style, website_text, font_settings)
 
-        video_clip = VideoFileClip("output_video.mp4")
+            video_clip = VideoFileClip("output_video.mp4")
 
-        # Apply GIF overlay
-        final_video = add_gif_to_video(
-            video_clip, 5, icon_path="subscribe.gif"
-        )
+            final_video = add_gif_to_video(
+                video_clip, 5, icon_path="subscribe.gif"
+            )
 
-        # Export the final video
-        final_video.write_videofile(
-            "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
-        )
+            final_video.write_videofile(
+                "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
+            )
 
-        output_file = "output_video_with_gif.mp4"
-        #check_and_split_video(output_file, selected_size)
+            output_file = "output_video_with_gif.mp4"
 
-        # Handle splits if needed
-        if selected_size == "YouTube Shorts":
-            video = VideoFileClip(output_file)
-            duration_minutes = video.duration / 60
+            if selected_size == "YouTube Shorts":
+                video = VideoFileClip(output_file)
+                duration_minutes = video.duration / 60
 
-            # Split video if duration exceeds 3 minutes
-            if duration_minutes > 3:
-                print(f"Video duration {duration_minutes:.2f} minutes. Splitting required.")
-                split_files = split_video(output_file, video.duration, max_duration=130)  # 2m 10s
-                for idx, split_file in enumerate(split_files, start=1):
-                    split_output_name = f"{output_folder}/{base_file_name}-{idx}.mp4"
-                    safe_copy(split_file, split_output_name)
+                if duration_minutes > 3:
+                    print(f"Video duration {duration_minutes:.2f} minutes. Splitting required.")
+                    split_files = split_video(output_file, video.duration, max_duration=130)  # 2m 10s
+                    for idx, split_file in enumerate(split_files, start=1):
+                        split_output_name = f"{output_folder}/{base_file_name}-{idx}.mp4"
+                        safe_copy(split_file, split_output_name)
+                else:
+                    print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
+                    output_name = f"{output_folder}/{base_file_name}.mp4"
+                    safe_copy(output_file, output_name)
             else:
-                print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")       
                 output_name = f"{output_folder}/{base_file_name}.mp4"
-                safe_copy(output_file, output_name)                  
-        else:
-            output_name = f"{output_folder}/{base_file_name}.mp4"
-            safe_copy(output_file, output_name)
+                safe_copy(output_file, output_name)
 
-        print(f"Processing complete for {url}")
+            print(f"Processing complete for {url}")
+
+        except Exception as e:
+            print(f"Error processing {url}: {e}")
+
 
 def safe_copy(src, dst, retries=5, delay=2):
     """
@@ -124,8 +119,8 @@ def safe_copy(src, dst, retries=5, delay=2):
 
     raise PermissionError(f"Failed to copy {src} to {dst} after {retries} retries.")
 
-# From Gemini - Simpler implementation but has duplicates issue
-def scrape_page_old(url):
+#From Gemini - https://gemini.google.com/app/f86d38e806049040
+def scrape_page(url):
     """
     Scrapes text and images from a given webpage URL.
 
@@ -138,23 +133,21 @@ def scrape_page_old(url):
     # Scrape the page
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
+
     # Extract text-image pairs
     text_image_pairs = []
     current_text = ""
     last_image_url = None
 
-    # Find all paragraphs or text nodes within "songLyrics" div
+    # Loop through all elements within "songLyrics" div
     for element in soup.select_one(".songLyrics").descendants:
         # Skip irrelevant elements (script, styles, etc.)
-        if element.name in ("script", "style"):
+        if element.name in ("script", "style", "p"):
             continue
 
-        # Collect text from text nodes or <p> tags
+        # Collect text from text nodes
         if isinstance(element, str) and element.strip():
             current_text += " " + element.strip()
-
-        elif element.name == "p" and element.get_text(strip=True):
-            current_text += " " + element.get_text(separator=" ").strip()
 
         # Collect images from <img class="movieImageCls">
         elif element.name == "img" and "movieImageCls" in element.get("class", []):
@@ -171,8 +164,8 @@ def scrape_page_old(url):
 
     return text_image_pairs
 
-#DND-Working from ChatGPT
-def scrape_page(url):
+#DND-from ChatGPT - Failing for https://readernook.com/topics/amazing-short-stories/bruce-and-the-spider
+def scrape_page_old(url):
     """
     Scrapes text and images from a given webpage URL, avoiding duplicates 
     caused by nested 'paragraph2-desc' blocks.
