@@ -41,38 +41,44 @@ def add_pan_effect(image_path, audio_duration, start_x=0, end_x=1920, start_y=0,
     return pan_clip
 
 #working on Dell latitude and woring on precision - Non smooth motion  
-def add_ken_burns_effect_DND(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
-    """Adds a Ken Burns effect with pan and zoom to the image."""
+def add_ken_burns_effect(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
+    """Adds a Ken Burns effect with smooth pan and zoom."""
     clip = ImageClip(image_path, duration=audio_duration)
 
     def resize_frame(get_frame, t):
         frame = get_frame(t)
         img = Image.fromarray(frame)
 
-        zoom_factor = start_zoom + (end_zoom - start_zoom) * t / audio_duration
-        new_width = int(img.width * zoom_factor)
-        new_height = int(img.height * zoom_factor)
+        # Calculate smooth zoom factor
+        zoom_factor = start_zoom + (end_zoom - start_zoom) * (t / audio_duration)
+        
+        # Ensure integer scaling
+        new_width = round(img.width * zoom_factor)
+        new_height = round(img.height * zoom_factor)
 
-        left = (new_width - clip.w) / 2
-        top = (new_height - clip.h) / 2
-        right = (new_width + clip.w) / 2
-        bottom = (new_height + clip.h) / 2
+        # Resize with LANCZOS for better quality
+        resized_img = img.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
 
-        resized_img = img.resize((new_width, new_height), resample=Image.Resampling.LANCZOS) # Correct usage
+        # Calculate centered crop
+        left = (new_width - clip.w) // 2
+        top = (new_height - clip.h) // 2
+        right = left + clip.w
+        bottom = top + clip.h
 
+        # Crop image to center
         cropped_img = resized_img.crop((left, top, right, bottom))
         return np.array(cropped_img)
 
     try:
         zoom_clip = clip.fl(resize_frame, apply_to=['image'])
-    except Exception as e:  # Catching a broader exception for better debugging
+    except Exception as e:
         print(f"Error during resize: {e}")
         raise
 
     return zoom_clip.set_position("center")
 
 # Not working on Dell latitude but woring on precision  - smooth motion  
-def add_ken_burns_effect(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
+def add_ken_burns_effect_DND(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
     """
     Adds a Ken Burns effect with pan and zoom to the image.
     """
