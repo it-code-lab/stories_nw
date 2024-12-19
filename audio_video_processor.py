@@ -98,8 +98,9 @@ def create_video(audio_files, image_files, target_size, background_music, output
 
 
     if len(audio_files) != len(image_files):
-        raise ValueError("Mismatch between audio and image counts")
-
+        #raise ValueError("Mismatch between audio and image counts")
+        print("Mismatch between audio and image counts.")
+        return
     # Initialize list for video clips
     video_clips = []
     total_audio_duration = 0
@@ -159,7 +160,9 @@ def create_video_Old(audio_files, image_files, target_size, background_music, ou
     buffer_seconds = 3
 
     if len(audio_files) != len(image_files):
-        raise ValueError("Mismatch between audio and image counts")
+        #raise ValueError("Mismatch between audio and image counts")
+        print("Mismatch between audio and image counts.")
+        return
 
     # Calculate total audio duration with buffer
     total_audio_duration = sum(AudioSegment.from_file(audio).duration_seconds for audio in audio_files) + buffer_seconds

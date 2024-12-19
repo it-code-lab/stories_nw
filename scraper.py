@@ -271,7 +271,8 @@ def generate_audio_images(text_image_pairs, target_size, audio_dir="audios", ima
 
     # Ensure matching lengths before video creation
     if len(audio_files) != len(image_files):
-        messagebox.showerror("Error", "Mismatch between audio and image counts.")
+        #messagebox.showerror("Error", "Mismatch between audio and image counts.")
+        print("Mismatch between audio and image counts.")
         return
     return audio_files, image_files
 
