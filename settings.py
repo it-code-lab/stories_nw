@@ -3,6 +3,10 @@ sizes = {
     "Regular YouTube Video": (1920, 1080)
 }
 
+tts_engine = {
+    "google": "google",
+    "amazon": "amazon"
+}
 background_music_options = {
     "Scary Stories": "scary_music.mp3",
     "Kids Stories": "kids_music.mp3",

@@ -38,7 +38,7 @@ from pathlib import Path
 from moviepy.editor import VideoFileClip
 
 def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize, y_pos, style, 
-                       selected_voice, language, gender):
+                       selected_voice, language, gender, tts_engine):
     if not urls or selected_size not in sizes or selected_music not in background_music_options:
         raise ValueError("Invalid input parameters")
 
@@ -61,7 +61,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
             base_file_name = Path(url).name
             text_image_pairs = scrape_page(url)
 
-            audio_files, image_files = generate_audio_images(text_image_pairs, target_size, "audios", "images", language, gender)
+            audio_files, image_files = generate_audio_images(text_image_pairs, target_size, "audios", "images", language, gender, tts_engine)
 
             output_file = create_video(audio_files, image_files, target_size, background_music_options[selected_music])
 
@@ -72,7 +72,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
                 video_clip = VideoFileClip("output_video.mp4")
 
                 final_video = add_gif_to_video(
-                    video_clip, 5, icon_path="subscribe.gif"
+                    video_clip, 10, icon_path="subscribe.gif"
                 )
 
                 final_video.write_videofile(
@@ -229,7 +229,7 @@ def scrape_page_old(url):
 
     return text_image_pairs
 
-def generate_audio_images(text_image_pairs, target_size, audio_dir="audios", image_dir="images", language="english", gender="Female"):
+def generate_audio_images(text_image_pairs, target_size, audio_dir="audios", image_dir="images", language="english", gender="Female", tts_engine="google"):
     """
     Generate audio files using TTS and download images.
 
@@ -256,7 +256,10 @@ def generate_audio_images(text_image_pairs, target_size, audio_dir="audios", ima
         # Generate audio using Amazon Polly
         audio_file = f"audios/audio{idx+1}.mp3"
 
-        generated_audio = get_audio_file(text, audio_file,"amazon",language,gender, "generative")
+        if tts_engine == "google":
+            generated_audio = get_audio_file(text, audio_file,"google",language,gender, "journey")
+        elif tts_engine == "amazon":
+            generated_audio = get_audio_file(text, audio_file,"amazon",language,gender, "generative")
         
         if generated_audio:
             audio_files.append(generated_audio)
