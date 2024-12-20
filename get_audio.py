@@ -61,7 +61,7 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
             speaking_rate=1
         )
 
-    elif tts_engine == "amazon":
+    elif tts_engine == "amazonX": # Disabled for now
         text_type = "ssml" if type == "neural" else "text"
         text_content = f'<speak><prosody rate="90%">{text}</prosody></speak>' if text_type == "ssml" else text
 
