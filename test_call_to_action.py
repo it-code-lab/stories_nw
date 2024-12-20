@@ -15,14 +15,24 @@ from call_to_action import add_call_to_action_to_video, add_gif_to_video
 # final_video.write_videofile("output_video_with_cta.mp4", codec="libx264", audio_codec="aac", fps=24)
 
 
-video_clip = VideoFileClip("main_video.mp4")
+# video_clip = VideoFileClip("main_video.mp4")
 
-# Apply GIF overlay
+# # Apply GIF overlay
+# final_video = add_gif_to_video(
+#     video_clip, 5, icon_path="subscribe.gif"
+# )
+
+# # Export the final video
+# final_video.write_videofile(
+#     "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
+# )
+
+video_clip = VideoFileClip("output_video.mp4")
+
 final_video = add_gif_to_video(
     video_clip, 5, icon_path="subscribe.gif"
 )
 
-# Export the final video
 final_video.write_videofile(
     "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
 )

@@ -72,7 +72,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
                 video_clip = VideoFileClip("output_video.mp4")
 
                 final_video = add_gif_to_video(
-                    video_clip, 10, icon_path="subscribe.gif"
+                    video_clip, 5, icon_path="subscribe.gif"
                 )
 
                 final_video.write_videofile(

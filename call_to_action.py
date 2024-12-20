@@ -44,7 +44,44 @@ def create_gif_call_to_action(
     return call_to_action
 
 def add_gif_to_video(
-    video_clip, show_at_seconds_from_end, icon_path="like_icon.gif"
+    video_clip, show_gif_for_duration, icon_path="like_icon.gif"
+):
+    """
+    Adds a GIF overlay to the main video at specific timestamps.
+
+    Args:
+        video_clip: The main video clip.
+        show_gif_for_duration: Duration the GIF should be visible.
+        icon_path: Path to the GIF file.
+
+    Returns:
+        Video clip with GIF overlays at specific times.
+    """
+    video_duration = video_clip.duration
+
+    # Calculate timestamps
+    timestamps = []
+    if video_duration > 60:
+        timestamps.append(video_duration - 60)  # 1 minute before end
+
+    timestamps.append(video_duration - 10)  # 10 seconds before end
+
+    # Create GIF overlays at specified timestamps
+    overlays = [
+        create_gif_call_to_action(
+            icon_path=icon_path,
+            video_duration=show_gif_for_duration,
+        ).set_start(t)
+        for t in timestamps
+    ]
+
+    # Composite all overlays with the main video
+    final_video = CompositeVideoClip([video_clip, *overlays])
+
+    return final_video
+
+def add_gif_to_video_Old(
+    video_clip, show_at_seconds_from_end, show_gif_duration, icon_path="like_icon.gif"
 ):
     """
     Adds a GIF overlay to the main video.
@@ -60,7 +97,7 @@ def add_gif_to_video(
     # Create the GIF overlay
     gif_overlay = create_gif_call_to_action(
         icon_path=icon_path,
-        video_duration=show_at_seconds_from_end,
+        video_duration=show_gif_duration,
     )
 
     # Add GIF to the main video at the end
