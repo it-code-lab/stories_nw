@@ -41,7 +41,7 @@ def add_pan_effect(image_path, audio_duration, start_x=0, end_x=1920, start_y=0,
     return pan_clip
 
 #working on Dell latitude and woring on precision  
-def add_ken_burns_effect(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
+def add_ken_burns_effect_DND(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
     """Adds a Ken Burns effect with smooth pan and zoom."""
     clip = ImageClip(image_path, duration=audio_duration)
 
@@ -78,15 +78,48 @@ def add_ken_burns_effect(image_path, audio_duration, start_zoom=1, end_zoom=1.2)
     return zoom_clip.set_position("center")
 
 # Not working on Dell latitude but woring on precision  - smooth motion  
-def add_ken_burns_effect_DND(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
+def add_ken_burns_effect(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
     """
     Adds a Ken Burns effect with pan and zoom to the image.
     """
-    clip = ImageClip(image_path, duration=audio_duration)
-    zoom_clip = clip.resize(lambda t: start_zoom + (end_zoom - start_zoom) * t / audio_duration)
-    return zoom_clip.set_position("center")
+    try:
+        clip = ImageClip(image_path, duration=audio_duration)
+        zoom_clip = clip.resize(lambda t: start_zoom + (end_zoom - start_zoom) * t / audio_duration)
+        return zoom_clip.set_position("center")
+    except Exception as e:
+        clip = ImageClip(image_path, duration=audio_duration)
 
+        def resize_frame(get_frame, t):
+            frame = get_frame(t)
+            img = Image.fromarray(frame)
 
+            # Calculate smooth zoom factor
+            zoom_factor = start_zoom + (end_zoom - start_zoom) * (t / audio_duration)
+            
+            # Ensure integer scaling
+            new_width = round(img.width * zoom_factor)
+            new_height = round(img.height * zoom_factor)
+
+            # Resize with LANCZOS for better quality
+            resized_img = img.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
+
+            # Calculate centered crop
+            left = (new_width - clip.w) // 2
+            top = (new_height - clip.h) // 2
+            right = left + clip.w
+            bottom = top + clip.h
+
+            # Crop image to center
+            cropped_img = resized_img.crop((left, top, right, bottom))
+            return np.array(cropped_img)
+
+        try:
+            zoom_clip = clip.fl(resize_frame, apply_to=['image'])
+        except Exception as e:
+            print(f"Error during resize: {e}")
+            raise
+
+        return zoom_clip.set_position("center")
 
 def create_stylized_video(image_files, audio_files, output_file="final_video.mp4"):
     video_clips = []
