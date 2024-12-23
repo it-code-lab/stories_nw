@@ -2,7 +2,7 @@ from moviepy.editor import *
 from PIL import Image
 import numpy as np  # Import numpy
 
-def add_zoom_effect(image_path, audio_duration, zoom_factor=1.2, start_pos="center", end_pos="center"):
+def add_zoom_effect(image_path, audio_duration, zoom_factor=0.9, start_pos="center", end_pos="center"):
     """
     Adds a zoom-in effect on an image over the audio duration.
     
@@ -78,7 +78,7 @@ def add_ken_burns_effect_DND(image_path, audio_duration, start_zoom=1, end_zoom=
     return zoom_clip.set_position("center")
 
 # Not working on Dell latitude but woring on precision  - smooth motion  
-def add_ken_burns_effect(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
+def add_ken_burns_effect(image_path, audio_duration, start_zoom=1.2, end_zoom=1):
     """
     Adds a Ken Burns effect with pan and zoom to the image.
     """
