@@ -34,6 +34,11 @@ from model_scraper import scrape_page, scrape_story_page_with_soundeffect, scrap
 #     print("-" * 50)
 
 #DND - Working
-url = "https://readernook.com/topics/amazing-short-stories/the-greedy-dog-and-his-bone-test"
+# url = "https://readernook.com/topics/amazing-short-stories/the-greedy-dog-and-his-bone-test"
+# results = scrape_page_sm(url)
+# generate_audio(results, "final_output.mp3")
+
+#DND - Working
+url = "https://readernook.com/topics/amazing-short-stories/the-greedy-dog-and-his-bone"
 results = scrape_page_sm(url)
 generate_audio(results, "final_output.mp3")

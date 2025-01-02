@@ -339,17 +339,20 @@ def generate_audio(elements, output_file="final_audio.mp3"):
     final_audio = AudioSegment.silent(duration=0)  # Start with silence
 
     for element in elements:
+        print(f"Processing element: {element}")
         if element["type"] == "text":
-            # Generate TTS audio
-            tts = gTTS(text=element["text"], lang="en")
-            tts_file = "temp_tts.mp3"
-            tts.save(tts_file)
-            tts_audio = AudioSegment.from_file(tts_file)
+            try:
+                # Generate TTS audio
+                tts = gTTS(text=element["text"], lang="en")
+                tts_file = "temp_tts.mp3"
+                tts.save(tts_file)
+                tts_audio = AudioSegment.from_file(tts_file)
 
-            # Append TTS audio to final audio
-            final_audio += tts_audio
-            os.remove(tts_file)  # Clean up temporary file
-
+                # Append TTS audio to final audio
+                final_audio += tts_audio
+                os.remove(tts_file)  # Clean up temporary file
+            except Exception as e:
+                print("Error processing text")
         elif element["type"] == "audio":
             # Download the audio file if it's a URL
             local_audio_path = download_file(element["audio_src"])
@@ -359,13 +362,40 @@ def generate_audio(elements, output_file="final_audio.mp3"):
             duration_ms = int(element["duration"] * 1000)
             if len(sound_effect) > duration_ms:
                 sound_effect = sound_effect[:duration_ms]
+                #sound_effect.export("debug_sound_effect_1.mp3", format="mp3")
             else:
                 # Repeat the sound effect if it is too short
                 sound_effect = sound_effect * (duration_ms // len(sound_effect) + 1)
+                #sound_effect.export("debug_sound_effect_2.mp3", format="mp3")
                 sound_effect = sound_effect[:duration_ms]
+                #sound_effect.export("debug_sound_effect_3.mp3", format="mp3")
+            # Adjust volume
+            print(f"Original dBFS: {sound_effect.dBFS}")
+            # Calculate volume adjustment
+            volume_adjustment = element["volume"] - 100
+
+            # Clamp excessive decreases
+            if volume_adjustment < -45:
+                volume_adjustment = -45
+
+            # Clamp excessive increases
+            if volume_adjustment > 100:
+                volume_adjustment = 100
+
+            # Apply adjustment with threshold check
+            if sound_effect.dBFS + volume_adjustment < -50:
+                volume_adjustment = -50 - sound_effect.dBFS
 
             # Adjust volume
-            sound_effect = sound_effect + element["volume"] - 100  # Normalize volume to dBFS
+            sound_effect = sound_effect + volume_adjustment
+
+            # Normalize (optional)
+            target_dBFS = -20.0
+            sound_effect = sound_effect.apply_gain(target_dBFS - sound_effect.dBFS)
+
+            # Export for debugging
+            #sound_effect.export("debug_sound_effect_4.mp3", format="mp3")
+            print(f"Final adjusted dBFS: {sound_effect.dBFS}")
 
             # Handle overlap
             if element["overlap"]:
