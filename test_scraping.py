@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import unittest
-from model_scraper import scrape_page, scrape_story_page_with_soundeffect, scrape_page_sm, generate_audio
+from model_scraper import scrape_page, scrape_story_page_with_soundeffect, scrape_page_sm, generate_audio, scrape_page_with_camera_frame, create_video_from_elements
 #from scraper import scrape_page
 
 
@@ -39,6 +39,19 @@ from model_scraper import scrape_page, scrape_story_page_with_soundeffect, scrap
 # generate_audio(results, "final_output.mp3")
 
 #DND - Working
-url = "https://readernook.com/topics/amazing-short-stories/the-greedy-dog-and-his-bone"
-results = scrape_page_sm(url)
-generate_audio(results, "final_output.mp3")
+# url = "https://readernook.com/topics/amazing-short-stories/the-greedy-dog-and-his-bone"
+# results = scrape_page_sm(url)
+# generate_audio(results, "final_output.mp3")
+
+#DND - Working
+# url = "https://readernook.com/topics/amazing-short-stories/the-greedy-dog-and-his-bone-test"
+# results = scrape_page_with_camera_frame(url)
+# # Print results
+# for idx, item in enumerate(results):
+#     print(f"Element {idx + 1}:")
+#     print(item)
+#     print("-" * 50)
+
+url = "https://readernook.com/topics/amazing-short-stories/the-greedy-dog-and-his-bone-test"
+results = scrape_page_with_camera_frame(url)
+create_video_from_elements(results, "final_output.mp4")
