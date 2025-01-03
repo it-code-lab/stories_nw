@@ -1,6 +1,12 @@
 from moviepy.editor import *
 from PIL import Image
 import numpy as np  # Import numpy
+import cv2
+import numpy as np
+from scipy.interpolate import CubicSpline
+import requests
+from io import BytesIO
+import os
 
 def add_zoom_effect(image_path, audio_duration, zoom_factor=0.9, start_pos="center", end_pos="center"):
     """
@@ -39,6 +45,116 @@ def add_pan_effect(image_path, audio_duration, start_x=0, end_x=1920, start_y=0,
     pan_clip = clip.set_position(lambda t: (start_x + (end_x - start_x) * t / audio_duration, 
                                             start_y + (end_y - start_y) * t / audio_duration))
     return pan_clip
+
+def load_image(image_path):
+    """
+    Loads an image from a local path or URL.
+
+    Args:
+        image_path: Path to the image file or a URL.
+
+    Returns:
+        The loaded image (as a NumPy array).
+    """
+    if image_path.startswith("http://") or image_path.startswith("https://"):
+        # Handle URL
+        try:
+            response = requests.get(image_path, stream=True)
+            response.raise_for_status()
+            image = Image.open(BytesIO(response.content))
+            return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to load image from URL: {e}")
+            return None
+    else:
+        # Handle local path
+        return cv2.imread(image_path)
+    
+def create_camera_movement_video(image_path, 
+                                 start_frame, 
+                                 end_frame, 
+                                 output_path='output.mp4', 
+                                 duration=5, 
+                                 fps=30):
+    """
+    Creates a video with camera movement between two frames within an image.
+
+    Args:
+        image_path: Path to the input image.
+        start_frame: Dictionary containing 'width', 'height', 'left', 'top' 
+                     of the starting camera frame.
+        end_frame: Dictionary containing 'width', 'height', 'left', 'top' 
+                   of the ending camera frame.
+        output_path: Path to save the output video.
+        duration: Duration of the video in seconds.
+        fps: Frames per second for the video.
+
+    Returns:
+        None
+    """
+
+    # Load the image
+    #img = cv2.imread(image_path)
+    # Load the image
+    img = load_image(image_path)
+    if img is None:
+        print("Failed to load image. Exiting.")
+        return
+    # Calculate image dimensions
+    img_height, img_width, _ = img.shape
+
+    # Calculate the aspect ratio from the start frame
+    start_aspect_ratio = start_frame['width'] / start_frame['height']
+    video_width = 1920  # Base width for output video
+    video_height = int(video_width / start_aspect_ratio)
+
+    # Define camera movement path (linear interpolation)
+    def get_frame_at_time(t):
+        progress = t / duration
+        width = np.interp(progress, [0, 1], [start_frame['width'], end_frame['width']])
+        height = width / start_aspect_ratio  # Ensure consistent aspect ratio
+        left = np.interp(progress, [0, 1], [start_frame['left'], end_frame['left']])
+        top = np.interp(progress, [0, 1], [start_frame['top'], end_frame['top']])
+        return int(width), int(height), int(left), int(top)
+
+    # Create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for MP4
+    out = cv2.VideoWriter(output_path, fourcc, fps, (video_width, video_height))
+
+    # Generate frames for the video
+    for i in range(int(duration * fps)):
+        t = i / fps
+        width, height, left, top = get_frame_at_time(t)
+
+        # Adjust for out-of-bounds cropping
+        x1 = max(0, left)
+        y1 = max(0, top)
+        x2 = min(x1 + width, img_width)
+        y2 = min(y1 + height, img_height)
+
+        frame = img[y1:y2, x1:x2]
+
+        # Ensure the cropped region matches the start frame's aspect ratio
+        frame_height, frame_width, _ = frame.shape
+        frame_aspect_ratio = frame_width / frame_height
+        if frame_aspect_ratio != start_aspect_ratio:
+            if frame_aspect_ratio > start_aspect_ratio:  # Too wide
+                new_width = int(frame_height * start_aspect_ratio)
+                offset = (frame_width - new_width) // 2
+                frame = frame[:, offset:offset + new_width]
+            else:  # Too tall
+                new_height = int(frame_width / start_aspect_ratio)
+                offset = (frame_height - new_height) // 2
+                frame = frame[offset:offset + new_height, :]
+
+        # Resize the frame to the output video dimensions
+        frame = cv2.resize(frame, (video_width, video_height))
+
+        # Write the frame to the video
+        out.write(frame)
+
+    # Release the VideoWriter object
+    out.release()    
 
 #working on Dell latitude and woring on precision  
 def add_ken_burns_effect_DND(image_path, audio_duration, start_zoom=1, end_zoom=1.2):
