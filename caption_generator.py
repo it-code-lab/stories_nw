@@ -67,12 +67,11 @@ def create_stylish_subtitles(video, subtitles, style, fontsize, y_pos, font_sett
     return CompositeVideoClip([video] + subtitle_clips)
 
 # Correct and Add Captions
-def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings):
-    video_path = "final_video.mp4"
+def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings, input_video_path = "final_video.mp4"):
     audio_path = "audio.wav"
     output_video_path = "output_video.mp4"
 
-    extract_audio(video_path, audio_path)
+    extract_audio(input_video_path, audio_path)
 
     audio_transcription = normalize_text(website_text)
 
@@ -80,7 +79,7 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings)
     subtitles = generate_aligned_subtitles(audio_path, audio_transcription, max_words)
 
     # Create the Video with Captions
-    video = VideoFileClip(video_path)
+    video = VideoFileClip(input_video_path)
     styled_video = create_stylish_subtitles(video, subtitles, style, fontsize, y_pos, font_settings)
     try:
         # Write output and ensure file closure
