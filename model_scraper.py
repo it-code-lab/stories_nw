@@ -11,7 +11,7 @@ from moviepy.editor import ImageClip, TextClip, concatenate_videoclips, concaten
 from tempfile import NamedTemporaryFile
 import numpy as np
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
-from effects import add_ken_burns_effect, create_camera_movement_video
+from effects import add_ken_burns_effect, create_camera_movement_clip, create_camera_movement_video
 from moviepy.video.VideoClip import VideoClip
 
 
@@ -927,8 +927,8 @@ def create_video_from_elements(elements, output_path):
     for idx, element in enumerate(elements):  # Using enumerate to get the index
 
         #DND - For debugging
-        #if idx > 5:
-        #    break  # Break the loop after processing 5 elements
+        # if idx > 5:
+        #     break  # Break the loop after processing 5 elements
 
         element_id = element.get("id", f"element_{idx}")  # Use "id" if available, fallback to generated ID
         
@@ -1020,19 +1020,30 @@ def create_video_from_elements(elements, output_path):
                 }
                 end_frame = start_frame
 
-            output_file_name = f"output_{element_id}.mp4"
+            # DND - Working Code
+            #output_file_name = f"output_{element_id}.mp4"
 
-            create_camera_movement_video(
+            # create_camera_movement_video(
+            #     element['image'], 
+            #     start_frame, 
+            #     end_frame, 
+            #     output_path=output_file_name,
+            #     duration = duration,
+            #     fps=24
+            # )
+
+            # # Load the video file
+            # video_clip = VideoFileClip(output_file_name)
+
+            video_clip = create_camera_movement_clip(
                 element['image'], 
                 start_frame, 
                 end_frame, 
-                output_path=output_file_name,
                 duration = duration,
                 fps=24
             )
 
-            # Load the video file
-            video_clip = VideoFileClip(output_file_name)
+
 
             # Ensure all elements in audio_clips are AudioFileClip objects
             audio_clips_loaded = [
