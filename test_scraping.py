@@ -54,12 +54,12 @@ from model_scraper import scrape_page, scrape_story_page_with_soundeffect, scrap
 #     print("-" * 50)
 
 #DND - Working
-url = "https://readernook.com/topics/amazing-short-stories/the-greedy-dog-and-his-bone-video"
+url = "https://readernook.com/topics/amazing-short-stories/The-Deceitful-Dog-and-the-Loyal-Fox-vid-reg"
 results = scrape_page_with_camera_frame(url)
-# for idx, item in enumerate(results):
-#     print(f"Element {idx + 1}:")
-#     print(item)
-#     print("-" * 50)
+for idx, item in enumerate(results):
+    print(f"Element {idx + 1}:")
+    print(item)
+    print("-" * 50)
 create_video_from_elements(results, "final_output.mp4")
 
 

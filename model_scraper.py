@@ -343,10 +343,18 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
         """
         Check if the element should be skipped for text extraction.
         """
-        if element.name == "span" or element.name == "button" or (
-            element.name == "div" and "audio-details" in element.get("class", [])
-        ):
+        # Skip <span> only if it has onclick="toggleParentDetails(this)"
+        if element.name == "span" and element.get("onclick") == "toggleParentDetails(this)":
             return True
+        
+        # Skip <button> elements
+        if element.name == "button":
+            return True
+        
+        # Skip <div> with class "audio-details"
+        if element.name == "div" and "audio-details" in element.get("class", []):
+            return True
+        
         return False
     
     # Loop through all elements within "songLyrics" div
@@ -617,12 +625,15 @@ def create_video_from_elements(elements, output_path):
         #DND - For debugging
         # if idx > 5:
         #     break  # Break the loop after processing 5 elements
+        if idx < 49:
+            continue
+
 
         element_id = element.get("id", f"element_{idx}")  # Use "id" if available, fallback to generated ID
         
         #DND - For debugging
-        #print(f"Processing element: {element}")
-        print(f"Processing element: {idx}")
+        print(f"Processing element {idx}: {element}")
+        #print(f"Processing element: {idx}")
 
         if element["type"] == "text":
             try:
