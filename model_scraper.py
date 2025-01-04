@@ -7,7 +7,7 @@ from pydub.generators import Sine
 from gtts import gTTS
 import os
 from moviepy.video.fx.all import crop, resize  # Import crop and resize effects as needed
-from moviepy.editor import ImageClip, TextClip, concatenate_videoclips, concatenate_audioclips, AudioFileClip, VideoFileClip
+from moviepy.editor import ImageClip, TextClip, concatenate_videoclips, concatenate_audioclips, CompositeAudioClip, AudioFileClip, VideoFileClip
 from tempfile import NamedTemporaryFile
 import numpy as np
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
@@ -926,9 +926,16 @@ def create_video_from_elements(elements, output_path):
 
     for idx, element in enumerate(elements):  # Using enumerate to get the index
 
+        #DND - For debugging
+        #if idx > 5:
+        #    break  # Break the loop after processing 5 elements
+
         element_id = element.get("id", f"element_{idx}")  # Use "id" if available, fallback to generated ID
         
-        print(f"Processing element: {element}")
+        #DND - For debugging
+        #print(f"Processing element: {element}")
+        print(f"Processing element: {idx}")
+
         if element["type"] == "text":
             try:
                 # Generate TTS audio for text
@@ -938,8 +945,8 @@ def create_video_from_elements(elements, output_path):
                 tts_audio = AudioFileClip(tts_audio_path)
                 audio_clips.append(tts_audio)
 
-                # Export intermediate TTS audio
-                tts_audio.write_audiofile(f"debug_audio_tts_{element_id}.mp3")
+                #DND - For Debugging - Export intermediate TTS audio
+                #tts_audio.write_audiofile(f"debug_audio_tts_{element_id}.mp3")
 
             except Exception as e:
                 print(f"Error processing text: {e}")
@@ -977,14 +984,16 @@ def create_video_from_elements(elements, output_path):
         elif element["type"] == "image":
 
             img_clip = ImageClip(element["image"])
-            print(f"Loaded image clip: {img_clip}")
+            #DND - For Debugging purposes
+            #print(f"Loaded image clip: {img_clip}")
             
             # Attempt to get the image size
             try:
                 actual_width, actual_height = img_clip.size
-                print(f"Image dimensions: width={actual_width}, height={actual_height}")
-                print(f"Image source: {element['image']}")
-                print(f"ImageClip: {img_clip}")
+                #DND - For Debugging purposes
+                #print(f"Image dimensions: width={actual_width}, height={actual_height}")
+                #print(f"Image source: {element['image']}")
+                #print(f"ImageClip: {img_clip}")
             except Exception as e:
                 print(f"Error getting image dimensions: {e}")
                 actual_width, actual_height = 1920, 1080  # Fallback to default
@@ -1011,38 +1020,63 @@ def create_video_from_elements(elements, output_path):
                 }
                 end_frame = start_frame
 
+            output_file_name = f"output_{element_id}.mp4"
+
             create_camera_movement_video(
                 element['image'], 
                 start_frame, 
                 end_frame, 
-                output_path='output_movement.mp4',
-                duration = duration
+                output_path=output_file_name,
+                duration = duration,
+                fps=24
             )
 
             # Load the video file
-            video_clip = VideoFileClip('output_movement.mp4')
-            # Load and combine all audio clips
-            audio_clips_loaded = [AudioFileClip(audio_path) for audio_path in audio_clips]
+            video_clip = VideoFileClip(output_file_name)
+
+            # Ensure all elements in audio_clips are AudioFileClip objects
+            audio_clips_loaded = [
+                clip if isinstance(clip, AudioFileClip) else AudioFileClip(clip)
+                for clip in audio_clips
+            ]
+
             combined_audio = concatenate_audioclips(audio_clips_loaded)
+
+            if combined_audio.duration > video_clip.duration:
+                combined_audio = combined_audio.subclip(0, video_clip.duration)
 
             # Set the combined audio to the video
             video_with_audio = video_clip.set_audio(combined_audio)
             video_clips.append(video_with_audio)
-                
 
-            #img_clip = img_clip.set_duration(duration)
-            #video_clips.append(img_clip)
+            #DND - For debugging purposes    
+            #video_with_audio.write_videofile(f"video_with_audio_{element_id}.mp4", fps=24)
+            
+            # Do not close the video_with_audio here
+            # video_with_audio.close()
 
-            # Export intermediate video for debugging
-            #img_clip.write_videofile(f"debug_video_{element_id}.mp4", fps=24)
 
             # Reset audio clips for the next image
             audio_clips = []
 
     final_video = concatenate_videoclips(video_clips, method="compose")
 
+    # # Check for audio in video_clips
+    # audio_clips = [clip.audio for clip in video_clips if clip.audio is not None]
+
+    # # Combine all valid audio tracks into a single audio track
+    # if audio_clips:
+    #     final_audio = CompositeAudioClip(audio_clips)
+    #     # Set the final combined audio to the concatenated video
+    #     final_video = final_video.set_audio(final_audio)
+    # else:
+    #     print("Warning: No audio found in video clips. Final video will be silent.")
+
     final_video.write_videofile(output_path, fps=24)
 
+    # Cleanup resources
+    for clip in video_clips:
+        clip.close()
 def add_camera_movement(image_path, audio_duration, start_frame, end_frame, actual_width, actual_height, styled_width):
     """
     Adds camera movement animation from start_frame to end_frame.

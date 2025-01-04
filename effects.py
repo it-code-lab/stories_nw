@@ -69,8 +69,136 @@ def load_image(image_path):
     else:
         # Handle local path
         return cv2.imread(image_path)
-    
+
+
 def create_camera_movement_video(image_path, 
+                                 start_frame, 
+                                 end_frame, 
+                                 output_path='output.mp4', 
+                                 duration=5, 
+                                 fps=30):
+    """
+    Creates a video with camera movement or zoom effect on an image.
+
+    Args:
+        image_path: Path to the input image.
+        start_frame: Dictionary containing 'width', 'height', 'left', 'top' 
+                     of the starting camera frame.
+        end_frame: Dictionary containing 'width', 'height', 'left', 'top' 
+                   of the ending camera frame.
+        output_path: Path to save the output video.
+        duration: Duration of the video in seconds.
+        fps: Frames per second for the video.
+
+    Returns:
+        None
+    """
+    from moviepy.editor import ImageClip
+
+    # Check if the start and end frames are the same (trigger zoom effect)
+    is_zoom_out = (
+        start_frame['width'] == end_frame['width'] and
+        start_frame['height'] == end_frame['height'] and
+        start_frame['left'] == end_frame['left'] and
+        start_frame['top'] == end_frame['top']
+    )
+
+    if is_zoom_out:
+        # Crop the image to the selected frame
+        img = load_image(image_path)
+        if img is None:
+            print("Failed to load image. Exiting.")
+            return
+
+        x1, y1 = start_frame['left'], start_frame['top']
+        x2, y2 = x1 + start_frame['width'], y1 + start_frame['height']
+        cropped_img = img[y1:y2, x1:x2]
+
+        # Save the cropped frame as a temporary file
+        cropped_image_path = 'cropped_frame.png'
+        cv2.imwrite(cropped_image_path, cropped_img)
+
+        zoom_clip = add_ken_burns_effect_DND(cropped_image_path, duration, 1.2, 1)
+
+        start_aspect_ratio = start_frame['width'] / start_frame['height']
+        video_width = 1920  # Base width for output video
+        video_height = int(video_width / start_aspect_ratio)
+
+        zoom_clip = zoom_clip.resize(height=video_height, width=video_width)
+
+        zoom_clip.write_videofile(output_path, fps=fps)        
+
+        return
+
+    # If not a zoom effect, proceed with the original camera movement logic
+    img = load_image(image_path)
+    if img is None:
+        print("Failed to load image. Exiting.")
+        return
+
+    # Calculate image dimensions
+    img_height, img_width, _ = img.shape
+
+    # Calculate the aspect ratio from the start frame
+    start_aspect_ratio = start_frame['width'] / start_frame['height']
+    video_width = 1920  # Base width for output video
+    video_height = int(video_width / start_aspect_ratio)
+
+    # Define camera movement path (linear interpolation)
+    def get_frame_at_time(t):
+        progress = t / duration
+        width = np.interp(progress, [0, 1], [start_frame['width'], end_frame['width']])
+        height = width / start_aspect_ratio  # Ensure consistent aspect ratio
+        left = np.interp(progress, [0, 1], [start_frame['left'], end_frame['left']])
+        top = np.interp(progress, [0, 1], [start_frame['top'], end_frame['top']])
+        return int(width), int(height), int(left), int(top)
+
+    # Create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for MP4
+    out = cv2.VideoWriter(output_path, fourcc, fps, (video_width, video_height))
+
+    # Generate frames for the video
+    for i in range(int(duration * fps)):
+        t = i / fps
+        width, height, left, top = get_frame_at_time(t)
+
+        # Adjust for out-of-bounds cropping
+        x1 = max(0, left)
+        y1 = max(0, top)
+        x2 = min(x1 + width, img_width)
+        y2 = min(y1 + height, img_height)
+
+        frame = img[y1:y2, x1:x2]
+
+        # Ensure the cropped region matches the start frame's aspect ratio
+        frame_height, frame_width, _ = frame.shape
+        frame_aspect_ratio = frame_width / frame_height
+        if frame_aspect_ratio != start_aspect_ratio:
+            if frame_aspect_ratio > start_aspect_ratio:  # Too wide
+                new_width = int(frame_height * start_aspect_ratio)
+                offset = (frame_width - new_width) // 2
+                frame = frame[:, offset:offset + new_width]
+            else:  # Too tall
+                new_height = int(frame_width / start_aspect_ratio)
+                offset = (frame_height - new_height) // 2
+                frame = frame[offset:offset + new_height, :]
+
+        # Resize the frame to the output video dimensions
+        frame = cv2.resize(frame, (video_width, video_height))
+
+        # Write the frame to the video
+        out.write(frame)
+
+    # Release the VideoWriter object
+    out.release()
+
+
+
+
+
+
+#DND-Working    
+def create_camera_movement_video_BK(image_path, 
                                  start_frame, 
                                  end_frame, 
                                  output_path='output.mp4', 
