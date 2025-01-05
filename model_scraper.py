@@ -11,7 +11,7 @@ from moviepy.editor import ImageClip, TextClip, concatenate_videoclips, concaten
 from tempfile import NamedTemporaryFile
 import numpy as np
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
-from effects import add_ken_burns_effect, create_camera_movement_clip, create_camera_movement_video
+from effects import add_ken_burns_effect, create_camera_movement_clip, create_camera_movement_clip_Linear, create_camera_movement_video, create_camera_movement_video_Linear_motion
 from moviepy.video.VideoClip import VideoClip
 
 
@@ -623,10 +623,11 @@ def create_video_from_elements(elements, output_path):
     for idx, element in enumerate(elements):  # Using enumerate to get the index
 
         #DND - For debugging
-        # if idx > 5:
-        #     break  # Break the loop after processing 5 elements
-        if idx < 49:
-            continue
+        if idx > 8:
+            break  # Break the loop after processing 5 elements
+        
+        #if idx < 49:
+        #    continue
 
 
         element_id = element.get("id", f"element_{idx}")  # Use "id" if available, fallback to generated ID
@@ -750,12 +751,14 @@ def create_video_from_elements(elements, output_path):
             # # Load the video file
             # video_clip = VideoFileClip(output_file_name)
 
+            #video_clip = create_camera_movement_clip_Linear(
             video_clip = create_camera_movement_clip(
                 element['image'], 
                 start_frame, 
                 end_frame, 
                 duration = duration,
-                fps=24
+                fps=24,
+                movement_percentage=70
             )
 
 
@@ -773,7 +776,16 @@ def create_video_from_elements(elements, output_path):
 
             # Set the combined audio to the video
             video_with_audio = video_clip.set_audio(combined_audio)
-            video_clips.append(video_with_audio)
+
+            # Render the video to a temporary file to ensure smooth concatenation - Needed for non linear camera movement
+            temp_file = f"temp_video_{element_id}.mp4"
+            video_with_audio.write_videofile(temp_file, fps=24, codec="libx264", audio_codec="aac")
+
+            # Load the rendered file as a VideoFileClip
+            rendered_clip = VideoFileClip(temp_file)
+
+
+            video_clips.append(rendered_clip)
 
             #DND - For debugging purposes    
             #video_with_audio.write_videofile(f"video_with_audio_{element_id}.mp4", fps=24)
@@ -785,7 +797,11 @@ def create_video_from_elements(elements, output_path):
             # Reset audio clips for the next image
             audio_clips = []
 
+    #DND - Working with linear camera movement
     final_video = concatenate_videoclips(video_clips, method="compose")
+
+    # Not working with Linear motion - Concatenate video clips with 'chain' method to preserve motion
+    #final_video = concatenate_videoclips(video_clips, method="chain")
 
     # # Check for audio in video_clips
     # audio_clips = [clip.audio for clip in video_clips if clip.audio is not None]
