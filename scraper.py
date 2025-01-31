@@ -104,7 +104,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
             print(f"Processing complete for {url}")
 
         except Exception as e:
-            print(f"Error processing {url}: {e}. Proceeding to next")
+            print(f"Error processing {url}: {e.with_traceback}. Proceeding to next")
 
 
 
@@ -247,13 +247,29 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
 
             # # Load the video file
             # video_clip = VideoFileClip(output_file_name)
+            img_duration = element["img_duration"]
+            img_animation = element["img_animation"]
+            
+            if img_duration:  # Ensure it's not empty or None
+                try:
+                    img_duration = float(img_duration)  # Convert to float
+                    if img_duration > duration:
+                        duration = img_duration
+                        print(f"Image duration switched from {duration} to {img_duration} seconds")
+                except ValueError:
+                    print(f"Warning: Unable to convert img_duration ('{img_duration}') to float. Skipping.")
+
+            if img_animation is None:  # Only set a default if img_animation is None
+                img_animation = 'Zoom In'
 
             video_clip = create_camera_movement_clip(
                 element['image'], 
                 start_frame, 
                 end_frame, 
                 duration = duration,
-                fps=24
+                fps=24,
+                movement_percentage=70,
+                img_animation = img_animation
             )
 
 
@@ -362,7 +378,11 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
         # Skip <div> with class "audio-details"
         if element.name == "div" and "audio-details" in element.get("class", []):
             return True
-        
+
+        # Skip <div> with class "audio-details"
+        if element.name == "div" and "image-props" in element.get("class", []):
+            return True
+                
         return False
     
     # Loop through all elements within "songLyrics" div
@@ -419,6 +439,9 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
             img_tag = element.find("img", class_="movieImageCls")
             img_src = urljoin(base_url, img_tag["src"]) if img_tag else None
 
+            img_duration = element.select_one("[id$='-imgduration']").text.strip()
+            img_animation = element.select_one("[id$='-imganimation']").text.strip()
+
             # Extract camera frame details
             camera_frame = element.find("div", class_="camera-frame")
             if camera_frame:
@@ -462,7 +485,9 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
                     "left": left,
                     "top": top
                 },
-                "camera_movement": camera_movement
+                "camera_movement": camera_movement,
+                "img_duration": img_duration,
+                "img_animation": img_animation
             }
             last_image = {
                 "type": "image",
@@ -475,7 +500,9 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
                     "left": left,
                     "top": top
                 },
-                "camera_movement": None
+                "camera_movement": None,
+                "img_duration": img_duration,
+                "img_animation": img_animation
             }
 
 

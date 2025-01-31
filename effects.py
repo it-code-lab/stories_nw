@@ -342,7 +342,8 @@ def create_camera_movement_clip(image_path,
                                  end_frame, 
                                  duration=5, 
                                  fps=30, 
-                                 movement_percentage=70):
+                                 movement_percentage=70,
+                                 img_animation = 'Zoom In'):
     """
     Creates a video clip with camera movement or zoom effect on an image.
 
@@ -490,19 +491,35 @@ def create_camera_movement_clip(image_path,
 
             return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # Create the video clip
-        zoom_clip = VideoClip(make_zoom_frame, duration=duration).set_fps(24)
+        if img_animation == '':
+            # Convert image to a video clip with a fixed duration
+            print("Creating still clip of duration " + str(duration))
+            still_clip = ImageSequenceClip([cv2.cvtColor(cropped_img, cv2.COLOR_BGR2RGB)], durations=[duration])
 
-        start_aspect_ratio = start_frame['width'] / start_frame['height']        
-        video_width = 1920  # Base width for output video
-        video_height = int(video_width / start_aspect_ratio)
+            start_aspect_ratio = start_frame['width'] / start_frame['height']        
+            video_width = 1920  # Base width for output video
+            video_height = int(video_width / start_aspect_ratio)
 
-        zoom_clip = zoom_clip.resize(height=video_height, width=video_width)  
+            still_clip = still_clip.resize(height=video_height, width=video_width)
+            
+            # Center the clip position
+            still_clip = still_clip.set_position("center")
 
-        # Center the clip position
-        zoom_clip = zoom_clip.set_position("center")
+            return still_clip
+        else:
+            # Create the video clip
+            zoom_clip = VideoClip(make_zoom_frame, duration=duration).set_fps(24)
 
-        return zoom_clip
+            start_aspect_ratio = start_frame['width'] / start_frame['height']        
+            video_width = 1920  # Base width for output video
+            video_height = int(video_width / start_aspect_ratio)
+
+            zoom_clip = zoom_clip.resize(height=video_height, width=video_width)  
+
+            # Center the clip position
+            zoom_clip = zoom_clip.set_position("center")
+
+            return zoom_clip
 
     # General camera movement
     def make_frame(t):

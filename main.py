@@ -12,16 +12,16 @@ root.geometry("700x800")
 main_frame = Frame(root)
 main_frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-# Field Variables
+# Field Variables # DEFAULT VALUES CAN BE CHANGED HERE
 language_var = StringVar(value="english")
 tts_var = StringVar(value="google")
 gender_var = StringVar(value="Female")
 voice_var = StringVar(value="Joanna")
-size_var = StringVar(value="YouTube Shorts")
-music_var = StringVar(value="Scary Stories")
-max_words = IntVar(value=3)
+size_var = StringVar(value="Regular YouTube Video")
+music_var = StringVar(value="Kids Stories")
+max_words = IntVar(value=5)
 fontsize = IntVar(value=90)
-y_pos = StringVar(value="center")
+y_pos = StringVar(value="bottom")
 style_var = StringVar(value="Style 27")
 
 # Functions
