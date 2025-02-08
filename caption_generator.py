@@ -3,7 +3,7 @@ import re
 import difflib
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 import whisper
-
+import traceback
 
 # Extract Audio from Video
 def extract_audio(video_path, audio_path):
@@ -19,6 +19,9 @@ def normalize_text(text):
 
 # Improved Subtitle Generation Logic
 def generate_aligned_subtitles(audio_path, website_text, max_words):
+
+    print("Received generate_aligned_subtitles Arguments:", locals())
+
     model = whisper.load_model("base")
     result = model.transcribe(audio_path, word_timestamps=True)
     grouped_subtitles = []
@@ -67,24 +70,59 @@ def create_stylish_subtitles(video, subtitles, style, fontsize, y_pos, font_sett
     return CompositeVideoClip([video] + subtitle_clips)
 
 # Correct and Add Captions
-def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings, input_video_path = "final_video.mp4"):
+import traceback
+
+def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings, input_video_path="final_video.mp4"):
+    
+    print("Received add_captions Arguments:", locals())
+
     audio_path = "audio.wav"
     output_video_path = "output_video.mp4"
 
-    extract_audio(input_video_path, audio_path)
-
-    audio_transcription = normalize_text(website_text)
-
-    # Improved Alignment with Website Text
-    subtitles = generate_aligned_subtitles(audio_path, audio_transcription, max_words)
-
-    # Create the Video with Captions
-    video = VideoFileClip(input_video_path)
-    styled_video = create_stylish_subtitles(video, subtitles, style, fontsize, y_pos, font_settings)
+    try:
+        extract_audio(input_video_path, audio_path)
+        print("Audio extracted successfully!")
+    except Exception as e:
+        print(f"Error extracting audio: {e}")
+        traceback.print_exc()
+        return
+    
+    try:
+        audio_transcription = normalize_text(website_text)
+        print("Text normalized successfully!")
+    except Exception as e:
+        print(f"Error normalizing text: {e}")
+        traceback.print_exc()
+        return
+    
+    try:
+        # Improved Alignment with Website Text
+        subtitles = generate_aligned_subtitles(audio_path, audio_transcription, max_words)
+        print("Subtitles generated successfully!")
+    except Exception as e:
+        print(f"Error generating subtitles: {e}")
+        traceback.print_exc()
+        return
+    
+    try:
+        # Create the Video with Captions
+        video = VideoFileClip(input_video_path)
+        styled_video = create_stylish_subtitles(video, subtitles, style, fontsize, y_pos, font_settings)
+    except Exception as e:
+        print(f"Error loading video: {e}")
+        traceback.print_exc()
+        return
+    
     try:
         # Write output and ensure file closure
         styled_video.write_videofile(output_video_path, codec="libx264", audio_codec="aac")
+    except Exception as e:
+        print(f"Error writing video file: {e}")
+        traceback.print_exc()
+        return
     finally:
         # Ensure proper resource release
         styled_video.close()
         video.close()
+    
+    print("Captioning process completed successfully!")

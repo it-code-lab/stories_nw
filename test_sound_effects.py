@@ -108,7 +108,7 @@ def apply_effects_and_create_video(image_files, audio_files, sfx_mapping, target
     final_video = final_video.set_audio(mixed_audio)
 
     # DND-Temporarily commented out - Add call-to-action GIFs
-    final_video = add_gif_to_video(final_video, show_gif_for_duration=3, icon_path="subscribe.gif")
+    final_video = add_gif_to_video(final_video, show_gif_for_duration=3, icon_path="gif_files/subscribe.gif")
 
     # Save the final video
     final_video.write_videofile(output_file, codec="libx264", audio_codec="aac")

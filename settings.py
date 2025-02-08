@@ -8,9 +8,9 @@ tts_engine = {
     "amazon": "amazon"
 }
 background_music_options = {
-    "Scary Stories": "scary_music.mp3",
-    "Kids Stories": "kids_music.mp3",
-    "Funny Videos": "funny_music.mp3"
+    "Scary Stories": "background_music/scary_music.mp3",
+    "Kids Stories": "background_music/kids_music.mp3",
+    "Funny Videos": "background_music/funny_music.mp3"
 }
 
 font_settings = {

@@ -19,7 +19,7 @@ from call_to_action import add_call_to_action_to_video, add_gif_to_video
 
 # # Apply GIF overlay
 # final_video = add_gif_to_video(
-#     video_clip, 5, icon_path="subscribe.gif"
+#     video_clip, 5, icon_path="gif_files/subscribe.gif"
 # )
 
 # # Export the final video
@@ -30,7 +30,7 @@ from call_to_action import add_call_to_action_to_video, add_gif_to_video
 video_clip = VideoFileClip("output_video.mp4")
 
 final_video = add_gif_to_video(
-    video_clip, 5, icon_path="subscribe.gif"
+    video_clip, 5, icon_path="gif_files/subscribe.gif"
 )
 
 final_video.write_videofile(

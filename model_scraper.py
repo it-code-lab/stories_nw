@@ -778,7 +778,7 @@ def create_video_from_elements(elements, output_path):
             video_with_audio = video_clip.set_audio(combined_audio)
 
             # Render the video to a temporary file to ensure smooth concatenation - Needed for non linear camera movement
-            temp_file = f"temp_video_{element_id}.mp4"
+            temp_file = f"temp/temp_video_{element_id}.mp4"
             video_with_audio.write_videofile(temp_file, fps=24, codec="libx264", audio_codec="aac")
 
             # Load the rendered file as a VideoFileClip

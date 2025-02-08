@@ -71,7 +71,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
                 video_clip = VideoFileClip("output_video.mp4")
 
                 final_video = add_gif_to_video(
-                    video_clip, 5, icon_path="subscribe.gif"
+                    video_clip, 5, icon_path="gif_files/subscribe.gif"
                 )
 
                 final_video.write_videofile(
@@ -116,6 +116,9 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
         elements (list[dict]): Scrapped elements containing text, audio, and image data.
         output_path (str): Path to save the final video.
     """
+
+    print("Received create_video_using_camera_frames Arguments:", locals())
+
     video_clips = []
     audio_clips = []
     #last_image_clip = None
@@ -570,7 +573,7 @@ def scrape_and_process_OLD_DND(urls, selected_size, selected_music, max_words, f
                 video_clip = VideoFileClip("output_video.mp4")
 
                 final_video = add_gif_to_video(
-                    video_clip, 5, icon_path="subscribe.gif"
+                    video_clip, 5, icon_path="gif_files/subscribe.gif"
                 )
 
                 final_video.write_videofile(
