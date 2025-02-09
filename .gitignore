@@ -13,5 +13,6 @@ venv
 *.gif
 *.png
 *.webp
-SadTalker
-Wav2Lip
+SadTalker/
+Wav2Lip/
+
