@@ -15,4 +15,4 @@ venv
 *.webp
 SadTalker/
 Wav2Lip/
-
+gfpgan/
