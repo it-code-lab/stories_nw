@@ -5,8 +5,9 @@ from tempfile import NamedTemporaryFile
 import requests
 from bs4 import BeautifulSoup
 import urllib.request
+from add_avatar import create_avatar_video
 from audio_video_processor import create_video, resize_and_crop_image
-from caption_generator import add_captions
+from caption_generator import add_captions, extract_audio
 from effects import create_camera_movement_clip
 from settings import sizes, background_music_options, font_settings
 from tkinter import messagebox
@@ -252,6 +253,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             # video_clip = VideoFileClip(output_file_name)
             img_duration = element["img_duration"]
             img_animation = element["img_animation"]
+            avatar_flag = element["avatar_flag"]
             
             if img_duration:  # Ensure it's not empty or None
                 try:
@@ -290,6 +292,15 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
 
             # Set the combined audio to the video
             video_with_audio = video_clip.set_audio(combined_audio)
+
+            
+            if avatar_flag == 'y':
+                temp_audio_path = "temp/audio.wav"
+                temp_output_path = "temp/video_b4_adding_avatar.mp4"
+                video_with_audio.write_videofile(temp_output_path, fps=24)
+                extract_audio(temp_output_path, temp_audio_path)
+                video_with_audio  = create_avatar_video(temp_output_path, gender)
+            
             video_clips.append(video_with_audio)
 
             #DND - For debugging purposes    
@@ -444,6 +455,7 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
 
             img_duration = element.select_one("[id$='-imgduration']").text.strip()
             img_animation = element.select_one("[id$='-imganimation']").text.strip()
+            add_avatar = element.select_one("[id$='-avatarflag']").text.strip()
 
             # Extract camera frame details
             camera_frame = element.find("div", class_="camera-frame")
@@ -490,7 +502,8 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
                 },
                 "camera_movement": camera_movement,
                 "img_duration": img_duration,
-                "img_animation": img_animation
+                "img_animation": img_animation,
+                "avatar_flag": add_avatar
             }
             last_image = {
                 "type": "image",
@@ -505,7 +518,8 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
                 },
                 "camera_movement": None,
                 "img_duration": img_duration,
-                "img_animation": img_animation
+                "img_animation": img_animation,
+                "avatar_flag": add_avatar
             }
 
 
