@@ -2,6 +2,7 @@ import os
 import subprocess
 import shutil
 from tempfile import NamedTemporaryFile
+import traceback
 import requests
 from bs4 import BeautifulSoup
 import urllib.request
@@ -106,6 +107,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
 
         except Exception as e:
             print(f"Error processing {url}: {e.with_traceback}. Proceeding to next")
+            traceback.print_exc()
 
 
 
@@ -198,6 +200,58 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             except Exception as e:
                 print(f"Error processing audio: {e}")
 
+        # Video processing
+        elif element["type"] == "video":
+            try:
+                # Define a small buffer in seconds (e.g., 0.1 seconds)
+                BUFFER_DURATION = 0.0
+                avatar_flag = element["avatar_flag"]
+
+                video_path = download_file(element["video"])
+                video_clip = VideoFileClip(video_path).without_audio()
+
+                # Calculate total audio duration
+                combined_audio_duration = sum([clip.duration for clip in audio_clips]) if audio_clips else 0
+                print(f"combined_audio_duration: {combined_audio_duration}")
+                print(f"video_clip.duration: {video_clip.duration}")
+                # Clip video if it's longer than the combined audio duration
+                if video_clip.duration > combined_audio_duration:
+                    video_clip = video_clip.subclip(0, combined_audio_duration + BUFFER_DURATION)
+
+                # Combine audio
+                audio_clips_loaded = [clip if isinstance(clip, AudioFileClip) else AudioFileClip(clip) for clip in audio_clips]
+                combined_audio = concatenate_audioclips(audio_clips_loaded)
+
+                # if combined_audio.duration > video_clip.duration:
+                #     combined_audio = combined_audio.subclip(0, video_clip.duration)
+
+                # Handle remaining duration
+                if combined_audio.duration > video_clip.duration:
+                    remaining_audio = combined_audio.subclip(video_clip.duration)
+                    audio_clips = [remaining_audio]  # Update audio_clips with the remaining audio
+                    print(f"remaining_audio.duration: {remaining_audio.duration}")
+                else:
+                    audio_clips = []  # Clear audio_clips if no remaining audio
+
+                # Add combined audio to video
+                #video_with_audio = video_clip.set_audio(combined_audio)
+                video_with_audio = video_clip.set_audio(combined_audio.subclip(0, video_clip.duration))
+
+                if avatar_flag == 'y':
+                    temp_audio_path = "temp/audio.wav"
+                    temp_output_path = "temp/video_b4_adding_avatar.mp4"
+                    video_with_audio.write_videofile(temp_output_path, fps=24)
+                    extract_audio(temp_output_path, temp_audio_path)
+                    video_with_audio  = create_avatar_video(temp_output_path, gender)
+
+                video_clips.append(video_with_audio)
+
+                # Reset audio clips
+                #audio_clips = []
+            except Exception as e:
+                print(f"Error processing video: {e}")
+                traceback.print_exc()
+
         elif element["type"] == "image":
 
             img_clip = ImageClip(element["image"])
@@ -206,6 +260,9 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             
             # Attempt to get the image size
             try:
+                if not audio_clips:
+                    print("No audio clips available. Skipping image processing.")
+                    continue  # Skip to the next element
                 actual_width, actual_height = img_clip.size
                 #DND - For Debugging purposes
                 #print(f"Image dimensions: width={actual_width}, height={actual_height}")
@@ -396,11 +453,18 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
         # Skip <div> with class "audio-details"
         if element.name == "div" and "image-props" in element.get("class", []):
             return True
-                
+
+        if element.name == "div" and "video-props" in element.get("class", []):
+            return True
+                        
         return False
     
     # Loop through all elements within "songLyrics" div
     for element in soup.select_one(".songLyrics").descendants:
+
+        #DND - For debugginh
+        #print(f"Processing element: {element}")
+
         # Skip irrelevant elements (script, styles, etc.)
         if element.name in ("script", "style", "p", "button"):
             continue
@@ -448,6 +512,38 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
             if not any(parent for parent in element.parents if is_skippable(parent)):
                 current_text += " " + element.strip()
 
+        elif element.name == "div" and "video1-desc" in element.get("class", []):
+            video_tag = element.find("video", class_="movieVideoCls")
+            video_src = urljoin(base_url, video_tag["src"]) if video_tag else None
+
+            vid_duration = element.select_one("[id$='-vidduration']").text.strip()
+
+            try:
+                add_avatar = element.select_one("[id$='-avatarflag']").text.strip()
+            except:
+                add_avatar = 'n'
+
+            video_data = {
+                "type": "video",
+                "text": None,
+                "audio": None,
+                "video": video_src,
+                "vid_duration": vid_duration,
+                "avatar_flag": add_avatar
+            }
+
+            if current_text.strip() :
+                elements.append({
+                    "type": "text",
+                    "text": current_text,
+                    "audio": None,
+                    "image": None,
+                    "camera_frame": None
+                })
+                current_text = ""  # Reset text after pairing
+
+            elements.append(video_data)
+
         # Collect images from <img class="movieImageCls">
         elif element.name == "div" and "image1-desc" in element.get("class", []):
             img_tag = element.find("img", class_="movieImageCls")
@@ -455,7 +551,10 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
 
             img_duration = element.select_one("[id$='-imgduration']").text.strip()
             img_animation = element.select_one("[id$='-imganimation']").text.strip()
-            add_avatar = element.select_one("[id$='-avatarflag']").text.strip()
+            try:
+                add_avatar = element.select_one("[id$='-avatarflag']").text.strip()
+            except:
+                add_avatar = 'n'
 
             # Extract camera frame details
             camera_frame = element.find("div", class_="camera-frame")
