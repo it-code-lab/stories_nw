@@ -1,4 +1,5 @@
 import subprocess
+import gfpgan
 from moviepy.editor import VideoFileClip
 # Paths for AI avatar generation
 WAV2LIP_PATH = "Wav2Lip"
@@ -20,6 +21,7 @@ def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", ge
         r"C:/0.data/4.SM-WSpace/6B.Python/1.Create_Video_From_Readernook_Story/application/venv/Scripts/python.exe", f"{SADTALKER_PATH}/inference.py",
         "--driven_audio", TTS_AUDIO,
         "--source_image", INPUT_IMAGE,
+        "--enhancer", "gfpgan",
         "--checkpoint_dir", f"{SADTALKER_PATH}/checkpoints",
         "--result_dir", SADTALKER_OUT_DIR # code change done to store file name as sadtalker_out.mp4 
     ]
@@ -64,4 +66,4 @@ def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", ge
 
 # Example Usage
 if __name__ == "__main__":
-    create_avatar_video("temp/video_b4_adding_avatar.mp4", "Male")
+    create_avatar_video("temp/video_b4_adding_avatar.mp4", "feMale")
