@@ -23,7 +23,8 @@ def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", ge
         "--source_image", INPUT_IMAGE,
         "--enhancer", "gfpgan",
         "--checkpoint_dir", f"{SADTALKER_PATH}/checkpoints",
-        "--result_dir", SADTALKER_OUT_DIR # code change done to store file name as sadtalker_out.mp4 
+        "--result_dir", SADTALKER_OUT_DIR, # code change done to store file name as sadtalker_out.mp4 
+        "--still"  # Prevents aggressive cropping
     ]
     print("SadTalker command:", sadtalker_command)
     subprocess.run(sadtalker_command)
@@ -39,21 +40,45 @@ def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", ge
     subprocess.run(ffmpeg_command, check=True)
 
     # Step 2: Remove the green background from the avatar video
+    # Not working
     # ffmpeg_command = [
     #     "ffmpeg", "-i", AVATAR_VIDEO,
-    #     "-vf", "chromakey=0xFFFFFF:0.1:0.2",  # Remove green background (0xFFFFFF is the hex for green)
+    #     "-vf", "chromakey=0x008000:0.1:0.2",  # Remove green background 
     #     "-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-preset", "ultrafast", "-y", AVATAR_WITHOUT_WHITEBG
     # ]
 
     #print("Removing  background from avatar video...")
     #subprocess.run(ffmpeg_command, check=True)
 
-    # Step 3: Overlay the avatar video onto the background video
+    # Step : Overlay the avatar video onto the background video
+    #SM-DND-Working
+    # ffmpeg_command = [
+    #     "ffmpeg", "-i", UPDATED_BACKGROUND, "-i", AVATAR_WITHOUT_WHITEBG,
+    #     "-filter_complex", "[1:v]scale=416:416[avatar];[0:v][avatar] overlay=W-w:H-h:format=auto",
+    #     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "18",
+    #     "-map", "0:a",  # Keep only the main video’s audio
+    #     "-y", FINAL_VIDEO
+    # ]
+
+    # 1. Remove green background and preserve alpha (using PNG sequence for intermediate)
     ffmpeg_command = [
-        "ffmpeg", "-i", UPDATED_BACKGROUND, "-i", AVATAR_VIDEO,
+        "ffmpeg", "-i", AVATAR_VIDEO,
+        "-vf", "chromakey=0x008000:0.15:0.05",  # Adjust tolerance if needed
+        "-c:v", "png",  # Use PNG for alpha support
+        "-y", AVATAR_WITHOUT_WHITEBG
+    ]
+
+    subprocess.run(ffmpeg_command, check=True)
+
+    # 2. Overlay the transparent avatar onto the background video
+    ffmpeg_command = [
+        "ffmpeg", "-i", UPDATED_BACKGROUND,
+        "-i", AVATAR_WITHOUT_WHITEBG,
         "-filter_complex", "[1:v]scale=416:416[avatar];[0:v][avatar] overlay=W-w:H-h:format=auto",
-        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "18",
-        "-map", "0:a",  # Keep only the main video’s audio
+        "-c:v", "libx264",  # Or your preferred output codec
+        "-preset", "ultrafast",
+        "-crf", "18",  # Adjust CRF for quality
+        "-map", "0:a",  # Keep audio from background video
         "-y", FINAL_VIDEO
     ]
 
