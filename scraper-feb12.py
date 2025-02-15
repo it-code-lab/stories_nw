@@ -23,7 +23,6 @@ from call_to_action import add_gif_to_video
 from pydub import AudioSegment
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
-from moviepy.video.fx.resize import resize
 
 def clear_folders():
     shutil.rmtree("audios", ignore_errors=True)
@@ -127,7 +126,6 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
     video_clips = []
     audio_clips = []
     #last_image_clip = None
-    target_resolution = (1920, 1080)  # Define the desired full frame resolution
 
     for idx, element in enumerate(elements):  # Using enumerate to get the index
 
@@ -135,7 +133,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
         # if idx > 5:
         #     break  # Break the loop after processing 5 elements
 
-        element_id = element.get("id", f"element_{idx}")  # Use "id" if available, fallback to generated ID
+        #element_id = element.get("id", f"element_{idx}")  # Use "id" if available, fallback to generated ID
         
         #DND - For debugging
         print(f"Processing element {idx}: {element}")
@@ -213,9 +211,6 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                 video_path = download_file(element["video"])
                 video_clip = VideoFileClip(video_path).without_audio()
 
-                # Resize the video clip to the target resolution
-                video_clip = resize(video_clip, newsize=target_resolution)
-
                 # Calculate total audio duration
                 combined_audio_duration = sum([clip.duration for clip in audio_clips]) if audio_clips else 0
                 print(f"combined_audio_duration: {combined_audio_duration}")
@@ -232,8 +227,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                 #     combined_audio = combined_audio.subclip(0, video_clip.duration)
 
                 # Handle remaining duration
-                #0.5 buffer is added to avoid blank video file creation
-                if combined_audio.duration > video_clip.duration :
+                if combined_audio.duration > video_clip.duration:
                     remaining_audio = combined_audio.subclip(video_clip.duration)
 
                     if isinstance(remaining_audio, CompositeAudioClip):
@@ -258,7 +252,6 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                     video_with_audio  = create_avatar_video(temp_output_path, gender)
 
                 video_clips.append(video_with_audio)
-                video_with_audio.write_videofile(f"temp/video_with_audio_{element_id}.mp4", fps=24)
 
                 # Reset audio clips
                 #audio_clips = []
@@ -348,8 +341,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                 img_animation = img_animation
             )
 
-            # Resize the image-based video clip to the target resolution
-            video_clip = resize(video_clip, newsize=target_resolution)
+
 
             # Ensure all elements in audio_clips are AudioFileClip objects
             # audio_clips_loaded = [
@@ -384,7 +376,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             video_clips.append(video_with_audio)
 
             #DND - For debugging purposes    
-            video_with_audio.write_videofile(f"temp/video_with_audio_{element_id}.mp4", fps=24)
+            #video_with_audio.write_videofile(f"video_with_audio_{element_id}.mp4", fps=24)
             
             # Do not close the video_with_audio here
             # video_with_audio.close()
@@ -672,32 +664,8 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
         elements.append(last_image)
 
     return elements
-def safe_copy(src, dst, retries=25, delay=2):
-    """
-    Safely copy a file from `src` to `dst`, retrying if the file is locked.
-    If the file already exists, append a suffix (_1, _2, _3, etc.) to the destination filename.
-    """
-    base, ext = os.path.splitext(dst)  # Split destination into name and extension
-    counter = 1
 
-    # Check if the destination file exists, and modify the name with a suffix if necessary
-    while os.path.exists(dst):
-        dst = f"{base}_{counter}{ext}"
-        counter += 1
-
-    for attempt in range(retries):
-        try:
-            shutil.copy2(src, dst)
-            print(f"Copied {src} to {dst}")
-            return
-        except PermissionError as e:
-            print(f"PermissionError: {e}. Retrying in {delay} seconds...")
-            time.sleep(delay)
-
-    raise PermissionError(f"Failed to copy {src} to {dst} after {retries} retries.")
-
-
-def safe_copy_old(src, dst, retries=5, delay=2):
+def safe_copy(src, dst, retries=5, delay=2):
     """
     Safely copy a file from `src` to `dst`, retrying if the file is locked.
     """
