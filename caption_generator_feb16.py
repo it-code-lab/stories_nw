@@ -4,8 +4,6 @@ import difflib
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 import whisper
 import traceback
-import json
-from settings import sizes, background_music_options, font_settings
 
 # Extract Audio from Video
 def extract_audio(video_path, audio_path):
@@ -30,9 +28,6 @@ def generate_aligned_subtitles(audio_path, website_text, max_words):
     current_caption = []
     current_start = None
 
-    with open('temp/result.json', 'w') as f:
-        json.dump(result, f,indent=4)
-
     for segment in result['segments']:
         for word_info in segment['words']:
             word = word_info['word']
@@ -46,9 +41,6 @@ def generate_aligned_subtitles(audio_path, website_text, max_words):
                 grouped_subtitles.append((current_start, end, caption_text))
                 current_caption = []
                 current_start = None
-    
-    with open('temp/grouped_subtitles.json', 'w') as f:
-        json.dump(grouped_subtitles, f,indent=4)
 
     return grouped_subtitles
 
@@ -134,23 +126,3 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings,
         video.close()
     
     print("Captioning process completed successfully!")
-
-if __name__ == "__main__":
-    input_video_path = "input_video.mp4"
-    audio_path = "extracted_audio.wav"
-    output_video_path = "test_output_video.mp4"
-    file_path = "test_website_text.txt"
-    website_text = ""
-    max_words = 5
-    style = "Style 27"
-    fontsize = 90
-    y_pos = "bottom"
-
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            website_text =  file.read()
-    except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
-        traceback.print_exc()
-
-    add_captions(max_words, fontsize, y_pos, style, website_text, font_settings, "composed_video.mp4")
