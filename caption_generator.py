@@ -192,26 +192,25 @@ def test_captions(url, max_words, fontsize, y_pos, style, website_text, font_set
     with open('temp/word_timestamps.txt', 'w') as f:
         json.dump(word_timestamps, f,indent=4)
 
+    # Extract text with headings & list items
+    full_text = extract_full_text_with_positions(url)
+
     """Compare each word in sequence and set matched flag."""
     matched_results = []
     last_matched_index = 0  # Track the last matched word's position in word_timestamps
+
+    i = 0  # Index for full_text
 
     SEARCH_WINDOW = 5  # Number of words after to check for a match
     """Compare each word in sequence and set matched flag, ensuring each word is mapped only once.
     After a match is found, the next word is looked up within the next SEARCH_WINDOW indices. If not found, mark as unmatched.
     """
 
-    # Replace hyphens with spaces
-    #normalized_text = re.sub(r"\s*-\s*", " ", normalized_text)
-
-    # for text in website_text:
-        #text = re.sub(r"[^\w\s']", " ", text)  # Keeps words and spaces
-    words = normalized_text.split()  # Split by whitespace
-
     i = 0  # Manually control the index
 
-    while i < len(words):  # Using while-loop to manually increment `i`
-        word = words[i]
+    while i < len(full_text):  # Using full_text instead of splitting normalized_text
+        word_data = full_text[i]
+        word = word_data["word"]  # Extract word from full_text
         matched = False
         search_start = last_matched_index  # Start searching from the last matched index
         search_end = min(last_matched_index + SEARCH_WINDOW, len(word_timestamps))  # Search within next 10 indices
@@ -229,13 +228,14 @@ def test_captions(url, max_words, fontsize, y_pos, style, website_text, font_set
                     "start": word_timestamps[caption_index]["start"],
                     "end": word_timestamps[caption_index]["end"],
                     "matched": True,
-                    "website_text_index": i
+                    "website_text_index": word_data["position"],  # Use full_text position
+                    "type": word_data["type"]  # Store type for styling
                 })
                 break  # Move to the next website word
 
             # If current word didn't match, try words[i+1]
-            elif i + 1 < len(words):
-                cleaned_next_word = normalize_text(words[i+1])
+            elif i + 1 < len(full_text):
+                cleaned_next_word = normalize_text(full_text[i+1]["word"])
 
                 if not word_timestamps[caption_index]["matched"] and cleaned_word_timestamps == cleaned_next_word:
                     matched = True
@@ -244,11 +244,12 @@ def test_captions(url, max_words, fontsize, y_pos, style, website_text, font_set
 
                     matched_results.append({
                         "position": None,  # No matching position
-                        "word": words[i],
+                        "word": full_text[i]["word"],
                         "start": None,
                         "end": None,
                         "matched": False,
-                        "website_text_index": i
+                        "website_text_index": full_text[i]["position"],
+                        "type": full_text[i]["type"]  # Store type for styling
                     })
                     matched_results.append({
                         "position": word_timestamps[caption_index]["position"],
@@ -256,7 +257,8 @@ def test_captions(url, max_words, fontsize, y_pos, style, website_text, font_set
                         "start": word_timestamps[caption_index]["start"],
                         "end": word_timestamps[caption_index]["end"],
                         "matched": True,
-                        "website_text_index": i + 1
+                        "website_text_index": full_text[i + 1]["position"],
+                        "type": full_text[i+1]["type"]  # Store type for styling
                     })
                     i = i + 1  # Move to the next website word
                     break  # Stop looking once a match is found
@@ -269,15 +271,16 @@ def test_captions(url, max_words, fontsize, y_pos, style, website_text, font_set
                 "word": word,
                 "start": None,
                 "end": None,
-                "matched": False
+                "matched": False,
+                "website_text_index": word_data["position"],  # Use full_text position
+                "type": word_data["type"]  # Store type for styling
             })
     with open('temp/matched_results.txt', 'w') as f:
         json.dump(matched_results, f,indent=4)
 
 
     output_file_path = "temp/structured_output.json"
-    # Extract text with headings & list items
-    full_text = extract_full_text_with_positions(url)
+
 
     # Find start & end word timings
     structured_output = find_timing_for_headings_list_items(full_text, matched_results)
@@ -359,7 +362,7 @@ def extract_full_text_with_positions(url):
 
 
 def find_timing_for_headings_list_items(full_text, matched_results):
-    """Finds start and end word positions for headings/list items using their detected positions in full_text."""
+    """Finds start and end word positions for headings/list items using website_text_index."""
     structured_output = []
     i = 0
 
@@ -381,9 +384,11 @@ def find_timing_for_headings_list_items(full_text, matched_results):
                 end_position = full_text[j]["position"]
                 j += 1
 
-            # Retrieve timings from matched_results
-            start_timing = next((res["start"] for res in matched_results if res["position"] == start_position), None)
-            end_timing = next((res["end"] for res in matched_results if res["position"] == end_position), None)
+            # 🔹 Find start timing using website_text_index
+            start_timing = next((res["start"] for res in matched_results if res["website_text_index"] == start_position), None)
+
+            # 🔹 Find end timing using website_text_index
+            end_timing = next((res["end"] for res in matched_results if res["website_text_index"] == end_position), None)
 
             structured_output.append({
                 "type": current_type,
@@ -399,8 +404,6 @@ def find_timing_for_headings_list_items(full_text, matched_results):
             i += 1  # Move forward normally
 
     return structured_output
-
-
 
 
 if __name__ == "__main__":
