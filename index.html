@@ -60,6 +60,7 @@
 
     <script>
         let overlayData = [];  // Stores structured_output.json data
+        let currentOverlayText = "";  // Stores the currently displayed text
 
         // Load structured_output.json
         fetch('temp/structured_output.json')
@@ -82,14 +83,21 @@
             );
 
             if (activeOverlay) {
-                overlay.innerText = activeOverlay.text;
-                overlay.classList.add("show");
-                overlay.classList.remove("hide");
+                if (activeOverlay.text !== currentOverlayText) { // Only update if text has changed
+                    overlay.innerText = activeOverlay.text;
+                    overlay.classList.add("show");
+                    overlay.classList.remove("hide");
+                    currentOverlayText = activeOverlay.text;  // Update tracking variable
+                }
             } else {
-                overlay.classList.add("hide");
-                setTimeout(() => overlay.classList.remove("show"), 500); // Hide after fade-out
+                if (currentOverlayText !== "") { // Only hide if there was an active overlay
+                    overlay.classList.add("hide");
+                    setTimeout(() => overlay.classList.remove("show"), 500); // Hide after fade-out
+                    currentOverlayText = "";  // Reset tracking variable
+                }
             }
         });
+
     </script>
 
 </body>
