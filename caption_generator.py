@@ -275,7 +275,7 @@ def test_captions(url, max_words, fontsize, y_pos, style, website_text, font_set
         json.dump(matched_results, f,indent=4)
 
 
-    output_file_path = "temp/structured_output.txt"
+    output_file_path = "temp/structured_output.json"
     # Extract text with headings & list items
     full_text = extract_full_text_with_positions(url)
 
