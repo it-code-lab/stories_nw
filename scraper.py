@@ -480,7 +480,13 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
 
         if element.name == "div" and "video-props" in element.get("class", []):
             return True
-                        
+
+        if element.name == "div" and "video-listitem-props" in element.get("class", []):
+            return True
+
+        if element.name == "div" and "video-hdr-props" in element.get("class", []):
+            return True
+                                        
         return False
     
     # Loop through all elements within "songLyrics" div
