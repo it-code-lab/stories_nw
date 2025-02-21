@@ -1,0 +1,109 @@
+/* 🔹 Video Container */
+#video-container {
+    position: relative;
+    width: 80%;
+    margin: auto;
+}
+
+/* 🔹 Video Element (Ensure No Zoom-In Issues) */
+video {
+    width: 100%;
+    display: block;
+    object-fit: contain; /* Prevent stretching or zooming */
+}
+/* 🔹 Base Overlay Styling */
+.overlay-text {
+    position: absolute;
+    width: auto;
+    max-width: 70%;  /* Ensure text doesn’t take up the whole screen */
+    left: 50%;
+    text-align: center;
+    bottom: 42%;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6)); /* Modern gradient */
+    color: #fff;
+    padding: 15px 20px;
+    text-align: center;
+    font-size: 2em;
+    font-family: 'Poppins', sans-serif; /* Modern font */
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    display: none;
+    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+}
+
+/* 🔹 Heading Style */
+.heading {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #ffcc00; /* Attention-grabbing yellow */
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-shadow: 3px 3px 10px rgba(255, 204, 0, 0.8);
+    animation: fadeInSlide 1s ease-in-out;
+}
+
+/* 🔹 List Item Style */
+.list-item {
+    font-size: 2em;
+    font-weight: 600;
+    color: #00ffcc; /* Vibrant cyan for list items */
+    border-left: 5px solid #00ffcc;
+    padding-left: 15px;
+    animation: fadeInScale 1s ease-in-out;
+}
+
+/* 🔹 Show Overlay with Animation */
+.show {
+    display: block;
+    opacity: 1;
+}
+
+/* 🔹 Hide Overlay with Smooth Exit */
+.hide {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+/* 🔹 Fullscreen Fix */
+#video-container.fullscreen .overlay-text {
+    max-width: 80%;
+    font-size: 3em;
+    bottom: 10%;
+}
+
+/* 🔹 Animations */
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulseGlow {
+    0% {
+        text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+    }
+    50% {
+        text-shadow: 0px 0px 20px rgba(255, 255, 255, 0.9);
+    }
+    100% {
+        text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+    }
+}
