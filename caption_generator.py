@@ -189,7 +189,7 @@ def test_captions(url, max_words, fontsize, y_pos, style, website_text, font_set
             })
             position_index += 1
 
-    with open('temp/word_timestamps.txt', 'w') as f:
+    with open('temp/word_timestamps.json', 'w') as f:
         json.dump(word_timestamps, f,indent=4)
 
     # Extract text with headings & list items

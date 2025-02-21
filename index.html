@@ -15,6 +15,16 @@
         </video>
         <!-- 🔹 Ensure overlay is inside the video container -->
         <div id="overlayText" class="overlay-text"></div>
+
+        <!-- Captions Below the Video -->
+        <div id="captions" class="captions-text"></div>
+
+    </div>
+
+    <!-- 🔹 Input to Set Number of Caption Words -->
+    <div id="caption-controls">
+        <label for="captionLength">Words per Caption:</label>
+        <input type="number" id="captionLength" value="5" min="1" max="10">
     </div>
 
     <script src="script.js"></script>

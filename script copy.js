@@ -1,14 +1,12 @@
 let overlayData = [];
 let currentOverlayText = "";
+
 let captionsData = [];
 let currentCaption = "";
 
-let captionWordLimit = 5;  // Default number of words per block
-let currentBlockStart = 0; // Track where the current caption block starts
-let lastSpokenWordIndex = -1; // Last word index processed
-let lastCaptionUpdateTime = 0; // Time when captions were last updated
-
-// Load structured_output.json (for headings & list items)
+let captionWordLimit = 5;  // Default number of words to display
+let currentCaptionWords = [];
+// Load structured_output.json
 fetch('temp/structured_output.json')
     .then(response => response.json())
     .then(data => {
@@ -16,13 +14,14 @@ fetch('temp/structured_output.json')
     })
     .catch(error => console.error("Error loading overlay data:", error));
 
+
 // Load full_text and word_timestamps (for captions)
 fetch('temp/word_timestamps.json')
-    .then(response => response.json())
-    .then(data => {
-        captionsData = data;
-    })
-    .catch(error => console.error("Error loading captions data:", error));
+.then(response => response.json())
+.then(data => {
+    captionsData = data;
+})
+.catch(error => console.error("Error loading captions data:", error));
 
 const video = document.getElementById("video");
 const overlay = document.getElementById("overlayText");
@@ -30,7 +29,7 @@ const captions = document.getElementById("captions");
 
 const captionInput = document.getElementById("captionLength");
 
-// Update caption word limit dynamically from user input
+// Update the caption word limit dynamically from user input
 captionInput.addEventListener("input", () => {
     captionWordLimit = parseInt(captionInput.value, 10) || 5;
 });
@@ -39,14 +38,16 @@ captionInput.addEventListener("input", () => {
 video.addEventListener("timeupdate", () => {
     const currentTime = video.currentTime;
 
-    /** 🔹 1. Show Headings & List Items **/
+    // Find active overlay text for this timestamp
     const activeOverlay = overlayData.find(item => 
         currentTime >= item.start_word_start_timing && currentTime <= item.end_word_end_timing
     );
 
     if (activeOverlay) {
-        if (activeOverlay.text !== currentOverlayText) {
+        if (activeOverlay.text !== currentOverlayText) { // Only update if text has changed
             overlay.innerText = activeOverlay.text;
+
+            // Apply dynamic class based on type
             overlay.classList.remove("heading", "list-item");
             overlay.classList.add(activeOverlay.type === "heading" ? "heading" : "list-item");
 
@@ -62,23 +63,22 @@ video.addEventListener("timeupdate", () => {
         }
     }
 
-    /** 🔹 2. Display Captions in Blocks & Maintain Them During Pauses **/
+    /** 🔹 2. Display Captions with Fixed Positioning **/
     let currentIndex = captionsData.findIndex(word => currentTime >= word.start && currentTime <= word.end);
     
     if (currentIndex !== -1) {
-        // Only update if we reach the last word of the current block
-        if (currentIndex >= currentBlockStart + captionWordLimit) {
-            currentBlockStart = currentIndex; // Move to the next block
-            lastCaptionUpdateTime = currentTime; // Update last update time
+        let startIdx = Math.max(0, currentIndex - Math.floor(captionWordLimit / 2));
+        let endIdx = Math.min(startIdx + captionWordLimit, captionsData.length);
+
+        // Keep previous words fixed in place to prevent shifting
+        if (currentCaptionWords.length === 0) {
+            currentCaptionWords = captionsData.slice(startIdx, endIdx).map(word => word.word);
         }
 
-        let endIdx = Math.min(currentBlockStart + captionWordLimit, captionsData.length);
-        let currentBlockWords = captionsData.slice(currentBlockStart, endIdx);
-
-        let displayedWords = currentBlockWords.map((wordObj) => {
-            return (currentTime >= wordObj.start && currentTime <= wordObj.end)
-                ? `<span class="current-word">${wordObj.word}</span>` // Highlight spoken word
-                : wordObj.word;
+        let displayedWords = currentCaptionWords.map((word, index) => {
+            let wordData = captionsData.find(w => w.word === word);
+            let isCurrent = wordData && (currentTime >= wordData.start && currentTime <= wordData.end);
+            return isCurrent ? `<span class="current-word">${word}</span>` : word;
         });
 
         const newCaption = displayedWords.join(" ");
@@ -88,13 +88,11 @@ video.addEventListener("timeupdate", () => {
             captions.classList.add("show-caption");
             captions.classList.remove("hide-caption");
         }
-    } else if (currentTime - lastCaptionUpdateTime < 2) {
-        // 🔹 If there’s a pause, keep the last caption visible for 2 seconds
-        captions.classList.add("show-caption");
-        captions.classList.remove("hide-caption");
-    } else if (captions.innerHTML !== "") {
-        // 🔹 After the pause, fade out the caption
-        captions.classList.add("hide-caption");
-        setTimeout(() => captions.classList.remove("show-caption"), 300);
+    } else {
+        if (captions.innerHTML !== "") { 
+            captions.classList.add("hide-caption");
+            setTimeout(() => captions.classList.remove("show-caption"), 300);
+        }
     }
+
 });
