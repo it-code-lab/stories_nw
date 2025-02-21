@@ -50,20 +50,39 @@ video {
     color: #00ffcc; /* Vibrant cyan for list items */
     border-left: 5px solid #00ffcc;
     padding-left: 15px;
-    animation: fadeInScale 1s ease-in-out;
+    /* animation: fadeInScale 1s ease-in-out; */
+    animation: bounceIn 0.8s ease-in-out;  /* Apply bounce effect */
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); }
 }
 
 /* 🔹 Show Overlay with Animation */
 .show {
     display: block;
     opacity: 1;
+    animation: fadeIn 0.6s ease-in-out;
 }
 
+/* 🔹 Fade-In Effect */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 /* 🔹 Hide Overlay with Smooth Exit */
 .hide {
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
 }
 
 /* 🔹 Fullscreen Fix */
