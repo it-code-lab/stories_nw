@@ -9,6 +9,7 @@ let dummyCaptionsData = [
 
 let overlayData = [];
 let currentOverlayText = "";
+//let currentCaptionIndex = 0;  // Track the index of the caption being displayed
 let captionsData = [];
 let currentCaption = "";
 
@@ -64,6 +65,10 @@ restartBtn.addEventListener("click", () => {
     video.currentTime = 0;
     video.play();
     playPauseBtn.innerHTML = "⏸ Pause";  // Change button to "Pause" when restarted
+
+    //currentCaptionIndex = 0;  // Reset caption tracking
+    captions.innerHTML = "";  // Clear previous captions
+    currentBlockStart = 0
 });
 
 // 🔹 Format Time Function (Convert Seconds to mm:ss)
@@ -73,10 +78,10 @@ function formatTime(time) {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-// 🔹 Update Time Display
-video.addEventListener("timeupdate", () => {
-    videoTimeDisplay.innerHTML = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
-});
+// // 🔹 Update Time Display
+// video.addEventListener("timeupdate", () => {
+//     videoTimeDisplay.innerHTML = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+// });
 
 // 🔹 Update Total Duration When Metadata Loads
 video.addEventListener("loadedmetadata", () => {
@@ -138,6 +143,8 @@ video.addEventListener("timeupdate", () => {
     }
 
     /** 🔹 2. Display Captions in Blocks & Maintain Them During Pauses **/
+    videoTimeDisplay.innerHTML = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+
     let currentIndex = captionsData.findIndex(word => currentTime >= word.start && currentTime <= word.end);
 
     if (currentIndex !== -1) {

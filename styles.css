@@ -89,6 +89,7 @@ video {
     color: #00ffcc; /* Vibrant cyan for list items */
     border-left: 5px solid #00ffcc;
     padding-left: 15px;
+    text-transform: uppercase;
     /* animation: fadeInScale 1s ease-in-out; */
     animation: bounceIn 0.8s ease-in-out;  /* Apply bounce effect */
 }
@@ -172,19 +173,19 @@ video {
     width: 80%;
     left: 50%;
     transform: translateX(-50%);
-    bottom: 5%;
-    background: rgba(0, 0, 0, 0.7);
-    color: #fff;
+    bottom: 2%;
+    /* background: rgba(0, 0, 0, 0.7); */
+    /* color: #fff; */
     padding: 10px 15px;
     text-align: center;
-    font-size: 1.5em;
+    font-size: 1.8em;
     font-family: 'Poppins', sans-serif;
-    border-radius: 5px;
+    border-radius: 10px;
     opacity: 0;
     display: none;
     transition: opacity 0.5s ease-in-out;
-    line-height: 1.4;
-    min-height: 40px; /* 🔹 Prevent shifting */
+    line-height: 1.5;
+    min-height: 50px; /* 🔹 Prevent shifting */
     white-space: nowrap; /* 🔹 Ensure text doesn't wrap */
 }
 
@@ -204,28 +205,59 @@ video {
     min-height: 50px;
     white-space: nowrap;
 }
+
+.current-word {
+    /* color: #ffcc00; 
+    text-shadow: 0px 0px 10px rgba(255, 204, 0, 0.8);
+    animation: pulseGlow 0.5s infinite alternate; */
+    padding: 5px;
+}
+
 /* 🔹 Caption Style 1 (Default) */
 .style1 {
-    background: rgba(0, 0, 0, 0.8);
+
     color: #fff;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.4);
+    font-size: 1.5em;
+    text-shadow: 0px 0px 10px rgba(50, 50, 49, 0.8);
+    font-weight: bold;
+    text-transform: uppercase;
+
+}
+
+/* 🔹 Highlight Current Word */
+.style1 .current-word {
+    background-color: #512085;
+    border-radius: 4px;
 }
 
 /* 🔹 Caption Style 2 (Yellow Highlight) */
 .style2 {
-    background: rgba(255, 215, 0, 0.8);
-    color: black;
-    border: 3px solid rgba(255, 215, 0, 0.5);
+    color: rgb(255, 255, 255);
+    font-size: 1.5em;
+    font-weight: bold;
+    text-shadow: 0px 0px 10px rgba(42, 42, 41, 0.8);
+    text-transform: uppercase;
+}
+
+.style2 .current-word {
+    background-color: rgb(231, 74, 105);
+    border-radius: 4px;
 }
 
 /* 🔹 Caption Style 3 (Blue Glow) */
 .style3 {
-    background: rgba(0, 0, 255, 0.7);
-    color: white;
-    text-shadow: 0px 0px 10px rgba(0, 0, 255, 0.9);
+    
+    color: #fff;
+    font-size: 1.5em;
+    text-shadow: 0px 0px 10px rgba(50, 50, 49, 0.8);
+    font-weight: bold;
+    text-transform: uppercase;
 }
 
+.style3 .current-word {
+    background-color: #ffcc00;
+    border-radius: 4px;
+}
 /* 🔹 Caption Style 4 (Red Background) */
 .style4 {
     background: rgba(255, 0, 0, 0.7);
@@ -299,13 +331,7 @@ video {
     transition: opacity 0.3s ease-out;
 }
 
-/* 🔹 Highlight Current Word */
-.current-word {
-    color: #ffcc00; /* Bright yellow */
-    font-weight: bold;
-    text-shadow: 0px 0px 10px rgba(255, 204, 0, 0.8);
-    animation: pulseGlow 0.5s infinite alternate;
-}
+
 
 /* 🔹 Animations for Captions */
 @keyframes fadeIn {
