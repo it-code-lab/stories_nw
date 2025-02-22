@@ -384,3 +384,22 @@ video {
     visibility: hidden; 
   
 }
+
+/* 🔹 Position Subscribe GIF in Top Left */
+#subscribe-gif {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 200px;  /* Adjust as needed */
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* 🔹 Show GIF */
+.show-gif {
+    opacity: 1;
+}
+
+/* 🔹 Hide GIF */
+.hidden {
+    opacity: 0;
+}

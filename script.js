@@ -45,6 +45,7 @@ const videoTimeDisplay = document.getElementById("video-time");
 const captionStyleDropdown = document.getElementById("captionStyle");
 const captionPreview = document.getElementById("caption-preview");
 
+const subscribeGif = document.getElementById("subscribe-gif");
 
 // 🔹 Hide Default Video Controls
 video.removeAttribute("controls");
@@ -115,10 +116,27 @@ captionStyleDropdown.addEventListener("change", () => {
 captionInput.addEventListener("input", () => {
     captionWordLimit = parseInt(captionInput.value, 10) || 5;
 });
+
+let videoDuration = video.duration;
+
 // Listen for video time updates
 video.addEventListener("timeupdate", () => {
     const currentTime = video.currentTime;
+    
 
+    if (currentTime >= 30 && currentTime <= 35) {
+        // Show GIF 30 seconds after start (for 5 seconds)
+        subscribeGif.classList.add("show-gif");
+        subscribeGif.classList.remove("hidden");
+    } else if (videoDuration - currentTime <= 30 && videoDuration - currentTime >= 25) {
+        // Show GIF 30 seconds before end (for 5 seconds)
+        subscribeGif.classList.add("show-gif");
+        subscribeGif.classList.remove("hidden");
+    } else {
+        // Hide otherwise
+        subscribeGif.classList.remove("show-gif");
+        subscribeGif.classList.add("hidden");
+    }
     /** 🔹 1. Show Headings & List Items **/
     const activeOverlay = overlayData.find(item =>
         currentTime >= item.start_word_start_timing && currentTime <= item.end_word_end_timing

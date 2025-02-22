@@ -142,12 +142,12 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings,
     
     print("Captioning process completed successfully!")
 
-def test_captions(url, max_words, fontsize, y_pos, style, website_text, font_settings, input_video_path="final_video.mp4"):
+def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4"):
     
     #print("Received add_captions Arguments:", locals())
 
     audio_path = "audio.wav"
-    output_video_path = "output_video.mp4"
+
 
     try:
         extract_audio(input_video_path, audio_path)
@@ -157,23 +157,8 @@ def test_captions(url, max_words, fontsize, y_pos, style, website_text, font_set
         traceback.print_exc()
         return
     
-    try:
-        normalized_text = normalize_text(website_text)
-
-        with open('temp/normalized_text.txt', 'w') as f:
-            json.dump(normalized_text, f,indent=4)
-
-        print("Text normalized successfully!")
-    except Exception as e:
-        print(f"Error normalizing text: {e}")
-        traceback.print_exc()
-        return
-
     model = whisper.load_model("base")
     captions_data = model.transcribe(audio_path, word_timestamps=True)
-
-    with open('temp/result.json', 'w') as f:
-        json.dump(captions_data, f,indent=4)
 
     word_timestamps = []
     position_index = 0  # Track word positions
@@ -428,4 +413,4 @@ if __name__ == "__main__":
     #add_captions(max_words, fontsize, y_pos, style, website_text, font_settings, "composed_video.mp4")
 
     
-    test_captions(url, max_words, fontsize, y_pos, style, website_text, font_settings, "composed_video.mp4")
+    prepare_file_for_adding_captions_n_headings_thru_html(url, "composed_video.mp4")

@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import urllib.request
 from add_avatar import create_avatar_video
 from audio_video_processor import create_video, resize_and_crop_image
-from caption_generator import add_captions, extract_audio
+from caption_generator import add_captions, extract_audio, prepare_file_for_adding_captions_n_headings_thru_html
 from effects import create_camera_movement_clip
 from settings import sizes, background_music_options, font_settings
 from tkinter import messagebox
@@ -67,26 +67,27 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
             
             results = scrape_page_with_camera_frame(url)
             create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine)
-
-
-            add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
-
-            try:
-                video_clip = VideoFileClip("output_video.mp4")
+            output_file = "composed_video.mp4"
+            #SM- DND - Working. Commented out for now as captions are going to be added thru HTML
+            #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
+            prepare_file_for_adding_captions_n_headings_thru_html(url,output_file)
+            #try:
+                #video_clip = VideoFileClip("output_video.mp4")
 
                 #DND - Temporarily disabled - as Gif is being added thru Mango as part of effects addition
                 # final_video = add_gif_to_video(
                 #     video_clip, 5, icon_path="gif_files/subscribe.gif"
                 # )
 
-                video_clip.write_videofile(
-                    "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
-                )
+                #SM - DND - Temporarily disabled - as Gif is being added thru HTML
+                # video_clip.write_videofile(
+                #     "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
+                # )
 
-                output_file = "output_video_with_gif.mp4"
-            except Exception as e:
-                print("Error adding gif. Proceeding without gif")
-                output_file = "output_video.mp4"
+                # output_file = "output_video_with_gif.mp4"
+            #except Exception as e:
+                #print("Error adding gif. Proceeding without gif")
+                #output_file = "output_video.mp4"
 
             if selected_size == "YouTube Shorts":
                 video = VideoFileClip(output_file)
