@@ -146,6 +146,7 @@ video {
     transition: opacity 0.5s ease-in-out;
     line-height: 1.4;
     min-height: 40px; /* 🔹 Prevent shifting */
+    white-space: nowrap; /* 🔹 Ensure text doesn't wrap */
 }
 
 /* 🔹 Show Captions Smoothly */

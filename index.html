@@ -21,11 +21,33 @@
 
     </div>
 
+    <div id="custom-controls">
+        <button id="playPauseBtn">▶ Play</button>
+        <button id="restartBtn">⏪ Restart</button>
+        <span id="video-time">00:00 / 00:00</span>
+    </div>
+
     <!-- 🔹 Input to Set Number of Caption Words -->
     <div id="caption-controls">
         <label for="captionLength">Words per Caption:</label>
         <input type="number" id="captionLength" value="5" min="1" max="10">
+        <label for="captionStyle">Choose Caption Style:</label>
+        <select id="captionStyle">
+            <option value="style1">Style 1</option>
+            <option value="style2">Style 2</option>
+            <option value="style3">Style 3</option>
+            <option value="style4">Style 4</option>
+            <option value="style5">Style 5</option>
+            <option value="style6">Style 6</option>
+            <option value="style7">Style 7</option>
+            <option value="style8">Style 8</option>
+            <option value="style9">Style 9</option>
+            <option value="style10">Style 10</option>
+        </select>
     </div>
+
+    <!-- 🔹 Caption Preview -->
+    <div id="caption-preview" class="preview-captions-text style1">This is a caption preview</div>
 
     <script src="script.js"></script>
 </body>
