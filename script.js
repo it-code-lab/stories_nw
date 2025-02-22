@@ -47,6 +47,8 @@ const captionPreview = document.getElementById("caption-preview");
 
 const subscribeGif = document.getElementById("subscribe-gif");
 
+video.volume = 1.0;  // Set default volume to max
+
 // 🔹 Hide Default Video Controls
 video.removeAttribute("controls");
 
