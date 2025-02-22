@@ -541,7 +541,10 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
         # Text nodes
         elif isinstance(element, str) and element.strip():
             if not any(parent for parent in element.parents if is_skippable(parent)):
-                current_text += " " + element.strip()
+                text = element.strip()
+                if not text.endswith('.'):
+                    text += '.'
+                current_text += " " + text
 
         elif element.name == "div" and "video1-desc" in element.get("class", []):
             video_tag = element.find("video", class_="movieVideoCls")
