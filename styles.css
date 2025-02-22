@@ -260,24 +260,47 @@ video {
 }
 /* 🔹 Caption Style 4 (Red Background) */
 .style4 {
-    background: rgba(255, 0, 0, 0.7);
-    color: white;
+    color: #ffd000;
+    font-size: 1.8em;
+    font-weight:bold;
+    text-transform: uppercase;
+    -webkit-text-stroke: 1px black;
+    font-family: 'Luckiest Guy', cursive;
 }
 
+.style4 .current-word {
+    background-color: rgb(122, 43, 219);
+    border-radius: 4px;
+    border: 1px solid #969693;
+}
 /* 🔹 Caption Style 5 (Green Text) */
 .style5 {
-    background: rgba(0, 128, 0, 0.7);
-    color: #fff;
-    font-weight: bold;
+    color: #fffffd;
+    font-size: 1.5em;
+    font-weight:bold;
+    text-transform: uppercase;
+    -webkit-text-stroke: 1px black;
+    font-family:'Shrikhand';
 }
 
+.style5 .current-word {
+    background-color: #ffcc00;
+    border-radius: 4px;
+}
 /* 🔹 Caption Style 6 (Transparent with Shadow) */
 .style6 {
-    background: transparent;
-    color: white;
-    text-shadow: 2px 2px 5px black;
+    color: #ffffff;
+    font-size: 1.8em;
+    font-weight:bold;
+    text-transform: uppercase;
+    -webkit-text-stroke: 1px black;
+    font-family:'Permanent Marker', cursive;
 }
 
+.style6 .current-word {
+    background-color: rgb(231, 74, 105);
+    border-radius: 4px;
+}
 /* 🔹 Caption Style 7 (Large Bold Text) */
 .style7 {
     background: rgba(0, 0, 0, 0.6);
@@ -355,4 +378,9 @@ video {
     width: 90%;
     font-size: 2em;
     bottom: 5%;
+}
+
+.fontCheck{
+    visibility: hidden; 
+  
 }
