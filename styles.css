@@ -395,8 +395,8 @@ video {
 .angle2 { transform: rotate(4deg); }
 .angle3 { transform: rotate(5deg); }
 .angle4 { transform: rotate(-5deg); }
-.angle5 { transform: rotate(7deg); }
-.angle6 { transform: rotate(-7deg); }
+.angle5 { transform: rotate(6deg); }
+.angle6 { transform: rotate(-6deg); }
 
 /* 🔹 Pop-In Effect */
 @keyframes popIn {

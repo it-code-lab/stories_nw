@@ -25,7 +25,7 @@ const bgColors = [
     "#f3c7ad"   
 ];
 
-const fontSizes = ["1.5em", "1.8em", "2em", "2.5em", "2.8em"];
+const fontSizes = ["1.9em", "1.8em", "2em", "2.5em", "2.3em"];
 const angles = ["angle1", "angle2", "angle3", "angle4", "angle5", "angle6"];
 
 let overlayData = [];
