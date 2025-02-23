@@ -7,6 +7,27 @@ let dummyCaptionsData = [
     { "word": "preview", "start": 0.72, "end": 1.12 }
 ];
 
+const textColors = [
+    "#222222",  
+    "#9f2f16",  
+    "#85540d",  
+    "#46850d",  
+    "#0d5a85",  
+    "#5f0d85"   
+];
+
+const bgColors = [
+    "#e9d7f2",  
+    "#d7eaf2",  
+    "#adf3e2",  
+    "#d2f3ad",  
+    "#f3efad",  
+    "#f3c7ad"   
+];
+
+const fontSizes = ["1.5em", "1.8em", "2em", "2.5em", "2.8em"];
+const angles = ["angle1", "angle2", "angle3", "angle4", "angle5", "angle6"];
+
 let overlayData = [];
 let currentOverlayText = "";
 //let currentCaptionIndex = 0;  // Track the index of the caption being displayed
@@ -101,9 +122,10 @@ captionInput.addEventListener("input", () => {
     captionWordLimit = parseInt(captionInput.value, 10) || 5;
 });
 
+let selectedStyle = "style1";  // Default caption style
 // Change Caption Style Based on Selection
 captionStyleDropdown.addEventListener("change", () => {
-    let selectedStyle = captionStyleDropdown.value;
+    selectedStyle = captionStyleDropdown.value;
 
     // Remove old styles
     captions.className = "captions-text";
@@ -172,16 +194,49 @@ video.addEventListener("timeupdate", () => {
         if (currentIndex >= currentBlockStart + captionWordLimit) {
             currentBlockStart = currentIndex; // Move to the next block
             lastCaptionUpdateTime = currentTime; // Update last update time
+
+            // Store styles for this block only once
+            blockWordStyles = captionsData.slice(currentBlockStart, Math.min(currentBlockStart + captionWordLimit, captionsData.length)).map(wordObj => ({
+                textColor: textColors[Math.floor(Math.random() * textColors.length)],
+                bgColor: bgColors[Math.floor(Math.random() * bgColors.length)],
+                fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
+                angle: angles[Math.floor(Math.random() * angles.length)]
+            }));            
         }
 
         let endIdx = Math.min(currentBlockStart + captionWordLimit, captionsData.length);
         let currentBlockWords = captionsData.slice(currentBlockStart, endIdx);
+        let displayedWords = "";
 
-        let displayedWords = currentBlockWords.map((wordObj) => {
-            return (currentTime >= wordObj.start && currentTime <= wordObj.end)
-                ? `<span class="current-word">${wordObj.word}</span>` // Highlight spoken word
-                : wordObj.word;
-        });
+        if (selectedStyle !== "block-style") {
+            displayedWords = currentBlockWords.map((wordObj) => {
+                return (currentTime >= wordObj.start && currentTime <= wordObj.end)
+                    ? `<span class="current-word">${wordObj.word}</span>` // Highlight spoken word
+                    : wordObj.word;
+            });
+        } else {
+            displayedWords = currentBlockWords.map((wordObj, index) => {
+                let span = document.createElement("span");
+                span.innerText = wordObj.word;
+        
+                // Retrieve previously stored styles for this block
+                let style = blockWordStyles[index] || {};
+
+                span.style.color = style.textColor || "#FFF";
+                span.style.backgroundColor = style.bgColor || "#000";
+                span.style.fontSize = style.fontSize || "1em";
+                //span.classList.add(style.angle || "angle1"); // Apply stored angle
+                span.classList.add("word-box"); // Applies bold block style
+
+                // 🔹 Highlight spoken word
+                if (currentTime >= wordObj.start && currentTime <= wordObj.end) {
+                    span.classList.add("current-word");
+                    span.classList.add(style.angle || "angle1");
+                }
+
+                return span.outerHTML;
+            });
+        }
 
         const newCaption = displayedWords.join(" ");
 

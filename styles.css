@@ -189,6 +189,7 @@ video {
     white-space: nowrap; /* 🔹 Ensure text doesn't wrap */
 }
 
+
 /* 🔹 General Caption Styling */
 .preview-captions-text {
     position: absolute;
@@ -332,6 +333,23 @@ video {
     font-weight: bold;
 }
 
+.block-style {
+    position: absolute;
+    left: 50%;
+    top: 10%;
+    /* transform: translate(-50%, -50%); */
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.2;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    /* transition: opacity 0.5s ease-in-out; */
+    font-size: 1em;
+}
+
 /* 🔹 Caption Style Selection Box */
 #caption-controls {
     text-align: center;
@@ -346,6 +364,44 @@ video {
 .show-caption {
     display: block;
     opacity: 1;
+}
+
+/* 🔹 Fancy Block Captions */
+.word-box {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    /* transition: transform 0.03s ease-in-out; */
+    /* animation: popIn 0.5s ease-out; */
+    display: flex ;
+    width: fit-content;
+    margin: 8px;
+}
+
+/* 🔹 Current Spoken Word */
+.block-style .current-word {
+    background-color: rgb(231, 74, 105) !important;
+    color: white !important;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: transform 0.03s ease-in-out !important;
+}
+
+/* 🔹 Rotating Words for Visual Appeal */
+.angle1 { transform: rotate(-4deg); }
+.angle2 { transform: rotate(4deg); }
+.angle3 { transform: rotate(5deg); }
+.angle4 { transform: rotate(-5deg); }
+.angle5 { transform: rotate(7deg); }
+.angle6 { transform: rotate(-7deg); }
+
+/* 🔹 Pop-In Effect */
+@keyframes popIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 
 /* 🔹 Hide Captions Smoothly */
