@@ -18,3 +18,7 @@ Wav2Lip/
 gfpgan/
 pytorch3d/
 temp/*
+node
+package-lock.json
+node_modules/.package-lock.json
+node_modules
