@@ -1,3 +1,6 @@
+//SM-Note-Run server
+//(venv) C:\0.data\4.SM-WSpace\6B.Python\1.Create_Video_From_Readernook_Story\application>python server.py
+
 // 🔹 Dummy Caption Data for Preview
 let dummyCaptionsData = [
     { "word": "This", "start": 0.0, "end": 0.22 },
@@ -28,6 +31,11 @@ const bgColors = [
 const fontSizes = ["1.9em", "1.8em", "2em", "2.5em", "2.3em"];
 const angles = ["angle1", "angle2", "angle3", "angle4", "angle5", "angle6"];
 
+const wordEditor = document.getElementById("word-editor");
+const saveWordChanges = document.getElementById("save-word-changes");
+let wordTimestamps = [];
+
+
 let overlayData = [];
 let currentOverlayText = "";
 //let currentCaptionIndex = 0;  // Track the index of the caption being displayed
@@ -43,18 +51,23 @@ let previewTime = 0.0;
 let previewInterval;
 
 // Load structured_output.json (for headings & list items)
-fetch('temp/structured_output.json')
+//fetch('temp/structured_output.json')
+fetch("http://localhost:5000/get_structured_output")
     .then(response => response.json())
     .then(data => {
         overlayData = data;
+      
     })
     .catch(error => console.error("Error loading overlay data:", error));
 
 // Load full_text and word_timestamps (for captions)
-fetch('temp/word_timestamps.json')
+//fetch('temp/word_timestamps.json')
+fetch("http://localhost:5000/get_word_timestamps")
     .then(response => response.json())
     .then(data => {
         captionsData = data;
+        wordTimestamps = data;
+        renderWordEditor();          
     })
     .catch(error => console.error("Error loading captions data:", error));
 
@@ -285,3 +298,59 @@ function startPreviewAnimation() {
 
 // Start the caption animation loop on page load
 startPreviewAnimation();
+
+// 🔹 Render Editable Words
+function renderWordEditor() {
+    wordEditor.innerHTML = ""; // Clear previous content
+
+    wordTimestamps.forEach((wordObj, index) => {
+        let wordDiv = document.createElement("div");
+        wordDiv.classList.add("word-editor-box");
+
+        // Editable input field
+        let input = document.createElement("input");
+        input.type = "text";
+        input.value = wordObj.word;
+        input.dataset.index = index;
+
+        // Delete button
+        let deleteBtn = document.createElement("span");
+        deleteBtn.innerHTML = "❌";
+        deleteBtn.classList.add("delete-word");
+        deleteBtn.dataset.index = index;
+
+        wordDiv.appendChild(input);
+        wordDiv.appendChild(deleteBtn);
+        wordEditor.appendChild(wordDiv);
+    });
+}
+
+// 🔹 Handle Editing
+wordEditor.addEventListener("input", (event) => {
+    if (event.target.tagName === "INPUT") {
+        let index = event.target.dataset.index;
+        wordTimestamps[index].word = event.target.value.trim();
+    }
+});
+
+// 🔹 Handle Deletion
+wordEditor.addEventListener("click", (event) => {
+    if (event.target.classList.contains("delete-word")) {
+        let index = event.target.dataset.index;
+        wordTimestamps.splice(index, 1);
+        renderWordEditor(); // Re-render after deletion
+    }
+});
+
+// 🔹 Save Updated Words to `word_timestamps.json`
+// 🔹 Save Updated Words to `word_timestamps.json` via Python server
+saveWordChanges.addEventListener("click", () => {
+    fetch("http://localhost:5000/save_word_timestamps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(wordTimestamps)
+    })
+    .then(response => response.json())
+    .then(data => alert(data.message))
+    .catch(error => console.error("Error saving word timestamps:", error));
+});

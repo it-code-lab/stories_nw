@@ -459,3 +459,42 @@ video {
 .hidden {
     opacity: 0;
 }
+
+/* 🔹 Word Editor Container */
+#word-editor-container {
+    margin-top: 20px;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 🔹 Editable Word Box */
+.word-editor-box {
+    display: inline-block;
+    margin: 5px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+}
+
+/* 🔹 Input Field for Editing */
+.word-editor-box input {
+    width: 80px;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    padding: 3px;
+}
+
+/* 🔹 Delete Button */
+.delete-word {
+    margin-left: 5px;
+    color: red;
+    font-weight: bold;
+    cursor: pointer;
+}
