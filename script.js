@@ -319,7 +319,14 @@ function renderWordEditor() {
         deleteBtn.classList.add("delete-word");
         deleteBtn.dataset.index = index;
 
+        // View Details Button
+        let detailsBtn = document.createElement("span");
+        detailsBtn.innerHTML = "ℹ️";  // Info icon
+        detailsBtn.classList.add("view-details");
+        detailsBtn.dataset.index = index;
+
         wordDiv.appendChild(input);
+        wordDiv.appendChild(detailsBtn); // Add details button
         wordDiv.appendChild(deleteBtn);
         wordEditor.appendChild(wordDiv);
     });
@@ -330,6 +337,50 @@ wordEditor.addEventListener("input", (event) => {
     if (event.target.tagName === "INPUT") {
         let index = event.target.dataset.index;
         wordTimestamps[index].word = event.target.value.trim();
+    }
+});
+
+// Function to create the floating tooltip for word properties
+function showWordDetails(index, event) {
+    let wordObj = wordTimestamps[index];
+
+    // Remove existing tooltip
+    let existingTooltip = document.querySelector(".word-tooltip");
+    if (existingTooltip) existingTooltip.remove();
+
+    // Create tooltip div
+    let tooltip = document.createElement("div");
+    tooltip.classList.add("word-tooltip");
+    tooltip.innerHTML = `
+        <strong>📖 Word:</strong> ${wordObj.word} <br>
+        <strong>⏳ Start:</strong> <span class="copy-text">${wordObj.start}</span> <button class="copy-btn" data-text="${wordObj.start}">📋</button><br>
+        <strong>⏳ End:</strong> <span class="copy-text">${wordObj.end}</span> <button class="copy-btn" data-text="${wordObj.end}">📋</button>
+    `;
+
+    // Position tooltip near the clicked button
+    tooltip.style.position = "absolute";
+    tooltip.style.left = `${event.clientX + 10}px`;
+    tooltip.style.top = `${event.clientY + 10}px`;
+    
+    document.body.appendChild(tooltip);
+}
+
+// Event listener for copying times to clipboard
+document.body.addEventListener("click", (event) => {
+    if (event.target.classList.contains("copy-btn")) {
+        let textToCopy = event.target.dataset.text;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            event.target.innerText = "✅";  // Show checkmark after copying
+            setTimeout(() => event.target.innerText = "📋", 1000);
+        });
+    }
+});
+
+// Event listener for showing details
+wordEditor.addEventListener("click", (event) => {
+    if (event.target.classList.contains("view-details")) {
+        let index = event.target.dataset.index;
+        showWordDetails(index, event);
     }
 });
 

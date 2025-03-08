@@ -498,3 +498,27 @@ video {
     font-weight: bold;
     cursor: pointer;
 }
+
+.word-tooltip {
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    position: absolute;
+    z-index: 999;
+    font-size: 14px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.copy-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 5px;
+}
+
+.copy-btn:hover {
+    color: #ffcc00;
+}
