@@ -29,9 +29,12 @@ def clear_folders():
     shutil.rmtree("audios", ignore_errors=True)
     shutil.rmtree("images", ignore_errors=True)
     shutil.rmtree("splits", ignore_errors=True)
+    shutil.rmtree("temp", ignore_errors=True)
+
     os.makedirs("audios", exist_ok=True)
     os.makedirs("images", exist_ok=True)
     os.makedirs("splits", exist_ok=True)
+    os.makedirs("temp", exist_ok=True)
 
 # scraper.py
 
@@ -68,7 +71,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
             results = scrape_page_with_camera_frame(url)
             create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine)
             output_file = "composed_video.mp4"
-            #SM- DND - Working. Commented out for now as captions are going to be added thru HTML
+            #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
             #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
             prepare_file_for_adding_captions_n_headings_thru_html(url,output_file)
             #try:
@@ -134,8 +137,8 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
     for idx, element in enumerate(elements):  # Using enumerate to get the index
 
         #DND - For debugging
-        # if idx > 5:
-        #     break  # Break the loop after processing 5 elements
+        #if idx > 7:
+             #break  # Break the loop after processing 5 elements
 
         element_id = element.get("id", f"element_{idx}")  # Use "id" if available, fallback to generated ID
         
@@ -260,7 +263,8 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                     video_with_audio  = create_avatar_video(temp_output_path, gender)
 
                 video_clips.append(video_with_audio)
-                video_with_audio.write_videofile(f"temp/video_with_audio_{element_id}.mp4", fps=24)
+                #DND-Working but can alter the clip so that the final video may not have the camera movement
+                #video_with_audio.write_videofile(f"temp/video_with_audio_{element_id}.mp4", fps=24)
 
                 # Reset audio clips
                 #audio_clips = []
@@ -386,7 +390,8 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             video_clips.append(video_with_audio)
 
             #DND - For debugging purposes    
-            video_with_audio.write_videofile(f"temp/video_with_audio_{element_id}.mp4", fps=24)
+            #DND-Working but can alter the clip so that the final video may not have the camera movement
+            #video_with_audio.write_videofile(f"temp/video_with_audio_{element_id}.mp4", fps=24)
             
             # Do not close the video_with_audio here
             # video_with_audio.close()
@@ -395,7 +400,8 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             # Reset audio clips for the next image
             audio_clips = []
 
-    final_video = concatenate_videoclips(video_clips, method="compose")
+    #final_video = concatenate_videoclips(video_clips, method="compose")
+    final_video = concatenate_videoclips(video_clips, method="chain")
 
     # # Check for audio in video_clips
     # audio_clips = [clip.audio for clip in video_clips if clip.audio is not None]
@@ -542,9 +548,16 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
         elif isinstance(element, str) and element.strip():
             if not any(parent for parent in element.parents if is_skippable(parent)):
                 text = element.strip()
-                if not text.endswith('.'):
-                    text += '.'
+                # if not text.endswith('.'):
+                #     text += '.'
+                
+                # try:
+                #     if isinstance(element, Tag) and "video-hdr-inline-cls" in element.get("class", []):
+                #         text += '.'
+                # except:
+                #     pass
                 current_text += " " + text
+
 
         elif element.name == "div" and "video1-desc" in element.get("class", []):
             video_tag = element.find("video", class_="movieVideoCls")

@@ -317,8 +317,13 @@ def create_camera_movement_clip(image_path, start_frame, end_frame, duration=5, 
             still_clip = still_clip.resize(height=video_height, width=video_width).set_position("center")
             return still_clip
         else:
-            zoom_clip = add_zoom_effect(cropped_image_path, duration, zoom_factor=1.2, output_size=(1920,1080))
-            return zoom_clip
+            #SM-DND-Working for zooming in
+            #zoom_clip = add_zoom_effect(cropped_image_path, duration, zoom_factor=1.2, output_size=(1920,1080))
+            #return zoom_clip
+            
+            ken_burns_clip = add_ken_burns_effect(cropped_image_path, duration, start_zoom=1.2, end_zoom=1)
+            return ken_burns_clip
+        
             #SM-DND-Working but not smooth
             # start_zoom = 1.2
             # end_zoom = 1
