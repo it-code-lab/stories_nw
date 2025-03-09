@@ -328,15 +328,22 @@ def extract_full_text_with_positions(url):
                 element_type = "regular"
                 if isinstance(element.parent, Tag):  # Check parent element instead of text node
                     if "video-hdr-inline-cls" in element.parent.get("class", []):
-                        element_type = "heading"
+                        if "staying" in element.parent.get("class", []):
+                            element_type = "staying-heading"
+                        else:
+                            element_type = "heading"
                     elif "video-listitem-inline-cls" in element.parent.get("class", []):
-                        element_type = "list_item"
+                        if "staying" in element.parent.get("class", []):
+                            element_type = "staying-list-item"
+                        else:
+                            element_type = "list_item"
 
-                for word in words:
+                for index, word in enumerate(words):
                     full_text.append({
                         "position": position_index,
                         "word": word,
-                        "type": element_type  # Regular text, heading, or list item
+                        "type": element_type,  # Regular text, heading, or list item
+                        "is_last_word": index == len(words) - 1  # True if it's the last word of the element
                     })
                     position_index += 1  # Move forward in word count
 
@@ -345,8 +352,52 @@ def extract_full_text_with_positions(url):
 
     return full_text
 
-
 def find_timing_for_headings_list_items(full_text, matched_results):
+    """Finds start and end word positions for headings/list items using website_text_index."""
+    structured_output = []
+    i = 0
+
+    while i < len(full_text):
+        word_data = full_text[i]
+
+        if word_data["type"] in ["heading", "list_item", "staying-heading", "staying-list-item"]:  # Process headings & list items
+            start_position = word_data["position"]
+            start_word = word_data["word"]
+
+            # Group words until is_last_word is True
+            grouped_words = [start_word]
+            end_position = start_position
+
+            j = i + 1
+            while j < len(full_text) and not full_text[j - 1]["is_last_word"]:  # Continue until the last word of the element
+                grouped_words.append(full_text[j]["word"])
+                end_position = full_text[j]["position"]
+                j += 1
+
+            # 🔹 Find start timing using website_text_index
+            start_timing = next((res["start"] for res in matched_results if res["website_text_index"] == start_position), None)
+
+            # 🔹 Find end timing using website_text_index
+            end_timing = next((res["end"] for res in matched_results if res["website_text_index"] == end_position), None)
+
+            structured_output.append({
+                "type": word_data["type"],
+                "text": " ".join(grouped_words),  # Combine words into a full phrase
+                "start_word_position": start_position,
+                "start_word_start_timing": start_timing,
+                "end_word_position": end_position,
+                "end_word_end_timing": end_timing
+            })
+
+            i = j  # Skip to the next element
+        else:
+            i += 1  # Move forward normally
+
+    return structured_output
+
+
+#DND - Was working except when the two headings or list items are next to each other
+def find_timing_for_headings_list_items_Old(full_text, matched_results):
     """Finds start and end word positions for headings/list items using website_text_index."""
     structured_output = []
     i = 0
@@ -355,7 +406,7 @@ def find_timing_for_headings_list_items(full_text, matched_results):
         word_data = full_text[i]
         current_type = word_data["type"]
 
-        if current_type in ["heading", "list_item"]:  # Process headings & list items
+        if current_type in ["heading", "list_item","staying-heading", "staying-list-item"]:  # Process headings & list items
             start_position = word_data["position"]
             start_word = word_data["word"]
 
@@ -401,7 +452,7 @@ if __name__ == "__main__":
     style = "Style 27"
     fontsize = 90
     y_pos = "bottom"
-    url = "https://readernook.com/topics/scary-stories/Heading-Item-List-Test"
+    url = "https://readernook.com/topics/scary-stories/taxfiling"
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             website_text =  file.read()

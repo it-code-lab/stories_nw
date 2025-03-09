@@ -18,8 +18,19 @@
             <source src="composed_video.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
-        <!-- 🔹 Ensure overlay is inside the video container -->
-        <div id="overlayText" class="overlay-text"></div>
+        <!-- 🔹 Container for All Overlays -->
+        <div id="overlayContainer">
+            <!-- 🔹 Normal Heading & List Item -->
+            <div id="overlayText" class="overlay-text"></div>
+
+            <!-- 🔹 Staying Heading (added dynamically in JS) -->
+            <div id="stayingHeading" class="staying-heading"></div>
+
+            <!-- 🔹 Staying List Items (added dynamically in JS) -->
+            <div id="stayingListContainer" class="staying-list-container"></div>
+        </div>
+
+  
 
         <!-- Captions Below the Video -->
         <div id="captions" class="captions-text style1"></div>

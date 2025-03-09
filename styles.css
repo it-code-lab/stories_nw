@@ -94,6 +94,109 @@ video {
     animation: bounceIn 0.8s ease-in-out;  /* Apply bounce effect */
 }
 
+/* 🔹 Staying Heading */
+.staying-heading {
+    position: absolute;
+    top: 2%;
+    left: 50%; 
+    transform: translateX(-50%);
+    font-size: 1.8em;
+    color: #fff;
+    text-shadow: 1px 1px 2px black, 0 0 25px black, 0 0 5px black;
+    padding: 5px 5px;
+    width: 99%;
+    text-align: center;
+    text-transform: uppercase;
+    font-family: 'Poppins', sans-serif;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+    animation: fadeInSlideDown 0.8s ease-in-out forwards;
+}
+
+/* 🔹 Staying List Items (appear under staying heading) */
+
+/* 🔹 Staying List Container */
+.staying-list-container {
+    position: absolute;
+    top: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%;
+    text-align: left;
+    font-family: 'Poppins', sans-serif;
+    text-transform: uppercase;
+}
+
+/* 🔹 Staying List Item (Displays as a List) */
+.staying-list-item {
+    display: flex;
+    align-items: center;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2px 3px;
+    margin: 2px 0;
+    border-radius: 8px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.5s ease-in-out;
+    transform: translateX(-20px);
+    animation: fadeInListItem 0.8s ease-in-out forwards;
+}
+
+/* 🔹 Icon Before List Item */
+.staying-list-item::before {
+    content: "✔️";  /* Checkmark Icon */
+    font-size: 1.2em;
+    margin-right: 12px;
+    color: #00ffcc;  /* Cyan color for icon */
+}
+
+/* 🔹 Apply the animation */
+.fade-in-slide-down {
+    animation: fadeInSlideDown 0.8s ease-in-out forwards;
+}
+
+/* Smooth Fade-In + Slide Down for Headings */
+@keyframes fadeInSlideDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+/* Staggered Fade-In + Slide Right for List Items */
+@keyframes fadeInListItem {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Glowing Effect for Heading */
+@keyframes glowEffect {
+    0% {
+        text-shadow: 0 0 10px rgba(255, 204, 0, 0.8);
+    }
+    50% {
+        text-shadow: 0 0 20px rgba(255, 204, 0, 1);
+    }
+    100% {
+        text-shadow: 0 0 10px rgba(255, 204, 0, 0.8);
+    }
+}
+
+/* .staying-heading {
+    animation: fadeInSlideDown 1s ease-in-out, glowEffect 2s infinite alternate;
+} */
 @keyframes bounceIn {
     0% { transform: scale(0.8); opacity: 0; }
     50% { transform: scale(1.05); opacity: 1; }

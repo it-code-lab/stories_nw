@@ -38,6 +38,14 @@ let wordTimestamps = [];
 
 let overlayData = [];
 let currentOverlayText = "";
+
+let currentStayingHeading = "";
+let stayingListItems = [];
+
+
+
+
+
 //let currentCaptionIndex = 0;  // Track the index of the caption being displayed
 let captionsData = [];
 let currentCaption = "";
@@ -126,6 +134,18 @@ video.addEventListener("loadedmetadata", () => {
 });
 
 const overlay = document.getElementById("overlayText");
+
+
+const overlayContainer = document.getElementById("overlayContainer");
+const stayingHeading = document.createElement("div"); // Element for staying headings
+stayingHeading.classList.add("staying-heading");
+overlayContainer.appendChild(stayingHeading);
+
+const stayingListContainer = document.createElement("div"); // Container for staying list items
+stayingListContainer.classList.add("staying-list-container");
+overlayContainer.appendChild(stayingListContainer);
+
+
 const captions = document.getElementById("captions");
 
 const captionInput = document.getElementById("captionLength");
@@ -180,16 +200,50 @@ video.addEventListener("timeupdate", () => {
     );
 
     if (activeOverlay) {
-        if (activeOverlay.text !== currentOverlayText) {
-            overlay.innerText = activeOverlay.text;
-            overlay.classList.remove("heading", "list-item");
-            overlay.classList.add(activeOverlay.type === "heading" ? "heading" : "list-item");
+        if (activeOverlay.type === "staying-heading") {
+            // Clear previous staying headings & list items when a new staying heading appears
+            if (activeOverlay.text !== currentStayingHeading) {
+                stayingHeading.innerText = activeOverlay.text;
+                currentStayingHeading = activeOverlay.text;
 
-            overlay.classList.add("show");
-            overlay.classList.remove("hide");
-            currentOverlayText = activeOverlay.text;
+                // 🔹 Reset animation (remove & re-add class)
+                stayingHeading.classList.remove("fade-in-slide-down");
+                void stayingHeading.offsetWidth;  // Trigger reflow to restart animation
+                stayingHeading.classList.add("fade-in-slide-down");
+
+                stayingListItems = []; // Reset list items
+                stayingListContainer.innerHTML = ""; // Clear previous list items
+            }
+        } 
+        else if (activeOverlay.type === "staying-list-item") {
+            // Ensure list item is not duplicated
+            if (!stayingListItems.includes(activeOverlay.text)) {
+                stayingListItems.push(activeOverlay.text);
+                const listItem = document.createElement("div");
+                listItem.classList.add("staying-list-item");
+                listItem.innerText = activeOverlay.text;
+                stayingListContainer.appendChild(listItem);
+            }
+        } 
+        else {
+            // Handle regular headings & list items (disappear after time)
+            if (activeOverlay.text !== currentOverlayText) {
+
+                stayingHeading.innerText = "";
+                currentStayingHeading = "";
+                stayingListItems = []; // Reset list items
+                stayingListContainer.innerHTML = ""; // Clear previous list items
+
+                overlay.innerText = activeOverlay.text;
+                overlay.classList.remove("heading", "list-item");
+                overlay.classList.add(activeOverlay.type === "heading" ? "heading" : "list-item");
+                overlay.classList.add("show");
+                overlay.classList.remove("hide");
+                currentOverlayText = activeOverlay.text;
+            }
         }
     } else {
+        // Hide normal headings & list items (not staying)
         if (currentOverlayText !== "") {
             overlay.classList.add("hide");
             setTimeout(() => overlay.classList.remove("show"), 500);
