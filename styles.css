@@ -436,6 +436,10 @@ video {
     font-weight: bold;
 }
 
+.none {
+    display: none !important;
+}
+
 .block-style {
     position: absolute;
     left: 50%;
