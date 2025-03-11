@@ -12,6 +12,47 @@ video {
     object-fit: contain; /* Prevent stretching or zooming */
 }
 
+/* 🔹 Timeline Container (Separate Below Video) */
+#timeline-container {
+    width: 80%;
+    margin: 10px auto;
+    display: flex;
+    justify-content: center;
+}
+
+#timeline {
+    width: 100%;
+    appearance: none;
+    height: 6px;
+    background: #ddd;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#timeline:hover {
+    background: #bbb;
+}
+
+#timeline::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #ffcc00;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#timeline::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #ffcc00;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
 #caption-controls{
     padding: 5px;
     background-color: cornflowerblue;

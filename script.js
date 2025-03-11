@@ -83,7 +83,7 @@ const video = document.getElementById("video");
 const playPauseBtn = document.getElementById("playPauseBtn");
 const restartBtn = document.getElementById("restartBtn");
 const videoTimeDisplay = document.getElementById("video-time");
-
+const timeline = document.getElementById("timeline");
 const captionStyleDropdown = document.getElementById("captionStyle");
 const captionPreview = document.getElementById("caption-preview");
 
@@ -130,6 +130,8 @@ function formatTime(time) {
 
 // 🔹 Update Total Duration When Metadata Loads
 video.addEventListener("loadedmetadata", () => {
+    console.log("🔹 Video Duration:", video.duration); 
+    timeline.max = video.duration;
     videoTimeDisplay.innerHTML = `00:00 / ${formatTime(video.duration)}`;
 });
 
@@ -178,7 +180,11 @@ let videoDuration = video.duration;
 
 // Listen for video time updates
 video.addEventListener("timeupdate", () => {
-    const currentTime = video.currentTime;
+    updateOverlayAndCaptions();
+});
+
+function updateOverlayAndCaptions() {
+    let currentTime = video.currentTime;
     
 
     if (currentTime >= 30 && currentTime <= 35) {
@@ -251,7 +257,9 @@ video.addEventListener("timeupdate", () => {
         }
     }
 
+    timeline.value = video.currentTime;
     /** 🔹 2. Display Captions in Blocks & Maintain Them During Pauses **/
+    timeline.max = video.duration;
     videoTimeDisplay.innerHTML = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
 
     let currentIndex = captionsData.findIndex(word => currentTime >= word.start && currentTime <= word.end);
@@ -269,6 +277,18 @@ video.addEventListener("timeupdate", () => {
                 fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
                 angle: angles[Math.floor(Math.random() * angles.length)]
             }));            
+        }else if (currentIndex < currentBlockStart) {
+            // 🔹 Handling backward seeking (reset block start)
+            currentBlockStart = Math.max(0, currentIndex - Math.floor(captionWordLimit / 2)); 
+            lastCaptionUpdateTime = currentTime;
+    
+            // Recalculate styles for this block when seeking backward
+            blockWordStyles = captionsData.slice(currentBlockStart, Math.min(currentBlockStart + captionWordLimit, captionsData.length)).map(wordObj => ({
+                textColor: textColors[Math.floor(Math.random() * textColors.length)],
+                bgColor: bgColors[Math.floor(Math.random() * bgColors.length)],
+                fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
+                angle: angles[Math.floor(Math.random() * angles.length)]
+            }));
         }
 
         let endIdx = Math.min(currentBlockStart + captionWordLimit, captionsData.length);
@@ -321,8 +341,12 @@ video.addEventListener("timeupdate", () => {
         captions.classList.add("hide-caption");
         setTimeout(() => captions.classList.remove("show-caption"), 300);
     }
+}
+// 🔹 Seek Video when Timeline is Clicked or Dragged
+timeline.addEventListener("input", () => {
+    video.currentTime = timeline.value;
+    updateOverlayAndCaptions();
 });
-
 
 // 🔹 Simulate Caption Animation in Preview Section
 function startPreviewAnimation() {
