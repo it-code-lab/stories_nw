@@ -85,7 +85,7 @@ const restartBtn = document.getElementById("restartBtn");
 const videoTimeDisplay = document.getElementById("video-time");
 const timeline = document.getElementById("timeline");
 const captionStyleDropdown = document.getElementById("captionStyle");
-const captionPreview = document.getElementById("caption-preview");
+//const captionPreview = document.getElementById("caption-preview");
 
 const subscribeGif = document.getElementById("subscribe-gif");
 
@@ -164,11 +164,11 @@ captionStyleDropdown.addEventListener("change", () => {
 
     // Remove old styles
     captions.className = "captions-text";
-    captionPreview.className = "preview-captions-text";
+    //captionPreview.className = "preview-captions-text";
 
     // Apply new style
     captions.classList.add(selectedStyle);
-    captionPreview.classList.add(selectedStyle);
+    //captionPreview.classList.add(selectedStyle);
 });
 
 // Update caption word limit dynamically from user input
@@ -186,6 +186,30 @@ video.addEventListener("timeupdate", () => {
 function updateOverlayAndCaptions() {
     let currentTime = video.currentTime;
     
+    // Find the current word being spoken
+    let currentWordIndex = wordTimestamps.findIndex(word => 
+        currentTime >= word.start && currentTime <= word.end
+    );
+
+    if (currentWordIndex !== -1) {
+        // Highlight only the current word
+        document.querySelectorAll(".word-editor-box").forEach((box, index) => {
+            if (index === currentWordIndex) {
+                box.classList.add("current");
+            } else {
+                box.classList.remove("current");
+            }
+        });
+
+        // 🔹 Scroll the word editor smoothly without affecting the video view
+        let wordEditor = document.getElementById("word-editor-wrapper");
+        let currentWordBox = document.querySelectorAll(".word-editor-box")[currentWordIndex];
+
+        if (currentWordBox) {
+            let wordOffset = currentWordBox.offsetLeft - wordEditor.offsetWidth / 2 + currentWordBox.offsetWidth / 2;
+            wordEditor.scrollLeft = wordOffset;
+        }        
+    }
 
     if (currentTime >= 30 && currentTime <= 35) {
         // Show GIF 30 seconds after start (for 5 seconds)
@@ -353,7 +377,7 @@ timeline.addEventListener("input", () => {
 });
 
 // 🔹 Simulate Caption Animation in Preview Section
-function startPreviewAnimation() {
+function startPreviewAnimation_Not_in_use() {
     clearInterval(previewInterval); // Reset animation if already running
     previewTime = 0.0;
 
@@ -379,10 +403,42 @@ function startPreviewAnimation() {
 }
 
 // Start the caption animation loop on page load
-startPreviewAnimation();
+//startPreviewAnimation();
+
+function renderWordEditor() { 
+    wordEditor.innerHTML = ""; // Clear previous content
+
+    wordTimestamps.forEach((wordObj, index) => {
+        let wordDiv = document.createElement("div");
+        wordDiv.classList.add("word-editor-box");
+
+        // Editable input field
+        let input = document.createElement("input");
+        input.type = "text";
+        input.value = wordObj.word;
+        input.dataset.index = index;
+
+        // Delete button
+        let deleteBtn = document.createElement("span");
+        deleteBtn.innerHTML = "❌";
+        deleteBtn.classList.add("delete-word");
+        deleteBtn.dataset.index = index;
+
+        // View Details Button
+        let detailsBtn = document.createElement("span");
+        detailsBtn.innerHTML = "ℹ️";  // Info icon
+        detailsBtn.classList.add("view-details");
+        detailsBtn.dataset.index = index;
+
+        wordDiv.appendChild(input);
+        wordDiv.appendChild(detailsBtn);
+        wordDiv.appendChild(deleteBtn);
+        wordEditor.appendChild(wordDiv);
+    });
+}
 
 // 🔹 Render Editable Words
-function renderWordEditor() {
+function renderWordEditor_old() {
     wordEditor.innerHTML = ""; // Clear previous content
 
     wordTimestamps.forEach((wordObj, index) => {

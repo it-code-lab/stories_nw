@@ -737,6 +737,20 @@ video {
     background: #ffaa00;
 }
 
+#save-word-changes{
+    font-size: 0.8em;
+    padding: 10px;
+    cursor: pointer;
+    background: #ffcc00;
+    border: none;
+    border-radius: 5px;
+    transition: 0.3s;
+    font-weight: bold;
+    margin: 5px;
+}
+#save-word-changes:hover {
+    background: #ffaa00;
+}
 /* 🔹 Video Time */
 #video-time {
     font-size: 0.8em;
@@ -772,4 +786,60 @@ video {
     padding: 5px;
     border-radius: 5px;
     text-align: center;
+}
+
+/* 🔹 Word Editor Container */
+#word-editor-container {
+    width: 100%;
+    overflow: hidden;
+    background: #f8f8f8;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 🔹 Wrapper for Horizontal Scrolling */
+#word-editor-wrapper {
+    overflow-x: auto;  /* Enable horizontal scrolling */
+    white-space: nowrap;
+    padding-bottom: 10px;
+    scroll-behavior: smooth; /* Smooth scrolling */
+}
+
+/* 🔹 Word Editor (Horizontal Layout) */
+#word-editor {
+    display: flex;
+    gap: 10px;  /* Space between words */
+    padding: 5px;
+}
+
+/* 🔹 Individual Word Box */
+.word-editor-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: white;
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    white-space: nowrap;
+}
+
+/* 🔹 Highlight Current Word */
+.word-editor-box.current {
+    background: yellow;
+    font-weight: bold;
+}
+
+/* 🔹 Editable Input */
+.word-editor-box input {
+    width: 80px;
+    border: none;
+    font-size: 1em;
+}
+
+/* 🔹 Delete & Details Buttons */
+.word-editor-box span {
+    cursor: pointer;
+    font-size: 1.2em;
 }
