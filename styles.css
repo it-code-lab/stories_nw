@@ -1,16 +1,4 @@
-/* 🔹 Video Container */
-#video-container {
-    position: relative;
-    width: 80%;
-    margin: auto;
-}
 
-/* 🔹 Video Element (Ensure No Zoom-In Issues) */
-video {
-    width: 100%;
-    display: block;
-    object-fit: contain; /* Prevent stretching or zooming */
-}
 
 /* 🔹 Timeline Container (Separate Below Video) */
 #timeline-container {
@@ -53,10 +41,7 @@ video {
     cursor: pointer;
 }
 
-#caption-controls{
-    padding: 5px;
-    background-color: cornflowerblue;
-}
+
 /* 🔹 Custom Control Buttons */
 #custom-controls {
     text-align: center;
@@ -87,7 +72,7 @@ video {
     background: #333;
     padding: 5px 10px;
     border-radius: 5px;
-    font-family: 'Poppins', sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
 }
 /* 🔹 Base Overlay Styling */
 .overlay-text {
@@ -452,8 +437,12 @@ video {
     color: white;
     font-size: 2em;
     font-weight: bold;
+    border-radius: 4px;
 }
-
+.style7 .current-word {
+    background-color: rgb(231, 74, 105);
+    border-radius: 4px;
+}
 /* 🔹 Caption Style 8 (Comic Style) */
 .style8 {
     background: rgba(255, 140, 0, 0.7);
@@ -461,14 +450,20 @@ video {
     font-family: 'Comic Sans MS', cursive, sans-serif;
     font-size: 2em;
 }
-
+.style8 .current-word {
+    background-color: rgb(22, 152, 57);
+    border-radius: 4px;
+}
 /* 🔹 Caption Style 9 (Glowing Effect) */
 .style9 {
     background: rgba(0, 0, 0, 0.85);
     color: #00ffcc;
     text-shadow: 0px 0px 15px #00ffcc;
 }
-
+.style9 .current-word {
+    background-color: rgb(231, 74, 105);
+    border-radius: 4px;
+}
 /* 🔹 Caption Style 10 (Luxury Gold) */
 .style10 {
     background: rgba(0, 0, 0, 0.9);
@@ -476,7 +471,10 @@ video {
     font-family: 'Georgia', serif;
     font-weight: bold;
 }
-
+.style10 .current-word {
+    background-color: rgb(231, 74, 105);
+    border-radius: 4px;
+}
 .none {
     display: none !important;
 }
@@ -498,14 +496,10 @@ video {
     font-size: 1em;
 }
 
-/* 🔹 Caption Style Selection Box */
-#caption-controls {
-    text-align: center;
-    margin-top: 15px;
-}
+
 
 #captionStyle {
-    font-size: 1.2em;
+    font-size: 0.8em;
     padding: 5px;
 }
 /* 🔹 Show Captions Smoothly */
@@ -669,4 +663,113 @@ video {
 
 .copy-btn:hover {
     color: #ffcc00;
+}
+
+/* 🔹 Full Container: Video + Controls Side by Side */
+#container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    /* gap: 20px;
+    width: 90%; */
+    margin: 0 auto;
+    padding-top: 0;  /* Ensure there's no extra padding */
+}
+
+/* 🔹 Video Container */
+#video-container {
+    position: relative;
+    width: 1280px; /* Increase video width */
+    height: 720px;  /* Increase video height */
+    margin-top: -50px; /* Move video up */
+}
+
+/* 🔹 Video Element */
+video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain; /* Prevent stretching */
+}
+
+/* 🔹 Captions */
+#captions {
+    position: absolute;
+    bottom: 10%;
+    width: 100%;
+    text-align: center;
+    font-size: 2em;
+    color: white;
+    text-shadow: 2px 2px 4px black;
+}
+
+/* 🔹 Controls Container */
+#controls-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 100px;
+}
+
+/* 🔹 Custom Controls */
+#custom-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8f8f8;
+    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 🔹 Play/Pause/Restart Buttons */
+#custom-controls button {
+    font-size: 0.8em;
+    padding: 10px;
+    cursor: pointer;
+    background: #ffcc00;
+    border: none;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+#custom-controls button:hover {
+    background: #ffaa00;
+}
+
+/* 🔹 Video Time */
+#video-time {
+    font-size: 0.8em;
+    font-weight: bold;
+    text-align: center;
+    background: #222;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+/* 🔹 Caption Controls */
+#caption-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: #f8f8f8;
+    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: normal;
+    background: #f8f8f8;
+    gap: 10px;
+    text-align: left;
+}
+
+#caption-controls label {
+	font-size: 0.8em;
+    font-weight: bold;
+    background: #222;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    text-align: center;
 }

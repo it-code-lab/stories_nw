@@ -246,6 +246,9 @@ function updateOverlayAndCaptions() {
                 overlay.classList.add("show");
                 overlay.classList.remove("hide");
                 currentOverlayText = activeOverlay.text;
+                //DND-May be used in future-to hide onscreen captions when overlay is shown
+                //captions.classList.add("none");
+                
             }
         }
     } else {
@@ -254,6 +257,7 @@ function updateOverlayAndCaptions() {
             overlay.classList.add("hide");
             setTimeout(() => overlay.classList.remove("show"), 500);
             currentOverlayText = "";
+            captions.classList.remove("none");
         }
     }
 
