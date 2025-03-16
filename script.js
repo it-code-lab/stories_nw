@@ -43,7 +43,11 @@ let currentStayingHeading = "";
 let stayingListItems = [];
 
 
+const audioEffect = new Audio();
 
+// 🔹 Load Sound Effects Data
+const headingSound = "sounds/heading_whoosh.wav";  // Example sound for headings
+const listItemSound = "sounds/list_item_pop.wav";  // Example sound for list items
 
 
 //let currentCaptionIndex = 0;  // Track the index of the caption being displayed
@@ -57,6 +61,19 @@ let lastCaptionUpdateTime = 0; // Time when captions were last updated
 
 let previewTime = 0.0;
 let previewInterval;
+
+// 🔹 Track Played Sounds
+let playedSounds = new Set();
+
+const bgMusicSelect = document.getElementById("bgMusicSelect");
+const previewMusicBtn = document.getElementById("previewMusic");
+const stopPreviewBtn = document.getElementById("stopPreview");
+
+const videoVolumeSlider = document.getElementById("videoVolume");
+const bgMusicVolume = document.getElementById("bgMusicVolume");
+const effectVolume = document.getElementById("effectVolume");
+
+const audioBackground = new Audio();
 
 // Load structured_output.json (for headings & list items)
 //fetch('temp/structured_output.json')
@@ -98,9 +115,17 @@ video.removeAttribute("controls");
 playPauseBtn.addEventListener("click", () => {
     if (video.paused) {
         video.play();
+        const selectedMusic = bgMusicSelect.value;
+        if (selectedMusic !== "none") {
+            audioBackground.src = `sounds/${selectedMusic}`;
+            audioBackground.loop = true;
+            audioBackground.volume = bgMusicVolume.value; // Keep it subtle
+            audioBackground.play();
+        }        
         playPauseBtn.innerHTML = "⏸ Pause";
     } else {
         video.pause();
+        audioBackground.pause();
         playPauseBtn.innerHTML = "▶ Play";
     }
 });
@@ -109,6 +134,13 @@ playPauseBtn.addEventListener("click", () => {
 restartBtn.addEventListener("click", () => {
     video.currentTime = 0;
     video.play();
+    const selectedMusic = bgMusicSelect.value;
+    if (selectedMusic !== "none") {
+        audioBackground.src = `sounds/${selectedMusic}`;
+        audioBackground.loop = true;
+        audioBackground.volume = 0.3; // Keep it subtle
+        audioBackground.play();
+    }      
     playPauseBtn.innerHTML = "⏸ Pause";  // Change button to "Pause" when restarted
 
     //currentCaptionIndex = 0;  // Reset caption tracking
@@ -185,7 +217,8 @@ video.addEventListener("timeupdate", () => {
 
 function updateOverlayAndCaptions() {
     let currentTime = video.currentTime;
-    
+
+
     // Find the current word being spoken
     let currentWordIndex = wordTimestamps.findIndex(word => 
         currentTime >= word.start && currentTime <= word.end
@@ -244,6 +277,13 @@ function updateOverlayAndCaptions() {
                 stayingListItems = []; // Reset list items
                 stayingListContainer.innerHTML = ""; // Clear previous list items
             }
+
+            if ((audioEffect.src !== headingSound) && !playedSounds.has(activeOverlay.text)) {
+                audioEffect.src = headingSound;
+                audioEffect.volume = effectVolume.value;
+                audioEffect.play();
+                playedSounds.add(activeOverlay.text);
+            }
         } 
         else if (activeOverlay.type === "staying-list-item") {
             // Ensure list item is not duplicated
@@ -253,6 +293,13 @@ function updateOverlayAndCaptions() {
                 listItem.classList.add("staying-list-item");
                 listItem.innerText = activeOverlay.text;
                 stayingListContainer.appendChild(listItem);
+            }
+
+            if ((audioEffect.src !== listItemSound) && !playedSounds.has(activeOverlay.text)) {
+                audioEffect.src = listItemSound;
+                audioEffect.volume = effectVolume.value;
+                audioEffect.play();
+                playedSounds.add(activeOverlay.text);
             }
         } 
         else {
@@ -274,6 +321,13 @@ function updateOverlayAndCaptions() {
                 //captions.classList.add("none");
                 
             }
+
+            if ((audioEffect.src !== headingSound) && !playedSounds.has(activeOverlay.text)) {
+                audioEffect.src = headingSound;
+                audioEffect.volume = effectVolume.value;
+                audioEffect.play();
+                playedSounds.add(activeOverlay.text);
+            }
         }
     } else {
         // Hide normal headings & list items (not staying)
@@ -283,6 +337,8 @@ function updateOverlayAndCaptions() {
             currentOverlayText = "";
             captions.classList.remove("none");
         }
+
+        playedSounds.clear();
     }
 
     timeline.value = video.currentTime;
@@ -542,4 +598,36 @@ saveWordChanges.addEventListener("click", () => {
     .then(response => response.json())
     .then(data => alert(data.message))
     .catch(error => console.error("Error saving word timestamps:", error));
+});
+
+// 🔹 Play Selected Background Music for Preview
+previewMusicBtn.addEventListener("click", () => {
+    const selectedMusic = bgMusicSelect.value;
+    if (selectedMusic !== "none") {
+        audioBackground.src = `sounds/${selectedMusic}`;
+        audioBackground.loop = true;
+        audioBackground.volume = bgMusicVolume.value;
+        audioBackground.play();
+    }
+});
+
+// 🔹 Stop Preview Music
+stopPreviewBtn.addEventListener("click", () => {
+    audioBackground.pause();
+    audioBackground.currentTime = 0;
+});
+
+// 🔹 Adjust Background Music Volume Dynamically
+bgMusicVolume.addEventListener("input", () => {
+    audioBackground.volume = bgMusicVolume.value;
+});
+
+// 🔹 Adjust Sound Effect Volume Dynamically
+effectVolume.addEventListener("input", () => {
+    audioEffect.volume = effectVolume.value;
+});
+
+// 🔹 Adjust Main Video Volume Dynamically
+videoVolumeSlider.addEventListener("input", () => {
+    video.volume = videoVolumeSlider.value;
 });

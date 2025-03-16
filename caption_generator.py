@@ -8,6 +8,7 @@ import whisper
 import traceback
 import json
 from settings import sizes, background_music_options, font_settings
+#from transformers import pipeline
 
 # Extract Audio from Video
 def extract_audio(video_path, audio_path):
@@ -160,10 +161,94 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     model = whisper.load_model("base")
     captions_data = model.transcribe(audio_path, word_timestamps=True)
 
+    #SM-DND-Not in USE. May be used later
+    # # 🔹 Load NLP Model for Sentiment/Keyword Analysis
+    # classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+    # sound_categories = {
+    #     # 🔹 Alerts & Warnings
+    #     "warning": ["alert", "danger", "caution", "beware", "threat", "risk", "alarm", "emergency", "critical", "important"],
+        
+    #     # 🔹 Positive & Exciting Moments
+    #     "positive": ["amazing", "awesome", "fantastic", "great", "best", "victory", "win", "celebrate", "brilliant", "congratulations"],
+
+    #     # 🔹 Announcements & Breaking News
+    #     "announcement": ["breaking", "new", "exciting", "introducing", "exclusive", "special", "revealed", "launch", "update"],
+
+    #     # 🔹 Suspense & Mystery
+    #     "suspense": ["mystery", "why", "how", "hidden", "secrets", "unknown", "thriller", "reveal", "unexpected", "twist"],
+
+    #     # 🔹 Emotional Moments (Sadness, Drama)
+    #     "emotional": ["cry", "heartbreaking", "sad", "emotional", "tears", "lost", "goodbye", "pain", "tragic", "sorrow"],
+
+    #     # 🔹 Comedy & Funny Moments
+    #     "funny": ["joke", "haha", "laugh", "hilarious", "funny", "meme", "LOL", "prank", "comedy", "ridiculous"],
+
+    #     # 🔹 Shock & Surprise
+    #     "shock": ["what!", "unbelievable", "shocking", "mind-blowing", "insane", "whoa", "omg", "no way", "crazy", "unexpected"],
+
+    #     # 🔹 Action & Speed (Chase, Fast Movement)
+    #     "action": ["fast", "run", "chase", "speed", "race", "quick", "urgent", "intense", "faster", "rapid"],
+
+    #     # 🔹 Horror & Spooky Sounds
+    #     "horror": ["ghost", "haunted", "scary", "fear", "evil", "creepy", "dark", "terror", "paranormal", "monster"],
+
+    #     # 🔹 Failure & Disappointment
+    #     "failure": ["lost", "fail", "disaster", "oops", "mistake", "regret", "crash", "ruined", "downfall"],
+
+    #     # 🔹 Success & Achievements
+    #     "success": ["won", "achieved", "completed", "goal", "milestone", "congratulations", "champion", "success"],
+
+    #     # 🔹 Clapping & Audience Reactions
+    #     "applause": ["clap", "cheer", "standing ovation", "bravo", "crowd", "reaction"],
+
+    #     # 🔹 Nature & Environmental Sounds
+    #     "nature": ["rain", "storm", "wind", "ocean", "fire", "forest", "jungle", "thunder", "birds"],
+
+    #     # 🔹 Sci-Fi & Futuristic Sounds
+    #     "sci-fi": ["robot", "AI", "technology", "futuristic", "space", "alien", "cyber", "virtual", "hologram"],
+
+    #     # 🔹 Gaming & Tech Sounds
+    #     "gaming": ["level up", "game over", "power up", "next level", "mission complete", "checkpoint", "coin"],
+
+    #     # 🔹 Money & Business
+    #     "money": ["rich", "millionaire", "billionaire", "money", "investment", "cash", "dollars", "profit", "finance"],
+
+    #     # 🔹 Tension & Build-Up
+    #     "tension": ["waiting", "building up", "anticipation", "moment of truth", "decision time"],
+
+    #     # 🔹 Silence & Pause (For Dramatic Effects)
+    #     "silence": ["pause", "quiet", "silent", "deep breath", "moment", "nothing"],
+
+    #     # 🔹 Romantic & Love Scenes
+    #     "romantic": ["love", "heart", "crush", "romantic", "date", "kiss", "hug", "valentine", "together", "sweet"],
+    # }
+
+
+    # sound_effects = []
+
     word_timestamps = []
     position_index = 0  # Track word positions
 
     for segment in captions_data["segments"]:
+        #SM-DND-Not in USE. May be used later
+        # text = segment["text"]
+        # start_time = segment["start"]
+        # end_time = segment["end"]
+
+        # # Classify Text to Suggest Sound Effect
+        # prediction = classifier(text, list(sound_categories.keys()))
+        # best_match = prediction["labels"][0]  # Highest probability category
+
+        # # Get Matching Sound Effect
+        # if best_match in sound_categories:
+        #     sound_effects.append({
+        #         "text": text,
+        #         "start_time": start_time,
+        #         "end_time": end_time,
+        #         "suggested_effect": best_match
+        #     })
+
         for word_data in segment.get("words", []):
             word_timestamps.append({
                 "word": word_data["word"].lower(),  # Normalize case
@@ -176,6 +261,11 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
 
     with open('temp/word_timestamps.json', 'w') as f:
         json.dump(word_timestamps, f,indent=4)
+
+    #SM-DND-Not in USE. May be used later
+    # 🔹 Save to JSON File for Integration
+    # with open("temp/suggested_sound_effects.json", "w") as f:
+    #     json.dump(sound_effects, f, indent=4)
 
     # Extract text with headings & list items
     full_text = extract_full_text_with_positions(url)

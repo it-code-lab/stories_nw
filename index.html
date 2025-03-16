@@ -51,6 +51,7 @@
                 <button id="playPauseBtn">▶ Play</button>
                 <button id="restartBtn">⏪ Restart</button>
                 <span id="video-time">00:00 / 00:00</span>
+                <input type="range" id="videoVolume" min="0" max="1" step="0.05" value="1.0">
             </div>
 
             <!-- 🔹 Input to Set Number of Caption Words -->
@@ -72,6 +73,34 @@
                     <option value="none">No Caption</option>
                     <option value="block-style">Block Caption</option>
                 </select>
+
+                <!-- 🔹 Background Music Selection -->
+                <label for="bgMusicSelect">Background Music:</label>
+                <select id="bgMusicSelect">
+                    <option value="none">None</option>
+                    <option value="children-a-baby-story-530.mp3">Children-story</option>
+                    <option value="children-close-your-eyes-now-1022.mp3">Children-eyes</option>
+                    <option value="children-lullaby-night-531.mp3">Children-lullaby</option>
+                    <option value="children-summers-here-91.mp3">Children-summers</option>
+                    <option value="horror-fright-night-871.mp3">Horror-fright</option>
+                    <option value="horror-piano-671.mp3">Horror-piano</option>
+                    <option value="positive-a-very-happy-christmas-897.mp3">Positive-christmas</option>
+                    <option value="positive-mixkit-fun-jazz-647.mp3">Positive-fun</option>
+                    <option value="positive-wedding-01-657.mp3">Positive-wedding</option>
+                    <option value="story-classical-3-710.mp3">Story-1</option>
+                    <option value="story-classical-6-713.mp3">Story-6</option>
+                    <option value="story-classical-10-717.mp3">story-10</option>
+                </select>
+                <button id="previewMusic">🔊 Preview</button>
+                <button id="stopPreview">⏹ Stop</button>
+
+                <label for="bgMusicVolume">🎵 BG Music Volume:</label>
+                <input type="range" id="bgMusicVolume" min="0" max="1" step="0.05" value="0.3">
+
+                <!-- 🔹 Sound Effect Volume -->
+                <label for="effectVolume">🔊 Sound Eff Volume:</label>
+                <input type="range" id="effectVolume" min="0" max="1" step="0.05" value="1.0">
+
             </div>
         </div>
     </div>

@@ -708,14 +708,14 @@ video {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-width: 100px;
+    max-width: 100px;
 }
 
 /* 🔹 Custom Controls */
 #custom-controls {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    /* gap: 10px; */
     background: #f8f8f8;
     padding: 5px;
     border-radius: 8px;
@@ -724,7 +724,7 @@ video {
 
 /* 🔹 Play/Pause/Restart Buttons */
 #custom-controls button {
-    font-size: 0.8em;
+    font-size: 0.7em;
     padding: 10px;
     cursor: pointer;
     background: #ffcc00;
@@ -779,7 +779,7 @@ video {
 }
 
 #caption-controls label {
-	font-size: 0.8em;
+	font-size: 0.7em;
     font-weight: bold;
     background: #222;
     color: white;
