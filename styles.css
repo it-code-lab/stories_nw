@@ -123,7 +123,7 @@
 /* 🔹 Staying Heading */
 .staying-heading {
     position: absolute;
-    top: 2%;
+    top: 10%;
     left: 50%; 
     transform: translateX(-50%);
     font-size: 1.8em;
@@ -722,7 +722,7 @@
 }
 
 .portrait .staying-list-container {
-    top: 5%;
+    top: 12%;
     width: 90%;
     font-size: 10px;
 }
@@ -733,6 +733,7 @@
 
 .portrait .staying-heading {
     font-size: 20px;
+    top: 2%;
 }
 
 .portrait .overlay-Text {

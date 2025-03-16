@@ -247,18 +247,22 @@ function updateOverlayAndCaptions() {
         }        
     }
 
-    if (currentTime >= 30 && currentTime <= 35) {
-        // Show GIF 30 seconds after start (for 5 seconds)
-        subscribeGif.classList.add("show-gif");
-        subscribeGif.classList.remove("hidden");
-    } else if (videoDuration - currentTime <= 30 && videoDuration - currentTime >= 25) {
-        // Show GIF 30 seconds before end (for 5 seconds)
-        subscribeGif.classList.add("show-gif");
-        subscribeGif.classList.remove("hidden");
-    } else {
-        // Hide otherwise
-        subscribeGif.classList.remove("show-gif");
-        subscribeGif.classList.add("hidden");
+    let selectedOrientation = videoOrientation.value;
+    if (selectedOrientation === "portrait") {
+    }else {
+        if (currentTime >= 30 && currentTime <= 35) {
+            // Show GIF 30 seconds after start (for 5 seconds)
+            subscribeGif.classList.add("show-gif");
+            subscribeGif.classList.remove("hidden");
+        } else if (videoDuration - currentTime <= 30 && videoDuration - currentTime >= 25) {
+            // Show GIF 30 seconds before end (for 5 seconds)
+            subscribeGif.classList.add("show-gif");
+            subscribeGif.classList.remove("hidden");
+        } else {
+            // Hide otherwise
+            subscribeGif.classList.remove("show-gif");
+            subscribeGif.classList.add("hidden");
+        }
     }
     /** 🔹 1. Show Headings & List Items **/
     const activeOverlay = overlayData.find(item =>
