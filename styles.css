@@ -684,6 +684,59 @@
     margin-top: -50px; /* Move video up */
 }
 
+.portrait #video-container {
+    width: 410px;
+    /*height: 1280px; */
+}
+
+/* 🔹 Adjust Captions & Overlays for Portrait Mode */
+.portrait #captions {
+    /* bottom: 20%; */
+    font-size: 2em;
+    white-space: normal; /* Allows text to wrap */
+    word-wrap: break-word; /* Breaks long words */
+    overflow-wrap: break-word; /* Ensures wrapping */
+    /* display: flex; */
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    height: 210px;
+    /* margin: 20px; */
+    width: 80%;
+
+}
+
+ .portrait #video {
+    width: 100%;
+    height: 95%;
+} 
+
+.portrait .word-box {
+    font-size: 1em !important;
+}
+
+.portrait .heading {
+    right: 30%;
+    font-size: 1.5em;
+}
+
+.portrait .staying-list-container {
+    top: 5%;
+    width: 90%;
+    font-size: 10px;
+}
+
+.portrait .staying-list-item {
+    font-size: 20px;
+}
+
+.portrait .staying-heading {
+    font-size: 20px;
+}
+
+.portrait .overlay-Text {
+    margin: 20px;
+}
 /* 🔹 Video Element */
 video {
     width: 100%;

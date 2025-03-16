@@ -75,6 +75,9 @@ const effectVolume = document.getElementById("effectVolume");
 
 const audioBackground = new Audio();
 
+const videoContainer = document.getElementById("video-container");
+const videoOrientation = document.getElementById("videoOrientation");
+
 // Load structured_output.json (for headings & list items)
 //fetch('temp/structured_output.json')
 fetch("http://localhost:5000/get_structured_output")
@@ -317,8 +320,11 @@ function updateOverlayAndCaptions() {
                 overlay.classList.add("show");
                 overlay.classList.remove("hide");
                 currentOverlayText = activeOverlay.text;
-                //DND-May be used in future-to hide onscreen captions when overlay is shown
-                //captions.classList.add("none");
+                //hide onscreen captions when overlay is shown
+                let selectedOrientation = videoOrientation.value;    
+                if (selectedOrientation === "portrait") {
+                    captions.classList.add("none");
+                }
                 
             }
 
@@ -631,3 +637,24 @@ effectVolume.addEventListener("input", () => {
 videoVolumeSlider.addEventListener("input", () => {
     video.volume = videoVolumeSlider.value;
 });
+
+// 🔹 Function to Update Video Orientation
+function updateVideoOrientation() {
+    const selectedOrientation = videoOrientation.value;
+    
+    if (selectedOrientation === "portrait") {
+        document.body.classList.add("portrait");
+        // video.width = 720;
+        // video.height = 1280;
+    } else {
+        document.body.classList.remove("portrait");
+        // video.width = 1280;
+        // video.height = 720;
+    }
+}
+
+// 🔹 Listen for Orientation Change
+videoOrientation.addEventListener("change", updateVideoOrientation);
+
+// 🔹 Set Initial Orientation on Page Load
+updateVideoOrientation();
