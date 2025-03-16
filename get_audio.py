@@ -2,7 +2,7 @@ import os
 from text_to_speech_google import synthesize_speech_google
 import boto3
 
-def get_audio_file(text, audio_file_name, tts_engine="google", language="english", gender="Female", type="journey"):
+def get_audio_file(text, audio_file_name, tts_engine="google", language="english", gender="Male", type="journey"):
     """
     Generate audio using TTS.
 
@@ -78,3 +78,12 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
         return audio_file_name
 
     raise ValueError("Unsupported TTS engine.")
+
+if __name__ == "__main__":
+    sample_text = "Now that you know how this tool works, you can use it for your own projects—or even customize it further!If you found this tutorial helpful, hit that like button and subscribe for more coding breakdowns!Got any questions or feature requests? Drop them in the comments—I’d love to hear your thoughts!"
+
+
+    output_audio_file = "test_audio.mp3"
+    
+    generated_file = get_audio_file(sample_text, output_audio_file)
+    print(f"Generated audio file: {generated_file}")
