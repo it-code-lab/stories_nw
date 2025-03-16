@@ -685,8 +685,9 @@
 }
 
 .portrait #video-container {
-    width: 410px;
-    /*height: 1280px; */
+    width: 360px;
+    height: 640px; 
+    margin-top: -10px
 }
 
 /* 🔹 Adjust Captions & Overlays for Portrait Mode */
@@ -708,7 +709,7 @@
 
  .portrait #video {
     width: 100%;
-    height: 95%;
+    /* height: 95%; */
 } 
 
 .portrait .word-box {
