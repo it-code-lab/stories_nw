@@ -711,7 +711,7 @@ def create_video_from_elements(elements, output_path):
                 #print(f"Image source: {element['image']}")
                 #print(f"ImageClip: {img_clip}")
             except Exception as e:
-                print(f"Error getting image dimensions: {e}")
+                print(f"Error getting image dimensions: {e}. Defaulting to Landscape")
                 actual_width, actual_height = 1920, 1080  # Fallback to default
 
             styled_width = 400  # Example styled width from the webpage

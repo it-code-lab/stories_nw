@@ -69,7 +69,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
             base_file_name = Path(url).name
             
             results = scrape_page_with_camera_frame(url)
-            create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine)
+            create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size)
             output_file = "composed_video.mp4"
             #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
             #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
@@ -118,7 +118,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
 
 
 
-def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google"):
+def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080) ):
     """
     Creates a video using the scrapped elements.
 
@@ -127,12 +127,12 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
         output_path (str): Path to save the final video.
     """
 
-    print("Received create_video_using_camera_frames Arguments:", locals())
+    #print("Received create_video_using_camera_frames Arguments:", locals())
 
     video_clips = []
     audio_clips = []
     #last_image_clip = None
-    target_resolution = (1920, 1080)  # Define the desired full frame resolution
+    #target_resolution = (1920, 1080)  # Define the desired full frame resolution
 
     for idx, element in enumerate(elements):  # Using enumerate to get the index
 
@@ -289,7 +289,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                 #print(f"Image source: {element['image']}")
                 #print(f"ImageClip: {img_clip}")
             except Exception as e:
-                print(f"Error getting image dimensions: {e}")
+                print(f"Error getting image dimensions: {e}. Falling back to landscape.")
                 actual_width, actual_height = 1920, 1080  # Fallback to default
 
             styled_width = 400  # Example styled width from the webpage
@@ -351,7 +351,8 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                 duration = duration,
                 fps=24,
                 movement_percentage=70,
-                img_animation = img_animation
+                img_animation = img_animation,
+                target_resolution = target_resolution
             )
 
             # Resize the image-based video clip to the target resolution

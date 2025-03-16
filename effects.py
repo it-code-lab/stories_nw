@@ -205,6 +205,7 @@ def create_camera_movement_clip_Linear(image_path, start_frame, end_frame, durat
     video_clip = VideoClip(make_frame, duration=duration).set_fps(fps)
     return video_clip
 
+#Not working
 def create_camera_movement_clip_nw(image_path, start_frame, end_frame, duration=5, fps=30, movement_easing='ease_in_out'):
     """
     Creates a video clip with non-linear camera movement or zoom effect on an image.
@@ -283,7 +284,7 @@ def create_camera_movement_clip_nw(image_path, start_frame, end_frame, duration=
     video_clip = VideoClip(make_frame, duration=duration).set_fps(fps)
     return video_clip
 
-def create_camera_movement_clip(image_path, start_frame, end_frame, duration=5, fps=30, movement_percentage=70, img_animation='Zoom In'):
+def create_camera_movement_clip(image_path, start_frame, end_frame, duration=5, fps=30, movement_percentage=70, img_animation='Zoom In', target_resolution=(1920,1080)):
     """
     Creates a video clip with camera movement or zoom effect on an image.
     
@@ -292,12 +293,15 @@ def create_camera_movement_clip(image_path, start_frame, end_frame, duration=5, 
     Returns:
         VideoClip: The resulting clip.
     """
+    print("Received create_camera_movement_clip Arguments:", locals())
+    
     img = load_image(image_path)
     if img is None:
         raise FileNotFoundError(f"Image not found at path: {image_path}")
     img_height, img_width, _ = img.shape
     start_aspect_ratio = start_frame['width'] / start_frame['height']
-    video_width = 1920
+    video_width, video_height = target_resolution
+    #video_width = 1920
     video_height = int(video_width / start_aspect_ratio)
     
     is_zoom_out = (
@@ -321,7 +325,7 @@ def create_camera_movement_clip(image_path, start_frame, end_frame, duration=5, 
             #zoom_clip = add_zoom_effect(cropped_image_path, duration, zoom_factor=1.2, output_size=(1920,1080))
             #return zoom_clip
             
-            ken_burns_clip = add_ken_burns_effect(cropped_image_path, duration, start_zoom=1.2, end_zoom=1)
+            ken_burns_clip = add_ken_burns_effect(cropped_image_path, duration, start_zoom=1.2, end_zoom=1, output_size=target_resolution)
             return ken_burns_clip
         
             #SM-DND-Working but not smooth

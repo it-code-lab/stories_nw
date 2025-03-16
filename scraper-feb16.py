@@ -123,7 +123,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
         output_path (str): Path to save the final video.
     """
 
-    print("Received create_video_using_camera_frames Arguments:", locals())
+    #print("Received create_video_using_camera_frames Arguments:", locals())
 
     video_clips = []
     audio_clips = []
