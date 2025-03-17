@@ -739,6 +739,11 @@
 .portrait .overlay-Text {
     margin: 20px;
 }
+
+.portrait .list-item {
+    left: auto !important;
+    font-size: 1.5em;
+}
 /* 🔹 Video Element */
 video {
     width: 100%;
