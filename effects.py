@@ -294,7 +294,7 @@ def create_camera_movement_clip(image_path, start_frame, end_frame, duration=5, 
         VideoClip: The resulting clip.
     """
     print("Received create_camera_movement_clip Arguments:", locals())
-    
+
     img = load_image(image_path)
     if img is None:
         raise FileNotFoundError(f"Image not found at path: {image_path}")
@@ -546,6 +546,7 @@ def add_ken_burns_effect_DND(image_path, audio_duration, start_zoom=1, end_zoom=
     zoom_clip = zoom_clip.fl_time(lambda t: t % audio_duration)
     return zoom_clip.set_position("center").set_duration(audio_duration)
 
+#DND-Working
 def add_ken_burns_effect(image_path, audio_duration, start_zoom=1.2, end_zoom=1, output_size=(1920,1080)):
     """
     Applies a Ken Burns effect (pan & zoom) on the image using smooth easing.
@@ -570,6 +571,7 @@ def add_ken_burns_effect(image_path, audio_duration, start_zoom=1.2, end_zoom=1,
         comp = CompositeVideoClip([zoom_clip.set_position("center")], size=output_size)
         return comp.set_duration(audio_duration)
     except Exception as e:
+        print(f"Error in add_ken_burns_effect: {e}")
         clip = ImageClip(image_path, duration=audio_duration)
         def resize_frame(get_frame, t):
             frame = get_frame(t)
@@ -591,8 +593,58 @@ def add_ken_burns_effect(image_path, audio_duration, start_zoom=1.2, end_zoom=1,
         zoom_clip = zoom_clip.fl_time(lambda t: t % audio_duration)
         return zoom_clip.set_position("center").set_duration(audio_duration)
 
+# Comment it out after debugging
+# def add_ken_burns_effect(image_path, audio_duration, start_zoom=1.2, end_zoom=1, output_size=(1920,1080)):
+#     """
+#     Applies a Ken Burns effect (pan & zoom) on the image using smooth easing.
+#     The effect scales the image from start_zoom to end_zoom over the duration.
+    
+#     Args:
+#         image_path (str): Path to the image.
+#         audio_duration (float): Duration of the effect.
+#         start_zoom (float): Zoom factor at the beginning.
+#         end_zoom (float): Zoom factor at the end.
+#         output_size (tuple): The output (width, height). (Optional)
+        
+#     Returns:
+#         VideoClip with the Ken Burns effect.
+#     """
+#     try:
+#         print(f"Processing image: {image_path}")
+        
+#         # Check if image loads properly
+#         base_img = prepare_image(image_path, output_size)  # prepare_image converts to RGB
+#         print(f"Loaded image: {image_path}, Size after prepare_image: {base_img.size}")
 
-def create_stylized_video(image_files, audio_files, output_file="final_video.mp4"):
+#         # Create the image clip
+#         clip = ImageClip(base_img, duration=audio_duration)
+#         print(f"Created ImageClip. Size: {clip.size}, Duration: {audio_duration}")
+
+#         # Debug zoom function
+#         zoom_levels = [start_zoom + (end_zoom - start_zoom) * smoothstep(t / audio_duration) for t in [0, audio_duration/2, audio_duration]]
+#         print(f"Zoom levels: {zoom_levels}")
+
+#         # Apply the zoom effect
+#         zoom_clip = clip.resize(lambda t: start_zoom + (end_zoom - start_zoom) * smoothstep(t / audio_duration))
+#         zoom_clip = zoom_clip.fl_time(lambda t: t % audio_duration).set_duration(audio_duration)
+
+#         # Composite video clip
+#         comp = CompositeVideoClip([zoom_clip.set_position("center")], size=output_size)
+#         final_clip = comp.set_duration(audio_duration)
+
+#         # Save a test frame to verify output
+#         test_frame_path = "debug_frame.png"
+#         final_clip.save_frame(test_frame_path, t=0.5)
+#         print(f"Saved test frame at {test_frame_path}")
+
+#         return final_clip
+    
+#     except Exception as e:
+#         print(f"Error processing {image_path}: {e}")
+#         return None
+
+# Working-DND
+def create_stylized_video_DND(image_files, audio_files, output_file="final_video.mp4"):
     """
     Creates a final video by applying a Ken Burns effect to each image paired with audio.
     """
@@ -606,7 +658,8 @@ def create_stylized_video(image_files, audio_files, output_file="final_video.mp4
     final_video = concatenate_videoclips(video_clips, method="compose")
     final_video.write_videofile(output_file, codec="libx264", audio_codec="aac")
 
-def upscale_image(image, output_size=(1920,1080), min_scale=1.0):
+# Working-DND
+def upscale_image_OLD(image, output_size=(1920,1080), min_scale=1.0):
     """
     Upscales an image so that it covers the output_size.
     
@@ -623,15 +676,78 @@ def upscale_image(image, output_size=(1920,1080), min_scale=1.0):
     """
     target_w, target_h = output_size
     orig_h, orig_w = image.shape[:2]
+
+    # Debugging prints
+    print(f"Original Image Size: {orig_w}x{orig_h}, Target Size: {target_w}x{target_h}")
+
+    # Avoid division by zero
+    if orig_w == 0 or orig_h == 0:
+        raise ValueError("Invalid image dimensions: Width or height is zero.")
+    
     base_scale = max(target_w / orig_w, target_h / orig_h)
     scale_factor = max(base_scale, min_scale)
-    new_w = int(orig_w * scale_factor)
-    new_h = int(orig_h * scale_factor)
+
+    print(f"Base Scale: {base_scale}, scale_factor: {scale_factor}")
+
+    new_w = max(int(orig_w * scale_factor), 2)  # Ensure at least 2 pixels wide
+    new_h = max(int(orig_h * scale_factor), 2)  # Ensure at least 2 pixels high
+
+    print(f"Resized Image Size: {new_w}x{new_h}")
+
     resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
     # Center crop:
     x_start = (new_w - target_w) // 2
     y_start = (new_h - target_h) // 2
     cropped = resized[y_start:y_start+target_h, x_start:x_start+target_w]
+    return cropped
+
+def upscale_image(image, output_size=(1920, 1080), min_scale=1.0):
+    """
+    Upscales an image while maintaining aspect ratio, ensuring it covers output_size.
+    Then, center-crops to fit exactly.
+
+    Args:
+        image (np.array): Input image.
+        output_size (tuple): (width, height) target.
+        min_scale (float): Minimum scale factor to apply.
+
+    Returns:
+        Upscaled and cropped image.
+    """
+    target_w, target_h = output_size
+    orig_h, orig_w = image.shape[:2]
+
+    print(f"Original Image Size: {orig_w}x{orig_h}, Target Size: {target_w}x{target_h}")
+
+    # Avoid division by zero
+    if orig_w == 0 or orig_h == 0:
+        raise ValueError("Invalid image dimensions: Width or height is zero.")
+    
+    # Compute base scale while maintaining aspect ratio
+    base_scale = max(target_w / orig_w, target_h / orig_h)
+    scale_factor = max(base_scale, min_scale)
+
+    print(f"Base Scale: {base_scale}, scale_factor: {scale_factor}")
+
+    new_w = int(orig_w * scale_factor)
+    new_h = int(orig_h * scale_factor)
+
+    print(f"Resized Image Size: {new_w}x{new_h}")
+
+    # Resize image using high-quality upscaling
+    resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
+
+    # Ensure crop doesn't exceed bounds
+    x_start = max((new_w - target_w) // 2, 0)
+    y_start = max((new_h - target_h) // 2, 0)
+
+    crop_x_end = min(x_start + target_w, new_w)
+    crop_y_end = min(y_start + target_h, new_h)
+
+    cropped = resized[y_start:crop_y_end, x_start:crop_x_end]
+
+    print(f"Cropped Image Shape: {cropped.shape}")
+
     return cropped
 
 def prepare_image(image_path, output_size=(1920,1080)):
@@ -640,11 +756,19 @@ def prepare_image(image_path, output_size=(1920,1080)):
     Then converts the image from BGR to RGB.
     """
     img = load_image(image_path)
+    
     if img is None:
         raise FileNotFoundError(f"Image not found: {image_path}")
+    
+    print(f"Loaded Image Shape: {img.shape}")  # Debug
+
     upscaled = upscale_image(img, output_size, min_scale=1.0)
+
+    print(f"Upscaled Image Shape: {upscaled.shape}")  # Debug
+
     # Convert from BGR to RGB before returning.
     return cv2.cvtColor(upscaled, cv2.COLOR_BGR2RGB)
+
 
 
 def run_tests():
@@ -732,6 +856,32 @@ def run_tests():
     
     print("All tests completed.")
 
-
+def run_test2():
+    start_frame = {
+        "width": 463,    # width of the cropped region
+        "height": 823,   # height of the cropped region
+        "left": 419,     # x-coordinate of the top-left corner
+        "top": 174        # y-coordinate of the top-left corner
+    }
+    # End frame is identical to start_frame to indicate a zoom-out effect.
+    end_frame = {
+        "width": 463,    # width of the cropped region
+        "height": 823,   # height of the cropped region
+        "left": 419,     # x-coordinate of the top-left corner
+        "top": 174        # y-coordinate of the top-left corner
+    }
+    duration = 2.26
+    fps = 24
+    movement_percentage = 70
+    target_resolution= (1080, 1920)
+    sample_image = 'https://readernook.com/img/The-Crow-and-the-Snake-702318.png'
+    clip = create_camera_movement_clip(sample_image, start_frame, end_frame, duration=duration, fps=fps, movement_percentage =movement_percentage, img_animation="Zoom In",target_resolution =target_resolution)
+    
+    # Write the result to a file.
+    clip.write_videofile("temp/test_camera_movement_clip.mp4", fps=fps)
 if __name__ == "__main__":
-    run_tests()
+
+    #SM-DND-Working
+    #run_tests()
+
+    run_test2()

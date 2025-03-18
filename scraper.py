@@ -105,10 +105,12 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
                 else:
                     print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
                     output_name = f"{output_folder}/{base_file_name}.mp4"
-                    safe_copy(output_file, output_name)
+                    #SM-DND
+                    #safe_copy(output_file, output_name)
             else:
                 output_name = f"{output_folder}/{base_file_name}.mp4"
-                safe_copy(output_file, output_name)
+                #SM-DND
+                #safe_copy(output_file, output_name)
 
             print(f"Processing complete for {url}")
 
