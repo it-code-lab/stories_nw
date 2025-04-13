@@ -109,15 +109,103 @@ const captionStyleDropdown = document.getElementById("captionStyle");
 
 const subscribeGif = document.getElementById("subscribe-gif");
 
+const canvas = document.createElement('canvas');
+//canvas.style.display = 'none'; // if you want to hide it
+document.body.appendChild(canvas);
+const ctx = canvas.getContext('2d');
+
+// Create MediaStream to capture
+let stream ;
+let mediaRecorder;
+let shouldCapture = false;
+const chunks = [];
+let isRecording = false;
+let frameCount = 0;
+
+// Start capturing frame by frame
+function captureFrame() {
+    if (!shouldCapture) {
+        console.log("🔴 captureFrame stopped.");
+        return; // Stop if flag is off
+    }
+    // Draw video frame
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    requestAnimationFrame(captureFrame);
+}
+
+function startRecordingAndCapture() {
+    if (isRecording) {
+        console.log("⚠️ Already recording.");
+        return;
+    }
+    isRecording = true;
+    chunks.length = 0;
+    shouldCapture = true;
+    frameCount = 0;
+
+    try {
+        stream = canvas.captureStream(30);
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+
+        mediaRecorder.ondataavailable = (e) => {
+            console.log("📦 Data available:", e.data.size, "bytes");
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            isRecording = false;
+            shouldCapture = false;
+            console.log("🛑 MediaRecorder stopped. Total chunks:", chunks.length);
+            if (chunks.length === 0) {
+                console.warn("⚠️ No video data was recorded.");
+                return;
+            }
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'captured-video.webm';
+            a.click();
+        };
+
+        mediaRecorder.onerror = e => console.error("❌ Recorder error:", e.error);
+
+        mediaRecorder.start(); // Start without timeslice
+        captureFrame(); // Start capturing video frames to canvas
+        console.log("🎥 Recording initiated...");
+
+    } catch (error) {
+        console.error("🚨 Error setting up or starting recording:", error);
+        isRecording = false;
+        shouldCapture = false;
+    }
+}
+
+function stopRecording() {
+    if (isRecording && mediaRecorder && mediaRecorder.state === "recording") {
+        console.log("⏹️ Stopping recording...");
+        mediaRecorder.stop();
+        isRecording = false;
+        shouldCapture = false;
+    } else {
+        console.log("⚠️ No active recording to stop.");
+    }
+}
 video.volume = 1.0;  // Set default volume to max
 
 // 🔹 Hide Default Video Controls
 video.removeAttribute("controls");
 
 // 🔹 Play/Pause Button Functionality
-playPauseBtn.addEventListener("click", () => {
+playPauseBtn.addEventListener("click", async () => {
     if (video.paused) {
-        video.play();
+        await ensureCanvasAndRecorderSetup(); // Ensure canvas is ready
+        startRecordingAndCapture();
+        await video.play();
+        console.log("▶️ Starting playback and recording...");
+        shouldCapture = true;
+ 
         const selectedMusic = bgMusicSelect.value;
         if (selectedMusic !== "none") {
             audioBackground.src = `sounds/${selectedMusic}`;
@@ -130,13 +218,21 @@ playPauseBtn.addEventListener("click", () => {
         video.pause();
         audioBackground.pause();
         playPauseBtn.innerHTML = "▶ Play";
+        stopRecording(); // Stop recording when pausing
     }
 });
 
 // 🔹 Restart Button Functionality
-restartBtn.addEventListener("click", () => {
+restartBtn.addEventListener("click", async () => {
+    stopRecording(); // Ensure any existing recording is stopped
+
+    chunks.length = 0;
+    mediaRecorder = null; // Reset so it can be recreated
+    await ensureCanvasAndRecorderSetup();
+
     video.currentTime = 0;
-    video.play();
+    await video.play();
+    startRecordingAndCapture();
     const selectedMusic = bgMusicSelect.value;
     if (selectedMusic !== "none") {
         audioBackground.src = `sounds/${selectedMusic}`;
@@ -157,6 +253,61 @@ function formatTime(time) {
     const seconds = Math.floor(time % 60);
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
+function ensureCanvasAndRecorderSetup() {
+    return new Promise((resolve) => {
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+            console.warn("⚠️ Video metadata not yet loaded. Waiting...");
+            video.addEventListener('loadedmetadata', () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                console.log("✅ Canvas set:", canvas.width, canvas.height);
+                resolve();
+            }, { once: true });
+            return;
+        }
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        console.log("✅ Canvas set:", canvas.width, canvas.height);
+        resolve();
+    });
+}
+
+function ensureCanvasAndRecorderSetup_Old() {
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.warn("⚠️ Video metadata not yet loaded. Retrying...");
+        setTimeout(ensureCanvasAndRecorderSetup, 100); // Retry in 100ms
+        return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    console.log("✅ Canvas set:", canvas.width, canvas.height);
+
+    stream = canvas.captureStream(30);
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+
+    mediaRecorder.ondataavailable = (e) => {
+        console.log("📦 Data available:", e.data.size, "bytes");
+        if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+        console.log("🛑 MediaRecorder stopped. Total chunks:", chunks.length);
+        if (chunks.length === 0) {
+            console.warn("⚠️ No video data was recorded.");
+            return;
+        }        
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'captured-video.webm';
+        a.click();
+    };
+
+    mediaRecorder.onerror = e => console.error("❌ Recorder error:", e.error);
+}
 
 // // 🔹 Update Time Display
 // video.addEventListener("timeupdate", () => {
@@ -168,8 +319,15 @@ video.addEventListener("loadedmetadata", () => {
     console.log("🔹 Video Duration:", video.duration); 
     timeline.max = video.duration;
     videoTimeDisplay.innerHTML = `00:00 / ${formatTime(video.duration)}`;
+
+    ensureCanvasAndRecorderSetup();
+    
 });
 
+if (video.readyState >= 1) {
+    console.log("Calling ensureCanvasAndRecorderSetup");
+    ensureCanvasAndRecorderSetup();
+}
 const overlay = document.getElementById("overlayText");
 
 
@@ -218,6 +376,11 @@ video.addEventListener("timeupdate", () => {
     updateOverlayAndCaptions();
 });
 
+// Stop after video ends or at desired time
+video.addEventListener('ended', () => {
+    stopRecording();
+  });
+  
 function updateOverlayAndCaptions() {
     let currentTime = video.currentTime;
 

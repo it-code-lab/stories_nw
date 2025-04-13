@@ -12,7 +12,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pickr/1.8.2/themes/classic.min.css" />
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 
 <body>
@@ -20,7 +20,7 @@
         <!-- 🔹 Video & Overlays -->
         <div id="video-container">
             <video id="video" controls>
-                <source src="composed_video.mp4" type="video/mp4">
+                <source src="http://localhost:5000/video/composed_video.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
             <!-- 🔹 Container for All Overlays -->
@@ -41,7 +41,7 @@
             <div id="captions" class="captions-text style1"></div>
 
             <!-- 🔹 Subscribe GIF Overlay -->
-            <img id="subscribe-gif" src="gif_files/subscribe.gif" alt="Subscribe" class="hidden">
+            <img id="subscribe-gif" src="/static/gif_files/subscribe.gif" alt="Subscribe" class="hidden">
 
         </div>
 
@@ -147,7 +147,7 @@
         <span style="font-family: 'Archivo Black', sans-serif">A</span>
     </div>
 
-    <script src="script.js"></script>
+    <script src="/static/script.js"></script>
 </body>
 
 </html>
