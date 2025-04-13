@@ -46,8 +46,8 @@ let stayingListItems = [];
 const audioEffect = new Audio();
 
 // 🔹 Load Sound Effects Data
-const headingSound = "sounds/heading_whoosh.wav";  // Example sound for headings
-const listItemSound = "sounds/list_item_pop.wav";  // Example sound for list items
+const headingSound = "/static/sounds/heading_whoosh.wav";  // Example sound for headings
+const listItemSound = "/static/sounds/list_item_pop.wav";  // Example sound for list items
 
 
 //let currentCaptionIndex = 0;  // Track the index of the caption being displayed
@@ -114,6 +114,38 @@ const canvas = document.createElement('canvas');
 document.body.appendChild(canvas);
 const ctx = canvas.getContext('2d');
 
+// 🔊 Audio Mixing Setup
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const audioDest = audioCtx.createMediaStreamDestination();
+
+const videoSource = audioCtx.createMediaElementSource(video);
+const bgMusicSource = audioCtx.createMediaElementSource(audioBackground);
+const sfxSource = audioCtx.createMediaElementSource(audioEffect);
+
+// Optional Gain Nodes for finer volume control
+const videoGain = audioCtx.createGain();
+const bgGain = audioCtx.createGain();
+const sfxGain = audioCtx.createGain();
+
+// Initial volumes from sliders
+videoGain.gain.value = video.volume;
+bgGain.gain.value = bgMusicVolume.value;
+sfxGain.gain.value = effectVolume.value;
+
+// Connect elements through gain nodes to the destination
+videoSource.connect(videoGain);
+videoGain.connect(audioDest);          // For recording
+videoGain.connect(audioCtx.destination); // For real-time playback + timeupdate
+
+bgMusicSource.connect(bgGain);
+bgGain.connect(audioDest);
+bgGain.connect(audioCtx.destination);
+
+sfxSource.connect(sfxGain);
+sfxGain.connect(audioDest);
+sfxGain.connect(audioCtx.destination);
+
+
 // Create MediaStream to capture
 let stream ;
 let mediaRecorder;
@@ -145,8 +177,18 @@ function startRecordingAndCapture() {
     frameCount = 0;
 
     try {
-        stream = canvas.captureStream(30);
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+        // stream = canvas.captureStream(30);
+        // mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+
+        const canvasStream = canvas.captureStream(30);
+        const combinedStream = new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            ...audioDest.stream.getAudioTracks()
+        ]);
+    
+        mediaRecorder = new MediaRecorder(combinedStream, {
+            mimeType: 'video/webm; codecs=vp8,opus'
+        });
 
         mediaRecorder.ondataavailable = (e) => {
             console.log("📦 Data available:", e.data.size, "bytes");
@@ -208,7 +250,7 @@ playPauseBtn.addEventListener("click", async () => {
  
         const selectedMusic = bgMusicSelect.value;
         if (selectedMusic !== "none") {
-            audioBackground.src = `sounds/${selectedMusic}`;
+            audioBackground.src = `/static/sounds/${selectedMusic}`;
             audioBackground.loop = true;
             audioBackground.volume = bgMusicVolume.value; // Keep it subtle
             audioBackground.play();
@@ -235,7 +277,7 @@ restartBtn.addEventListener("click", async () => {
     startRecordingAndCapture();
     const selectedMusic = bgMusicSelect.value;
     if (selectedMusic !== "none") {
-        audioBackground.src = `sounds/${selectedMusic}`;
+        audioBackground.src = `/static/sounds/${selectedMusic}`;
         audioBackground.loop = true;
         audioBackground.volume = 0.3; // Keep it subtle
         audioBackground.play();
@@ -382,221 +424,227 @@ video.addEventListener('ended', () => {
   });
   
 function updateOverlayAndCaptions() {
-    let currentTime = video.currentTime;
+    try{
 
 
-    // Find the current word being spoken
-    let currentWordIndex = wordTimestamps.findIndex(word => 
-        currentTime >= word.start && currentTime <= word.end
-    );
+        let currentTime = video.currentTime;
 
-    if (currentWordIndex !== -1) {
-        // Highlight only the current word
-        document.querySelectorAll(".word-editor-box").forEach((box, index) => {
-            if (index === currentWordIndex) {
-                box.classList.add("current");
+
+        // Find the current word being spoken
+        let currentWordIndex = wordTimestamps.findIndex(word => 
+            currentTime >= word.start && currentTime <= word.end
+        );
+
+        if (currentWordIndex !== -1) {
+            // Highlight only the current word
+            document.querySelectorAll(".word-editor-box").forEach((box, index) => {
+                if (index === currentWordIndex) {
+                    box.classList.add("current");
+                } else {
+                    box.classList.remove("current");
+                }
+            });
+
+            // 🔹 Scroll the word editor smoothly without affecting the video view
+            let wordEditor = document.getElementById("word-editor-wrapper");
+            let currentWordBox = document.querySelectorAll(".word-editor-box")[currentWordIndex];
+
+            if (currentWordBox) {
+                let wordOffset = currentWordBox.offsetLeft - wordEditor.offsetWidth / 2 + currentWordBox.offsetWidth / 2;
+                wordEditor.scrollLeft = wordOffset;
+            }        
+        }
+
+        let selectedOrientation = videoOrientation.value;
+        if (selectedOrientation === "portrait") {
+        }else {
+            if (currentTime >= 30 && currentTime <= 35) {
+                // Show GIF 30 seconds after start (for 5 seconds)
+                subscribeGif.classList.add("show-gif");
+                subscribeGif.classList.remove("hidden");
+            } else if (videoDuration - currentTime <= 30 && videoDuration - currentTime >= 25) {
+                // Show GIF 30 seconds before end (for 5 seconds)
+                subscribeGif.classList.add("show-gif");
+                subscribeGif.classList.remove("hidden");
             } else {
-                box.classList.remove("current");
+                // Hide otherwise
+                subscribeGif.classList.remove("show-gif");
+                subscribeGif.classList.add("hidden");
             }
-        });
-
-        // 🔹 Scroll the word editor smoothly without affecting the video view
-        let wordEditor = document.getElementById("word-editor-wrapper");
-        let currentWordBox = document.querySelectorAll(".word-editor-box")[currentWordIndex];
-
-        if (currentWordBox) {
-            let wordOffset = currentWordBox.offsetLeft - wordEditor.offsetWidth / 2 + currentWordBox.offsetWidth / 2;
-            wordEditor.scrollLeft = wordOffset;
-        }        
-    }
-
-    let selectedOrientation = videoOrientation.value;
-    if (selectedOrientation === "portrait") {
-    }else {
-        if (currentTime >= 30 && currentTime <= 35) {
-            // Show GIF 30 seconds after start (for 5 seconds)
-            subscribeGif.classList.add("show-gif");
-            subscribeGif.classList.remove("hidden");
-        } else if (videoDuration - currentTime <= 30 && videoDuration - currentTime >= 25) {
-            // Show GIF 30 seconds before end (for 5 seconds)
-            subscribeGif.classList.add("show-gif");
-            subscribeGif.classList.remove("hidden");
-        } else {
-            // Hide otherwise
-            subscribeGif.classList.remove("show-gif");
-            subscribeGif.classList.add("hidden");
         }
-    }
-    /** 🔹 1. Show Headings & List Items **/
-    const activeOverlay = overlayData.find(item =>
-        currentTime >= item.start_word_start_timing && currentTime <= item.end_word_end_timing
-    );
+        /** 🔹 1. Show Headings & List Items **/
+        const activeOverlay = overlayData.find(item =>
+            currentTime >= item.start_word_start_timing && currentTime <= item.end_word_end_timing
+        );
 
-    if (activeOverlay) {
-        if (activeOverlay.type === "staying-heading") {
-            // Clear previous staying headings & list items when a new staying heading appears
-            if (activeOverlay.text !== currentStayingHeading) {
-                stayingHeading.innerText = activeOverlay.text;
-                currentStayingHeading = activeOverlay.text;
+        if (activeOverlay) {
+            if (activeOverlay.type === "staying-heading") {
+                // Clear previous staying headings & list items when a new staying heading appears
+                if (activeOverlay.text !== currentStayingHeading) {
+                    stayingHeading.innerText = activeOverlay.text;
+                    currentStayingHeading = activeOverlay.text;
 
-                // 🔹 Reset animation (remove & re-add class)
-                stayingHeading.classList.remove("fade-in-slide-down");
-                void stayingHeading.offsetWidth;  // Trigger reflow to restart animation
-                stayingHeading.classList.add("fade-in-slide-down");
+                    // 🔹 Reset animation (remove & re-add class)
+                    stayingHeading.classList.remove("fade-in-slide-down");
+                    void stayingHeading.offsetWidth;  // Trigger reflow to restart animation
+                    stayingHeading.classList.add("fade-in-slide-down");
 
-                stayingListItems = []; // Reset list items
-                stayingListContainer.innerHTML = ""; // Clear previous list items
-            }
-
-            if ((audioEffect.src !== headingSound) && !playedSounds.has(activeOverlay.text)) {
-                audioEffect.src = headingSound;
-                audioEffect.volume = effectVolume.value;
-                audioEffect.play();
-                playedSounds.add(activeOverlay.text);
-            }
-        } 
-        else if (activeOverlay.type === "staying-list-item") {
-            // Ensure list item is not duplicated
-            if (!stayingListItems.includes(activeOverlay.text)) {
-                stayingListItems.push(activeOverlay.text);
-                const listItem = document.createElement("div");
-                listItem.classList.add("staying-list-item");
-                listItem.innerText = activeOverlay.text;
-                stayingListContainer.appendChild(listItem);
-            }
-
-            if ((audioEffect.src !== listItemSound) && !playedSounds.has(activeOverlay.text)) {
-                audioEffect.src = listItemSound;
-                audioEffect.volume = effectVolume.value;
-                audioEffect.play();
-                playedSounds.add(activeOverlay.text);
-            }
-        } 
-        else {
-            // Handle regular headings & list items (disappear after time)
-            if (activeOverlay.text !== currentOverlayText) {
-
-                stayingHeading.innerText = "";
-                currentStayingHeading = "";
-                stayingListItems = []; // Reset list items
-                stayingListContainer.innerHTML = ""; // Clear previous list items
-
-                overlay.innerText = activeOverlay.text;
-                overlay.classList.remove("heading", "list-item");
-                overlay.classList.add(activeOverlay.type === "heading" ? "heading" : "list-item");
-                overlay.classList.add("show");
-                overlay.classList.remove("hide");
-                currentOverlayText = activeOverlay.text;
-                //hide onscreen captions when overlay is shown
-                let selectedOrientation = videoOrientation.value;    
-                if (selectedOrientation === "portrait") {
-                    captions.classList.add("none");
+                    stayingListItems = []; // Reset list items
+                    stayingListContainer.innerHTML = ""; // Clear previous list items
                 }
-                
+
+                if ((audioEffect.src !== headingSound) && !playedSounds.has(activeOverlay.text)) {
+                    audioEffect.src = headingSound;
+                    audioEffect.volume = effectVolume.value;
+                    audioEffect.play();
+                    playedSounds.add(activeOverlay.text);
+                }
+            } 
+            else if (activeOverlay.type === "staying-list-item") {
+                // Ensure list item is not duplicated
+                if (!stayingListItems.includes(activeOverlay.text)) {
+                    stayingListItems.push(activeOverlay.text);
+                    const listItem = document.createElement("div");
+                    listItem.classList.add("staying-list-item");
+                    listItem.innerText = activeOverlay.text;
+                    stayingListContainer.appendChild(listItem);
+                }
+
+                if ((audioEffect.src !== listItemSound) && !playedSounds.has(activeOverlay.text)) {
+                    audioEffect.src = listItemSound;
+                    audioEffect.volume = effectVolume.value;
+                    audioEffect.play();
+                    playedSounds.add(activeOverlay.text);
+                }
+            } 
+            else {
+                // Handle regular headings & list items (disappear after time)
+                if (activeOverlay.text !== currentOverlayText) {
+
+                    stayingHeading.innerText = "";
+                    currentStayingHeading = "";
+                    stayingListItems = []; // Reset list items
+                    stayingListContainer.innerHTML = ""; // Clear previous list items
+
+                    overlay.innerText = activeOverlay.text;
+                    overlay.classList.remove("heading", "list-item");
+                    overlay.classList.add(activeOverlay.type === "heading" ? "heading" : "list-item");
+                    overlay.classList.add("show");
+                    overlay.classList.remove("hide");
+                    currentOverlayText = activeOverlay.text;
+                    //hide onscreen captions when overlay is shown
+                    let selectedOrientation = videoOrientation.value;    
+                    if (selectedOrientation === "portrait") {
+                        captions.classList.add("none");
+                    }
+                    
+                }
+
+                if ((audioEffect.src !== headingSound) && !playedSounds.has(activeOverlay.text)) {
+                    audioEffect.src = headingSound;
+                    audioEffect.volume = effectVolume.value;
+                    audioEffect.play();
+                    playedSounds.add(activeOverlay.text);
+                }
             }
-
-            if ((audioEffect.src !== headingSound) && !playedSounds.has(activeOverlay.text)) {
-                audioEffect.src = headingSound;
-                audioEffect.volume = effectVolume.value;
-                audioEffect.play();
-                playedSounds.add(activeOverlay.text);
-            }
-        }
-    } else {
-        // Hide normal headings & list items (not staying)
-        if (currentOverlayText !== "") {
-            overlay.classList.add("hide");
-            setTimeout(() => overlay.classList.remove("show"), 500);
-            currentOverlayText = "";
-            captions.classList.remove("none");
-        }
-
-        playedSounds.clear();
-    }
-
-    timeline.value = video.currentTime;
-    /** 🔹 2. Display Captions in Blocks & Maintain Them During Pauses **/
-    timeline.max = video.duration;
-    videoTimeDisplay.innerHTML = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
-
-    let currentIndex = captionsData.findIndex(word => currentTime >= word.start && currentTime <= word.end);
-
-    if (currentIndex !== -1) {
-        // Only update if we reach the last word of the current block
-        if (currentIndex >= currentBlockStart + captionWordLimit) {
-            currentBlockStart = currentIndex; // Move to the next block
-            lastCaptionUpdateTime = currentTime; // Update last update time
-
-            // Store styles for this block only once
-            blockWordStyles = captionsData.slice(currentBlockStart, Math.min(currentBlockStart + captionWordLimit, captionsData.length)).map(wordObj => ({
-                textColor: textColors[Math.floor(Math.random() * textColors.length)],
-                bgColor: bgColors[Math.floor(Math.random() * bgColors.length)],
-                fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
-                angle: angles[Math.floor(Math.random() * angles.length)]
-            }));            
-        }else if (currentIndex < currentBlockStart) {
-            // 🔹 Handling backward seeking (reset block start)
-            currentBlockStart = Math.max(0, currentIndex - Math.floor(captionWordLimit / 2)); 
-            lastCaptionUpdateTime = currentTime;
-    
-            // Recalculate styles for this block when seeking backward
-            blockWordStyles = captionsData.slice(currentBlockStart, Math.min(currentBlockStart + captionWordLimit, captionsData.length)).map(wordObj => ({
-                textColor: textColors[Math.floor(Math.random() * textColors.length)],
-                bgColor: bgColors[Math.floor(Math.random() * bgColors.length)],
-                fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
-                angle: angles[Math.floor(Math.random() * angles.length)]
-            }));
-        }
-
-        let endIdx = Math.min(currentBlockStart + captionWordLimit, captionsData.length);
-        let currentBlockWords = captionsData.slice(currentBlockStart, endIdx);
-        let displayedWords = "";
-
-        if (selectedStyle !== "block-style") {
-            displayedWords = currentBlockWords.map((wordObj) => {
-                return (currentTime >= wordObj.start && currentTime <= wordObj.end)
-                    ? `<span class="current-word">${wordObj.word}</span>` // Highlight spoken word
-                    : wordObj.word;
-            });
         } else {
-            displayedWords = currentBlockWords.map((wordObj, index) => {
-                let span = document.createElement("span");
-                span.innerText = wordObj.word;
+            // Hide normal headings & list items (not staying)
+            if (currentOverlayText !== "") {
+                overlay.classList.add("hide");
+                setTimeout(() => overlay.classList.remove("show"), 500);
+                currentOverlayText = "";
+                captions.classList.remove("none");
+            }
+
+            playedSounds.clear();
+        }
+
+        timeline.value = video.currentTime;
+        /** 🔹 2. Display Captions in Blocks & Maintain Them During Pauses **/
+        timeline.max = video.duration;
+        videoTimeDisplay.innerHTML = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+
+        let currentIndex = captionsData.findIndex(word => currentTime >= word.start && currentTime <= word.end);
+
+        if (currentIndex !== -1) {
+            // Only update if we reach the last word of the current block
+            if (currentIndex >= currentBlockStart + captionWordLimit) {
+                currentBlockStart = currentIndex; // Move to the next block
+                lastCaptionUpdateTime = currentTime; // Update last update time
+
+                // Store styles for this block only once
+                blockWordStyles = captionsData.slice(currentBlockStart, Math.min(currentBlockStart + captionWordLimit, captionsData.length)).map(wordObj => ({
+                    textColor: textColors[Math.floor(Math.random() * textColors.length)],
+                    bgColor: bgColors[Math.floor(Math.random() * bgColors.length)],
+                    fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
+                    angle: angles[Math.floor(Math.random() * angles.length)]
+                }));            
+            }else if (currentIndex < currentBlockStart) {
+                // 🔹 Handling backward seeking (reset block start)
+                currentBlockStart = Math.max(0, currentIndex - Math.floor(captionWordLimit / 2)); 
+                lastCaptionUpdateTime = currentTime;
         
-                // Retrieve previously stored styles for this block
-                let style = blockWordStyles[index] || {};
+                // Recalculate styles for this block when seeking backward
+                blockWordStyles = captionsData.slice(currentBlockStart, Math.min(currentBlockStart + captionWordLimit, captionsData.length)).map(wordObj => ({
+                    textColor: textColors[Math.floor(Math.random() * textColors.length)],
+                    bgColor: bgColors[Math.floor(Math.random() * bgColors.length)],
+                    fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
+                    angle: angles[Math.floor(Math.random() * angles.length)]
+                }));
+            }
 
-                span.style.color = style.textColor || "#FFF";
-                span.style.backgroundColor = style.bgColor || "#000";
-                span.style.fontSize = style.fontSize || "1em";
-                //span.classList.add(style.angle || "angle1"); // Apply stored angle
-                span.classList.add("word-box"); // Applies bold block style
+            let endIdx = Math.min(currentBlockStart + captionWordLimit, captionsData.length);
+            let currentBlockWords = captionsData.slice(currentBlockStart, endIdx);
+            let displayedWords = "";
 
-                // 🔹 Highlight spoken word
-                if (currentTime >= wordObj.start && currentTime <= wordObj.end) {
-                    span.classList.add("current-word");
-                    span.classList.add(style.angle || "angle1");
-                }
+            if (selectedStyle !== "block-style") {
+                displayedWords = currentBlockWords.map((wordObj) => {
+                    return (currentTime >= wordObj.start && currentTime <= wordObj.end)
+                        ? `<span class="current-word">${wordObj.word}</span>` // Highlight spoken word
+                        : wordObj.word;
+                });
+            } else {
+                displayedWords = currentBlockWords.map((wordObj, index) => {
+                    let span = document.createElement("span");
+                    span.innerText = wordObj.word;
+            
+                    // Retrieve previously stored styles for this block
+                    let style = blockWordStyles[index] || {};
 
-                return span.outerHTML;
-            });
-        }
+                    span.style.color = style.textColor || "#FFF";
+                    span.style.backgroundColor = style.bgColor || "#000";
+                    span.style.fontSize = style.fontSize || "1em";
+                    //span.classList.add(style.angle || "angle1"); // Apply stored angle
+                    span.classList.add("word-box"); // Applies bold block style
 
-        const newCaption = displayedWords.join(" ");
+                    // 🔹 Highlight spoken word
+                    if (currentTime >= wordObj.start && currentTime <= wordObj.end) {
+                        span.classList.add("current-word");
+                        span.classList.add(style.angle || "angle1");
+                    }
 
-        if (newCaption !== captions.innerHTML) {
-            captions.innerHTML = newCaption;
+                    return span.outerHTML;
+                });
+            }
+
+            const newCaption = displayedWords.join(" ");
+
+            if (newCaption !== captions.innerHTML) {
+                captions.innerHTML = newCaption;
+                captions.classList.add("show-caption");
+                captions.classList.remove("hide-caption");
+            }
+        } else if (currentTime - lastCaptionUpdateTime < 2) {
+            // 🔹 If there’s a pause, keep the last caption visible for 2 seconds
             captions.classList.add("show-caption");
             captions.classList.remove("hide-caption");
+        } else if (captions.innerHTML !== "") {
+            // 🔹 After the pause, fade out the caption
+            captions.classList.add("hide-caption");
+            setTimeout(() => captions.classList.remove("show-caption"), 300);
         }
-    } else if (currentTime - lastCaptionUpdateTime < 2) {
-        // 🔹 If there’s a pause, keep the last caption visible for 2 seconds
-        captions.classList.add("show-caption");
-        captions.classList.remove("hide-caption");
-    } else if (captions.innerHTML !== "") {
-        // 🔹 After the pause, fade out the caption
-        captions.classList.add("hide-caption");
-        setTimeout(() => captions.classList.remove("show-caption"), 300);
+    }catch (error) {
+        console.error("Error in updateOverlayAndCaptions:", error);
     }
 }
 // 🔹 Seek Video when Timeline is Clicked or Dragged
@@ -777,7 +825,7 @@ saveWordChanges.addEventListener("click", () => {
 previewMusicBtn.addEventListener("click", () => {
     const selectedMusic = bgMusicSelect.value;
     if (selectedMusic !== "none") {
-        audioBackground.src = `sounds/${selectedMusic}`;
+        audioBackground.src = `/static/sounds/${selectedMusic}`;
         audioBackground.loop = true;
         audioBackground.volume = bgMusicVolume.value;
         audioBackground.play();
@@ -793,16 +841,19 @@ stopPreviewBtn.addEventListener("click", () => {
 // 🔹 Adjust Background Music Volume Dynamically
 bgMusicVolume.addEventListener("input", () => {
     audioBackground.volume = bgMusicVolume.value;
+    bgGain.gain.value = bgMusicVolume.value;
 });
 
 // 🔹 Adjust Sound Effect Volume Dynamically
 effectVolume.addEventListener("input", () => {
     audioEffect.volume = effectVolume.value;
+    sfxGain.gain.value = effectVolume.value;
 });
 
 // 🔹 Adjust Main Video Volume Dynamically
 videoVolumeSlider.addEventListener("input", () => {
     video.volume = videoVolumeSlider.value;
+    videoGain.gain.value = videoVolumeSlider.value;
 });
 
 // 🔹 Function to Update Video Orientation
@@ -825,3 +876,8 @@ videoOrientation.addEventListener("change", updateVideoOrientation);
 
 // 🔹 Set Initial Orientation on Page Load
 updateVideoOrientation();
+window.addEventListener("click", () => {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => console.log("🔊 AudioContext resumed"));
+    }
+}, { once: true });
