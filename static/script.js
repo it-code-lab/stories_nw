@@ -160,10 +160,124 @@ function captureFrame() {
         console.log("🔴 captureFrame stopped.");
         return; // Stop if flag is off
     }
-    // Draw video frame
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous frame
+
+    // 1. Draw video
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    // 2. Draw captions
+    drawStyledCaptionsToCanvas();
+
+    // 3. Draw headings and list items
+    drawOverlayToCanvas();
+
     requestAnimationFrame(captureFrame);
+}
+
+function drawStyledCaptionsToCanvas() {
+    const currentTime = video.currentTime;
+
+    let currentIndex = captionsData.findIndex(word => currentTime >= word.start && currentTime <= word.end);
+
+    if (currentIndex === -1) return;
+
+    const endIdx = Math.min(currentBlockStart + captionWordLimit, captionsData.length);
+    const currentBlockWords = captionsData.slice(currentBlockStart, endIdx);
+
+    if (!currentBlockWords.length) return;
+
+    ctx.save();
+
+    const margin = 30;
+    const totalWidth = canvas.width - 2 * margin;
+    const wordSpacing = totalWidth / currentBlockWords.length;
+
+    currentBlockWords.forEach((wordObj, i) => {
+        const x = margin + i * wordSpacing + wordSpacing / 2;
+        const y = canvas.height - 80;
+
+        const style = blockWordStyles[i] || {};
+
+        const fontSize = style.fontSize || "24px";
+        ctx.font = `${fontSize} Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // Background box
+        const textMetrics = ctx.measureText(wordObj.word);
+        const boxWidth = textMetrics.width + 20;
+        const boxHeight = parseInt(fontSize) + 10;
+
+        const bgColor = style.bgColor || "rgba(0,0,0,0.5)";
+        const textColor = style.textColor || "#FFFFFF";
+
+        const angle = style.angle || "angle1";
+        const rotateAngle = getRotationFromAngle(angle);
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotateAngle);
+
+        // Draw background
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(-boxWidth / 2, -boxHeight / 2, boxWidth, boxHeight);
+
+        // Draw text
+        ctx.fillStyle = textColor;
+        ctx.fillText(wordObj.word, 0, 0);
+
+        ctx.restore();
+    });
+
+    ctx.restore();
+}
+
+function drawOverlayToCanvas() {
+    ctx.save();
+
+    // 🔹 Staying Heading
+    if (stayingHeading.innerText.trim()) {
+        ctx.font = "bold 36px Arial";
+        ctx.fillStyle = "#ffd700";
+        ctx.textAlign = "center";
+        ctx.fillText(stayingHeading.innerText, canvas.width / 2, 80);
+    }
+
+    // 🔹 Staying List Items
+    if (stayingListContainer.children.length > 0) {
+        ctx.font = "24px Arial";
+        ctx.fillStyle = "#90e0ef";
+        ctx.textAlign = "left";
+
+        for (let i = 0; i < stayingListContainer.children.length; i++) {
+            const text = stayingListContainer.children[i].innerText;
+            ctx.fillText(`• ${text}`, 50, 130 + i * 30);
+        }
+    }
+
+    // 🔹 Temporary overlay text (non-staying headings/list items)
+    if (overlay.innerText.trim() && overlay.classList.contains("show")) {
+        const overlayText = overlay.innerText;
+        ctx.font = overlay.classList.contains("heading") ? "bold 34px Arial" : "italic 28px Arial";
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.fillText(overlayText, canvas.width / 2, 100);
+    }
+
+    ctx.restore();
+}
+
+
+function getRotationFromAngle(angleClass) {
+    switch (angleClass) {
+        case "angle1": return 0;
+        case "angle2": return 0.05;
+        case "angle3": return -0.05;
+        case "angle4": return 0.1;
+        case "angle5": return -0.1;
+        case "angle6": return 0.15;
+        default: return 0;
+    }
 }
 
 function startRecordingAndCapture() {
