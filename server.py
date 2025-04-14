@@ -1,21 +1,10 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 import json
 
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
-
-# Serve static files (like your video)
-@app.route('/video/<path:filename>')
-def serve_video(filename):
-    response = send_from_directory('.', filename)  # Assuming your video is in the same directory or a subdirectory
-    response.headers["Access-Control-Allow-Origin"] = "*"  # Or "http://localhost:5000"
-    return response
-
-@app.route('/addcaption')
-def serve_test_html():
-    return send_from_directory('.', 'index.html')
 
 # Load word timestamps
 @app.route('/get_word_timestamps', methods=['GET'])
