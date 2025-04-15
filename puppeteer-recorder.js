@@ -47,6 +47,14 @@ const offsetY = isLandscape ? 130 : 130;
     });
 
     const [page] = await browser.pages();
+
+    // ✅ Capture browser console logs
+    // page.on('console', msg => {
+    // const args = msg.args();
+    // Promise.all(args.map(arg => arg.jsonValue())).then(values => {
+    //             console.log(`🧠 Browser log:`, ...values);
+    // });
+    // });    
     await page.goto(videoUrl);
 
     console.log("✅ Browser opened. Waiting for video to load...");
@@ -85,6 +93,7 @@ const offsetY = isLandscape ? 130 : 130;
         video.currentTime = 0;
         video.muted = false;
         video.volume = 1.0;
+        updateProperties();
     }, { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume });
 
     // await page.waitForFunction(() => {
@@ -207,7 +216,7 @@ const offsetY = isLandscape ? 130 : 130;
     ffmpeg.removeAllListeners('close'); // Remove potential listener added in the promise setup
     ffmpeg.on('close', async (code) => {
         console.log(`✅ Recording complete. FFmpeg exited with code ${code}. Output: ${outputPath}`);
-        await browser.close();
+        //await browser.close();
         console.log("✅ Browser closed.");
         // Trim the white/mute part using ffmpeg -ss
         const trimmedOutput = outputPath.replace(".mp4", "_trimmed.mp4");

@@ -106,7 +106,7 @@ const videoTimeDisplay = document.getElementById("video-time");
 const timeline = document.getElementById("timeline");
 const captionStyleDropdown = document.getElementById("captionStyle");
 //const captionPreview = document.getElementById("caption-preview");
-
+let selectedStyle ;
 const subscribeGif = document.getElementById("subscribe-gif");
 
 video.volume = 1.0;  // Set default volume to max
@@ -170,6 +170,20 @@ video.addEventListener("loadedmetadata", () => {
     videoTimeDisplay.innerHTML = `00:00 / ${formatTime(video.duration)}`;
 });
 
+function updateProperties(){
+    // Update properties based on user input
+    captionWordLimit = parseInt(captionInput.value, 10) || 5; // Default to 5 if input is empty
+    console.log("captionInput.value:", captionInput.value);
+    console.log("Caption word limit:", captionWordLimit);
+    selectedStyle = captionStyleDropdown.value;
+    // Remove old styles
+    captions.className = "captions-text";
+    //captionPreview.className = "preview-captions-text";
+
+    // Apply new style
+    captions.classList.add(selectedStyle);
+    console.log("captionStyleDropdown.value:", captionStyleDropdown.value);
+}
 const overlay = document.getElementById("overlayText");
 
 
@@ -192,7 +206,7 @@ captionInput.addEventListener("input", () => {
     captionWordLimit = parseInt(captionInput.value, 10) || 5;
 });
 
-let selectedStyle = "style1";  // Default caption style
+selectedStyle = "style1";  // Default caption style
 // Change Caption Style Based on Selection
 captionStyleDropdown.addEventListener("change", () => {
     selectedStyle = captionStyleDropdown.value;
