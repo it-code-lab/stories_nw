@@ -440,8 +440,8 @@ function updateOverlayAndCaptions() {
             captions.classList.add("show-caption");
             captions.classList.remove("hide-caption");
         }
-    } else if (currentTime - lastCaptionUpdateTime < 2) {
-        // 🔹 If there’s a pause, keep the last caption visible for 2 seconds
+    } else if (currentTime - lastCaptionUpdateTime < 4) {
+        // 🔹 If there’s a pause, keep the last caption visible for 4 seconds
         captions.classList.add("show-caption");
         captions.classList.remove("hide-caption");
     } else if (captions.innerHTML !== "") {

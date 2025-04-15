@@ -119,7 +119,7 @@ const offsetY = isLandscape ? 130 : 130;
         "-f", "dshow",
         "-i", "audio=Stereo Mix (Realtek(R) Audio)",
 
-        "-af", "adelay=500|500", // Add 500ms delay to audio stream(s)
+        "-af", "adelay=1200|1200", // Add 1200ms delay to audio stream(s)
         "-c:v", "libx264",
         "-c:a", "aac",
         "-b:a", "192k",
@@ -206,7 +206,7 @@ const offsetY = isLandscape ? 130 : 130;
         process.exit(1);
     }
 
-    whiteScreenDuration = 1;
+    whiteScreenDuration = 2;
 
     // The existing ffmpeg.on("close", ...) handler for final cleanup remains
     // Note: The 'close' event might fire *after* the main script flow continues
