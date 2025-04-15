@@ -1,8 +1,10 @@
 const puppeteer = require("puppeteer");
 const { spawn } = require("child_process");
 const path = require("path");
+const fs = require("fs");
 
 // Commands to run this code : DND
+// REF: https://gemini.google.com/app/c90e2976f214a9fe
 // //Command Line
 // node puppeteer-recorder.js captured_video.mp4 10 landscape 5 style2 story-classical-3-710.mp3 0.05 1
 
@@ -108,7 +110,7 @@ const offsetY = isLandscape ? 130 : 130;
         "-f", "dshow",
         "-i", "audio=Stereo Mix (Realtek(R) Audio)",
 
-        "-af", "adelay=400|400", // Add 200ms delay to audio stream(s)
+        "-af", "adelay=500|500", // Add 500ms delay to audio stream(s)
         "-c:v", "libx264",
         "-c:a", "aac",
         "-b:a", "192k",
@@ -122,17 +124,113 @@ const offsetY = isLandscape ? 130 : 130;
 
     await new Promise(resolve => setTimeout(resolve, 500)); // give FFmpeg time to initialize
 
-    await page.evaluate(() => {
-        const video = document.querySelector("video");
-        video.play();
-    });
-    ffmpeg.stderr.on("data", (data) => {
-        console.log("FFmpeg:", data.toString());
+    // await page.evaluate(() => {
+    //     const video = document.querySelector("video");
+    //     video.play();
+    // });
+    // ffmpeg.stderr.on("data", (data) => {
+    //     console.log("FFmpeg:", data.toString());
+    // });
+
+    // ffmpeg.on("close", async () => {
+    //     console.log(`✅ Recording complete: ${outputPath}`);
+    //     await browser.close();
+    // });
+    let ffmpegReady = false;
+    let ffmpegReadyTime;
+    const ffmpegPromise = new Promise((resolve, reject) => {
+        ffmpeg.stderr.on("data", (data) => {
+            const output = data.toString();
+            console.log("FFmpeg:", output); // Log all output for debugging
+
+            // Check for a line indicating encoding has started
+            // Common patterns include "frame=", "time=", "size="
+            // Adjust this pattern if needed based on your FFmpeg version/output
+            if (!ffmpegReady && output.includes('frame=') || output.includes('time=')) {
+                console.log("✅ FFmpeg seems to have started recording.");
+                ffmpegReady = true;
+                ffmpegReadyTime = Date.now();
+                resolve(); // Signal that FFmpeg is ready
+            }
+        });
+
+        ffmpeg.on("error", (err) => {
+            console.error("❌ FFmpeg error:", err);
+            if (!ffmpegReady) reject(err); // Reject if error occurs before ready
+        });
+
+        ffmpeg.on("close", (code) => {
+             console.log(`✅ FFmpeg process closed with code ${code}`);
+             // If FFmpeg closes before we thought it was ready, reject
+             if (!ffmpegReady) {
+                 reject(new Error(`FFmpeg closed unexpectedly (code ${code}) before indicating readiness.`));
+             }
+             // The main recording completion logic is outside this specific promise
+        });
+
+        // Add a timeout in case FFmpeg never outputs the expected message
+        setTimeout(() => {
+             if (!ffmpegReady) {
+                 reject(new Error("FFmpeg readiness timeout: Did not detect start message."));
+             }
+        }, 10000); // 10 second timeout - adjust as needed
     });
 
-    ffmpeg.on("close", async () => {
-        console.log(`✅ Recording complete: ${outputPath}`);
+    let whiteScreenDuration = 0; // Initialize white screen duration
+    try {
+        console.log("⏳ Waiting for FFmpeg to signal readiness...");
+        await ffmpegPromise; // Wait until the stderr listener resolves
+        const videoStartTime = Date.now();
+        whiteScreenDuration = (videoStartTime - ffmpegReadyTime) / 1000;
+        console.log("⏱ Estimated white screen duration:", whiteScreenDuration, "seconds");
+        console.log("▶️ Starting video playback...");
+        await page.evaluate(() => {
+            const video = document.querySelector("video");
+            video.currentTime = 0; // Ensure it starts from the beginning
+            video.play();
+        });
+    } catch (error) {
+        console.error("❌ Error during FFmpeg readiness wait or video playback start:", error);
+        // Handle the error appropriately - maybe kill ffmpeg and exit
+        ffmpeg.kill('SIGINT'); // Attempt to gracefully stop FFmpeg
         await browser.close();
-    });
+        process.exit(1);
+    }
 
+    whiteScreenDuration = 1;
+
+    // The existing ffmpeg.on("close", ...) handler for final cleanup remains
+    // Note: The 'close' event might fire *after* the main script flow continues
+    // if recording finishes successfully. Ensure browser.close() is handled correctly.
+
+    // Refined close handler (ensure it's only defined once)
+    ffmpeg.removeAllListeners('close'); // Remove potential listener added in the promise setup
+    ffmpeg.on('close', async (code) => {
+        console.log(`✅ Recording complete. FFmpeg exited with code ${code}. Output: ${outputPath}`);
+        await browser.close();
+        console.log("✅ Browser closed.");
+        // Trim the white/mute part using ffmpeg -ss
+        const trimmedOutput = outputPath.replace(".mp4", "_trimmed.mp4");
+        const trim = spawn("ffmpeg", [
+                    "-y",
+                    "-ss", whiteScreenDuration.toFixed(2),
+                    "-i", outputPath,
+                    "-c", "copy",
+                    trimmedOutput
+        ]);
+
+        trim.stderr.on("data", (data) => {
+                    console.log("FFmpeg Trim:", data.toString());
+        });
+
+        trim.on("close", (code) => {
+                    if (code === 0) {
+                            fs.renameSync(trimmedOutput, outputPath);
+                            console.log(`✂️ Trimmed video saved as ${outputPath}`);
+                    } else {
+                            console.error("❌ Trimming failed with code", code);
+                    }
+        });
+        
+    });
 })();
