@@ -14,6 +14,7 @@ main_frame.pack(padx=20, pady=20, fill="both", expand=True)
 
 # Field Variables # DEFAULT VALUES CAN BE CHANGED HERE
 language_var = StringVar(value="english")
+skip_puppeteer_var = StringVar(value="yes")
 tts_var = StringVar(value="google")
 gender_var = StringVar(value="Female")
 voice_var = StringVar(value="Joanna")
@@ -22,7 +23,7 @@ music_var = StringVar(value="Kids Stories")
 max_words = IntVar(value=5)
 fontsize = IntVar(value=90)
 y_pos = StringVar(value="bottom")
-style_var = StringVar(value="Style 27")
+style_var = StringVar(value="style2")
 
 # Functions
 def get_urls():
@@ -41,12 +42,12 @@ def update_ui_based_on_video_type(*args):
     if selected_type == "YouTube Shorts":
         max_words.set(3)
         y_pos.set("center")
-        style_var.set("Style 27")
+        style_var.set("style2")
         fontsize.set(90)
     elif selected_type == "Regular YouTube Video":
         max_words.set(5)
         y_pos.set("center")
-        style_var.set("Style 4")
+        style_var.set("style2")
         fontsize.set(90)
 
 size_var.trace("w", update_ui_based_on_video_type)
@@ -66,30 +67,32 @@ scrollbar.grid(row=0, column=2, sticky="ns")
 url_input_text["yscrollcommand"] = scrollbar.set
 
 # Create Layout
-create_dropdown(main_frame, "Language:", language_var, ["english", "hindi", "french"], 1)
+create_dropdown(main_frame, "Language:", language_var, ["english", "english-india","hindi", "french"], 1)
 create_dropdown(main_frame, "Select TTS Engine:", tts_var, tts_engine.keys(), 2)
 create_dropdown(main_frame, "Select Voice Gender:", gender_var, voices.keys(), 3)
-create_dropdown(main_frame, "Select Voice:", voice_var, voices["Female"], 4)
+# create_dropdown(main_frame, "Select Voice: (not in use)", voice_var, voices["Female"], 4)
 create_dropdown(main_frame, "Select Video Type:", size_var, sizes.keys(), 5)
 create_dropdown(main_frame, "Select Background Music:", music_var, background_music_options.keys(), 6)
+
+
 
 # Additional Settings
 Label(main_frame, text="Max Words per Caption:").grid(row=7, column=0, sticky="w", padx=10, pady=5)
 Spinbox(main_frame, from_=1, to=10, textvariable=max_words, width=5).grid(row=7, column=1, padx=10, pady=5)
 
-Label(main_frame, text="Font Size:").grid(row=8, column=0, sticky="w", padx=10, pady=5)
-Spinbox(main_frame, from_=30, to=150, textvariable=fontsize, width=5).grid(row=8, column=1, padx=10, pady=5)
+# Label(main_frame, text="Font Size(not in use):").grid(row=8, column=0, sticky="w", padx=10, pady=5)
+# Spinbox(main_frame, from_=30, to=150, textvariable=fontsize, width=5).grid(row=8, column=1, padx=10, pady=5)
 
-create_dropdown(main_frame, "Vertical Position:", y_pos, ["top", "center", "bottom"], 9)
-create_dropdown(main_frame, "Select Caption Style:", style_var, font_settings.keys(), 10)
-
+# create_dropdown(main_frame, "Vertical Position(not in use):", y_pos, ["top", "center", "bottom"], 9)
+create_dropdown(main_frame, "Select Caption Style:", style_var, font_settings.keys(), 8)
+create_dropdown(main_frame, "Skip Puppeteer Call:", skip_puppeteer_var, ["yes", "no"], 9)
 # Process Button
 Button(
     main_frame, text="Process",
     command=lambda: scrape_and_process(
         get_urls(), size_var.get(), music_var.get(),
         max_words.get(), fontsize.get(), y_pos.get(),
-        style_var.get(), voice_var.get(), language_var.get(), gender_var.get(), tts_var.get()
+        style_var.get(), voice_var.get(), language_var.get(), gender_var.get(), tts_var.get(),skip_puppeteer_var.get()
     ),
     width=20, height=2
 ).grid(row=10, columnspan=2, pady=15)

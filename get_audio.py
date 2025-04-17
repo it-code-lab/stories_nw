@@ -64,11 +64,13 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
         "google": {
             "neural": {
                 "english": {"Male": "en-US-Neural2-J", "Female": "en-US-Neural2-F"},
-                "hindi": {"Male": "hi-IN-Neural2-B", "Female": "hi-IN-Neural2-A"},
+                "english-india": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
+                "hindi": {"Male": "hi-IN-Standard-B", "Female": "hi-IN-Standard-A"},
             },
             "journey": {
                 "english": {"Male": "en-US-Journey-D", "Female": "en-US-Journey-F"},
-                "hindi": {"Male": "en-US-Journey-D", "Female": "en-US-Journey-F"},
+                "english-india": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
+                "hindi": {"Male": "hi-IN-Standard-B", "Female": "hi-IN-Standard-A"},
             },
         },
         "amazon": {

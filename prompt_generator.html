@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Prompt Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    textarea, select, input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    pre {
+      background: #eee;
+      padding: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      border-radius: 5px;
+    }
+    #copyMsg {
+      display: none;
+      color: green;
+      margin-top: 10px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>YouTube SEO Prompt Generator</h1>
+  <label for="storyType">Story Type:</label>
+  <select id="storyType">
+    <option value="English Stories">English Stories</option>
+    <option value="Side Hustles, Passive Income">Side Hustles, Passive Income</option>
+    <option value="Scary Stories">Scary Stories</option>
+  </select>
+
+  <label for="videoAbout">About:</label>
+  <input type="text" id="videoAbout" placeholder="About..." />
+
+  <label for="videoTitle">Title:</label>
+  <input type="text" id="videoTitle" placeholder="Enter your title..." />
+
+  <label for="videoScript">Video Script:</label>
+  <textarea id="videoScript" rows="10" placeholder="Paste your full video script here..."></textarea>
+
+  <button onclick="generatePrompt()">Generate Prompt</button>
+  <button onclick="copyToClipboard()">Copy to Clipboard</button>
+  <h2>Generated Prompt:</h2>
+  <pre id="output"></pre>
+  <div id="copyMsg">Prompt copied to clipboard!</div>
+  <script>
+    function generatePrompt() {
+      const storyType = document.getElementById('storyType').value;
+      const videoAbout = document.getElementById('videoAbout').value;
+      const title = document.getElementById('videoTitle').value;
+      const script = document.getElementById('videoScript').value;
+
+      const prompt = `Generate an SEO-optimized YouTube title, a detailed keyword-rich description, and comma-separated tags for a YouTube video.\n\nThe content type is: ${storyType}.\n The video is about ${videoAbout} and covers the part: ${title} \n\nThe script is:\n${script}`;
+
+      document.getElementById('output').textContent = prompt;
+    }
+    function copyToClipboard() {
+      const text = document.getElementById('output').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const msg = document.getElementById('copyMsg');
+        msg.style.display = 'block';
+        setTimeout(() => {
+          msg.style.display = 'none';
+        }, 1000);
+      }, (err) => {
+        alert("Failed to copy: " + err);
+      });
+    }
+  </script>
+</body>
+</html>

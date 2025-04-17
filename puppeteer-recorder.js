@@ -110,7 +110,7 @@ const offsetY = isLandscape ? 130 : 130;
     const ffmpeg = spawn("ffmpeg", [
         "-y",
         "-f", "gdigrab",
-        "-framerate", "24",
+        "-framerate", "30",
         "-offset_x", offsetX,
         "-offset_y", offsetY,
         "-video_size", `${captureWidth}x${captureHeight}`,
@@ -119,7 +119,7 @@ const offsetY = isLandscape ? 130 : 130;
         "-f", "dshow",
         "-i", "audio=Stereo Mix (Realtek(R) Audio)",
 
-        "-af", "adelay=1200|1200", // Add 1200ms delay to audio stream(s)
+        "-af", "adelay=400|400", // Add 1000ms delay to audio stream(s)
         "-c:v", "libx264",
         "-c:a", "aac",
         "-b:a", "192k",
@@ -206,7 +206,7 @@ const offsetY = isLandscape ? 130 : 130;
         process.exit(1);
     }
 
-    whiteScreenDuration = 2;
+    whiteScreenDuration = 1.2;
 
     // The existing ffmpeg.on("close", ...) handler for final cleanup remains
     // Note: The 'close' event might fire *after* the main script flow continues
@@ -216,8 +216,7 @@ const offsetY = isLandscape ? 130 : 130;
     ffmpeg.removeAllListeners('close'); // Remove potential listener added in the promise setup
     ffmpeg.on('close', async (code) => {
         console.log(`✅ Recording complete. FFmpeg exited with code ${code}. Output: ${outputPath}`);
-        //await browser.close();
-        console.log("✅ Browser closed.");
+
         // Trim the white/mute part using ffmpeg -ss
         const trimmedOutput = outputPath.replace(".mp4", "_trimmed.mp4");
         const trim = spawn("ffmpeg", [
@@ -240,6 +239,8 @@ const offsetY = isLandscape ? 130 : 130;
                             console.error("❌ Trimming failed with code", code);
                     }
         });
+        await browser.close();
+        console.log("✅ Browser closed.");
         
     });
 })();

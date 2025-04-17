@@ -45,8 +45,8 @@ def clean_text(text):
 
 
 
-def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize, y_pos, style, 
-                       selected_voice, language, gender, tts_engine):
+def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
+                       selected_voice, language, gender, tts_engine, skip_puppeteer):
     if not urls or selected_size not in sizes or selected_music not in background_music_options:
         raise ValueError("Invalid input parameters")
 
@@ -67,13 +67,17 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
 
         try:
             base_file_name = Path(url).name
-            
+            base_file_name = Path(url).name
+            base_file_name = re.sub(r'[<>:"/\\\\|?*]', '', base_file_name)  # Remove file-unsafe chars
+            base_file_name = re.sub(r'[^a-zA-Z0-9_-]', '_', base_file_name)  # Replace special chars with underscore
+
             results = scrape_page_with_camera_frame(url)
             create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size)
             output_file = "composed_video.mp4"
             #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
             #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
             prepare_file_for_adding_captions_n_headings_thru_html(url,output_file)
+
             #try:
                 #video_clip = VideoFileClip("output_video.mp4")
 
@@ -92,8 +96,11 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
                 #print("Error adding gif. Proceeding without gif")
                 #output_file = "output_video.mp4"
 
-            if selected_size == "YouTube Shorts":
-                video = VideoFileClip(output_file)
+            video = VideoFileClip(output_file)
+            duration_seconds = video.duration
+            duration_buffer = 3.5  # Buffer time for video processing
+            if selected_size == "YouTube Shorts":               
+                
                 duration_minutes = video.duration / 60
 
                 if duration_minutes > 3:
@@ -101,16 +108,47 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
                     split_files = split_video(output_file, video.duration, max_duration=130)  # 2m 10s
                     for idx, split_file in enumerate(split_files, start=1):
                         split_output_name = f"{output_folder}/{base_file_name}-{idx}.mp4"
-                        safe_copy(split_file, split_output_name)
+                        #safe_copy(split_file, split_output_name)
+                        shutil.copyfile(split_file, output_file)
+                        duration_seconds = split_file.duration
+                        duration_seconds = duration_seconds + duration_buffer
+                        cmd = [
+                            "node", "puppeteer-recorder.js",
+                            split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                            selected_music, "0.05", "1"
+                        ]
+                        print("▶️ Running Puppeteer with:", cmd)
+                        if skip_puppeteer == "no":
+                            subprocess.run(cmd)
+
                 else:
                     print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
                     output_name = f"{output_folder}/{base_file_name}.mp4"
+                    duration_seconds = duration_seconds + duration_buffer
+                    cmd = [
+                        "node", "puppeteer-recorder.js",
+                        output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                        selected_music, "0.05", "1"
+                    ]
+                    print("▶️ Running Puppeteer with:", cmd)
+                    if skip_puppeteer == "no":
+                        subprocess.run(cmd)
+
                     #SM-DND
                     #safe_copy(output_file, output_name)
             else:
                 output_name = f"{output_folder}/{base_file_name}.mp4"
+                duration_seconds = duration_seconds + duration_buffer
                 #SM-DND
                 #safe_copy(output_file, output_name)
+                cmd = [
+                    "node", "puppeteer-recorder.js",
+                    output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
+                    selected_music, "0.05", "1"
+                ]
+                print("▶️ Running Puppeteer with:", cmd)
+                if skip_puppeteer == "no":
+                    subprocess.run(cmd)
 
             print(f"Processing complete for {url}")
 
@@ -152,8 +190,15 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             try:
 
                 tts_audio_path = NamedTemporaryFile(delete=False, suffix=".mp3").name
+                
+
                 if tts_engine == "google":
-                    generated_audio = get_audio_file(element["text"], tts_audio_path,"google",language,gender, "journey")
+                    if (language == "english-india"):
+                        languageType = "neural"
+                    else:
+                        languageType = "journey"
+
+                    generated_audio = get_audio_file(element["text"], tts_audio_path,"google",language,gender, languageType)
                 elif tts_engine == "amazon":
                     generated_audio = get_audio_file(element["text"], tts_audio_path,"amazon",language,gender, "generative")
                 
