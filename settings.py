@@ -15,11 +15,11 @@ tts_engine = {
 # }
 
 background_music_options = {
-    "Scary Stories": "horror-piano-671.mp3",
-    "Kids Stories": "story-classical-3-710.mp3",
-    "Stories": "story-classical-10-717.mp3",
-    "Funny Videos": "positive-mixkit-fun-jazz-647.mp3",
-    "Happy": "children-summers-here-91.mp3"
+    "horror-piano-671.mp3": "horror-piano-671.mp3",
+    "story-classical-3-710.mp3": "story-classical-3-710.mp3",
+    "story-classical-10-717.mp3": "story-classical-10-717.mp3",
+    "positive-mixkit-fun-jazz-647.mp3": "positive-mixkit-fun-jazz-647.mp3",
+    "children-summers-here-91.mp3": "children-summers-here-91.mp3"
 }
 #Old - DND
 # font_settings = {

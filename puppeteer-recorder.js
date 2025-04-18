@@ -18,19 +18,19 @@ const fs = require("fs");
 
 
 // Extract arguments from command line
-const [,, outputFileName, recordingDuration, videoOrientation, wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume] = process.argv;
+const [,, outputFileName, recordingDuration, videoOrientationVal, wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume] = process.argv;
 
 if (!outputFileName) {
     console.error("❌ Please provide at least the output file name as the first argument.");
     process.exit(1);
 }
 
-const isLandscape = videoOrientation === "landscape";
+const isLandscape = videoOrientationVal === "landscape";
 const width = isLandscape ? 1280 : 720;
 const height = isLandscape ? 720 : 1280;
-const captureWidth = isLandscape ? 1664 : 720;
-const captureHeight = isLandscape ? 936 : 1280;
-const offsetX = isLandscape ? 12 : 720;
+const captureWidth = isLandscape ? 1664 : 540;
+const captureHeight = isLandscape ? 936 : 960;
+const offsetX = isLandscape ? 12 : 195;           //605 for middle
 const offsetY = isLandscape ? 130 : 130;
 
 (async () => {
@@ -61,9 +61,11 @@ const offsetY = isLandscape ? 130 : 130;
     await page.waitForSelector("video");
 
     // Set values in browser before playing
-    await page.evaluate(({ wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume }) => {
+    await page.evaluate(({ wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume,videoOrientationVal }) => {
         if (document.getElementById("videoOrientation"))
-            document.getElementById("videoOrientation").value = videoOrientation;
+            //alert(document.getElementById("videoOrientation").value)
+            //alert("going to set videoOrientation = " + videoOrientationVal)
+            document.getElementById("videoOrientation").value = videoOrientationVal;
         if (document.getElementById("captionLength"))
             document.getElementById("captionLength").value = wordsPerCaption;
         if (document.getElementById("captionStyle"))
@@ -94,7 +96,7 @@ const offsetY = isLandscape ? 130 : 130;
         video.muted = false;
         video.volume = 1.0;
         updateProperties();
-    }, { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume });
+    }, { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume,videoOrientationVal });
 
     // await page.waitForFunction(() => {
     //     const video = document.querySelector("video");

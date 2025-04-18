@@ -1,12 +1,14 @@
 import os
 import re
 import difflib
+import shutil
 from bs4 import BeautifulSoup, Tag
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 import requests
 import whisper
 import traceback
 import json
+#from scraper import safe_copy
 from settings import sizes, background_music_options, font_settings
 #from transformers import pipeline
 
@@ -143,7 +145,7 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings,
     
     print("Captioning process completed successfully!")
 
-def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4"):
+def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output"):
     
     #print("Received add_captions Arguments:", locals())
 
@@ -262,6 +264,7 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     with open('temp/word_timestamps.json', 'w') as f:
         json.dump(word_timestamps, f,indent=4)
 
+    shutil.copyfile('temp/word_timestamps.json', f"backup/word_timestamps_{base_file_name}.json")
     #SM-DND-Not in USE. May be used later
     # 🔹 Save to JSON File for Integration
     # with open("temp/suggested_sound_effects.json", "w") as f:
@@ -363,6 +366,9 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     # Save structured output
     with open(output_file_path, "w", encoding="utf-8") as file:
         json.dump(structured_output, file, indent=4)
+
+    shutil.copyfile('temp/structured_output.json', f"backup/structured_output_{base_file_name}.json")
+    shutil.copyfile('composed_video.mp4', f"backup/composed_video_{base_file_name}.mp4")
 
     print(f"Headings & List Item Timings saved to: {output_file_path}")
 

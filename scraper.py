@@ -72,11 +72,12 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
             base_file_name = re.sub(r'[^a-zA-Z0-9_-]', '_', base_file_name)  # Replace special chars with underscore
 
             results = scrape_page_with_camera_frame(url)
-            create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size)
+            create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
+            
             output_file = "composed_video.mp4"
             #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
             #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
-            prepare_file_for_adding_captions_n_headings_thru_html(url,output_file)
+            prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name)
 
             #try:
                 #video_clip = VideoFileClip("output_video.mp4")
@@ -158,7 +159,7 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
 
 
 
-def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080) ):
+def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video" ):
     """
     Creates a video using the scrapped elements.
 

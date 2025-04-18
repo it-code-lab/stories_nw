@@ -183,6 +183,7 @@ function updateProperties(){
     // Apply new style
     captions.classList.add(selectedStyle);
     console.log("captionStyleDropdown.value:", captionStyleDropdown.value);
+    updateVideoOrientation(); // Update video orientation based on user selection
 }
 const overlay = document.getElementById("overlayText");
 
@@ -226,7 +227,7 @@ captionInput.addEventListener("input", () => {
 });
 
 let videoDuration = video.duration;
-
+let blockWordStyles = [];
 // Listen for video time updates
 video.addEventListener("timeupdate", () => {
     updateOverlayAndCaptions();
