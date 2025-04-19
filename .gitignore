@@ -23,3 +23,6 @@ package-lock.json
 node_modules/.package-lock.json
 node_modules
 backup/*
+youtube_uploader_secrets.js
+*secret*
+youtube_profile/*
