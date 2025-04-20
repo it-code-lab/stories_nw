@@ -227,7 +227,7 @@ captionInput.addEventListener("input", () => {
 });
 
 let videoDuration = video.duration;
-let blockWordStyles = [];
+//let blockWordStyles = [];
 // Listen for video time updates
 video.addEventListener("timeupdate", () => {
     updateOverlayAndCaptions();
