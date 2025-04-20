@@ -32,7 +32,9 @@ def load_videos_from_excel():
     videos = []
     for row in ws.iter_rows(min_row=2, values_only=True):
         record = dict(zip(headers, row))
-        videos.append(record)
+        # Skip completely empty rows
+        if record.get("video_path") and record.get("youtube_title") and record.get("youtube_channel_name"):
+            videos.append(record)
     return wb, ws, videos
 
 def is_excel_file_locked(file_path):
@@ -365,7 +367,7 @@ def main():
                 save_video_status(ws, idx, video_url, "Success")
             except Exception as e:
                 print(f"Error uploading {video['youtube_title']}: {e}")
-                save_video_status(ws, idx, "", str(e)[:200])  # Save first 200 characters of error
+                save_video_status(ws, idx, "", str(e)[:500])  # Save first 200 characters of error
 
         wb.save(EXCEL_FILE)
         browser.close()
