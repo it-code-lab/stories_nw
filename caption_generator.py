@@ -12,7 +12,7 @@ import json
 from settings import sizes, background_music_options, font_settings
 import csv
 from datetime import datetime
-
+from openpyxl import Workbook, load_workbook
 #from transformers import pipeline
 
 # Extract Audio from Video
@@ -286,6 +286,78 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     shutil.copyfile('composed_video.mp4', f"backup/composed_video_{base_file_name}.mp4")
 
     print(f"Headings & List Item Timings saved to: {output_file_path}")
+    
+    #DND - Working but not in use
+    #save_details_in_csv(captions_data, url, base_file_name)
+
+def save_details_in_excel(captions_data, url, base_file_name):
+    """Safely write data to an Excel file, creating it if it doesn't exist."""
+    excel_file = "video_records.xlsx"
+    sheet_name = "Videos"
+
+    # Only capture the simple text, not full captions_data
+    captions_text = captions_data.get("text", "").strip()
+
+    # Define columns
+    columns = [
+        'url',
+        'video_path',
+        'captions_text',
+        'youtube_playlist_name',
+        'youtube_title',
+        'youtube_description',
+        'youtube_tags',
+        'youtube_channel_name',
+        'video_is_about',
+        'made_for_kids',
+        'schedule_date',
+        'youtube_upload_status',
+        'last_update_date',
+        'created_video_url'
+    ]
+
+    # Check if Excel file exists
+    if not os.path.exists(excel_file):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = sheet_name
+        ws.append(columns)  # write header
+        wb.save(excel_file)
+
+    # Load workbook and sheet
+    wb = load_workbook(excel_file)
+    if sheet_name not in wb.sheetnames:
+        ws = wb.create_sheet(sheet_name)
+        ws.append(columns)
+    else:
+        ws = wb[sheet_name]
+
+    # Prepare row data
+    row = [
+        url,
+        base_file_name,
+        captions_text,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        'Pending',
+        datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        ''
+    ]
+
+    ws.append(row)
+    wb.save(excel_file)
+
+    print(f"Record for {base_file_name} added to {excel_file}")
+
+#DND - Working but not in use
+def save_details_in_csv(captions_data, url, base_file_name):
+    """Safely write data to a CSV file, creating it if it doesn't exist."""
     csv_file = "video_records.csv"
     # Ensure captions_data is saved as JSON string (small, compact)
     captions_data_json = captions_data.get("text", "").strip()
@@ -299,10 +371,12 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
         'youtube_description',
         'youtube_tags',
         'youtube_channel_name',
+        'video_is_about',
         'made_for_kids',
         'schedule_date',
         'youtube_upload_status',
-        'last_update_date'
+        'last_update_date',
+        'created_video_url'
     ]
 
     # Check if CSV exists
@@ -324,13 +398,16 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
             'youtube_description': '',
             'youtube_tags': '',
             'youtube_channel_name': '',
+            'video_is_about': '',
             'made_for_kids': '',
             'schedule_date': '',
             'youtube_upload_status': 'Pending',
-            'last_update_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'last_update_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'created_video_url': ''
         })
 
     print(f"Record for {base_file_name} added to {csv_file}")
+
 
 def is_skippable(element):
     """

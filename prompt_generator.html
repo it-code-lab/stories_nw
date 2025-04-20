@@ -53,7 +53,7 @@
 </head>
 <body>
   <h1>YouTube SEO Prompt Generator</h1>
-  <label for="storyType">Story Type:</label>
+  <label for="storyType">YouTube Channel:</label>
   <select id="storyType">
     <option value="English Stories">English Stories</option>
     <option value="Side Hustles, Passive Income">Side Hustles, Passive Income</option>
@@ -81,7 +81,7 @@
       const title = document.getElementById('videoTitle').value;
       const script = document.getElementById('videoScript').value;
 
-      const prompt = `Generate an SEO-optimized YouTube title, a detailed keyword-rich description, and comma-separated tags for a YouTube video.\n\nThe content type is: ${storyType}.\n The video is about ${videoAbout} and covers the part: ${title} \n\nThe script is:\n${script}`;
+      const prompt = `Generate an SEO-optimized YouTube title, a detailed keyword-rich description, and comma-separated tags for a YouTube video.\n\nThe video is for YouTube channel: ${storyType}.\n The video is about ${videoAbout} and covers the part: ${title} \n\nThe script is:\n${script}`;
 
       document.getElementById('output').textContent = prompt;
     }

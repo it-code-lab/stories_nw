@@ -26,4 +26,6 @@ backup/*
 youtube_uploader_secrets.js
 *secret*
 youtube_profile/*
-video_records.csv
+*video_records*
+video_records.xlsx
+~$video_records.xlsx

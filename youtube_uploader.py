@@ -5,6 +5,8 @@ import time
 from pathlib import Path
 from datetime import datetime
 from playwright.sync_api import sync_playwright
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 # DND - To Run
 # python youtube_uploader.py
@@ -14,26 +16,50 @@ UPLOAD_URL = "https://studio.youtube.com"
 PROFILE_DIR = "C:\\Users\\mail2\\AppData\\Local\\Google\\Chrome\\User Data\\Profile 1"
 CHROME_EXECUTABLE = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
 
-INPUT_JSON = "upload_config.json"
-UPLOAD_LOG = "upload_log.csv"
+# INPUT_JSON = "upload_config.json"
+# UPLOAD_LOG = "upload_log.csv"
+
+EXCEL_FILE = "video_records.xlsx"
+
+# def load_videos():
+#     with open(INPUT_JSON, 'r', encoding='utf-8') as f:
+#         return json.load(f)
+
+def load_videos_from_excel():
+    wb = load_workbook(EXCEL_FILE)
+    ws = wb.active
+    headers = [cell.value for cell in ws[1]]
+    videos = []
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        record = dict(zip(headers, row))
+        videos.append(record)
+    return wb, ws, videos
+
+def is_excel_file_locked(file_path):
+    try:
+        with open(file_path, 'a'):
+            pass
+        return False
+    except PermissionError:
+        return True
 
 
-def load_videos():
-    with open(INPUT_JSON, 'r', encoding='utf-8') as f:
-        return json.load(f)
+def save_video_status(ws, row_idx, url, status):
+    ws[f'N{row_idx}'] = url
+    ws[f'L{row_idx}'] = status
+    ws[f'M{row_idx}'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+# def init_csv():
+#     if not os.path.exists(UPLOAD_LOG):
+#         with open(UPLOAD_LOG, 'w', newline='', encoding='utf-8') as f:
+#             writer = csv.writer(f)
+#             writer.writerow(['title', 'channel_name', 'video_url', 'status'])
 
 
-def init_csv():
-    if not os.path.exists(UPLOAD_LOG):
-        with open(UPLOAD_LOG, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['title', 'channel_name', 'video_url', 'status'])
-
-
-def log_upload(title, channel_name, video_url, status):
-    with open(UPLOAD_LOG, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow([title, channel_name, video_url, status])
+# def log_upload(title, channel_name, video_url, status):
+#     with open(UPLOAD_LOG, 'a', newline='', encoding='utf-8') as f:
+#         writer = csv.writer(f)
+#         writer.writerow([title, channel_name, video_url, status])
 
 
 def switch_channel(page, target_channel):
@@ -92,11 +118,12 @@ def switch_channel(page, target_channel):
 
 
 def upload_video(page, video_info):
+    print("Received upload_video Arguments:", locals())
     page.goto(UPLOAD_URL)
     page.wait_for_load_state("networkidle")
     time.sleep(2)
     print("Calling switch_channel")
-    switch_channel(page, video_info["channel_name"])
+    switch_channel(page, video_info["youtube_channel_name"])
 
     page.locator('ytcp-button#create-icon').click()
 
@@ -111,28 +138,46 @@ def upload_video(page, video_info):
 
     # Upload video file
     file_input = page.locator('input[type="file"]')
-    file_input.set_input_files(os.path.abspath(video_info["video_path"]))
+
+    video_filename = video_info["video_path"]
+
+    # If it doesn't already end with ".mp4", add it
+    if not video_filename.lower().endswith(".mp4"):
+        video_filename += ".mp4"
+
+    # Prepend the subfolder path
+    full_video_path = os.path.join("processed_videos", video_filename)
+
+    # Resolve to absolute path
+    absolute_video_path = os.path.abspath(full_video_path)
+
+    # Now use it
+    file_input.set_input_files(absolute_video_path)
+
+    #file_input.set_input_files(os.path.abspath(video_info["video_path"]))
 
     # Fill Title
     # page.locator('textarea#title-textarea').wait_for(timeout=15000)
     # page.locator('textarea#title-textarea').fill(video_info["title"])
 
 
-    page.get_by_label("Add a title that describes your video (type @ to mention a channel)").fill(video_info["title"])
+    safe_title = video_info["youtube_title"][:100]
+
+    page.get_by_label("Add a title that describes your video (type @ to mention a channel)").fill(safe_title)
     print("Title Entered")
 
-    page.get_by_label("Tell viewers about your video (type @ to mention a channel)").fill(video_info["description"])
+    page.get_by_label("Tell viewers about your video (type @ to mention a channel)").fill(video_info["youtube_description"])
     print("Description Entered")
 
     time.sleep(2)
     # Add to Playlist
-    if "playlist_name" in video_info and video_info["playlist_name"]:
+    if "youtube_playlist_name" in video_info and video_info["youtube_playlist_name"]:
         #page.locator('ytcp-button:has-text("Select playlist")').click()
         
         #page.locator('button:has-text("Select")').click()
         page.locator(".right-container.style-scope.ytcp-dropdown-trigger").click()
         time.sleep(2)
-        page.get_by_text(video_info["playlist_name"]).locator("xpath=ancestor::label").click()
+        page.get_by_text(video_info["youtube_playlist_name"]).locator("xpath=ancestor::label").click()
         #page.locator(f'div[role="checkbox"]:has-text("{video_info["playlist_name"]}")').click()
         page.locator('ytcp-button:has-text("Done")').click()
         print("Playlist selected")
@@ -166,19 +211,24 @@ def upload_video(page, video_info):
     print("Altered content option entered")
 
     # Add Tags
-    tags = video_info.get("tags", [])
+    tags = video_info.get("youtube_tags", "")[:450]
+
     if tags:
         tags_input = page.locator('input[placeholder="Add tag"]')
+        tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
         # tags_input.fill(",".join(tags))
         truncated_tags = []
         current_length = 0
 
-        for tag in tags:
-            if current_length + len(tag) + (1 if truncated_tags else 0) <= 500:
-                truncated_tags.append(tag)
-                current_length += len(tag) + (1 if truncated_tags else 0)
-            else:
-                break  # Stop adding tags if the limit is reached
+        if tag_list:
+            current_length = 0
+            for tag in tag_list:
+                if current_length + len(tag) + 1 <= 500:
+                    truncated_tags.append(tag)
+                    current_length += len(tag) + 1
+                else:
+                    break
+            tags_input.fill(",".join(truncated_tags))
 
         if truncated_tags:
             tags_input.fill(",".join(truncated_tags))
@@ -216,7 +266,23 @@ def upload_video(page, video_info):
         #date_input.fill(video_info["schedule_date"])
 
         page.get_by_label('Enter date').get_by_label('').press('Control+a')
-        page.get_by_label('Enter date').get_by_label('').fill(video_info["schedule_date"])
+        #page.get_by_label('Enter date').get_by_label('').fill(video_info["schedule_date"])
+        # Convert datetime to string if needed
+
+        schedule_date_value = video_info["schedule_date"]
+        if isinstance(schedule_date_value, datetime):
+            schedule_date_value = schedule_date_value.strftime('%B %d, %Y')  # Correct for YouTube
+        else:
+            # Try parsing string if not already datetime
+            try:
+                parsed_date = datetime.strptime(schedule_date_value, '%Y-%m-%d')
+                schedule_date_value = parsed_date.strftime('%B %d, %Y')
+            except:
+                # Already in proper format or wrong format (let's try using it as-is)
+                pass
+
+
+        page.get_by_label('Enter date').get_by_label('').fill(schedule_date_value)
 
         page.locator('tp-yt-iron-overlay-backdrop').nth(2).click();
 
@@ -239,8 +305,14 @@ def upload_video(page, video_info):
 
 
 def main():
-    videos = load_videos()
-    init_csv()
+    # videos = load_videos()
+    # init_csv()
+
+    if is_excel_file_locked(EXCEL_FILE):
+        print(f"Error: Please close '{EXCEL_FILE}' before running the uploader.")
+        return  # Exit cleanly without trying uploads
+
+    wb, ws, videos = load_videos_from_excel()
 
     with sync_playwright() as p:
         browser = p.chromium.launch_persistent_context(
@@ -255,16 +327,30 @@ def main():
         # Hide automation fingerprint
         page.add_init_script("""Object.defineProperty(navigator, 'webdriver', {get: () => undefined})""")
 
-        for video in videos:
-            try:
-                print(f"\n=== Uploading: {video['title']} to {video['channel_name']} ===")
-                video_url = upload_video(page, video)
-                print(f"Uploaded successfully: {video_url}")
-                log_upload(video["title"], video["channel_name"], video_url, "Success")
-            except Exception as e:
-                print(f"Error uploading {video['title']}: {e}")
-                log_upload(video["title"], video["channel_name"], "", "Failed")
+        # for video in videos:
+        #     try:
+        #         print(f"\n=== Uploading: {video['title']} to {video['channel_name']} ===")
+        #         video_url = upload_video(page, video)
+        #         print(f"Uploaded successfully: {video_url}")
+        #         log_upload(video["title"], video["channel_name"], video_url, "Success")
+        #     except Exception as e:
+        #         print(f"Error uploading {video['title']}: {e}")
+        #         log_upload(video["title"], video["channel_name"], "", "Failed")
 
+        for idx, video in enumerate(videos, start=2):
+            if str(video.get("youtube_upload_status", "")).strip().lower() == "success":
+                print(f"Skipping already uploaded: {video['youtube_title']}")
+                continue
+
+            try:
+                print(f"\n=== Uploading: {video['youtube_title']} to {video['youtube_channel_name']} ===")
+                video_url = upload_video(page, video)
+                save_video_status(ws, idx, video_url, "Success")
+            except Exception as e:
+                print(f"Error uploading {video['youtube_title']}: {e}")
+                save_video_status(ws, idx, "", str(e)[:200])  # Save first 200 characters of error
+
+        wb.save(EXCEL_FILE)
         browser.close()
 
 
