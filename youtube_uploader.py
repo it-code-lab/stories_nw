@@ -245,7 +245,11 @@ def upload_video(page, video_info):
 
     # Next Steps
     for _ in range(3):
-        page.locator('button:has-text("Next")').click()
+        #page.locator('button:has-text("Next")').click()
+        next_button = page.locator('button:has-text("Next")')
+        next_button.wait_for(state="visible", timeout=60000)  # wait for visible
+        wait_until_enabled(next_button, timeout=60)           # wait for enabled
+        next_button.click()
         time.sleep(1)
 
     # Schedule or Publish
@@ -277,19 +281,23 @@ def upload_video(page, video_info):
             try:
                 parsed_date = datetime.strptime(schedule_date_value, '%Y-%m-%d')
                 schedule_date_value = parsed_date.strftime('%B %d, %Y')
+                
             except:
                 # Already in proper format or wrong format (let's try using it as-is)
                 pass
 
 
         page.get_by_label('Enter date').get_by_label('').fill(schedule_date_value)
+        print(f"Entered schedule date: {schedule_date_value}")
 
         page.locator('tp-yt-iron-overlay-backdrop').nth(2).click();
 
         page.locator('ytcp-button:has-text("Schedule")').click()
+        print("Video scheduled successfully.")
     else:
         page.locator('tp-yt-paper-radio-button[name="PUBLIC"]').click()
         page.locator('ytcp-button:has-text("Publish")').click()
+        print("Video published successfully.")
 
     # Get video URL
     time.sleep(5)
@@ -303,6 +311,15 @@ def upload_video(page, video_info):
 
     return "Unknown"
 
+def wait_until_enabled(locator, timeout=60):
+    """Wait until the locator becomes enabled, with timeout in seconds."""
+    elapsed = 0
+    while elapsed < timeout:
+        if locator.is_enabled():
+            return
+        time.sleep(1)
+        elapsed += 1
+    raise Exception(f"Timeout: Element {locator} was not enabled after {timeout} seconds.")
 
 def main():
     # videos = load_videos()
