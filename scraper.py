@@ -268,11 +268,23 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
 
                 # Resize the video clip to the target resolution
                 video_clip = resize(video_clip, newsize=target_resolution)
+                vid_duration = element["vid_duration"]
 
                 # Calculate total audio duration
                 combined_audio_duration = sum([clip.duration for clip in audio_clips]) if audio_clips else 0
                 print(f"combined_audio_duration: {combined_audio_duration}")
                 print(f"video_clip.duration: {video_clip.duration}")
+
+                if vid_duration:  # Ensure it's not empty or None
+                    try:
+                        vid_duration = float(vid_duration)  # Convert to float
+                        if vid_duration > combined_audio_duration:
+                            combined_audio_duration = vid_duration
+                            print(f"video duration switched from {combined_audio_duration} to {vid_duration} seconds")
+                    except ValueError:
+                        print(f"Warning: Unable to convert vid_duration ('{vid_duration}') to float. Skipping.")
+
+
                 # Clip video if it's longer than the combined audio duration
                 if video_clip.duration > combined_audio_duration:
                     video_clip = video_clip.subclip(0, combined_audio_duration + BUFFER_DURATION)
