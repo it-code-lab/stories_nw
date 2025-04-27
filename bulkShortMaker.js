@@ -338,10 +338,15 @@ function displayNextText() {
 
             i++;
             if (ttsEnabled) {
-                speakText(part, showNextPart);
-            } else {
-                setTimeout(showNextPart, part.length * 60); // adjust multiplier if needed
-            }
+                if (usePreGeneratedAudio) {
+                  playAudioForPart(currentIndex, i, showNextPart);
+                } else {
+                  speakText(part, showNextPart);
+                }
+              } else {
+                setTimeout(showNextPart, part.length * 60);
+              }
+              
         }
 
         showNextPart();
