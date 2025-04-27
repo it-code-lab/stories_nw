@@ -1,0 +1,233 @@
+
+/* References: https://www.canva.com/templates/?query=quote&category=tAEEZ_gIPxM */
+body,
+html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    /* overflow: hidden; */
+    /* font-family: 'Poppins', sans-serif; */
+    /* background-color: black; */
+}
+
+#bgVideo {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+}
+
+.shorts-container {
+    width: 360px;
+    height: 640px;
+    /* width: 1080px;
+    height: 1920px; */
+    display: flex;
+    /* justify-content: center; */
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    position: relative;
+    /* overflow: hidden; */
+    /* padding: 40px 20px; */
+}
+
+#contentContainer{
+    width: 100%;
+}
+
+.content h1,
+.content p {
+    /* margin: 20px; */
+
+    /* padding: 0 10px; */
+    color: #ffffff;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
+    /* animation: fadeSlideUp 1s ease forwards; */
+}
+
+.fade-in-slide-Up {
+    animation: fadeSlideUp 1s ease forwards;
+}
+
+.contentWrapper{
+    position: relative;
+}
+#title {
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.2;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s ease forwards;
+    animation-delay: 0.5s;
+    font-family: monospace;
+    background: rgba(129, 127, 14);
+    border-radius: 20px;
+    position: relative;
+    top: 5px;
+    padding: 10px;
+    width: 70%;
+    margin: auto;
+    text-align: center;
+    margin-bottom: 0px;
+    z-index: 10;
+}
+
+.mainTextWrapper {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 20px;
+    margin: 20px auto;
+    /* margin-top: 30px;
+    margin-bottom: 30px; */
+    /* display: inline-block; */
+    opacity: 0;
+    animation: fadeSlideUp 1s ease forwards;
+    animation-delay: 1s;
+    width: 80%;
+    position: relative;
+    top: 10px;
+    min-height: 300px;
+    font-family: 'Raleway', sans-serif;
+    display: grid;
+    place-content: center;
+}
+
+span{
+    display: inline-block;
+}
+
+/* Camel case, center aligned, animation up */
+.style1_camel_center_up {
+    /* font-size: 30px; */
+    /* font-weight: 700; */
+    color: #fff;
+    animation-delay: 1.5s;
+}
+.style1_camel_center_up span {
+    opacity: 0;
+    animation: fadeSlideUp 0.6s ease forwards;
+}
+
+.style1_camel_center_up .mainTextPart {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    color: #fff;
+}
+
+.style2_upper_center_up {
+    /* font-size: 20px; */
+    /* font-weight: 700; */
+    color: #f8f7f4;
+    animation-delay: 1.5s;
+    text-transform: uppercase;
+}
+
+.style2_upper_center_up span {
+    opacity: 0;
+    animation: fadeSlideUp 0.6s ease forwards;
+}
+
+.style2_upper_center_up .mainTextPart {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    color: #fff;
+}
+
+.style3_upper_left_up {
+    /* font-size: 20px; */
+    /* font-weight: 700; */
+    color: #f8f7f4;
+    animation-delay: 1.5s;
+    text-transform: uppercase;
+}
+
+.style3_upper_left_up span {
+    opacity: 0;
+    animation: fadeSlideUp 0.6s ease forwards;
+    text-align: left;
+}
+
+.style3_upper_left_up .mainTextPart {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    color: #fff;
+    text-align: left;
+}
+
+.mainTextPartX {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    /* font-size: 1.5rem;
+    margin: 10px 0; */
+  }
+  
+#subText {
+    /* font-size: 20px; */
+    /* font-weight: 900; */
+    opacity: 0;
+    /* animation: fadeSlideUp 1s ease forwards; */
+    /* animation-delay: 3s; */
+    /* margin-top: 30px; */
+    font-family: 'Lilita One', cursive;
+    width: 80%;
+    margin: auto;
+    color: bisque;
+}
+
+#ctaText {
+    /* font-size: 20px; */
+    /* font-weight: 900; */
+    color: turquoise;
+    opacity: 0;
+    /* animation: fadeSlideUp 1s ease forwards;
+    animation-delay: 5s; */
+    margin-top: 30px;
+    font-family: monospace;
+}
+
+
+@keyframes fadeSlideUp {
+    0% {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0px);
+    }
+}
+
+.configurations{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+}
+
+select {
+    font-size: 0.8em;
+    padding: 5px;
+    margin: 10px;
+    width: 150px;
+}
+
+.fontCheck{
+    visibility: hidden; 
+    position: absolute;
+  
+}
+
+.noDisplay{
+    display: none;
+}
+
+.noVisibility{
+    visibility: hidden;
+}

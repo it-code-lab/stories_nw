@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cinematic Shorts Renderer</title>
+  <link rel="stylesheet" href="bulkShortMakerstyle.css">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Impact&family=Bebas+Neue&family=Anton&family=Oswald:wght@700&family=Montserrat:wght@800&family=Poppins:wght@800&family=Raleway:wght@800&family=Lilita+One&family=Bangers&family=Permanent+Marker&family=Luckiest+Guy&family=Black+Han+Sans&family=Rubik+Mono+One&family=Staatliches&family=Playfair+Display:wght@900&family=Archivo+Black&family=Fjalla+One&family=Shrikhand&family=Changa+One&display=swap"
+    rel="stylesheet">
+
+</head>
+<!-- 
+References: https://www.canva.com/templates/?query=quote&category=tAEEZ_gIPxM -->
+
+<body>
+  <div class="fontCheck">
+    <span style="font-family: 'Luckiest Guy', cursive;">A</span>
+    <span style="font-family: 'Anton', sans-serif">A</span>
+    <span style="font-family: 'Shrikhand', cursive">A</span>
+    <span style="font-family: 'Raleway', sans-serif">A</span>
+    <span style="font-family: 'Lilita One', cursive">A</span>
+    <span style="font-family: 'Permanent Marker', cursive">A</span>
+    <span style="font-family: 'Bangers', cursive">A</span>
+    <span style="font-family: sans-serif">A</span>
+    <span style="font-family: serif">A</span>
+    <span style="font-family: monospace">A</span>
+    <span style="font-family: cursive">A</span>
+    <span style="font-family: Impact">A</span>
+    <span style="font-family: 'Bebas Neue', sans-serif">A</span>
+    <span style="font-family: 'Oswald', sans-serif">A</span>
+    <span style="font-family: 'Montserrat', sans-serif">A</span>
+    <span style="font-family: 'Poppins', sans-serif">A</span>
+    <span style="font-family: 'Rubik Mono One', monospace">A</span>
+    <span style="font-family: 'Staatliches', sans-serif">A</span>
+    <span style="font-family: 'Playfair Display', serif">A</span>
+    <span style="font-family: 'Archivo Black', sans-serif">A</span>
+  </div>
+  <!-- <video autoplay muted loop id="bgVideo">
+  <source src="" type="video/mp4">
+</video> -->
+  <div style="display: flex; flex-direction: row;">
+    <div class="shorts-container" id="shortsContainer">
+      <video autoplay muted loop id="bgVideo">
+        <source src="" type="video/mp4">
+      </video>
+
+      <div id="contentContainer" class="content">
+
+        <div class="contentWrapper">
+          <div id="title"></div>
+          <div class="mainTextWrapper">
+
+            <p id="mainText"></p>
+            <!-- <p id="mainText2"></p>
+      <p id="mainText3"></p> -->
+          </div>
+        </div>
+
+
+        <p id="subText"></p>
+        <p id="ctaText" class="cta"></p>
+
+      </div>
+
+
+    </div>
+    <div class="configurations">
+      <label for="backgroundStyle">Background:</label>
+      <select id="backgroundStyle">
+        <option value="quizBg">quizBg</option>
+        <option value="quizBg1">quizBg1</option>
+        <option value="quizBg2">quizBg2</option>
+        <option value="quizBg3">quizBg3</option>
+        <option value="quizBg4">quizBg4</option>
+        <option value="quizBg5">quizBg5</option>
+        <option value="quoteBg">quoteBg</option>
+        <option value="factBg">factBg</option>
+        <option value="lifeAdviceBg">lifeAdviceBg</option>
+        <option value="challegeBg">challegeBg</option>
+      </select>
+
+      <label for="textStyle">Style:</label>
+      <select id="textStyle">
+        <option value="style1_camel_center_up">style1_camel_center_up</option>
+        <option value="style2_upper_center_up">style2_upper_center_up</option>
+        <option value="style3_upper_left_up">style3_upper_left_up</option>
+        <option value="content_style4">content_style4</option>
+        <option value="content_style5">content_style5</option>
+      </select>
+
+      <label for="fontFamily">Font Family:</label>
+      <select id="fontFamily">
+        <option value="'Luckiest Guy', cursive">Luckiest Guy</option>
+        <option value="'Anton', sans-serif">Anton</option>
+        <option value="'Shrikhand', cursive">Shrikhand</option>
+        <option value="'Raleway', sans-serif">Raleway ExtraBold</option>
+        <option value="'Lilita One', cursive">Lilita One</option>
+        <option value="'Permanent Marker', cursive">Permanent Marker</option>
+
+        <option value="'Bangers', cursive">Bangers</option>
+
+        <option value="sans-serif">Sans-Serif</option>
+        <option value="serif">Serif</option>
+        <option value="monospace">Monospace</option>
+        <option value="cursive">Cursive</option>
+
+        <option value="Impact">Impact</option>
+        <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+
+        <option value="'Oswald', sans-serif">Oswald</option>
+        <option value="'Montserrat', sans-serif">Montserrat ExtraBold</option>
+        <option value="'Poppins', sans-serif">Poppins ExtraBold</option>
+
+        <option value="'Rubik Mono One', monospace">Rubik Mono One</option>
+        <option value="'Staatliches', sans-serif">Staatliches</option>
+        <option value="'Playfair Display', serif">Playfair Display Black</option>
+        <option value="'Archivo Black', sans-serif">Archivo Black</option>
+
+
+        <!-- <option value="font-poppins">Poppins</option>
+    <option value="font-roboto">roboto </option>
+    <option value="font-lato">lato </option>
+    <option value="heading-font">heading </option>
+    <option value="font-open-sans">open-sans </option> -->
+      </select>
+      <label for="loadData">Load data:</label>
+      <select id="loadData">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+
+      </select>
+      <label for="testPicker">Load data:</label>
+      <select id="testPicker"> </select>
+    </div>
+  </div>
+  <audio id="bgMusic" loop></audio>
+
+  <script src="bulkShortMaker.js"></script>
+
+</body>
+
+</html>
