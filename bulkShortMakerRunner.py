@@ -87,6 +87,10 @@ def get_total_audio_duration(short_index):
 
 # Main execution
 def main():
+    if is_excel_file_locked(EXCEL_FILE):
+        print(f"Error: Please close '{EXCEL_FILE}' before running the application.")
+        return  # Exit cleanly without trying uploads  
+        
     # Load shorts data
     with open(SHORTS_JSON_FILE, 'r', encoding='utf-8') as f:
         shorts_data = json.load(f)
@@ -127,5 +131,13 @@ def main():
 
     print("\n🎬 All shorts recorded successfully!")
 
+def is_excel_file_locked(file_path):
+    try:
+        with open(file_path, 'a'):
+            pass
+        return False
+    except PermissionError:
+        return True
+    
 if __name__ == "__main__":
     main()
