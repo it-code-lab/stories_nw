@@ -206,12 +206,15 @@ let dummyInputData = [
     }
 ];
 
-let currentIndex = 0;
-let currentPartIndex = 0;
+let currentShortIndex = 0;
+let currentShortMainTextIndex = 0;
 let mainTexts = [];
 let subText = "";
 let ctaText = "";
 let ttsEnabled = false;
+
+let totalShortsData = [];  // will hold all shorts read from Excel or dummy
+
 let usePreGeneratedAudio = true; // Set to true to use DIA audio
 let preGeneratedAudioFolder = "generated_audio";
 
@@ -223,40 +226,38 @@ const ctaTextEl = document.getElementById('ctaText');
 const bgMusic = document.getElementById('bgMusic');
 const bgVideo = document.getElementById('bgVideo').querySelector('source');
 let parts = [];
-//DND - Not in use
-function getQueryParams() {
-    const params = new URLSearchParams(window.location.search);
-    const mainTexts = [];
-    for (let i = 1; i <= 10; i++) {
-        const textParam = params.get(`text${i}`);
-        if (textParam !== null) {
-            mainTexts.push(textParam);
-        } else {
-            //mainTexts.push(""); // Or you could choose to not push anything, depending on desired behavior
-        }
-    }
+let currentPartIndex = 0;
+let partElements = [];
+let part = "";
 
-    return {
-        templateType: params.get('templateType') || "Fact",
-        title: params.get('title') || "",
-        mainTexts: mainTexts,
-        subText: params.get('subText') || "",
-        ctaText: params.get('ctaText') || "",
-        musicFile: params.get('musicFile') || "background_music/sample_music.mp3",
-        musicVolume: parseFloat(params.get('musicVolume')) || 0.2,
-        backgroundVideo: params.get('backgroundVideo') || "background_videos/sample_bg.mp4"
-    };
+function cleanCorruptedCharacters(inputText) {
+    if (!inputText) return "";
+
+    // Remove all isolated ? characters
+    return inputText.replace(/\?/g, '').trim();
 }
 
-//DND - Not in use
-function splitTextIntoSpans(element, text, baseDelay = 1.5) {
-    element.innerHTML = "";
-    const words = text.split(" ");
-    words.forEach((word, index) => {
-        const span = document.createElement("span");
-        span.textContent = word;
-        element.appendChild(span);
+
+function playPreGeneratedAudio(shortIndex, partIndex, onComplete) {
+    const audioPath = `${preGeneratedAudioFolder}/short_${shortIndex}_${partIndex}.mp3`;
+    const audio = new Audio(audioPath);
+    audio.volume = 1.0;
+    audio.onended = onComplete;
+    audio.onerror = () => {
+        console.warn("Audio not found, skipping...");
+        onComplete();
+    };
+    audio.play().catch((e) => {
+        console.warn("Play error:", e);
+        onComplete();
     });
+}
+
+function isMostlyCorrupted(text) {
+    if (!text) return true;
+    const cleaned = text.replace(/[^\w\s.,!?'"()-]/g, '');
+    const corruptionRatio = 1 - (cleaned.length / text.length);
+    return corruptionRatio > 0.5;  // If >50% characters are weird, consider it bad
 }
 
 function showContent(data) {
@@ -287,9 +288,10 @@ function showContent(data) {
     for (let i = 0; i < mainTexts.length; i++) {
         totalTextLength += mainTexts[i].length;
     }
-    currentIndex = 0;
+    currentShortIndex = 0;
+    currentShortMainTextIndex = 0;
     mainTextEl.innerHTML = ''; // Clear previous content
-    displayNextText(); // Start displaying the first text
+    displayNextMainText(); // Start displaying the first text
 
     subTextEl.textContent = decodeURIComponent(data.subText);
     subTextEl.style.visibility = "hidden";
@@ -302,73 +304,104 @@ function showContent(data) {
 }
 
 
-function displayNextText() {
-    if (currentIndex < mainTexts.length) {
+function displayNextMainText() {
+    console.log("=======Inside displayNextMainText======",currentShortMainTextIndex);
+
+    if (currentShortMainTextIndex < mainTexts.length) {
         mainTextEl.innerHTML = '';
 
-        let currentText = mainTexts[currentIndex];
-        let parts = currentText.includes("^") ? currentText.split("^") : [currentText];
-        const partElements = [];
+        let currentText = mainTexts[currentShortMainTextIndex];
+        parts = currentText.includes("^") ? currentText.split("^") : [currentText];
+        partElements = [];
         // ttsEnabled = data.ttsEnabled;
 
         // Step 1: Add all elements initially (but hidden)
         parts.forEach((part, index) => {
             let el = document.createElement('p');
-            el.textContent = part;
-            el.classList.add("mainTextPart");
-            el.style.opacity = 0;
-            el.style.transition = "opacity 0.5s ease";
-            mainTextEl.appendChild(el);
-            partElements.push(el);
-        });
-
-        let i = 0;
-
-        // Step 2: Show each part (and optionally speak)
-        function showNextPart() {
-            if (i >= parts.length) {
-                currentIndex++;
-                displayNextText();
-                return;
+            const cleanPart = cleanCorruptedCharacters(part);
+            if (!isMostlyCorrupted(cleanPart)) {
+                el.textContent = cleanPart;
+                el.classList.add("mainTextPart");
+                el.style.opacity = 0;
+                el.style.transition = "opacity 0.5s ease";
+                mainTextEl.appendChild(el);
+                partElements.push(el);
             }
 
-            const el = partElements[i];
-            el.style.opacity = 1;  // reveal smoothly
-            const part = parts[i];
+        });
 
-            i++;
-            if (ttsEnabled) {
-                if (usePreGeneratedAudio) {
-                  playAudioForPart(currentIndex, i, showNextPart);
-                } else {
-                  speakText(part, showNextPart);
-                }
-              } else {
-                setTimeout(showNextPart, part.length * 60);
-              }
-              
+        currentPartIndex = 0;
+
+        // Step 2: Show each part (and optionally speak)
+
+
+        displayNextPart();
+
+    } else if (currentShortMainTextIndex == mainTexts.length) {
+        displaySubTextAndCTA()
+    }
+}
+
+function displayNextPart() {
+    console.log("Inside displayNextPart. currentPartIndex:", currentPartIndex, " parts.length:", parts.length );
+    if (currentPartIndex >= parts.length) {
+        currentShortMainTextIndex++;
+        displayNextMainText();
+        return;
+    }
+
+    const el = partElements[currentPartIndex];
+    el.style.opacity = 1;  // reveal smoothly
+    part = parts[currentPartIndex];
+    console.log("Part to display:", part, "ttsEnabled:", ttsEnabled, "usePreGeneratedAudio:", usePreGeneratedAudio);
+    //currentPartIndex++;
+    if (ttsEnabled) {
+        if (usePreGeneratedAudio) {
+            // playAudioForPart(currentShortIndex, currentPartIndex, displayNextPart);
+            playPreGeneratedAudio(currentShortIndex, currentPartIndex, () => {
+                currentPartIndex++;
+                setTimeout(displayNextPart, 300); // slight delay between parts
+            });
+        } else {
+            currentPartIndex++;
+            speakText(part, displayNextPart);
         }
-
-        showNextPart();
-
     } else {
-        // Show subText
-        if (subText) {
-            const subTextEl = document.createElement('p');
-            subTextEl.textContent = subText;
-            subTextEl.classList.add("fade-in-slide-Up");
-            mainTextEl.appendChild(subTextEl);
-        }
+        currentPartIndex++;
+        setTimeout(displayNextPart, part.length * 60);
+    }
 
-        // Show CTA
-        if (ctaText) {
-            setTimeout(() => {
-                const ctaEl = document.createElement('p');
-                ctaEl.textContent = ctaText;
-                ctaEl.classList.add("fade-in-slide-Up");
-                mainTextEl.appendChild(ctaEl);
-            }, 1000);
-        }
+}
+function displaySubTextAndCTA() {
+    console.log("Inside displaySubTextAndCTA. currentShortMainTextIndex:", currentShortMainTextIndex, " mainTexts.length:", mainTexts.length);
+    // Show subText
+    if (subText) {
+        //const subTextEl = document.createElement('p');
+        subTextEl.textContent = subText;
+        subTextEl.classList.add("fade-in-slide-Up");
+        // addVisibility(subTextEl, 10);
+        //mainTextEl.appendChild(subTextEl);
+    }
+
+    // Show CTA
+    if (ctaText) {
+        setTimeout(() => {
+            // const ctaTextEl = document.createElement('p');
+            ctaTextEl.textContent = ctaText;
+            ctaTextEl.classList.add("fade-in-slide-Up");
+            // addVisibility(ctaTextEl, 10);
+            // mainTextEl.appendChild(ctaEl);
+        }, 1000);
+    }
+
+    // Short fully loaded → Notify Puppeteer to start recording
+    triggerPuppeteerRecording(currentShortIndex);
+}
+
+function triggerPuppeteerRecording(shortIndex) {
+    console.log("Trigger recording for short:", shortIndex);
+    if (window.startRecording) {
+        window.startRecording(shortIndex);  // Puppeteer script will listen and start recording
     }
 }
 
@@ -387,75 +420,6 @@ function playAudioForPart(index, partIndex, onComplete) {
 }
 
 
-//DND - Working 
-function displayNextText_old() {
-    if (currentIndex < mainTexts.length) {
-
-        // Clear previous text element if it exists
-        mainTextEl.innerHTML = '';
-
-        let text = mainTexts[currentIndex];
-        let textElement = document.createElement('p');
-        let subTexts = text.split("^");
-        let prevText = "";
-        if (subTexts.length > 1) {
-            for (let i = 0; i < subTexts.length; i++) {
-                let subTextElement = document.createElement('p');
-                if (i > 0) {
-                    //subTextElement.className = "noDisplay";
-                    subTextElement.style.visibility = "hidden";
-                    addVisibility(subTextElement, prevText.length / 10);
-                }
-                subTextElement.textContent = subTexts[i];
-                subTextElement.classList.add("fade-in-slide-Up");
-                mainTextEl.appendChild(subTextElement);
-                prevText = prevText + subTexts[i];
-            }
-
-        } else {
-            textElement.textContent = text;
-        }
-        // Calculate duration based on text length (you can adjust the multiplier)
-        let durationMs = text.length * 100; // Example: 100ms per character
-
-        mainTextEl.appendChild(textElement);
-
-        if (currentIndex < mainTexts.length - 1) {
-            setTimeout(() => {
-                textElement.style.display = 'none';
-                currentIndex++;
-                displayNextText(); // Display the next text
-            }, durationMs);
-        }
-        // currentIndex++;
-    }
-}
-
-
-
-// function removeNoDisplayAfterSeconds(element, seconds) {
-//     setTimeout(() => {
-//         element.style.display = 'block';
-//     }, seconds * 1000);
-// }
-
-function addVisibilityClass(el, delay = 0) {
-    el.style.animationDelay = `${delay}s`;
-    el.classList.add("fade-in");
-  }
-
-  
-function addVisibility(element, seconds=0) {
-    setTimeout(() => {
-
-        // 🔹 Reset animation (remove & re-add class)
-        element.classList.remove("fade-in-slide-Up");
-        void element.offsetWidth;  // Trigger reflow to restart animation
-        element.classList.add("fade-in-slide-Up");
-        element.style.visibility = 'visible';
-    }, seconds * 1000);
-}
-
 function speakText(text, onComplete) {
     console.log("speakText called with text:", text);
     if (!window.speechSynthesis) return onComplete();
@@ -467,13 +431,14 @@ function speakText(text, onComplete) {
 }
 
 function readFromDummyInputData(selectedOption) {
+    console.log("Inside readFromDummyInputData. selectedOption:", selectedOption);
     const selectedData = dummyInputData[selectedOption];
     if (!selectedData) {
         console.error("Invalid selection");
         return null;
     }
 
-    const mainTexts = [];
+    mainTexts = [];
     for (let i = 0; i <= 10; i++) {
         const textValue = selectedData[`text${i}`];
         if (textValue !== undefined && textValue !== null && textValue !== "") {
@@ -489,14 +454,14 @@ function readFromDummyInputData(selectedOption) {
         ctaText: selectedData.ctaText || "",
         musicFile: selectedData.musicFile || "background_music/sample_music.mp3",
         musicVolume: parseFloat(selectedData.musicVolume) || 0.2,
-        backgroundVideo: "background_videos/" + selectedData.backgroundVideo  + ".mp4" || "background_videos/sample_bg.mp4",
+        backgroundVideo: "background_videos/" + selectedData.backgroundVideo + ".mp4" || "background_videos/sample_bg.mp4",
         ttsEnabled: selectedData.ttsEnabled || false
     };
 }
 
 // let data = getQueryParams();
-let data = readFromDummyInputData("1");
-showContent(data);
+//let data = readFromDummyInputData("1");
+//showContent(data);
 contentContainer = document.getElementById("contentContainer");
 contentContainer.classList.add(content_style);
 
@@ -528,3 +493,208 @@ fontFamily.addEventListener('change', () => {
     const selectedFont = fontFamily.value;
     document.body.style.fontFamily = selectedFont;
 });
+
+function loadShort(shortData, shortIndex) {
+    console.log("Inside loadShort. Loading shortData:", shortData);
+
+    currentShortIndex = shortIndex;
+    currentPartIndex = 0;
+    mainTexts = [];
+
+    titleEl.innerHTML = "";
+    mainTextEl.innerHTML = "";
+
+    if (shortData.title) {
+        titleEl.textContent = shortData.title;
+    }
+
+    subText = shortData.subText || "";
+    ctaText = shortData.ctaText || "";
+
+    for (let i = 1; i <= 10; i++) {
+        const textValue = shortData[`text${i}`];
+        if (textValue !== undefined && textValue !== null && textValue !== "") {
+            mainTexts.push(textValue);
+        }
+        // if (textPart) {
+        //     const parts = textPart.includes("^") ? textPart.split("^") : [textPart];
+        //     mainTexts.push(...parts);
+        // }
+    }
+
+    let bgVideoNme = shortData.backgroundVideo || "sample_bg";
+    let bgVideoSrc = "background_videos/" + bgVideoNme + ".mp4" 
+    bgVideo.src = decodeURIComponent(bgVideoSrc);
+    document.getElementById('bgVideo').load();
+
+    // Animate Title
+    if (shortData.title !== "") {
+        titleEl.textContent = shortData.title;
+        titleEl.style.padding = "10px";
+    } else {
+        titleEl.textContent = "";
+        titleEl.style.padding = "0px";
+    }
+
+    ttsEnabled = shortData.ttsEnabled || true;
+    currentShortMainTextIndex = 0;
+    displayNextMainText(); // Start displaying the first text
+
+}
+
+//DND - Not in use
+function loadAllShorts() {
+    // You would dynamically load from Excel later
+    // For now assume dummyInputData is already populated
+    totalShortsData = dummyInputData;
+    console.log("All shorts loaded. Proceeding with first");
+    if (totalShortsData.length > 0) {
+        loadShort(totalShortsData[0], 0);
+    }
+}
+
+async function loadShortsDataFromJsonFile() {
+    const response = await fetch('bulkShorts_input.json');
+    const data = await response.json();
+    totalShortsData = data;
+    if (totalShortsData.length > 0) {
+        loadShort(totalShortsData[1], 1);
+    }
+}
+
+function loadNextShort() {
+    currentShortIndex++;
+    if (currentShortIndex < totalShortsData.length) {
+        loadShort(totalShortsData[currentShortIndex], currentShortIndex);
+    } else {
+        console.log("All shorts processed!");
+    }
+}
+
+// Puppeteer can call this after each recording is done
+window.recordingFinished = function (shortIndex) {
+    console.log("Recording finished for short:", shortIndex);
+    loadNextShort();
+};
+
+// Load everything
+//document.addEventListener("DOMContentLoaded", loadAllShorts);
+//document.addEventListener("DOMContentLoaded", loadShortsDataFromJsonFile);
+
+document.getElementById('startOverlay').addEventListener('click', () => {
+    document.getElementById('startOverlay').style.display = 'none';
+    document.getElementById('shortsContainer').style.visibility = 'visible';
+    loadShortsDataFromJsonFile();  // Only start loading after interaction
+});
+
+//DND - Not in use
+//DND - Working 
+function displayNextShort_old() {
+    if (currentShortIndex < mainTexts.length) {
+
+        // Clear previous text element if it exists
+        mainTextEl.innerHTML = '';
+
+        let text = mainTexts[currentShortIndex];
+        let textElement = document.createElement('p');
+        let subTexts = text.split("^");
+        let prevText = "";
+        if (subTexts.length > 1) {
+            for (let i = 0; i < subTexts.length; i++) {
+                let subTextElement = document.createElement('p');
+                if (i > 0) {
+                    //subTextElement.className = "noDisplay";
+                    subTextElement.style.visibility = "hidden";
+                    addVisibility(subTextElement, prevText.length / 10);
+                }
+                subTextElement.textContent = subTexts[i];
+                subTextElement.classList.add("fade-in-slide-Up");
+                mainTextEl.appendChild(subTextElement);
+                prevText = prevText + subTexts[i];
+            }
+
+        } else {
+            textElement.textContent = text;
+        }
+        // Calculate duration based on text length (you can adjust the multiplier)
+        let durationMs = text.length * 100; // Example: 100ms per character
+
+        mainTextEl.appendChild(textElement);
+
+        if (currentShortIndex < mainTexts.length - 1) {
+            setTimeout(() => {
+                textElement.style.display = 'none';
+                currentShortIndex++;
+                displayNextMainText(); // Display the next text
+            }, durationMs);
+        }
+        // currentShortIndex++;
+    }
+}
+
+
+
+// function removeNoDisplayAfterSeconds(element, seconds) {
+//     setTimeout(() => {
+//         element.style.display = 'block';
+//     }, seconds * 1000);
+// }
+
+//DND - Not in use
+function splitTextIntoSpans(element, text, baseDelay = 1.5) {
+    element.innerHTML = "";
+    const words = text.split(" ");
+    words.forEach((word, index) => {
+        const span = document.createElement("span");
+        span.textContent = word;
+        element.appendChild(span);
+    });
+}
+
+//DND - Not in use
+function getQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+    const mainTexts = [];
+    for (let i = 1; i <= 10; i++) {
+        const textParam = params.get(`text${i}`);
+        if (textParam !== null) {
+            mainTexts.push(textParam);
+        } else {
+            //mainTexts.push(""); // Or you could choose to not push anything, depending on desired behavior
+        }
+    }
+
+    return {
+        templateType: params.get('templateType') || "Fact",
+        title: params.get('title') || "",
+        mainTexts: mainTexts,
+        subText: params.get('subText') || "",
+        ctaText: params.get('ctaText') || "",
+        musicFile: params.get('musicFile') || "background_music/sample_music.mp3",
+        musicVolume: parseFloat(params.get('musicVolume')) || 0.2,
+        backgroundVideo: params.get('backgroundVideo') || "background_videos/sample_bg.mp4"
+    };
+}
+
+//NOT IN USE
+// This function is not used in the current code but is kept for reference
+function addVisibilityClass(el, delay = 0) {
+    console.log("Adding visibility class with delay:", delay);
+    el.style.animationDelay = `${delay}s`;
+    el.classList.add("fade-in");
+}
+
+//Not in use
+// This function is not used in the current code but is kept for reference  
+function addVisibility(element, seconds = 0) {
+    console.log("Inside addVisibility");
+
+    setTimeout(() => {
+
+        // 🔹 Reset animation (remove & re-add class)
+        element.classList.remove("fade-in-slide-Up");
+        void element.offsetWidth;  // Trigger reflow to restart animation
+        element.classList.add("fade-in-slide-Up");
+        element.style.visibility = 'visible';
+    }, seconds * 1000);
+}
