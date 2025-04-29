@@ -16,6 +16,44 @@ df = pd.read_excel(input_excel_file)
 # Columns expected in Excel: title, text1, text2, ..., text10, subText, ctaText
 
 def prepare_text_for_tts(text):
+    if not text:
+        return ""
+
+    # Remove emojis and known special Unicode codes
+    emoji_pattern = re.compile(
+        "["
+        u"\U0001F600-\U0001F64F"  # emoticons
+        u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+        u"\U0001F680-\U0001F6FF"  # transport & map
+        u"\U0001F1E0-\U0001F1FF"  # flags
+        u"\u2600-\u26FF"          # miscellaneous symbols (☀️, ⏰)
+        u"\u2700-\u27BF"          # dingbats
+        u"\U0001F900-\U0001F9FF"  # supplemental symbols
+        u"\U0001FA70-\U0001FAFF"  # extended pictographs
+        u"\u200d"                 # zero width joiner
+        u"\ufe0f"                 # variation selectors
+        u"\u23cf"                 # eject symbol
+        u"\u23e9"                 # fast forward symbol
+        u"\u231a"                 # watch symbol
+        u"\u3030"                 # wavy dash
+        "]+", flags=re.UNICODE
+    )
+    cleaned = emoji_pattern.sub(r'', text)
+
+    # Remove leftover non-word junk except basic punctuation
+    cleaned = re.sub(r"[^a-zA-Z0-9.,!?\\-'\"\\s]", '', cleaned)
+
+    # Normalize spaces
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+
+    # Add full stop if missing
+    if cleaned and cleaned[-1] not in {'.', '!', '?'}:
+        cleaned += '.'
+
+    return cleaned
+
+#DND - Not in use - was partially working
+def prepare_text_for_tts_old(text):
     # Remove emojis first
     emoji_pattern = re.compile(
         "["  
@@ -86,7 +124,19 @@ def create_json_file():
     df = pd.read_excel('bulkShorts_input.xlsx')
     df.to_json('bulkShorts_input.json', orient='records', force_ascii=False, indent=2)
     print("\n✅ Json file generated successfully!")
-    
+
+def create_adhoc_audio_file(cleaned_text, filename):
+    output_filename = os.path.join(audio_output_folder, filename)   
+
+    get_audio_file(
+        text=cleaned_text,
+        audio_file_name=output_filename,
+        tts_engine="google",
+        language="english",
+        gender="Male",
+        type="journey"
+    )
 if __name__ == "__main__":
     create_audio_files()
     create_json_file()
+    # create_adhoc_audio_file("Keep going.", "short_4_2b.mp3")

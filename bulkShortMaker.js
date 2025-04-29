@@ -568,14 +568,15 @@ function loadAllShorts() {
     }
 }
 
-async function loadShortsDataFromJsonFile() {
+async function loadShortsDataFromJsonFile(shortIndexToLoad = 0) {
     const response = await fetch('bulkShorts_input.json');
     const data = await response.json();
     totalShortsData = data;
     if (totalShortsData.length > 0) {
-        loadShort(totalShortsData[2], 2);
+        loadShort(totalShortsData[shortIndexToLoad], shortIndexToLoad);
     }
 }
+
 
 function loadNextShort() {
     currentShortIndex++;
@@ -596,12 +597,25 @@ window.recordingFinished = function (shortIndex) {
 //document.addEventListener("DOMContentLoaded", loadAllShorts);
 //document.addEventListener("DOMContentLoaded", loadShortsDataFromJsonFile);
 
+// document.addEventListener("DOMContentLoaded", async () => {
+//     const params = new URLSearchParams(window.location.search);
+//     const shortIndex = parseInt(params.get('shortIndex')) || 0;
+//     await loadShortsDataFromJsonFile(shortIndex);
+// });
+
 document.getElementById('startOverlay').addEventListener('click', () => {
     document.getElementById('startOverlay').style.display = 'none';
     document.getElementById('shortsContainer').style.visibility = 'visible';
-    loadShortsDataFromJsonFile();  // Only start loading after interaction
+    const params = new URLSearchParams(window.location.search);
+    const shortIndex = parseInt(params.get('shortIndex')) || 0;
+    loadShortsDataFromJsonFile(shortIndex);  // Only start loading after interaction
 });
 
+document.getElementById('stopMusic').addEventListener('click', () => {
+    console.log("Stop music clicked");
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+});
 //DND - Not in use
 //DND - Working 
 function displayNextShort_old() {
