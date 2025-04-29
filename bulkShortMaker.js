@@ -1,4 +1,4 @@
-let content_style = "content_style2";
+let content_style = "style2_upper_center_up";
 let textStyleDropdown = document.getElementById("textStyle");
 let loadDataDropdown = document.getElementById("loadData");
 const fontFamily = document.getElementById('fontFamily');
@@ -483,6 +483,14 @@ backgroundStyle.addEventListener("change", () => {
 
 });
 
+backgroundSound.addEventListener("change", () => {
+    let audioSrc = "sounds/" + backgroundSound.value + ".mp3";
+    bgMusic.src = audioSrc;
+    bgMusic.volume = 0.02;
+    bgMusic.play().catch(e => console.log('Music autoplay blocked'));
+
+});
+
 loadDataDropdown.addEventListener("change", () => {
     const selectedOption = loadDataDropdown.value;
     data = readFromDummyInputData(selectedOption);
@@ -527,6 +535,13 @@ function loadShort(shortData, shortIndex) {
     bgVideo.src = decodeURIComponent(bgVideoSrc);
     document.getElementById('bgVideo').load();
 
+    let audioName = shortData.musicFile || "piano-2";
+    let audioSrc = "sounds/" + audioName + ".mp3";
+    bgMusic.src = audioSrc;
+    bgMusic.volume = 0.02;
+    bgMusic.play().catch(e => console.log('Music autoplay blocked'));
+    
+    
     // Animate Title
     if (shortData.title !== "") {
         titleEl.textContent = shortData.title;
@@ -558,7 +573,7 @@ async function loadShortsDataFromJsonFile() {
     const data = await response.json();
     totalShortsData = data;
     if (totalShortsData.length > 0) {
-        loadShort(totalShortsData[1], 1);
+        loadShort(totalShortsData[2], 2);
     }
 }
 
