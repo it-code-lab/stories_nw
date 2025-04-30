@@ -1,22 +1,64 @@
-// puppeteer-bulkshorts-recorder.js
+const puppeteer = require("puppeteer");
+const { spawn } = require("child_process");
+const path = require("path");
+const fs = require("fs");
 
-const puppeteer = require('puppeteer');
-const fs = require('fs');
-const path = require('path');
+// Commands to run this code : DND
+// REF: https://gemini.google.com/app/c90e2976f214a9fe
+// //Command Line
+// node puppeteer-recorder.js captured_video.mp4 10 landscape 5 style2 story-classical-3-710.mp3 0.05 1
 
-async function recordShort(shortIndex, outputPath) {
+// //Python Code
+// import subprocess
+
+// subprocess.run([
+//     "node", "puppeteer-recorder.js",
+//     "captured_video.mp4", "10", "portrait", "4", "style1", "story-classical-3-710.mp3", "0.05", "1"
+// ])
+
+
+// Extract arguments from command line
+const [,, shortIndex, outputPath, recordingDuration] = process.argv;
+
+if (!outputPath) {
+    console.error("❌ Please provide at least the output file name as the first argument.");
+    process.exit(1);
+}
+
+const isLandscape = false;
+const width = isLandscape ? 1280 : 720;
+const height = isLandscape ? 720 : 1280;
+const captureWidth = isLandscape ? 1664 : 540;
+const captureHeight = isLandscape ? 936 : 960;
+const offsetX = isLandscape ? 12 : 0;           //605 for middle
+const offsetY = isLandscape ? 130 : 130;
+
+(async () => {
+    const videoUrl = `http://localhost:8080/bulkShortMaker.html?shortIndex=${shortIndex}`;
+    //const recordingDuration = 10; // seconds
+
     const browser = await puppeteer.launch({
         headless: false,
-        defaultViewport: { width: 1080, height: 1920 },
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        defaultViewport: { width, height },
+        args: [
+            '--start-maximized',
+            '--autoplay-policy=no-user-gesture-required'
+        ]
     });
 
-    const page = await browser.newPage();
-    
-    const shortUrl = `http://localhost:8080/bulkShortMaker.html?shortIndex=${shortIndex}`;
-    console.log(`Opening ${shortUrl}`);
+    const [page] = await browser.pages();
 
-    await page.goto(shortUrl);
+    // ✅ Capture browser console logs
+    // page.on('console', msg => {
+    // const args = msg.args();
+    // Promise.all(args.map(arg => arg.jsonValue())).then(values => {
+    //             console.log(`🧠 Browser log:`, ...values);
+    // });
+    // });    
+    await page.goto(videoUrl);
+
+    // console.log("✅ Browser opened. Waiting for video to load...");
+    // await page.waitForSelector("video");
 
     // Wait for user interaction simulation if needed
     await page.evaluate(() => {
@@ -25,66 +67,121 @@ async function recordShort(shortIndex, outputPath) {
             overlay.click();
         }
     });
+ 
+    const ffmpeg = spawn("ffmpeg", [
+        "-y",
+        "-f", "gdigrab",
+        "-framerate", "18",
+        "-offset_x", offsetX,
+        "-offset_y", offsetY,
+        "-video_size", `${captureWidth}x${captureHeight}`,
+        "-i", "desktop",
 
-    // Wait for page and animations to complete
-    await page.waitForTimeout(1000);
+        "-f", "dshow",
+        "-i", "audio=Stereo Mix (Realtek(R) Audio)",
 
-    const client = await page.target().createCDPSession();
-    await client.send('Page.enable');
-    const { windowId } = await client.send('Browser.getWindowForTarget');
+        "-af", "adelay=400|400", // Add 1000ms delay to audio stream(s)
+        "-c:v", "libx264",
+        "-c:a", "aac",
+        "-b:a", "192k",
+        "-preset", "ultrafast",
+        "-async", "1",
+        "-vsync", "cfr", // Add this
+        "-t", `${recordingDuration}`,
+        "-pix_fmt", "yuv420p",
+        outputPath
+    ]);
 
-    // Start recording
-    await client.send('Page.startScreencast', {
-        format: 'png',
-        quality: 100,
-        maxWidth: 1080,
-        maxHeight: 1920,
-        everyNthFrame: 1
+    await new Promise(resolve => setTimeout(resolve, 2500)); // give FFmpeg time to initialize
+
+
+    // await page.evaluate(() => {
+    //     const video = document.querySelector("video");
+    //     video.play();
+    // });
+    // ffmpeg.stderr.on("data", (data) => {
+    //     console.log("FFmpeg:", data.toString());
+    // });
+
+    // ffmpeg.on("close", async () => {
+    //     console.log(`✅ Recording complete: ${outputPath}`);
+    //     await browser.close();
+    // });
+    let ffmpegReady = false;
+    let ffmpegReadyTime;
+    const ffmpegPromise = new Promise((resolve, reject) => {
+        ffmpeg.stderr.on("data", (data) => {
+            const output = data.toString();
+            console.log("FFmpeg:", output); // Log all output for debugging
+
+            // Check for a line indicating encoding has started
+            // Common patterns include "frame=", "time=", "size="
+            // Adjust this pattern if needed based on your FFmpeg version/output
+            if (!ffmpegReady && output.includes('frame=') || output.includes('time=')) {
+                console.log("✅ FFmpeg seems to have started recording.");
+                ffmpegReady = true;
+                ffmpegReadyTime = Date.now();
+                resolve(); // Signal that FFmpeg is ready
+            }
+        });
+
+        ffmpeg.on("error", (err) => {
+            console.error("❌ FFmpeg error:", err);
+            if (!ffmpegReady) reject(err); // Reject if error occurs before ready
+        });
+
+        ffmpeg.on("close", (code) => {
+             console.log(`✅ FFmpeg process closed with code ${code}`);
+             // If FFmpeg closes before we thought it was ready, reject
+             if (!ffmpegReady) {
+                 reject(new Error(`FFmpeg closed unexpectedly (code ${code}) before indicating readiness.`));
+             }
+             // The main recording completion logic is outside this specific promise
+        });
+
+        // Add a timeout in case FFmpeg never outputs the expected message
+        setTimeout(() => {
+             if (!ffmpegReady) {
+                 reject(new Error("FFmpeg readiness timeout: Did not detect start message."));
+             }
+        }, 10000); // 10 second timeout - adjust as needed
     });
 
-    const frames = [];
+    let whiteScreenDuration = 1.2;
 
-    client.on('Page.screencastFrame', async (frame) => {
-        frames.push(frame.data);
-        await client.send('Page.screencastFrameAck', { sessionId: frame.sessionId });
+    // The existing ffmpeg.on("close", ...) handler for final cleanup remains
+    // Note: The 'close' event might fire *after* the main script flow continues
+    // if recording finishes successfully. Ensure browser.close() is handled correctly.
+
+    // Refined close handler (ensure it's only defined once)
+    ffmpeg.removeAllListeners('close'); // Remove potential listener added in the promise setup
+    ffmpeg.on('close', async (code) => {
+        console.log(`✅ Recording complete. FFmpeg exited with code ${code}. Output: ${outputPath}`);
+
+        // Trim the white/mute part using ffmpeg -ss
+        const trimmedOutput = outputPath.replace(".mp4", "_trimmed.mp4");
+        const trim = spawn("ffmpeg", [
+                    "-y",
+                    "-ss", whiteScreenDuration.toFixed(2),
+                    "-i", outputPath,
+                    "-c", "copy",
+                    trimmedOutput
+        ]);
+
+        trim.stderr.on("data", (data) => {
+                    console.log("FFmpeg Trim:", data.toString());
+        });
+
+        trim.on("close", (code) => {
+                    if (code === 0) {
+                            fs.renameSync(trimmedOutput, outputPath);
+                            console.log(`✂️ Trimmed video saved as ${outputPath}`);
+                    } else {
+                            console.error("❌ Trimming failed with code", code);
+                    }
+        });
+        await browser.close();
+        console.log("✅ Browser closed.");
+        
     });
-
-    // Record for 20 seconds (adjust as needed)
-    await page.waitForTimeout(recordingDuration * 1000);
-
-    await client.send('Page.stopScreencast');
-    await browser.close();
-
-    // Save frames as video using ffmpeg (alternative: write raw images)
-    const tempFolder = path.join(__dirname, 'temp_frames', `short_${shortIndex}`);
-    fs.mkdirSync(tempFolder, { recursive: true });
-
-    frames.forEach((frame, idx) => {
-        const filePath = path.join(tempFolder, `frame_${String(idx).padStart(5, '0')}.png`);
-        fs.writeFileSync(filePath, Buffer.from(frame, 'base64'));
-    });
-
-    // Run ffmpeg to convert frames to video
-    const { execSync } = require('child_process');
-
-    const ffmpegCmd = `ffmpeg -r 30 -i ${tempFolder}/frame_%05d.png -vcodec libx264 -pix_fmt yuv420p -y ${outputPath}`;
-
-    console.log(`Running: ${ffmpegCmd}`);
-    execSync(ffmpegCmd, { stdio: 'inherit' });
-
-    // Cleanup temp frames
-    fs.rmSync(tempFolder, { recursive: true, force: true });
-
-    console.log(`🎬 Short ${shortIndex} recorded successfully at ${outputPath}`);
-}
-
-(async () => {
-    const args = process.argv.slice(2);
-    if (args.length < 2) {
-        console.error('Usage: node puppeteer-recorder.js <shortIndex> <outputPath>');
-        process.exit(1);
-    }
-    const [shortIndex, outputPath, recordingDuration] = args;
-
-    await recordShort(shortIndex, outputPath);
 })();

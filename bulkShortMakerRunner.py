@@ -54,14 +54,14 @@ def save_details_in_excel(video_path, title, description, tags, playlist):
         "YTShorts",
         video_path,
         description,
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
+        title,  #playlist
+        '',# title,
+        '', # description,
+        '', # tags,
+        '', # channel name,
+        title, # video is about,
+        '', #  made for kids,
+        '', # schedule date,
         'Pending',
         datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         ''
@@ -98,6 +98,9 @@ def main():
     setup_excel()
 
     for idx, short in enumerate(shorts_data):
+        # if idx > 1:
+        #     break
+
         print(f"\n▶️ Recording short {idx + 1}/{len(shorts_data)}")
 
         output_video_name = f"{OUTPUT_FOLDER}/short_{idx}.mp4"
@@ -105,13 +108,13 @@ def main():
         # output_video_name = f"short_{idx}.mp4"
 
         audio_duration = get_total_audio_duration(idx)
-        buffer_seconds = 4  # or 5, depending on your subtext time
+        buffer_seconds = 8  # or 5, depending on your subtext time
 
         recording_duration = audio_duration + buffer_seconds
 
         # Build Puppeteer command
         cmd = [
-            "node", "puppeteer-recorder.js",
+            "node", "puppeteer-bulkshorts-recorder.js",
             str(idx), str(output_video_name), str(recording_duration)
         ]
 

@@ -260,49 +260,6 @@ function isMostlyCorrupted(text) {
     return corruptionRatio > 0.5;  // If >50% characters are weird, consider it bad
 }
 
-function showContent(data) {
-    console.log("showContent called with data:", data);
-
-
-    // Set video and music********DND**********
-    // bgMusic.src = decodeURIComponent(data.musicFile);
-    // bgMusic.volume = data.musicVolume;
-    // bgMusic.play().catch(e => console.log('Music autoplay blocked'));
-
-    bgVideo.src = decodeURIComponent(data.backgroundVideo);
-    document.getElementById('bgVideo').load();
-
-    // Animate Title
-    if (data.title !== "") {
-        titleEl.textContent = decodeURIComponent(data.title);
-        titleEl.style.padding = "10px";
-    } else {
-        titleEl.textContent = "";
-        titleEl.style.padding = "0px";
-    }
-
-    // Animate MainText blocks sequentially
-    mainTexts = data.mainTexts;
-    ttsEnabled = data.ttsEnabled;
-    let totalTextLength = 0;
-    for (let i = 0; i < mainTexts.length; i++) {
-        totalTextLength += mainTexts[i].length;
-    }
-    currentShortIndex = 0;
-    currentShortMainTextIndex = 0;
-    mainTextEl.innerHTML = ''; // Clear previous content
-    displayNextMainText(); // Start displaying the first text
-
-    subTextEl.textContent = decodeURIComponent(data.subText);
-    subTextEl.style.visibility = "hidden";
-    addVisibility(subTextEl, totalTextLength / 10);
-
-    // CTA and Subscribe
-    ctaTextEl.textContent = decodeURIComponent(data.ctaText);
-    ctaTextEl.style.visibility = "hidden";
-    addVisibility(ctaTextEl, (totalTextLength / 10) + 1);
-}
-
 
 function displayNextMainText() {
     console.log("=======Inside displayNextMainText======",currentShortMainTextIndex);
@@ -395,15 +352,10 @@ function displaySubTextAndCTA() {
     }
 
     // Short fully loaded → Notify Puppeteer to start recording
-    triggerPuppeteerRecording(currentShortIndex);
+    //triggerPuppeteerRecording(currentShortIndex);
 }
 
-function triggerPuppeteerRecording(shortIndex) {
-    console.log("Trigger recording for short:", shortIndex);
-    if (window.startRecording) {
-        window.startRecording(shortIndex);  // Puppeteer script will listen and start recording
-    }
-}
+
 
 function playAudioForPart(index, partIndex, onComplete) {
     const audio = new Audio(`${preGeneratedAudioFolder}/audio_${index}_${partIndex}.mp3`);
@@ -553,7 +505,10 @@ function loadShort(shortData, shortIndex) {
 
     ttsEnabled = shortData.ttsEnabled || true;
     currentShortMainTextIndex = 0;
-    displayNextMainText(); // Start displaying the first text
+    setTimeout(() => {
+        displayNextMainText(); // Start displaying the first text
+    }, 4000);
+    
 
 }
 
@@ -608,7 +563,8 @@ document.getElementById('startOverlay').addEventListener('click', () => {
     document.getElementById('shortsContainer').style.visibility = 'visible';
     const params = new URLSearchParams(window.location.search);
     const shortIndex = parseInt(params.get('shortIndex')) || 0;
-    loadShortsDataFromJsonFile(shortIndex);  // Only start loading after interaction
+    loadShortsDataFromJsonFile(shortIndex);  
+    
 });
 
 document.getElementById('stopMusic').addEventListener('click', () => {
@@ -726,4 +682,57 @@ function addVisibility(element, seconds = 0) {
         element.classList.add("fade-in-slide-Up");
         element.style.visibility = 'visible';
     }, seconds * 1000);
+}
+
+//Not used in batch processing
+function showContent(data) {
+    console.log("showContent called with data:", data);
+
+
+    // Set video and music********DND**********
+    // bgMusic.src = decodeURIComponent(data.musicFile);
+    // bgMusic.volume = data.musicVolume;
+    // bgMusic.play().catch(e => console.log('Music autoplay blocked'));
+
+    bgVideo.src = decodeURIComponent(data.backgroundVideo);
+    document.getElementById('bgVideo').load();
+
+    // Animate Title
+    if (data.title !== "") {
+        titleEl.textContent = decodeURIComponent(data.title);
+        titleEl.style.padding = "10px";
+    } else {
+        titleEl.textContent = "";
+        titleEl.style.padding = "0px";
+    }
+
+    // Animate MainText blocks sequentially
+    mainTexts = data.mainTexts;
+    ttsEnabled = data.ttsEnabled;
+    let totalTextLength = 0;
+    for (let i = 0; i < mainTexts.length; i++) {
+        totalTextLength += mainTexts[i].length;
+    }
+    currentShortIndex = 0;
+    currentShortMainTextIndex = 0;
+    mainTextEl.innerHTML = ''; // Clear previous content
+    displayNextMainText(); // Start displaying the first text
+
+    subTextEl.textContent = decodeURIComponent(data.subText);
+    subTextEl.style.visibility = "hidden";
+    addVisibility(subTextEl, totalTextLength / 10);
+
+    // CTA and Subscribe
+    ctaTextEl.textContent = decodeURIComponent(data.ctaText);
+    ctaTextEl.style.visibility = "hidden";
+    addVisibility(ctaTextEl, (totalTextLength / 10) + 1);
+}
+
+//Not in use
+// This function is not used in the current code but is kept for reference
+function triggerPuppeteerRecording(shortIndex) {
+    console.log("Trigger recording for short:", shortIndex);
+    if (window.startRecording) {
+        window.startRecording(shortIndex);  // Puppeteer script will listen and start recording
+    }
 }
