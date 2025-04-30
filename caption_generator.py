@@ -287,6 +287,8 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
 
     print(f"Headings & List Item Timings saved to: {output_file_path}")
     
+    save_details_in_excel(captions_data, url, base_file_name)
+
     #DND - Working but not in use
     #save_details_in_csv(captions_data, url, base_file_name)
 
