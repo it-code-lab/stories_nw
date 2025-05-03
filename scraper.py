@@ -24,6 +24,7 @@ from pydub import AudioSegment
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
 from moviepy.video.fx.resize import resize
+import pandas as pd
 
 def clear_folders():
     shutil.rmtree("audios", ignore_errors=True)
@@ -45,10 +46,11 @@ def clean_text(text):
 
 
 
-def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
+def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
                        selected_voice, language, gender, tts_engine, skip_puppeteer):
-    if not urls or selected_size not in sizes or selected_music not in background_music_options:
-        raise ValueError("Invalid input parameters")
+    if excel_var == "no":
+        if not urls or selected_size not in sizes or selected_music not in background_music_options:
+            raise ValueError("Invalid input parameters")
 
     clear_folders()
 
@@ -60,103 +62,228 @@ def scrape_and_process(urls, selected_size, selected_music, max_words, fontsize,
     output_folder = "processed_videos"
     os.makedirs(output_folder, exist_ok=True)
 
-    for url in urls.split(";"):
-        url = url.strip()
-        if not url:
-            continue
+    if excel_var == "no":
+        for url in urls.split(";"):
+            url = url.strip()
+            if not url:
+                continue
 
-        try:
-            base_file_name = Path(url).name
-            base_file_name = Path(url).name
-            base_file_name = re.sub(r'[<>:"/\\\\|?*]', '', base_file_name)  # Remove file-unsafe chars
-            base_file_name = re.sub(r'[^a-zA-Z0-9_-]', '_', base_file_name)  # Replace special chars with underscore
+            try:
+                base_file_name = Path(url).name
+                base_file_name = Path(url).name
+                base_file_name = re.sub(r'[<>:"/\\\\|?*]', '', base_file_name)  # Remove file-unsafe chars
+                base_file_name = re.sub(r'[^a-zA-Z0-9_-]', '_', base_file_name)  # Replace special chars with underscore
 
-            results = scrape_page_with_camera_frame(url)
-            create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
-            
-            output_file = "composed_video.mp4"
-            #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
-            #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
-            prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name)
-
-            #try:
-                #video_clip = VideoFileClip("output_video.mp4")
-
-                #DND - Temporarily disabled - as Gif is being added thru Mango as part of effects addition
-                # final_video = add_gif_to_video(
-                #     video_clip, 5, icon_path="gif_files/subscribe.gif"
-                # )
-
-                #SM - DND - Temporarily disabled - as Gif is being added thru HTML
-                # video_clip.write_videofile(
-                #     "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
-                # )
-
-                # output_file = "output_video_with_gif.mp4"
-            #except Exception as e:
-                #print("Error adding gif. Proceeding without gif")
-                #output_file = "output_video.mp4"
-
-            video = VideoFileClip(output_file)
-            duration_seconds = video.duration
-            duration_buffer = 3.5  # Buffer time for video processing
-            if selected_size == "YouTube Shorts":               
+                results = scrape_page_with_camera_frame(url)
+                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
                 
-                duration_minutes = video.duration / 60
+                output_file = "composed_video.mp4"
+                #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
+                #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
+                prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name, language,story_text="")
 
-                if duration_minutes > 3:
-                    print(f"Video duration {duration_minutes:.2f} minutes. Splitting required.")
-                    split_files = split_video(output_file, video.duration, max_duration=130)  # 2m 10s
-                    for idx, split_file in enumerate(split_files, start=1):
-                        split_output_name = f"{output_folder}/{base_file_name}-{idx}.mp4"
-                        #safe_copy(split_file, split_output_name)
-                        shutil.copyfile(split_file, output_file)
-                        duration_seconds = split_file.duration
+                #try:
+                    #video_clip = VideoFileClip("output_video.mp4")
+
+                    #DND - Temporarily disabled - as Gif is being added thru Mango as part of effects addition
+                    # final_video = add_gif_to_video(
+                    #     video_clip, 5, icon_path="gif_files/subscribe.gif"
+                    # )
+
+                    #SM - DND - Temporarily disabled - as Gif is being added thru HTML
+                    # video_clip.write_videofile(
+                    #     "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
+                    # )
+
+                    # output_file = "output_video_with_gif.mp4"
+                #except Exception as e:
+                    #print("Error adding gif. Proceeding without gif")
+                    #output_file = "output_video.mp4"
+
+                video = VideoFileClip(output_file)
+                duration_seconds = video.duration
+                duration_buffer = 3.5  # Buffer time for video processing
+                if selected_size == "YouTube Shorts":               
+                    
+                    duration_minutes = video.duration / 60
+
+                    if duration_minutes > 3:
+                        print(f"Video duration {duration_minutes:.2f} minutes. Splitting required.")
+                        split_files = split_video(output_file, video.duration, max_duration=130)  # 2m 10s
+                        for idx, split_file in enumerate(split_files, start=1):
+                            split_output_name = f"{output_folder}/{base_file_name}-{idx}.mp4"
+                            #safe_copy(split_file, split_output_name)
+                            shutil.copyfile(split_file, output_file)
+                            duration_seconds = split_file.duration
+                            duration_seconds = duration_seconds + duration_buffer
+                            cmd = [
+                                "node", "puppeteer-recorder.js",
+                                split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                                selected_music, "0.05", "1"
+                            ]
+                            print("▶️ Running Puppeteer with:", cmd)
+                            if skip_puppeteer == "no":
+                                subprocess.run(cmd)
+
+                    else:
+                        print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
+                        output_name = f"{output_folder}/{base_file_name}.mp4"
                         duration_seconds = duration_seconds + duration_buffer
                         cmd = [
                             "node", "puppeteer-recorder.js",
-                            split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                            output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
                             selected_music, "0.05", "1"
                         ]
                         print("▶️ Running Puppeteer with:", cmd)
                         if skip_puppeteer == "no":
                             subprocess.run(cmd)
 
+                        #SM-DND
+                        #safe_copy(output_file, output_name)
                 else:
-                    print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
                     output_name = f"{output_folder}/{base_file_name}.mp4"
                     duration_seconds = duration_seconds + duration_buffer
+                    #SM-DND
+                    #safe_copy(output_file, output_name)
                     cmd = [
                         "node", "puppeteer-recorder.js",
-                        output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                        output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
                         selected_music, "0.05", "1"
                     ]
                     print("▶️ Running Puppeteer with:", cmd)
                     if skip_puppeteer == "no":
                         subprocess.run(cmd)
 
+                print(f"Processing complete for {url}")
+
+            except Exception as e:
+                print(f"Error processing {url}: {e.with_traceback}. Proceeding to next")
+                traceback.print_exc()
+
+    if excel_var == "yes":
+       input_excel_file = "video_story_input.xlsx"
+       df = pd.read_excel(input_excel_file)
+
+       # Clean column names
+       df.columns = df.columns.str.strip()
+       print("Columns in Excel file:")
+       print(df.columns.tolist())
+
+       for short_idx, row in df.iterrows():
+            print(f"\nProcessing excel row #{short_idx}")
+            title = row.get("title")
+            background_video_src = row.get("background_video_src")
+            story = row.get("story")
+
+            try:
+                base_file_name = title
+
+                elements = []
+                elements.append({
+                    "type": "text",
+                    "text": story,
+                    "audio": None,
+                    "image": None,
+                    "camera_frame": None
+                })
+
+                video_data = {
+                    "type": "video",
+                    "text": None,
+                    "audio": None,
+                    "video": background_video_src,
+                    "vid_duration": "",
+                    "avatar_flag": "n",
+                    "local_video_flag": "y"
+                }
+                elements.append(video_data)
+
+                results = elements
+                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
+                
+                output_file = "composed_video.mp4"
+                url = title
+                #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
+                #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
+                prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text=story)
+
+                #try:
+                    #video_clip = VideoFileClip("output_video.mp4")
+
+                    #DND - Temporarily disabled - as Gif is being added thru Mango as part of effects addition
+                    # final_video = add_gif_to_video(
+                    #     video_clip, 5, icon_path="gif_files/subscribe.gif"
+                    # )
+
+                    #SM - DND - Temporarily disabled - as Gif is being added thru HTML
+                    # video_clip.write_videofile(
+                    #     "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
+                    # )
+
+                    # output_file = "output_video_with_gif.mp4"
+                #except Exception as e:
+                    #print("Error adding gif. Proceeding without gif")
+                    #output_file = "output_video.mp4"
+
+                video = VideoFileClip(output_file)
+                duration_seconds = video.duration
+                duration_buffer = 3.5  # Buffer time for video processing
+                if selected_size == "YouTube Shorts":               
+                    
+                    duration_minutes = video.duration / 60
+
+                    if duration_minutes > 3:
+                        print(f"Video duration {duration_minutes:.2f} minutes. Splitting required.")
+                        split_files = split_video(output_file, video.duration, max_duration=130)  # 2m 10s
+                        for idx, split_file in enumerate(split_files, start=1):
+                            split_output_name = f"{output_folder}/{base_file_name}-{idx}.mp4"
+                            #safe_copy(split_file, split_output_name)
+                            shutil.copyfile(split_file, output_file)
+                            duration_seconds = split_file.duration
+                            duration_seconds = duration_seconds + duration_buffer
+                            cmd = [
+                                "node", "puppeteer-recorder.js",
+                                split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                                selected_music, "0.05", "1"
+                            ]
+                            print("▶️ Running Puppeteer with:", cmd)
+                            if skip_puppeteer == "no":
+                                subprocess.run(cmd)
+
+                    else:
+                        print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
+                        output_name = f"{output_folder}/{base_file_name}.mp4"
+                        duration_seconds = duration_seconds + duration_buffer
+                        cmd = [
+                            "node", "puppeteer-recorder.js",
+                            output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                            selected_music, "0.05", "1"
+                        ]
+                        print("▶️ Running Puppeteer with:", cmd)
+                        if skip_puppeteer == "no":
+                            subprocess.run(cmd)
+
+                        #SM-DND
+                        #safe_copy(output_file, output_name)
+                else:
+                    output_name = f"{output_folder}/{base_file_name}.mp4"
+                    duration_seconds = duration_seconds + duration_buffer
                     #SM-DND
                     #safe_copy(output_file, output_name)
-            else:
-                output_name = f"{output_folder}/{base_file_name}.mp4"
-                duration_seconds = duration_seconds + duration_buffer
-                #SM-DND
-                #safe_copy(output_file, output_name)
-                cmd = [
-                    "node", "puppeteer-recorder.js",
-                    output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
-                    selected_music, "0.05", "1"
-                ]
-                print("▶️ Running Puppeteer with:", cmd)
-                if skip_puppeteer == "no":
-                    subprocess.run(cmd)
+                    cmd = [
+                        "node", "puppeteer-recorder.js",
+                        output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
+                        selected_music, "0.05", "1"
+                    ]
+                    print("▶️ Running Puppeteer with:", cmd)
+                    if skip_puppeteer == "no":
+                        subprocess.run(cmd)
 
-            print(f"Processing complete for {url}")
+                print(f"Processing complete for {url}")
 
-        except Exception as e:
-            print(f"Error processing {url}: {e.with_traceback}. Proceeding to next")
-            traceback.print_exc()
-
+            except Exception as e:
+                print(f"Error processing {url}: {e.with_traceback}. Proceeding to next")
+                traceback.print_exc()
 
 
 def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video" ):
@@ -262,8 +389,13 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                 # Define a small buffer in seconds (e.g., 0.1 seconds)
                 BUFFER_DURATION = 0.0
                 avatar_flag = element["avatar_flag"]
+                local_video_flag = element.get("local_video_flag", "n")  # Default is 'n'
 
-                video_path = download_file(element["video"])
+                if local_video_flag == 'y':
+                    video_path = element["video"]  # Treat it as local file path
+                else:
+                    video_path = download_file(element["video"])
+
                 video_clip = VideoFileClip(video_path).without_audio()
 
                 # Resize the video clip to the target resolution
@@ -284,7 +416,13 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                     except ValueError:
                         print(f"Warning: Unable to convert vid_duration ('{vid_duration}') to float. Skipping.")
 
+                if local_video_flag == 'y':
+                    if video_clip.duration < combined_audio_duration:
+                        num_loops = int(combined_audio_duration // video_clip.duration) + 1
+                        repeated_clips = [video_clip] * num_loops
+                        video_clip = concatenate_videoclips(repeated_clips).subclip(0, combined_audio_duration + BUFFER_DURATION)
 
+                
                 # Clip video if it's longer than the combined audio duration
                 if video_clip.duration > combined_audio_duration:
                     video_clip = video_clip.subclip(0, combined_audio_duration + BUFFER_DURATION)

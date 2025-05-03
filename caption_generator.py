@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
 import re
 import difflib
@@ -21,14 +24,19 @@ def extract_audio(video_path, audio_path):
     video.audio.write_audiofile(audio_path)
 
 # Normalize Text with Enhanced Rules
-def normalize_text(text):
+def normalize_text(text, language="english"):
     text = text.lower()
-    
-    # Replace hyphens with spaces
-    text = re.sub(r"\s*-\s*", " ", text)
 
-    text = re.sub(r"[^\w\s']", "", text)  # Keep only letters, numbers, and apostrophes
-    text = re.sub(r"\s+", " ", text).strip()  # Remove extra spaces
+    if language == "hindi":
+        # Remove punctuation except Hindi characters and digits
+        text = re.sub(r"[^\w\s\u0900-\u097F]", "", text)  # Keep Devanagari + digits + whitespace
+    else:
+        # English (default)
+        text = re.sub(r"\s*-\s*", " ", text)
+        text = re.sub(r"[^\w\s']", "", text)  # Keep letters, digits, apostrophes
+
+    # Normalize spaces
+    text = re.sub(r"\s+", " ", text).strip()
     return text
 
 # Improved Subtitle Generation Logic
@@ -148,7 +156,7 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings,
     
     print("Captioning process completed successfully!")
 
-def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output"):
+def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output", language="english", story_text=""):
     
     #print("Received add_captions Arguments:", locals())
 
@@ -163,8 +171,17 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
         traceback.print_exc()
         return
     
-    model = whisper.load_model("base")
-    captions_data = model.transcribe(audio_path, word_timestamps=True)
+    #model = whisper.load_model("base")
+    #model = whisper.load_model("medium")
+
+    if language == "hindi":
+        model = whisper.load_model("medium")
+        captions_data = model.transcribe(audio_path, word_timestamps=True, language="hi")
+    else:
+        model = whisper.load_model("base")
+        captions_data = model.transcribe(audio_path, word_timestamps=True)
+
+    print("Detected language:", captions_data.get("language"))
 
     word_timestamps = []
     position_index = 0  # Track word positions
@@ -180,13 +197,33 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
             })
             position_index += 1
 
-    with open('temp/word_timestamps.json', 'w') as f:
-        json.dump(word_timestamps, f,indent=4)
+    with open('temp/word_timestamps.json', 'w', encoding='utf-8') as f:
+        json.dump(word_timestamps, f,indent=4, ensure_ascii=False)
 
     shutil.copyfile('temp/word_timestamps.json', f"backup/word_timestamps_{base_file_name}.json")
 
     # Extract text with headings & list items
-    full_text = extract_full_text_with_positions(url)
+    if story_text != "":
+        full_text = []
+        position_index = 0
+        element_type = "regular"
+
+        words = re.findall(r'[\u0900-\u097F]+', story_text)
+
+
+        for index, word in enumerate(words):
+            full_text.append({
+                "position": position_index,
+                "word": word,
+                "type": element_type,  # Regular text, heading, or list item
+                "is_last_word": index == len(words) - 1  # True if it's the last word of the element
+            })
+            position_index += 1  # Move forward in word count
+
+        with open('temp/full_text.txt', 'w', encoding='utf-8') as f:
+            json.dump(full_text, f, indent=4, ensure_ascii=False)
+    else:
+        full_text = extract_full_text_with_positions(url)
 
     """Compare each word in sequence and set matched flag."""
     matched_results = []
@@ -209,7 +246,7 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
         search_end = min(last_matched_index + SEARCH_WINDOW, len(word_timestamps))  # Search within next 10 indices
 
         for caption_index in range(search_start, search_end):
-            cleaned_word_timestamps = normalize_text(word_timestamps[caption_index]["word"])
+            cleaned_word_timestamps = normalize_text(word_timestamps[caption_index]["word"], language)
 
             if not word_timestamps[caption_index]["matched"] and cleaned_word_timestamps == word.strip():
                 matched = True
@@ -228,7 +265,7 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
 
             # If current word didn't match, try words[i+1]
             elif i + 1 < len(full_text):
-                cleaned_next_word = normalize_text(full_text[i+1]["word"])
+                cleaned_next_word = normalize_text(full_text[i+1]["word"], language)
 
                 if not word_timestamps[caption_index]["matched"] and cleaned_word_timestamps == cleaned_next_word:
                     matched = True
@@ -268,8 +305,8 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
                 "website_text_index": word_data["position"],  # Use full_text position
                 "type": word_data["type"]  # Store type for styling
             })
-    with open('temp/matched_results.txt', 'w') as f:
-        json.dump(matched_results, f,indent=4)
+    with open('temp/matched_results.txt', 'w', encoding='utf-8') as f:
+        json.dump(matched_results, f,indent=4, ensure_ascii=False)
 
 
     output_file_path = "temp/structured_output.json"
@@ -578,25 +615,28 @@ def find_timing_for_headings_list_items_Old(full_text, matched_results):
 
 
 if __name__ == "__main__":
-    input_video_path = "composed_video.mp4"
-    audio_path = "audio.wav"
-    output_video_path = "test_output_video.mp4"
-    file_path = "test_website_text.txt"
-    website_text = ""
-    max_words = 5
-    style = "Style 27"
-    fontsize = 90
-    y_pos = "bottom"
-    url = "https://readernook.com/topics/scary-stories/taxfiling"
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            website_text =  file.read()
-    except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
-        traceback.print_exc()
+
+    # DND - Working    
+    # input_video_path = "composed_video.mp4"
+    # audio_path = "audio.wav"
+    # output_video_path = "test_output_video.mp4"
+    # file_path = "test_website_text.txt"
+    # website_text = ""
+    # max_words = 5
+    # style = "Style 27"
+    # fontsize = 90
+    # y_pos = "bottom"
+    # url = "https://readernook.com/topics/scary-stories/taxfiling"
+    # try:
+    #     with open(file_path, 'r', encoding='utf-8') as file:
+    #         website_text =  file.read()
+    # except Exception as e:
+    #     print(f"Error reading file {file_path}: {e}")
+    #     traceback.print_exc()
 
     #DND-Working
     #add_captions(max_words, fontsize, y_pos, style, website_text, font_settings, "composed_video.mp4")
 
     
-    prepare_file_for_adding_captions_n_headings_thru_html(url, "composed_video.mp4")
+    #prepare_file_for_adding_captions_n_headings_thru_html(url, "composed_video.mp4")
+    prepare_file_for_adding_captions_n_headings_thru_html("", "composed_video.mp4", "output", "hindi", story_text="प्राचीन काल की बात है।भारतवर्ष के काशी नगर में एक ब्राह्मण रहता था।उसका जीवन अत्यंत कठिनाइयों से भरा हुआ था।घर में न चूल्हा जलता, न दीपक। न वस्त्र, न बर्तन।वह वृद्ध हो चला था, शरीर दुर्बल और आँखों में निरंतर चिंता का बादल।")

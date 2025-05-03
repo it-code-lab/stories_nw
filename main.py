@@ -14,6 +14,7 @@ main_frame.pack(padx=20, pady=20, fill="both", expand=True)
 
 # Field Variables # DEFAULT VALUES CAN BE CHANGED HERE
 language_var = StringVar(value="english")
+excel_var = StringVar(value="no")
 skip_puppeteer_var = StringVar(value="yes")
 tts_var = StringVar(value="google")
 gender_var = StringVar(value="Female")
@@ -67,9 +68,11 @@ scrollbar.grid(row=0, column=2, sticky="ns")
 url_input_text["yscrollcommand"] = scrollbar.set
 
 # Create Layout
-create_dropdown(main_frame, "Language:", language_var, ["english", "english-india","hindi", "french"], 1)
-create_dropdown(main_frame, "Select TTS Engine:", tts_var, tts_engine.keys(), 2)
-create_dropdown(main_frame, "Select Voice Gender:", gender_var, voices.keys(), 3)
+create_dropdown(main_frame, "Pick video background and story from video_story_input.xlsx:", excel_var, ["no", "yes"], 1)
+
+create_dropdown(main_frame, "Language:", language_var, ["english", "english-india","hindi", "french"], 2)
+create_dropdown(main_frame, "Select TTS Engine:", tts_var, tts_engine.keys(), 3)
+create_dropdown(main_frame, "Select Voice Gender:", gender_var, voices.keys(), 4)
 # create_dropdown(main_frame, "Select Voice: (not in use)", voice_var, voices["Female"], 4)
 create_dropdown(main_frame, "Select Video Type:", size_var, sizes.keys(), 5)
 create_dropdown(main_frame, "Select Background Music:", music_var, background_music_options.keys(), 6)
@@ -90,7 +93,7 @@ create_dropdown(main_frame, "Skip Puppeteer Call:", skip_puppeteer_var, ["yes", 
 Button(
     main_frame, text="Process",
     command=lambda: scrape_and_process(
-        get_urls(), size_var.get(), music_var.get(),
+        get_urls(), excel_var.get(), size_var.get(), music_var.get(),
         max_words.get(), fontsize.get(), y_pos.get(),
         style_var.get(), voice_var.get(), language_var.get(), gender_var.get(), tts_var.get(),skip_puppeteer_var.get()
     ),

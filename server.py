@@ -10,7 +10,7 @@ CORS(app)
 @app.route('/get_word_timestamps', methods=['GET'])
 def get_word_timestamps():
     try:
-        with open("temp/word_timestamps.json", "r") as f:
+        with open("temp/word_timestamps.json", "r", encoding="utf-8") as f:
             data = json.load(f)
         return jsonify(data)
     except Exception as e:
@@ -21,8 +21,8 @@ def get_word_timestamps():
 def save_word_timestamps():
     try:
         data = request.json
-        with open("temp/word_timestamps.json", "w") as f:
-            json.dump(data, f, indent=4)
+        with open("temp/word_timestamps.json", "w", encoding='utf-8') as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
         return jsonify({"message": "✅ Word timestamps updated successfully!"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
