@@ -44,7 +44,13 @@ def clean_text(text):
     cleaned_text = re.sub(r"\.+", ",", text)
     return cleaned_text
 
-
+def is_excel_file_locked(file_path):
+    try:
+        with open(file_path, 'a'):
+            pass
+        return False
+    except PermissionError:
+        return True
 
 def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
                        selected_voice, language, gender, tts_engine, skip_puppeteer):
@@ -162,6 +168,10 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
 
     if excel_var == "yes":
        input_excel_file = "video_story_input.xlsx"
+       if is_excel_file_locked(input_excel_file):
+           print(f"Error: Please close '{input_excel_file}' before running the application.")
+           return  # Exit cleanly without trying uploads  
+    
        df = pd.read_excel(input_excel_file)
 
        # Clean column names
@@ -170,6 +180,10 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
        print(df.columns.tolist())
 
        for short_idx, row in df.iterrows():
+            if str(row.get("status")).strip().lower() == "success":
+                print(f"Skipping row #{short_idx} - already marked as success")
+                continue
+
             print(f"\nProcessing excel row #{short_idx}")
             title = row.get("title")
             background_video_src = row.get("background_video_src")
@@ -280,10 +294,12 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         subprocess.run(cmd)
 
                 print(f"Processing complete for {url}")
-
+                df.at[short_idx, "status"] = "success"
             except Exception as e:
                 print(f"Error processing {url}: {e.with_traceback}. Proceeding to next")
                 traceback.print_exc()
+
+            df.to_excel(input_excel_file, index=False)
 
 
 def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video" ):
