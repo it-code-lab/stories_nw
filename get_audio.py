@@ -1,3 +1,4 @@
+import datetime
 import os
 from text_to_speech_google import synthesize_speech_google
 import boto3
@@ -88,9 +89,19 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
     # Initialize Amazon Polly
     polly_client = boto3.client('polly', region_name='us-east-1')
 
+    today = datetime.datetime.now().day
+
+    # Choose credentials file based on whether the date is even or odd
+    if today % 2 == 0:
+        print("Even day, using 173")
+        credentials_file = "quantum-conduit-458602-k9-e1f713291583.json"
+    else:
+        print("Odd day, using mail2")
+        credentials_file = "notes-imgtotxt-7b07c59d85c6.json"
+
     # Set Google Application Credentials using a relative path (one level up)
     google_credentials_path = os.path.join(
-        os.path.dirname(__file__), os.path.pardir, "tts-secret", "notes-imgtotxt-7b07c59d85c6.json"
+        os.path.dirname(__file__), os.path.pardir, "tts-secret", credentials_file
     )
     if os.path.exists(google_credentials_path):
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = google_credentials_path
@@ -242,9 +253,19 @@ def get_audio_file_Working_DND(text, audio_file_name, tts_engine="google", langu
     # Initialize Amazon Polly
     polly_client = boto3.client('polly', region_name='us-east-1')
 
+    today = datetime.datetime.now().day
+
+    # Choose credentials file based on whether the date is even or odd
+    if today % 2 == 0:
+        print("Even day, using 173")
+        credentials_file = "quantum-conduit-458602-k9-e1f713291583.json"
+    else:
+        print("Odd day, using mail2")
+        credentials_file = "notes-imgtotxt-7b07c59d85c6.json"
+
     # Set Google Application Credentials using a relative path (one level up)
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(
-        os.path.dirname(__file__), os.path.pardir, "tts-secret", "notes-imgtotxt-7b07c59d85c6.json"
+        os.path.dirname(__file__), os.path.pardir, "tts-secret", credentials_file
     )
 
     try:

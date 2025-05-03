@@ -31,3 +31,4 @@ video_records.xlsx
 ~$video_records.xlsx
 ~$bulkShorts_input.xlsx
 *.xlsx
+background_videos/*
