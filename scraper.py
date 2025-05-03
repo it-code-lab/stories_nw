@@ -193,7 +193,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                     "audio": None,
                     "video": background_video_src,
                     "vid_duration": "",
-                    "avatar_flag": "n",
+                    "avatar_flag": "n", # Assuming no avatar for now
                     "local_video_flag": "y"
                 }
                 elements.append(video_data)
