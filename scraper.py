@@ -76,7 +76,6 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
 
             try:
                 base_file_name = Path(url).name
-                base_file_name = Path(url).name
                 base_file_name = re.sub(r'[<>:"/\\\\|?*]', '', base_file_name)  # Remove file-unsafe chars
                 base_file_name = re.sub(r'[^a-zA-Z0-9_-]', '_', base_file_name)  # Replace special chars with underscore
 
@@ -191,6 +190,8 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
 
             try:
                 base_file_name = title
+                base_file_name = re.sub(r'[<>:"/\\\\|?*]', '', base_file_name)  # Remove file-unsafe chars
+                base_file_name = re.sub(r'[^a-zA-Z0-9_-]', '_', base_file_name)  # Replace special chars with underscore
 
                 elements = []
                 elements.append({

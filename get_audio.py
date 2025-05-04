@@ -77,7 +77,8 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
             "journey": {
                 "english": {"Male": "en-US-Journey-D", "Female": "en-US-Journey-F"},
                 "english-india": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
-                "hindi": {"Male": "hi-IN-Wavenet-B", "Female": "hi-IN-Wavenet-A"},
+                "hindi": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
+                "hindi-old": {"Male": "hi-IN-Wavenet-B", "Female": "hi-IN-Wavenet-A"},
             },
         },
         "amazon": {
