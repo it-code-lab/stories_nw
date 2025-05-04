@@ -7,7 +7,7 @@ from pydub import AudioSegment
 import re
 
 # Define the maximum character limit for each TTS engine
-GOOGLE_MAX_CHARS = 2000
+GOOGLE_MAX_CHARS = 4800
 AMAZON_MAX_CHARS = 2000  # Approximate limit
 
 def synthesize_speech_google(text, output_file, language, gender, voice_name, speaking_rate=1.0):
@@ -29,11 +29,17 @@ def synthesize_speech_google(text, output_file, language, gender, voice_name, sp
         out.write(response.audio_content)
     return output_file
 
-def split_text_into_sentences(text):
-    """Splits text into sentences while trying to keep paragraphs intact."""
-    # Use a more robust sentence splitting that considers abbreviations etc.
-    sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|!)\s', text)
+def split_text_into_sentences(text, language="english"):
+    """Splits text into sentences, handling language-specific punctuation."""
+    if language.lower() == "english":
+        # More robust English sentence splitting
+        sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|!)\s', text)
+    else:
+        # Hindi or general Unicode-friendly (including `।`)
+        sentences = re.split(r'(?<=[।.!?])\s+', text)
+    
     return [s.strip() for s in sentences if s.strip()]
+
 
 def merge_audio_files(file_paths, output_file):
     """Merges multiple audio files into one."""
@@ -66,12 +72,12 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
             "neural": {
                 "english": {"Male": "en-US-Neural2-J", "Female": "en-US-Neural2-F"},
                 "english-india": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
-                "hindi": {"Male": "hi-IN-Standard-B", "Female": "hi-IN-Standard-A"},
+                "hindi": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
             },
             "journey": {
                 "english": {"Male": "en-US-Journey-D", "Female": "en-US-Journey-F"},
                 "english-india": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
-                "hindi": {"Male": "hi-IN-Standard-B", "Female": "hi-IN-Standard-A"},
+                "hindi": {"Male": "hi-IN-Wavenet-B", "Female": "hi-IN-Wavenet-A"},
             },
         },
         "amazon": {
@@ -122,7 +128,9 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
     else:
         raise ValueError("Unsupported TTS engine.")
 
-    if len(text) <= max_chars:
+    print(f"text size: {len(text.encode('utf-8'))} bytes")
+
+    if len(text.encode('utf-8')) <= max_chars:
         if tts_engine == "google":
             return tts_function(
                 text=text,
@@ -146,12 +154,12 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
                 file.write(response['AudioStream'].read())
             return audio_file_name
     else:
-        sentences = split_text_into_sentences(text)
+        sentences = split_text_into_sentences(text, language)
         audio_files = []
         current_chunk = ""
         chunk_index = 0
         for sentence in sentences:
-            if len(current_chunk) + len(sentence) + 1 <= max_chars:  # +1 for potential space
+            if len((current_chunk + sentence + " ").encode('utf-8')) <= max_chars:  # +1 for potential space
                 current_chunk += (sentence + " ")
             else:
                 temp_audio_file = f"{audio_file_name.rsplit('.', 1)[0]}_part_{chunk_index}.mp3"

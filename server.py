@@ -6,6 +6,15 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+@app.route('/get_full_text', methods=['GET'])
+def get_full_text():
+    try:
+        with open("temp/full_text.txt", "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 # Load word timestamps
 @app.route('/get_word_timestamps', methods=['GET'])
 def get_word_timestamps():

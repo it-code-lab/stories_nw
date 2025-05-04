@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Word Timestamp Editor</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .word-box {
+            display: inline-block;
+            padding: 6px 12px;
+            margin: 4px;
+            border-radius: 4px;
+            border: 1px solid #aaa;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .match {
+            background-color: #d0ffd0;
+        }
+
+        .mismatch {
+            background-color: #ffd0d0;
+        }
+
+        .original {
+            background-color: #f0f0f0;
+        }
+
+        .timestamped {
+            background-color: #d0f0ff;
+        }
+
+        table th {
+            font-size: 18px;
+            padding-bottom: 10px;
+        }
+
+        table td {
+            vertical-align: top;
+            padding: 4px;
+        }
+
+
+        .original {
+            background-color: #f0f0f0;
+        }
+
+        .timestamped {
+            background-color: #d0f0ff;
+        }
+
+        .mismatch {
+            background-color: #ffd0d0;
+        }
+
+        .match {
+            background-color: #d0ffd0;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>📝 Word Timestamp Editor</h2>
+    <p>Click an original word, then click the timestamped word you want to update.</p>
+    <h3>Full Text (Source)</h3>
+    <div id="fullTextContainer"></div>
+    <h3>Timestamped Words (Editable)</h3>
+    <div id="timestampContainer"></div>
+    <button onclick="saveChanges()">💾 Save Changes</button>
+    <p id="status"></p>
+
+    <script>
+        let fullText = [], wordTimestamps = [], selectedText = null;
+
+        async function loadData() {
+            const [fullRes, tsRes] = await Promise.all([
+                fetch("http://localhost:5000/get_full_text"), fetch("http://localhost:5000/get_word_timestamps")
+            ]);
+            fullText = await fullRes.json();
+            wordTimestamps = await tsRes.json();
+            render();
+        }
+
+        function render() {
+            const ftDiv = document.getElementById("fullTextContainer");
+            const tsDiv = document.getElementById("timestampContainer");
+
+            ftDiv.innerHTML = "";
+            tsDiv.innerHTML = "";
+
+            const table = document.createElement("table");
+            // table.style.width = "100%";
+            table.style.borderCollapse = "collapse";
+
+            const header = document.createElement("tr");
+            header.innerHTML = `
+    <th style="width: 50%; text-align: left;">📘 Full Text (Source)</th>
+    <th style="width: 50%; text-align: left;">🕒 Timestamped Words (Editable)</th>
+  `;
+            table.appendChild(header);
+
+            const maxLength = Math.max(fullText.length, wordTimestamps.length);
+
+            for (let i = 0; i < maxLength; i++) {
+                const row = document.createElement("tr");
+
+                const ftWord = fullText[i]?.word || "";
+                const tsWord = wordTimestamps[i]?.word || "";
+
+                const ftCell = document.createElement("td");
+                const tsCell = document.createElement("td");
+
+                // Left column - Full Text
+                const ftSpan = document.createElement("span");
+                ftSpan.textContent = ftWord;
+                ftSpan.className = "word-box original";
+                ftSpan.onclick = () => selectedText = ftWord;
+                ftCell.appendChild(ftSpan);
+
+                // Right column - Timestamped Word
+                const tsSpan = document.createElement("span");
+                tsSpan.textContent = tsWord;
+                tsSpan.className = `word-box timestamped ${ftWord !== tsWord ? "mismatch" : "match"}`;
+                tsSpan.onclick = () => {
+                    if (selectedText && wordTimestamps[i]) {
+                        wordTimestamps[i].word = selectedText;
+                        selectedText = null;
+                        render();
+                    }
+                };
+                tsCell.appendChild(tsSpan);
+
+                row.appendChild(ftCell);
+                row.appendChild(tsCell);
+                table.appendChild(row);
+            }
+
+            ftDiv.appendChild(table);
+        }
+
+
+
+        async function saveChanges() {
+            const res = await fetch("http://localhost:5000/save_word_timestamps", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(wordTimestamps)
+            });
+            const result = await res.json();
+            document.getElementById("status").textContent = result.message || result.error;
+        }
+
+        loadData();
+    </script>
+</body>
+
+</html>

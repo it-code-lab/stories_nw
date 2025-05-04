@@ -18,6 +18,8 @@ from datetime import datetime
 from openpyxl import Workbook, load_workbook
 #from transformers import pipeline
 
+MAX_WORD_DURATION = 2.0  # seconds
+
 # Extract Audio from Video
 def extract_audio(video_path, audio_path):
     video = VideoFileClip(video_path)
@@ -175,8 +177,20 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     #model = whisper.load_model("medium")
 
     if language == "hindi":
-        model = whisper.load_model("medium")
-        captions_data = model.transcribe(audio_path, word_timestamps=True, language="hi")
+        # model = whisper.load_model("medium")
+        # captions_data = model.transcribe(audio_path, word_timestamps=True, language="hi")
+        model = whisper.load_model("large")
+        captions_data = model.transcribe(
+                            audio_path,
+                            word_timestamps=True,
+                            language="hi",     # or "en" for English
+                            verbose=True,
+                            fp16=False,         # Important on CPU
+                            initial_prompt="यह एक कहानी है",
+                            condition_on_previous_text=False,
+                            temperature=(0.0, 0.2, 0.4)
+                        )
+
     else:
         model = whisper.load_model("base")
         captions_data = model.transcribe(audio_path, word_timestamps=True)
@@ -196,6 +210,12 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
                 "matched": False  # Initialize as not matched
             })
             position_index += 1
+
+    for word in word_timestamps:
+        start = word["start"]
+        end = word["end"]
+        if end - start > MAX_WORD_DURATION:
+            word["end"] = start + MAX_WORD_DURATION
 
     with open('temp/word_timestamps.json', 'w', encoding='utf-8') as f:
         json.dump(word_timestamps, f,indent=4, ensure_ascii=False)
