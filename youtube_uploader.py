@@ -127,9 +127,28 @@ def upload_video(page, video_info):
     print("Calling switch_channel")
     switch_channel(page, video_info["youtube_channel_name"])
 
-    page.locator('ytcp-button#create-icon').click()
+    try:
+        page.get_by_text("Dashboard").click()
+    except:
+        pass
+    
+    #DND - Was working
+    #page.locator('ytcp-button#create-icon').click()
+    try:
+        page.locator('#upload-icon').click()
+    except:
+        page.locator('ytcp-button#create-icon').click()
+        page.get_by_text("Upload video").click()
 
-    page.get_by_text("Upload video").click()
+    # try:        
+    #     page.get_by_text("Upload video").click()
+    # except:
+    #     try:
+    #         page.get_by_text("Upload videos").click()
+    #     except:
+    #         page.locator("#upload-button").click()
+
+
 
     # page.locator('#endpoint').wait_for(timeout=10000)
     # page.locator("#endpoint").click()
