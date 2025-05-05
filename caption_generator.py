@@ -158,7 +158,7 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings,
     
     print("Captioning process completed successfully!")
 
-def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output", language="english", story_text=""):
+def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output", language="english", story_text="",description ="", tags="",playlist="",channel="",title=""):
     
     #print("Received add_captions Arguments:", locals())
 
@@ -344,12 +344,12 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
 
     print(f"Headings & List Item Timings saved to: {output_file_path}")
     
-    save_details_in_excel(captions_data, url, base_file_name)
+    save_details_in_excel(captions_data, url, base_file_name, description, tags, playlist, channel,title)
 
     #DND - Working but not in use
     #save_details_in_csv(captions_data, url, base_file_name)
 
-def save_details_in_excel(captions_data, url, base_file_name):
+def save_details_in_excel(captions_data, url, base_file_name, description="", tags="", playlist="", channel="", title=""):
     """Safely write data to an Excel file, creating it if it doesn't exist."""
     excel_file = "video_records.xlsx"
     sheet_name = "Videos"
@@ -396,12 +396,12 @@ def save_details_in_excel(captions_data, url, base_file_name):
         url,
         base_file_name,
         captions_text,
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
+        playlist,
+        title,
+        description,
+        tags,
+        channel,
+        title,
         '',
         '',
         'Pending',

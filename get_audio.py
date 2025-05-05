@@ -67,16 +67,23 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
     Returns:
         str: Path to the generated audio file.
     """
+
+    # For english-india, hi-IN voices pronouce names better so those are used
+
     voice_configs = {
         "google": {
             "neural": {
                 "english": {"Male": "en-US-Neural2-J", "Female": "en-US-Neural2-F"},
-                "english-india": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
+                "english-india": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
+                "english-india-x": {"Male": "en-IN-Chirp3-HD-Orus", "Female": "en-IN-Chirp3-HD-Leda"},
+                "english-india-old": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
                 "hindi": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
             },
             "journey": {
                 "english": {"Male": "en-US-Journey-D", "Female": "en-US-Journey-F"},
-                "english-india": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
+                "english-india": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
+                "english-india-x": {"Male": "en-IN-Chirp3-HD-Orus", "Female": "en-IN-Chirp3-HD-Leda"},
+                "english-india-old": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
                 "hindi": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
                 "hindi-old": {"Male": "hi-IN-Wavenet-B", "Female": "hi-IN-Wavenet-A"},
             },
@@ -139,7 +146,7 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
                 language=f"{voice_code[:5]}",
                 gender=gender.upper(),
                 voice_name=voice_code,
-                speaking_rate=1
+                speaking_rate=0.9
             )
         elif tts_engine == "amazon":
             text_type = "ssml" if type == "neural" else "text"
@@ -171,7 +178,7 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
                         language=f"{voice_code[:5]}",
                         gender=gender.upper(),
                         voice_name=voice_code,
-                        speaking_rate=1
+                        speaking_rate=0.9
                     )
                 elif tts_engine == "amazon":
                     text_type = "ssml" if type == "neural" else "text"
@@ -311,10 +318,10 @@ def get_audio_file_Working_DND(text, audio_file_name, tts_engine="google", langu
     raise ValueError("Unsupported TTS engine.")
 
 if __name__ == "__main__":
-    sample_text = "Now that you know how this tool works, you can use it for your own projects—or even customize it further!If you found this tutorial helpful, hit that like button and subscribe for more coding breakdowns!Got any questions or feature requests? Drop them in the comments—I’d love to hear your thoughts!"
+    sample_text = "One day, during his sister Devaki’s wedding, a divine voice thundered from the skies"
 
 
     output_audio_file = "test_audio.mp3"
     
-    generated_file = get_audio_file(sample_text, output_audio_file)
+    generated_file = get_audio_file(sample_text, output_audio_file,language="hindi", gender="Female")
     print(f"Generated audio file: {generated_file}")
