@@ -8,6 +8,8 @@ from openpyxl import Workbook, load_workbook
 from datetime import datetime
 from mutagen.mp3 import MP3
 
+from caption_generator import save_details_in_excel
+
 
 # Constants
 EXCEL_FILE = "video_records.xlsx"
@@ -44,12 +46,10 @@ def setup_excel():
         wb.save(EXCEL_FILE)
 
 # Save details in Excel
-def save_details_in_excel(video_path, title, description, tags, playlist):
+def save_details_in_excel_delit(video_path, title, description, tags, playlist):
     wb = load_workbook(EXCEL_FILE)
     ws = wb[SHEET_NAME]
-    # now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    # row = [video_path, title, description, tags, playlist, 'Pending', now]
-    # Prepare row data
+
     row = [
         "YTShorts",
         video_path,
@@ -123,11 +123,17 @@ def main():
 
         # Save details in Excel
         title = short.get('title', '')
-        description = short.get('subText', '')
-        tags = "#Shorts #Motivation"  # optional
-        playlist = "Inspirational Quotes"  # optional
+        description = short.get('description', '')
+        tags = short.get('tags', '')  
+        playlist = short.get('playlist', '')  
+        channel = short.get('channel', '')
+        schedule_date = short.get('schedule_date', '')
 
-        save_details_in_excel(video_path, title, description, tags, playlist)
+        save_details_in_excel(description, "YTShorts", video_path, description, tags, playlist, channel,title,schedule_date)
+        
+        #update status in excel
+
+        
 
         # Small delay between recordings
         time.sleep(1)

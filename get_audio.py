@@ -52,7 +52,7 @@ def merge_audio_files(file_paths, output_file):
         os.remove(file_path)
     return output_file
 
-def get_audio_file(text, audio_file_name, tts_engine="google", language="english", gender="Male", type="journey"):
+def get_audio_file(text, audio_file_name, tts_engine="google", language="english", gender="Male", type="neural"):
     """
     Generate audio using TTS, handling large text by splitting and merging.
 
@@ -73,7 +73,7 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
     voice_configs = {
         "google": {
             "neural": {
-                "english": {"Male": "en-US-Neural2-J", "Female": "en-US-Neural2-F"},
+                "english": {"Male": "en-US-Chirp3-HD-Orus", "Female": "en-US-Chirp3-HD-Leda"},
                 "english-india": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
                 "english-india-x": {"Male": "en-IN-Chirp3-HD-Orus", "Female": "en-IN-Chirp3-HD-Leda"},
                 "english-india-old": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
@@ -318,10 +318,10 @@ def get_audio_file_Working_DND(text, audio_file_name, tts_engine="google", langu
     raise ValueError("Unsupported TTS engine.")
 
 if __name__ == "__main__":
-    sample_text = "One day, during his sister Devaki’s wedding, a divine voice thundered from the skies"
+    sample_text = "When Abraham Lincoln worked as a store clerk,he once overcharged a customer by just a few cents"
 
 
     output_audio_file = "test_audio.mp3"
     
-    generated_file = get_audio_file(sample_text, output_audio_file,language="hindi", gender="Female")
+    generated_file = get_audio_file(sample_text, output_audio_file,language="english", gender="Female", type="neural")
     print(f"Generated audio file: {generated_file}")

@@ -41,7 +41,9 @@ def prepare_text_for_tts(text):
     cleaned = emoji_pattern.sub(r'', text)
 
     # Remove leftover non-word junk except basic punctuation
-    cleaned = re.sub(r"[^a-zA-Z0-9.,!?\\-'\"\\s]", '', cleaned)
+    #cleaned = re.sub(r"[^a-zA-Z0-9.,!?\\-'\"\\s]", '', cleaned)
+    cleaned = re.sub(r"[^a-zA-Z0-9.,!?\\'\"\s-]", '', cleaned)
+
 
     # Normalize spaces
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
@@ -91,6 +93,17 @@ def create_audio_files():
         print(f"\nProcessing Short #{short_idx}")
 
         part_idx = 0
+        title = row.get("title")
+        description = row.get("description")
+        tags = row.get("tags")
+        language = row.get("language")
+        status = row.get("status")
+        gender = row.get("gender")
+
+        # DND- This will not work as JavaScript reads data from Json file
+        # if status == "success":
+        #     print(f"Skipping Short #{short_idx} due to status: {status}")
+        #     continue
 
         # Process text1–text10
         for i in range(1, 11):
@@ -109,9 +122,9 @@ def create_audio_files():
                             text=cleaned_text,
                             audio_file_name=output_filename,
                             tts_engine="google",
-                            language="english",
-                            gender="Male",
-                            type="journey"
+                            language=language, # english/hindi/english-india
+                            gender=gender, # male/female
+                            type="neural"
                         )
                         part_idx += 1
 

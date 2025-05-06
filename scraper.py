@@ -191,6 +191,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
             tags = row.get("tags")
             playlist = row.get("playlist")
             channel = row.get("channel")
+            schedule_date = row.get("schedule_date")
 
             try:
                 base_file_name = title
@@ -224,7 +225,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                 url = title
                 #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
                 #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
-                prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text=story, description=description, tags=tags, playlist=playlist, channel=channel, title=title)
+                prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text=story, description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date=schedule_date)
 
                 #try:
                     #video_clip = VideoFileClip("output_video.mp4")

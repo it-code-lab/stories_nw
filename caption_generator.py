@@ -158,7 +158,7 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings,
     
     print("Captioning process completed successfully!")
 
-def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output", language="english", story_text="",description ="", tags="",playlist="",channel="",title=""):
+def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output", language="english", story_text="",description ="", tags="",playlist="",channel="",title="", schedule_date=""):
     
     #print("Received add_captions Arguments:", locals())
 
@@ -343,19 +343,20 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     shutil.copyfile('composed_video.mp4', f"backup/composed_video_{base_file_name}.mp4")
 
     print(f"Headings & List Item Timings saved to: {output_file_path}")
-    
-    save_details_in_excel(captions_data, url, base_file_name, description, tags, playlist, channel,title)
+    # Only capture the simple text, not full captions_data
+    captions_text = captions_data.get("text", "").strip()
+
+    save_details_in_excel(captions_text, url, base_file_name, description, tags, playlist, channel,title,schedule_date)
 
     #DND - Working but not in use
     #save_details_in_csv(captions_data, url, base_file_name)
 
-def save_details_in_excel(captions_data, url, base_file_name, description="", tags="", playlist="", channel="", title=""):
+def save_details_in_excel(captions_text, url, base_file_name, description="", tags="", playlist="", channel="", title="",schedule_date=""):
     """Safely write data to an Excel file, creating it if it doesn't exist."""
     excel_file = "video_records.xlsx"
     sheet_name = "Videos"
 
-    # Only capture the simple text, not full captions_data
-    captions_text = captions_data.get("text", "").strip()
+
 
     # Define columns
     columns = [
@@ -403,7 +404,7 @@ def save_details_in_excel(captions_data, url, base_file_name, description="", ta
         channel,
         title,
         '',
-        '',
+        schedule_date,
         'Pending',
         datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         ''

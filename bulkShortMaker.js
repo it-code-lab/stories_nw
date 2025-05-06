@@ -482,15 +482,18 @@ function loadShort(shortData, shortIndex) {
         // }
     }
 
-    let bgVideoNme = shortData.backgroundVideo || "sample_bg";
-    let bgVideoSrc = "background_videos/" + bgVideoNme + ".mp4" 
+    // let bgVideoNme = shortData.backgroundVideo || "sample_bg";
+    // let bgVideoSrc = "background_videos/" + bgVideoNme + ".mp4" 
+
+    let bgVideoSrc = shortData.background_video_src || "background_videos/sample_bg.mp4";
+
     bgVideo.src = decodeURIComponent(bgVideoSrc);
     document.getElementById('bgVideo').load();
 
-    let audioName = shortData.musicFile || "piano-2";
+    let audioName = shortData.musicFile || "story-classical-3-710";
     let audioSrc = "sounds/" + audioName + ".mp3";
     bgMusic.src = audioSrc;
-    bgMusic.volume = 0.02;
+    bgMusic.volume = 0.05;
     bgMusic.play().catch(e => console.log('Music autoplay blocked'));
     
     
