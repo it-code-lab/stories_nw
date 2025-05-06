@@ -1,10 +1,10 @@
 //let content_style = "style2_upper_center_up";
 
 //DND - Tobe used for facts/history stories
-//let content_style = "style1_camel_center_up"; 
+let content_style = "style1_camel_center_up"; 
 
 //DND - Tobe used for scary stories
-let content_style = "style4_camel_center_up"; 
+//let content_style = "scary4_camel_center_up"; 
 
 let textStyleDropdown = document.getElementById("textStyle");
 let loadDataDropdown = document.getElementById("loadData");
@@ -500,10 +500,19 @@ function loadShort(shortData, shortIndex) {
 
     let bgVideoSrc = shortData.background_video_src || "background_videos/sample_bg.mp4";
 
+    let audioName = shortData.musicFile || "story-classical-3-710";
+
+    if (bgVideoSrc.includes("scary_4.mp4")) {
+        content_style = "scary4_camel_center_up"; 
+        contentContainer.className = "content";
+        contentContainer.classList.add(content_style);
+        audioName = "horror-piano-671";
+    }
+
     bgVideo.src = decodeURIComponent(bgVideoSrc);
     document.getElementById('bgVideo').load();
 
-    let audioName = shortData.musicFile || "story-classical-3-710";
+
     let audioSrc = "sounds/" + audioName + ".mp3";
     bgMusic.src = audioSrc;
     bgMusic.volume = 0.05;

@@ -161,24 +161,35 @@ span{
     text-align: left;
 }
 
-.style4_camel_center_up {
+.scary4_camel_center_up {
     /* font-size: 30px; */
     /* font-weight: 700; */
     color: #fff;
     animation-delay: 1.5s;
     
 }
-.style4_camel_center_up span {
+
+.scary4_camel_center_up #title {
+
+    color: red;
+    animation-delay: 1.5s;
+    font-family: Creepster;
+    background: none;
+    font-size: 20px;
+}
+.scary4_camel_center_up span {
     opacity: 0;
     animation: fadeSlideUp 0.6s ease forwards;
 }
 
-.style4_camel_center_up .mainTextWrapper {
+.scary4_camel_center_up .mainTextWrapper {
     /* background: cadetblue; */
-     background-color: rgba(95, 158, 160, 0.95); 
+     background-color: rgba(0, 0, 0, 0.7); 
+     font-family: 'Metal Mania';
+     font-size: 20px;
 }
 
-.style4_camel_center_up .mainTextPart {
+.scary4_camel_center_up .mainTextPart {
     opacity: 0;
     transition: opacity 0.5s ease;
     color: #fff;
