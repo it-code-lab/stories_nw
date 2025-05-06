@@ -135,6 +135,9 @@ def create_audio_files():
 
 def create_json_file():
     df = pd.read_excel('bulkShorts_input.xlsx')
+    if 'schedule_date' in df.columns:
+        df['schedule_date'] = df['schedule_date'].dt.strftime('%Y-%m-%d')
+
     df.to_json('bulkShorts_input.json', orient='records', force_ascii=False, indent=2)
     print("\n✅ Json file generated successfully!")
 

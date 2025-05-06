@@ -1,5 +1,6 @@
 # bulkShortMakerRunner.py
 
+import re
 import subprocess
 import json
 import os
@@ -101,10 +102,18 @@ def main():
         # if idx > 1:
         #     break
 
-        print(f"\n▶️ Recording short {idx + 1}/{len(shorts_data)}")
+        # Save details in Excel
+        title = short.get('title', '')
+        saveAsName = re.sub(r'[<>:"/\\\\|?*]', '', title)  # Remove file-unsafe chars
+        saveAsName = re.sub(r'[^a-zA-Z0-9_-]', '_', saveAsName)  # Replace special chars with underscore
 
-        output_video_name = f"{OUTPUT_FOLDER}/short_{idx}.mp4"
-        video_path = f"short_{idx}"
+        now = datetime.now()
+        numeric_format = int(now.strftime("%Y%m%d%H%M%S"))
+
+        print(f"\n▶️ Recording short {idx + 1}/{len(shorts_data)}")
+        video_path = f"{idx}_{saveAsName}_{numeric_format}.mp4"
+        output_video_name = f"{OUTPUT_FOLDER}/{video_path}"
+        
         # output_video_name = f"short_{idx}.mp4"
 
         audio_duration = get_total_audio_duration(idx)
@@ -121,8 +130,7 @@ def main():
         print("Running Puppeteer with:", cmd)
         subprocess.run(cmd)
 
-        # Save details in Excel
-        title = short.get('title', '')
+
         description = short.get('description', '')
         tags = short.get('tags', '')  
         playlist = short.get('playlist', '')  

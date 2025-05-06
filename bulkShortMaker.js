@@ -1,4 +1,5 @@
-let content_style = "style2_upper_center_up";
+//let content_style = "style2_upper_center_up";
+let content_style = "style1_camel_center_up";
 let textStyleDropdown = document.getElementById("textStyle");
 let loadDataDropdown = document.getElementById("loadData");
 const fontFamily = document.getElementById('fontFamily');
@@ -227,6 +228,7 @@ const bgMusic = document.getElementById('bgMusic');
 const bgVideo = document.getElementById('bgVideo').querySelector('source');
 let parts = [];
 let currentPartIndex = 0;
+let overAllPartNumber = 0;
 let partElements = [];
 let part = "";
 
@@ -295,6 +297,7 @@ function displayNextMainText() {
         displayNextPart();
 
     } else if (currentShortMainTextIndex == mainTexts.length) {
+        overAllPartNumber = 0;
         displaySubTextAndCTA()
     }
 }
@@ -315,16 +318,19 @@ function displayNextPart() {
     if (ttsEnabled) {
         if (usePreGeneratedAudio) {
             // playAudioForPart(currentShortIndex, currentPartIndex, displayNextPart);
-            playPreGeneratedAudio(currentShortIndex, currentPartIndex, () => {
+            playPreGeneratedAudio(currentShortIndex, overAllPartNumber, () => {
                 currentPartIndex++;
+                overAllPartNumber++;
                 setTimeout(displayNextPart, 300); // slight delay between parts
             });
         } else {
             currentPartIndex++;
+            overAllPartNumber++;
             speakText(part, displayNextPart);
         }
     } else {
         currentPartIndex++;
+        overAllPartNumber++;
         setTimeout(displayNextPart, part.length * 60);
     }
 
@@ -459,6 +465,7 @@ function loadShort(shortData, shortIndex) {
 
     currentShortIndex = shortIndex;
     currentPartIndex = 0;
+    overAllPartNumber = 0;
     mainTexts = [];
 
     titleEl.innerHTML = "";
