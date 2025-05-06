@@ -32,3 +32,5 @@ video_records.xlsx
 ~$bulkShorts_input.xlsx
 *.xlsx
 background_videos/*
+bulkShorts_input.xlsx
+bulkShorts_input.json

@@ -1,5 +1,11 @@
 //let content_style = "style2_upper_center_up";
-let content_style = "style1_camel_center_up";
+
+//DND - Tobe used for facts/history stories
+//let content_style = "style1_camel_center_up"; 
+
+//DND - Tobe used for scary stories
+let content_style = "style4_camel_center_up"; 
+
 let textStyleDropdown = document.getElementById("textStyle");
 let loadDataDropdown = document.getElementById("loadData");
 const fontFamily = document.getElementById('fontFamily');
