@@ -1,4 +1,5 @@
 import os
+import shutil
 import pandas as pd
 from get_audio import get_audio_file  # Replace with your actual module
 import re
@@ -8,14 +9,14 @@ input_excel_file = "bulkShorts_input.xlsx"
 audio_output_folder = "generated_audio"
 
 # Ensure output folder exists
-os.makedirs(audio_output_folder, exist_ok=True)
+#os.makedirs(audio_output_folder, exist_ok=True)
 
 # Load input Excel
 df = pd.read_excel(input_excel_file)
 
 # Columns expected in Excel: title, text1, text2, ..., text10, subText, ctaText
 
-def prepare_text_for_tts(text):
+def prepare_text_for_tts(text, language="english"):
     if not text:
         return ""
 
@@ -42,8 +43,13 @@ def prepare_text_for_tts(text):
 
     # Remove leftover non-word junk except basic punctuation
     #cleaned = re.sub(r"[^a-zA-Z0-9.,!?\\-'\"\\s]", '', cleaned)
-    cleaned = re.sub(r"[^a-zA-Z0-9.,!?\\'\"\s-]", '', cleaned)
+    #cleaned = re.sub(r"[^a-zA-Z0-9.,!?\\'\"\s-]", '', cleaned)
 
+    # Allow Hindi characters (Devanagari range: \u0900-\u097F) if lang is 'hi'
+    if language == 'hindi':
+        cleaned = re.sub(r"[^\u0900-\u097Fa-zA-Z0-9.,!?\'\"\s-]", '', cleaned)
+    else:
+        cleaned = re.sub(r"[^a-zA-Z0-9.,!?\'\"\s-]", '', cleaned)
 
     # Normalize spaces
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
@@ -89,6 +95,11 @@ def prepare_text_for_tts_old(text):
 
 
 def create_audio_files():
+
+    # delete existing audio files in the output folder
+    shutil.rmtree(audio_output_folder, ignore_errors=True)
+    os.makedirs(audio_output_folder, exist_ok=True)
+    
     for short_idx, row in df.iterrows():
         print(f"\nProcessing Short #{short_idx}")
 
@@ -117,13 +128,13 @@ def create_audio_files():
                     if part:
                         output_filename = os.path.join(audio_output_folder, f"short_{short_idx}_{part_idx}.mp3")
                         print(f"Generating audio for part: {part} --> {output_filename}")
-                        cleaned_text = prepare_text_for_tts(part)
+                        cleaned_text = prepare_text_for_tts(part, language)
                         get_audio_file(
                             text=cleaned_text,
                             audio_file_name=output_filename,
                             tts_engine="google",
                             language=language, # english/hindi/english-india
-                            gender=gender, # male/female
+                            gender=gender, # Male/Female
                             type="neural"
                         )
                         part_idx += 1

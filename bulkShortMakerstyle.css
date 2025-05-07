@@ -196,6 +196,42 @@ span{
 
 }
 
+.hindi4dev_camel_center_up {
+    /* font-size: 30px; */
+    /* font-weight: 700; */
+    color: #fff;
+    animation-delay: 1.5s;
+    
+}
+
+.hindi4dev_camel_center_up #title {
+
+    color: #fff;
+    animation-delay: 1.5s;
+    font-family: 'Rozha One';
+    background: none;
+    font-size: 20px;
+    text-shadow: 0 0 8px black, 0 0 4px black;
+}
+.hindi4dev_camel_center_up span {
+    opacity: 0;
+    animation: fadeSlideUp 0.6s ease forwards;
+}
+
+.hindi4dev_camel_center_up .mainTextWrapper {
+    /* background: cadetblue; */
+     background-color: rgba(0, 0, 0, 0.8); 
+     font-family: 'Amita';
+     font-size: 20px;
+     
+}
+
+.hindi4dev_camel_center_up .mainTextPart {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    color: gold ;
+
+}
 .mainTextPartX {
     opacity: 0;
     transition: opacity 0.5s ease;

@@ -218,6 +218,7 @@ let currentShortMainTextIndex = 0;
 let mainTexts = [];
 let subText = "";
 let ctaText = "";
+let language="english"; 
 let ttsEnabled = false;
 
 let totalShortsData = [];  // will hold all shorts read from Excel or dummy
@@ -261,13 +262,27 @@ function playPreGeneratedAudio(shortIndex, partIndex, onComplete) {
     });
 }
 
-function isMostlyCorrupted(text) {
+function isMostlyCorrupted_Old(text) {
     if (!text) return true;
     const cleaned = text.replace(/[^\w\s.,!?'"()-]/g, '');
     const corruptionRatio = 1 - (cleaned.length / text.length);
     return corruptionRatio > 0.5;  // If >50% characters are weird, consider it bad
 }
 
+function isMostlyCorrupted(text, language = 'english') {
+    if (!text) return true;
+
+    let cleaned;
+    if (language === 'hindi') {
+        // Keep Hindi (Devanagari) characters: \u0900–\u097F
+        cleaned = text.replace(/[^\u0900-\u097F\w\s.,!?'"()-]/g, '');
+    } else {
+        cleaned = text.replace(/[^\w\s.,!?'"()-]/g, '');
+    }
+
+    const corruptionRatio = 1 - (cleaned.length / text.length);
+    return corruptionRatio > 0.5;  // If >50% characters are weird, consider it bad
+}
 
 function displayNextMainText() {
     console.log("=======Inside displayNextMainText======",currentShortMainTextIndex);
@@ -284,7 +299,7 @@ function displayNextMainText() {
         parts.forEach((part, index) => {
             let el = document.createElement('p');
             const cleanPart = cleanCorruptedCharacters(part);
-            if (!isMostlyCorrupted(cleanPart)) {
+            if (!isMostlyCorrupted(cleanPart,language)) {
                 el.textContent = cleanPart;
                 el.classList.add("mainTextPart");
                 el.style.opacity = 0;
@@ -483,6 +498,7 @@ function loadShort(shortData, shortIndex) {
 
     subText = shortData.subText || "";
     ctaText = shortData.ctaText || "";
+    language = shortData.language || "english";
 
     for (let i = 1; i <= 10; i++) {
         const textValue = shortData[`text${i}`];
@@ -507,6 +523,13 @@ function loadShort(shortData, shortIndex) {
         contentContainer.className = "content";
         contentContainer.classList.add(content_style);
         audioName = "horror-piano-671";
+    }else if (bgVideoSrc.includes("ram_4.mp4") || bgVideoSrc.includes("ganesh_4.mp4") ||bgVideoSrc.includes("krishna_4.mp4") || bgVideoSrc.includes("hanuman_4.mp4") || bgVideoSrc.includes("shiv_4.mp4") || bgVideoSrc.includes("durga_4.mp4") || bgVideoSrc.includes("hindi_4.mp4")|| bgVideoSrc.includes("vishnu_4.mp4")) {
+        if (language === "hindi") {
+            content_style = "hindi4dev_camel_center_up"; 
+            contentContainer.className = "content";
+            contentContainer.classList.add(content_style);
+        }
+
     }
 
     bgVideo.src = decodeURIComponent(bgVideoSrc);
