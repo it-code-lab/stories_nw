@@ -375,7 +375,26 @@ def main():
         #         print(f"Error uploading {video['title']}: {e}")
         #         log_upload(video["title"], video["channel_name"], "", "Failed")
 
-        for idx, video in enumerate(videos, start=2):
+
+        # DND -  Working for top to bottom
+        # for idx, video in enumerate(videos, start=2):
+        #     if str(video.get("youtube_upload_status", "")).strip().lower() == "success":
+        #         print(f"Skipping already uploaded: {video['youtube_title']}")
+        #         continue
+
+        #     try:
+        #         print(f"\n=== Uploading: {video['youtube_title']} to {video['youtube_channel_name']} ===")
+        #         video_url = upload_video(page, video)
+        #         save_video_status(ws, idx, video_url, "Success")
+        #     except Exception as e:
+        #         print(f"Error uploading {video['youtube_title']}: {e}")
+        #         save_video_status(ws, idx, "", str(e)[:500])  # Save first 200 characters of error
+
+        # Start from the last row and move up
+        for rev_idx, video in enumerate(reversed(videos), start=1):
+            # Calculate actual Excel row number (considering header in row 1)
+            idx = len(videos) - rev_idx + 2  # +2 because Excel rows start from 2
+
             if str(video.get("youtube_upload_status", "")).strip().lower() == "success":
                 print(f"Skipping already uploaded: {video['youtube_title']}")
                 continue
@@ -386,7 +405,7 @@ def main():
                 save_video_status(ws, idx, video_url, "Success")
             except Exception as e:
                 print(f"Error uploading {video['youtube_title']}: {e}")
-                save_video_status(ws, idx, "", str(e)[:500])  # Save first 200 characters of error
+                save_video_status(ws, idx, "", str(e)[:500])
 
         wb.save(EXCEL_FILE)
         browser.close()
