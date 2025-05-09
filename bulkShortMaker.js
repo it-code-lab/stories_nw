@@ -1,7 +1,10 @@
 //let content_style = "style2_upper_center_up";
 
 //DND - Tobe used for facts/history stories
-let content_style = "style1_camel_center_up"; 
+//let content_style = "style1_camel_center_up"; 
+
+let content_style = "hindi4dev_camel_center_up"; //Default style
+
 
 //DND - Tobe used for scary stories
 //let content_style = "scary4_camel_center_up"; 
@@ -500,7 +503,7 @@ function loadShort(shortData, shortIndex) {
     ctaText = shortData.ctaText || "";
     language = shortData.language || "english";
 
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 15; i++) {
         const textValue = shortData[`text${i}`];
         if (textValue !== undefined && textValue !== null && textValue !== "") {
             mainTexts.push(textValue);
@@ -523,9 +526,13 @@ function loadShort(shortData, shortIndex) {
         contentContainer.className = "content";
         contentContainer.classList.add(content_style);
         audioName = "horror-piano-671";
-    }else if (bgVideoSrc.includes("ram_4.mp4") || bgVideoSrc.includes("ganesh_4.mp4") ||bgVideoSrc.includes("krishna_4.mp4") || bgVideoSrc.includes("hanuman_4.mp4") || bgVideoSrc.includes("shiv_4.mp4") || bgVideoSrc.includes("durga_4.mp4") || bgVideoSrc.includes("hindi_4.mp4")|| bgVideoSrc.includes("vishnu_4.mp4")) {
+    }else if (bgVideoSrc.includes("gita_4.mp4") || bgVideoSrc.includes("ram_4.mp4") || bgVideoSrc.includes("ganesh_4.mp4") ||bgVideoSrc.includes("krishna_4.mp4") || bgVideoSrc.includes("hanuman_4.mp4") || bgVideoSrc.includes("shiv_4.mp4") || bgVideoSrc.includes("durga_4.mp4") || bgVideoSrc.includes("hindi_4.mp4")|| bgVideoSrc.includes("vishnu_4.mp4")) {
         if (language === "hindi") {
             content_style = "hindi4dev_camel_center_up"; 
+            contentContainer.className = "content";
+            contentContainer.classList.add(content_style);
+        }else if (language === "english-india") {
+            content_style = "english4dev_camel_center_up"; 
             contentContainer.className = "content";
             contentContainer.classList.add(content_style);
         }
@@ -688,7 +695,7 @@ function splitTextIntoSpans(element, text, baseDelay = 1.5) {
 function getQueryParams() {
     const params = new URLSearchParams(window.location.search);
     const mainTexts = [];
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 15; i++) {
         const textParam = params.get(`text${i}`);
         if (textParam !== null) {
             mainTexts.push(textParam);

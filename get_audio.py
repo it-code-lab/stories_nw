@@ -74,15 +74,15 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
         "google": {
             "neural": {
                 "english": {"Male": "en-US-Chirp3-HD-Orus", "Female": "en-US-Chirp3-HD-Leda"},
-                "english-india": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
-                "english-india-x": {"Male": "en-IN-Chirp3-HD-Orus", "Female": "en-IN-Chirp3-HD-Leda"},
+                "english-india-n": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
+                "english-india": {"Male": "en-IN-Chirp3-HD-Orus", "Female": "en-IN-Chirp3-HD-Leda"},
                 "english-india-old": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
                 "hindi": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
             },
             "journey": {
                 "english": {"Male": "en-US-Journey-D", "Female": "en-US-Journey-F"},
-                "english-india": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
-                "english-india-x": {"Male": "en-IN-Chirp3-HD-Orus", "Female": "en-IN-Chirp3-HD-Leda"},
+                "english-india-n": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
+                "english-india": {"Male": "en-IN-Chirp3-HD-Orus", "Female": "en-IN-Chirp3-HD-Leda"},
                 "english-india-old": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
                 "hindi": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
                 "hindi-old": {"Male": "hi-IN-Wavenet-B", "Female": "hi-IN-Wavenet-A"},

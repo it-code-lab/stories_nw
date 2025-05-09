@@ -76,12 +76,12 @@ def get_total_audio_duration(short_index):
     total_duration = 0.0
     audio_folder = "generated_audio"  # or wherever your audio files are
     
-    for i in range(50):  # up to 50 parts
+    for i in range(100):  # up to 100 parts
         audio_file = os.path.join(audio_folder, f"short_{short_index}_{i}.mp3")
         if os.path.exists(audio_file):
             audio = MP3(audio_file)
             total_duration += audio.info.length
-            total_duration += 0.3  # As 0.3 seconds delay is added between each part on the UI
+            total_duration += 0.4  # As 0.3 seconds delay is added between each part on the UI
         else:
             break  # Stop if no more parts
     

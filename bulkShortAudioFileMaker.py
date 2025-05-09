@@ -117,7 +117,7 @@ def create_audio_files():
         #     continue
 
         # Process text1–text10
-        for i in range(1, 11):
+        for i in range(1, 15):
             text_field = f"text{i}"
             text_value = row.get(text_field)
 
