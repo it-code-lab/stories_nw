@@ -275,26 +275,15 @@ def upload_video(page, video_info):
 
     # Schedule or Publish
     if "schedule_date" in video_info and video_info["schedule_date"]:
-        #page.locator('tp-yt-paper-radio-button[name="PRIVATE"]').click()
-        
-        #page.locator('ytcp-button:has-text("Schedule")').click()
-        page.locator('#visibility-title:has-text("Schedule")').click()
-        #page.locator(':contains-text("Select a date")').click()
-        time.sleep(1)
-
-        page.locator('ytcp-dropdown-trigger').click()
-
-        #date_input = page.locator('input[label="Date"]')
-        #date_input = page.locator('input.style-scope.tp-yt-paper-input')
-
-        #date_input = page.locator('input[aria-labelledby="paper-input-label-5"]')
-        #date_input.fill(video_info["schedule_date"])
-
-        page.get_by_label('Enter date').get_by_label('').press('Control+a')
-        #page.get_by_label('Enter date').get_by_label('').fill(video_info["schedule_date"])
-        # Convert datetime to string if needed
 
         schedule_date_value = video_info["schedule_date"]
+
+        page.locator('#visibility-title:has-text("Schedule")').click()
+        time.sleep(1)
+        page.locator('ytcp-dropdown-trigger').click()
+        page.get_by_label('Enter date').get_by_label('').press('Control+a')
+
+
         if isinstance(schedule_date_value, datetime):
             schedule_date_value = schedule_date_value.strftime('%B %d, %Y')  # Correct for YouTube
         else:
