@@ -2,6 +2,8 @@ tts-secret/notes-imgtotxt-7b07c59d85c6.json
 *.mp3
 *.mp4
 *.jpg
+*.xlsx
+*.json
 __pycache__
 .vscode
 audios
@@ -32,6 +34,6 @@ video_records.xlsx
 ~$bulkShorts_input.xlsx
 *.xlsx
 background_videos/*
+
 bulkShorts_input.xlsx
 bulkShorts_input.json
-bulkShorts_input.xlsx
