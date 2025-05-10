@@ -220,7 +220,8 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     with open('temp/word_timestamps.json', 'w', encoding='utf-8') as f:
         json.dump(word_timestamps, f,indent=4, ensure_ascii=False)
 
-    shutil.copyfile('temp/word_timestamps.json', f"backup/word_timestamps_{base_file_name}.json")
+    # DND - working-Save a backup of the word_timestamps
+    #shutil.copyfile('temp/word_timestamps.json', f"backup/word_timestamps_{base_file_name}.json")
 
     # Extract text with headings & list items
     if story_text != "":
@@ -339,8 +340,9 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     with open(output_file_path, "w", encoding="utf-8") as file:
         json.dump(structured_output, file, indent=4)
 
-    shutil.copyfile('temp/structured_output.json', f"backup/structured_output_{base_file_name}.json")
-    shutil.copyfile('composed_video.mp4', f"backup/composed_video_{base_file_name}.mp4")
+    #DND - working-Save a backup of the structured_output
+    #shutil.copyfile('temp/structured_output.json', f"backup/structured_output_{base_file_name}.json")
+    #shutil.copyfile('composed_video.mp4', f"backup/composed_video_{base_file_name}.mp4")
 
     print(f"Headings & List Item Timings saved to: {output_file_path}")
     # Only capture the simple text, not full captions_data

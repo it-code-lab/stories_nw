@@ -15,13 +15,13 @@ main_frame.pack(padx=20, pady=20, fill="both", expand=True)
 # Field Variables # DEFAULT VALUES CAN BE CHANGED HERE
 language_var = StringVar(value="english")
 excel_var = StringVar(value="no")
-skip_puppeteer_var = StringVar(value="yes")
+skip_puppeteer_var = StringVar(value="no")
 tts_var = StringVar(value="google")
 gender_var = StringVar(value="Female")
 voice_var = StringVar(value="Joanna")
-size_var = StringVar(value="Regular YouTube Video")
+size_var = StringVar(value="YouTube Shorts")
 music_var = StringVar(value="story-classical-3-710.mp3")
-max_words = IntVar(value=5)
+max_words = IntVar(value=4)
 fontsize = IntVar(value=90)
 y_pos = StringVar(value="bottom")
 style_var = StringVar(value="style2")
@@ -41,7 +41,7 @@ def update_voice_menu(*args):
 def update_ui_based_on_video_type(*args):
     selected_type = size_var.get()
     if selected_type == "YouTube Shorts":
-        max_words.set(3)
+        max_words.set(4)
         y_pos.set("center")
         style_var.set("style2")
         fontsize.set(90)
@@ -88,7 +88,7 @@ Spinbox(main_frame, from_=1, to=10, textvariable=max_words, width=5).grid(row=7,
 
 # create_dropdown(main_frame, "Vertical Position(not in use):", y_pos, ["top", "center", "bottom"], 9)
 create_dropdown(main_frame, "Select Caption Style:", style_var, font_settings.keys(), 8)
-create_dropdown(main_frame, "Skip Puppeteer Call:", skip_puppeteer_var, ["yes", "no"], 9)
+create_dropdown(main_frame, "Skip Puppeteer Call(Should be 'no' for multi-shorts):", skip_puppeteer_var, ["yes", "no"], 9)
 # Process Button
 Button(
     main_frame, text="Process",

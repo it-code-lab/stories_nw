@@ -54,6 +54,13 @@ def is_excel_file_locked(file_path):
 
 def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
                        selected_voice, language, gender, tts_engine, skip_puppeteer):
+
+
+    EXCEL_FILE = "video_records.xlsx"
+    if is_excel_file_locked(EXCEL_FILE):
+        print(f"Error: Please close '{EXCEL_FILE}' before running the application.")
+        return  # Exit cleanly without trying uploads  
+       
     if excel_var == "no":
         if not urls or selected_size not in sizes or selected_music not in background_music_options:
             raise ValueError("Invalid input parameters")
@@ -75,91 +82,118 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                 continue
 
             try:
-                base_file_name = Path(url).name
-                base_file_name = re.sub(r'[<>:"/\\\\|?*]', '', base_file_name)  # Remove file-unsafe chars
-                base_file_name = re.sub(r'[^a-zA-Z0-9_-]', '_', base_file_name)  # Replace special chars with underscore
 
                 results = scrape_page_with_camera_frame(url)
-                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
-                
-                output_file = "composed_video.mp4"
-                #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
-                #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
-                prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name, language,story_text="")
+                if not results:
+                    print(f"No valid content found in {url}. Skipping.")
+                else:
+                    for name_suffix, section_elements ,metadata in results:
+                        base_file_name = Path(url).name
+                        #base_file_name = re.sub(r'[^a-zA-Z0-9_-]', '_', base_file_name)  # Replace special chars with underscore
+                        
 
-                #try:
-                    #video_clip = VideoFileClip("output_video.mp4")
+                        title = metadata.get("title", "")
 
-                    #DND - Temporarily disabled - as Gif is being added thru Mango as part of effects addition
-                    # final_video = add_gif_to_video(
-                    #     video_clip, 5, icon_path="gif_files/subscribe.gif"
-                    # )
+                        if title:
+                            base_file_name = title
 
-                    #SM - DND - Temporarily disabled - as Gif is being added thru HTML
-                    # video_clip.write_videofile(
-                    #     "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
-                    # )
+                        base_file_name = re.sub(r'[<>:"/\\\\|?*]', '', base_file_name)  # Remove file-unsafe chars
 
-                    # output_file = "output_video_with_gif.mp4"
-                #except Exception as e:
-                    #print("Error adding gif. Proceeding without gif")
-                    #output_file = "output_video.mp4"
+                        if language == 'hindi':
+                            base_file_name = re.sub(r"[^\u0900-\u097Fa-zA-Z0-9.,!?\'\"\s-]", '', base_file_name)
+                        else:
+                            base_file_name = re.sub(r"[^a-zA-Z0-9.,!?\'\"\s-]", '', base_file_name)
 
-                video = VideoFileClip(output_file)
-                duration_seconds = video.duration
-                duration_buffer = 3.5  # Buffer time for video processing
-                if selected_size == "YouTube Shorts":               
-                    
-                    duration_minutes = video.duration / 60
+                        base_file_name += f"_{name_suffix}"
 
-                    if duration_minutes > 3:
-                        print(f"Video duration {duration_minutes:.2f} minutes. Splitting required.")
-                        split_files = split_video(output_file, video.duration, max_duration=130)  # 2m 10s
-                        for idx, split_file in enumerate(split_files, start=1):
-                            split_output_name = f"{output_folder}/{base_file_name}-{idx}.mp4"
-                            #safe_copy(split_file, split_output_name)
-                            shutil.copyfile(split_file, output_file)
-                            duration_seconds = split_file.duration
+                        description = metadata.get("description", "")
+                        tags = metadata.get("tags", "")
+                        channel = metadata.get("channel", "")
+                        playlist = metadata.get("playlist", "")
+                        ctatext = metadata.get("ctatext", "")
+
+                        create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
+                        
+                        output_file = "composed_video.mp4"
+                        #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
+                        #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
+                        #prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name, language,story_text="")
+                        
+                        prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text="", description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date="")
+
+                        #try:
+                            #video_clip = VideoFileClip("output_video.mp4")
+
+                            #DND - Temporarily disabled - as Gif is being added thru Mango as part of effects addition
+                            # final_video = add_gif_to_video(
+                            #     video_clip, 5, icon_path="gif_files/subscribe.gif"
+                            # )
+
+                            #SM - DND - Temporarily disabled - as Gif is being added thru HTML
+                            # video_clip.write_videofile(
+                            #     "output_video_with_gif.mp4", codec="libx264", audio_codec="aac", fps=24
+                            # )
+
+                            # output_file = "output_video_with_gif.mp4"
+                        #except Exception as e:
+                            #print("Error adding gif. Proceeding without gif")
+                            #output_file = "output_video.mp4"
+
+                        video = VideoFileClip(output_file)
+                        duration_seconds = video.duration
+                        duration_buffer = 3.5  # Buffer time for video processing
+                        if selected_size == "YouTube Shorts":               
+                            
+                            duration_minutes = video.duration / 60
+
+                            if duration_minutes > 3:
+                                print(f"Video duration {duration_minutes:.2f} minutes. Splitting required.")
+                                split_files = split_video(output_file, video.duration, max_duration=130)  # 2m 10s
+                                for idx, split_file in enumerate(split_files, start=1):
+                                    split_output_name = f"{output_folder}/{base_file_name}-{idx}.mp4"
+                                    #safe_copy(split_file, split_output_name)
+                                    shutil.copyfile(split_file, output_file)
+                                    duration_seconds = split_file.duration
+                                    duration_seconds = duration_seconds + duration_buffer
+                                    cmd = [
+                                        "node", "puppeteer-recorder.js",
+                                        split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                                        selected_music, "0.05", "1"
+                                    ]
+                                    print("▶️ Running Puppeteer with:", cmd)
+                                    if skip_puppeteer == "no":
+                                        subprocess.run(cmd)
+
+                            else:
+                                print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
+                                output_name = f"{output_folder}/{base_file_name}.mp4"
+                                duration_seconds = duration_seconds + duration_buffer
+                                cmd = [
+                                    "node", "puppeteer-recorder.js",
+                                    output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                                    selected_music, "0.05", "1"
+                                ]
+                                print("▶️ Running Puppeteer with:", cmd)
+                                if skip_puppeteer == "no":
+                                    subprocess.run(cmd)
+
+                                #SM-DND
+                                #safe_copy(output_file, output_name)
+                        else:
+                            output_name = f"{output_folder}/{base_file_name}.mp4"
                             duration_seconds = duration_seconds + duration_buffer
+                            #SM-DND
+                            #safe_copy(output_file, output_name)
                             cmd = [
                                 "node", "puppeteer-recorder.js",
-                                split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                                output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
                                 selected_music, "0.05", "1"
                             ]
                             print("▶️ Running Puppeteer with:", cmd)
                             if skip_puppeteer == "no":
                                 subprocess.run(cmd)
 
-                    else:
-                        print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
-                        output_name = f"{output_folder}/{base_file_name}.mp4"
-                        duration_seconds = duration_seconds + duration_buffer
-                        cmd = [
-                            "node", "puppeteer-recorder.js",
-                            output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
-                            selected_music, "0.05", "1"
-                        ]
-                        print("▶️ Running Puppeteer with:", cmd)
-                        if skip_puppeteer == "no":
-                            subprocess.run(cmd)
-
-                        #SM-DND
-                        #safe_copy(output_file, output_name)
-                else:
-                    output_name = f"{output_folder}/{base_file_name}.mp4"
-                    duration_seconds = duration_seconds + duration_buffer
-                    #SM-DND
-                    #safe_copy(output_file, output_name)
-                    cmd = [
-                        "node", "puppeteer-recorder.js",
-                        output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
-                        selected_music, "0.05", "1"
-                    ]
-                    print("▶️ Running Puppeteer with:", cmd)
-                    if skip_puppeteer == "no":
-                        subprocess.run(cmd)
-
-                print(f"Processing complete for {url}")
+                        print(f"Processing complete for {url}")
 
             except Exception as e:
                 print(f"Error processing {url}: {e.with_traceback}. Proceeding to next")
@@ -679,6 +713,298 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
 
+
+    shorts_sections = soup.select("div.shorts")
+    process_sections = []
+
+    if shorts_sections:
+        for idx, section in enumerate(shorts_sections, 1):
+            name_suffix = f"shorts_{idx}"
+
+            # ✅ Extract metadata fields from input elements
+            metadata = {
+                "title": section.select_one("div.shorts-title").get_text(strip=True) if section.select_one("div.shorts-title") else "",
+                "description": section.select_one("div.shorts-description").get_text(strip=True) if section.select_one("div.shorts-description") else "",
+                "tags": section.select_one("div.shorts-tags").get_text(strip=True) if section.select_one("div.shorts-tags") else "",
+                "channel": section.select_one("div.shorts-channel").get_text(strip=True) if section.select_one("div.shorts-channel") else "",
+                "playlist": section.select_one("div.shorts-playlist").get_text(strip=True) if section.select_one("div.shorts-playlist") else "",
+                "ctatext": section.select_one("div.shorts-ctatext").get_text(strip=True) if section.select_one("div.shorts-ctatext") else ""
+            }
+
+            process_sections.append((name_suffix, section, metadata))
+    else:
+        song_lyrics = soup.select_one(".songLyrics")
+        if song_lyrics:
+            process_sections.append(("main", song_lyrics, {}))
+        else:
+            return []  # No valid section found
+
+    all_results = []
+
+
+    def is_skippable(element):
+        """
+        Check if the element should be skipped for text extraction.
+        """
+        # Skip <span> only if it has onclick="toggleParentDetails(this)"
+        if element.name == "span" and element.get("onclick") == "toggleParentDetails(this)":
+            return True
+        
+        # Skip <button> elements
+        if element.name == "button":
+            return True
+        
+        # Skip <div> with class "audio-details"
+        if element.name == "div" and "audio-details" in element.get("class", []):
+            return True
+
+        # Skip <div> with class "audio-details"
+        if element.name == "div" and "image-props" in element.get("class", []):
+            return True
+
+        if element.name == "div" and "video-props" in element.get("class", []):
+            return True
+
+        if element.name == "div" and "video-listitem-props" in element.get("class", []):
+            return True
+
+        if element.name == "div" and "video-hdr-props" in element.get("class", []):
+            return True
+
+        if element.name == "div" and "shorts-props" in element.get("class", []):
+            return True
+                                               
+        return False
+    
+
+    for name_suffix, section, metadata  in process_sections:
+
+
+        #DND - For debugginh
+        #print(f"Processing element: {element}")
+
+        current_text = ""
+        elements = []
+        previous_image_data = None
+        last_image = None
+
+
+        for element in section.descendants:
+            # Skip irrelevant elements (script, styles, etc.)
+            if element.name in ("script", "style", "p", "button"):
+                continue
+
+            # Skip skippable elements
+            if is_skippable(element):
+                continue         
+
+            # Collect text from text nodes
+            if element.name == "div" and "audio-desc" in element.get("class", []):
+
+                if current_text.strip():
+                    elements.append({
+                        "type": "text",
+                        "text": current_text,
+                        "audio": None,
+                        "image": None,
+                        "camera_frame": None
+                    })
+                    current_text = ""  # Reset text after pairing
+            
+                audio_src = urljoin(url, element.find("audio")["src"])
+                start_time = element.select_one("[id$='-start']").text.strip()
+                duration = element.select_one("[id$='-duration']").text.strip()
+                volume = element.select_one("[id$='-volume']").text.strip()
+                overlap = element.select_one("[id$='-overlap']").text.strip()
+
+                # Save collected data
+                elements.append({
+                    "type": "audio",
+                    "text": None,
+                    "audio": {
+                        "src": audio_src,
+                        "start_time": start_time,
+                        "duration": duration,
+                        "volume": volume,
+                        "overlap": overlap
+                    },
+                    "image": None,
+                    "camera_frame": None
+                })
+
+            # Text nodes
+            elif isinstance(element, str) and element.strip():
+                if not any(parent for parent in element.parents if is_skippable(parent)):
+                    text = element.strip()
+                    # if not text.endswith('.'):
+                    #     text += '.'
+                    
+                    # try:
+                    #     if isinstance(element, Tag) and "video-hdr-inline-cls" in element.get("class", []):
+                    #         text += '.'
+                    # except:
+                    #     pass
+                    current_text += " " + text
+
+
+            elif element.name == "div" and "video1-desc" in element.get("class", []):
+                video_tag = element.find("video", class_="movieVideoCls")
+                video_src = urljoin(base_url, video_tag["src"]) if video_tag else None
+
+                vid_duration = element.select_one("[id$='-vidduration']").text.strip()
+
+                try:
+                    add_avatar = element.select_one("[id$='-avatarflag']").text.strip()
+                except:
+                    add_avatar = 'n'
+
+                video_data = {
+                    "type": "video",
+                    "text": None,
+                    "audio": None,
+                    "video": video_src,
+                    "vid_duration": vid_duration,
+                    "avatar_flag": add_avatar
+                }
+
+                if current_text.strip() :
+                    elements.append({
+                        "type": "text",
+                        "text": current_text,
+                        "audio": None,
+                        "image": None,
+                        "camera_frame": None
+                    })
+                    current_text = ""  # Reset text after pairing
+
+                elements.append(video_data)
+
+            # Collect images from <img class="movieImageCls">
+            elif element.name == "div" and "image1-desc" in element.get("class", []):
+                img_tag = element.find("img", class_="movieImageCls")
+                img_src = urljoin(base_url, img_tag["src"]) if img_tag else None
+
+                img_duration = element.select_one("[id$='-imgduration']").text.strip()
+                img_animation = element.select_one("[id$='-imganimation']").text.strip()
+                try:
+                    add_avatar = element.select_one("[id$='-avatarflag']").text.strip()
+                except:
+                    add_avatar = 'n'
+
+                # Extract camera frame details
+                camera_frame = element.find("div", class_="camera-frame")
+                if camera_frame:
+                    style = camera_frame.get("style", "")
+                    # Use a more robust parsing mechanism to handle spaces and missing values
+                    style_dict = {}
+                    for item in style.split(";"):
+                        if ": " in item:  # Ensure the item contains a key-value pair
+                            key, value = item.split(": ", 1)
+                            style_dict[key.strip()] = value.strip()
+
+                    # Extract individual properties
+                    width = style_dict.get('width')
+                    height = style_dict.get('height')
+                    left = style_dict.get('left', '0px')  # Default to '0px' if 'left' is not in style_dict
+                    top = style_dict.get('top', '0px')    # Default to '0px' if 'top' is not in style_dict
+
+
+                # Check for camera movement
+                if previous_image_data and previous_image_data["image"] == img_src:
+                    camera_movement = {
+                        "start_frame": previous_image_data["camera_frame"],
+                        "end_frame": {
+                            "width": width,
+                            "height": height,
+                            "left": left,
+                            "top": top
+                        }
+                    }
+                else:
+                    camera_movement = None
+
+                image_data = {
+                    "type": "image",
+                    "text": None,
+                    "audio": None,
+                    "image": img_src,
+                    "camera_frame": {
+                        "width": width,
+                        "height": height,
+                        "left": left,
+                        "top": top
+                    },
+                    "camera_movement": camera_movement,
+                    "img_duration": img_duration,
+                    "img_animation": img_animation,
+                    "avatar_flag": add_avatar
+                }
+                last_image = {
+                    "type": "image",
+                    "text": None,
+                    "audio": None,
+                    "image": img_src,
+                    "camera_frame": {
+                        "width": width,
+                        "height": height,
+                        "left": left,
+                        "top": top
+                    },
+                    "camera_movement": None,
+                    "img_duration": img_duration,
+                    "img_animation": img_animation,
+                    "avatar_flag": add_avatar
+                }
+
+
+                # Save text-image pair if text and image exist
+                if current_text.strip() :
+                    elements.append({
+                        "type": "text",
+                        "text": current_text,
+                        "audio": None,
+                        "image": None,
+                        "camera_frame": None
+                    })
+                    current_text = ""  # Reset text after pairing
+
+                elements.append(image_data)
+                previous_image_data = image_data
+
+        # Handle remaining text if no image follows
+        if current_text.strip():
+            #text_image_pairs.append((current_text.strip(), last_image_url))
+            elements.append({
+                "type": "text",
+                "text": current_text,
+                "audio": None,
+                "image": None,
+                "camera_frame": None
+            })
+            elements.append(last_image)
+
+
+        if elements:
+            all_results.append((name_suffix, elements, metadata))
+
+    return all_results  # List of (suffix, elements)
+
+#DND - Working code before the change to support multiple shorts on a page
+def scrape_page_with_camera_frame_DND(url, base_url="https://readernook.com"):
+    """
+    Scrapes text, sound effects, and images along with camera movement properties.
+
+    Args:
+        url (str): The webpage URL.
+        base_url (str): Base URL for resolving relative paths.
+
+    Returns:
+        list[dict]: A list of elements with text, audio, image, and camera frame details.
+    """
+   # Scrape the page
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+
     # Extract text-image pairs
     #text_image_pairs = []
     current_text = ""
@@ -686,6 +1012,7 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
     elements = []
     previous_image_data = None
     last_image = None
+
     def is_skippable(element):
         """
         Check if the element should be skipped for text extraction.
