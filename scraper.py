@@ -111,6 +111,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         channel = metadata.get("channel", "")
                         playlist = metadata.get("playlist", "")
                         ctatext = metadata.get("ctatext", "")
+                        shorts_html = metadata.get("shorts_html", "")
 
                         create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
                         
@@ -119,7 +120,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
                         #prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name, language,story_text="")
                         
-                        prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text="", description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date="")
+                        prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text="", description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date="",shorts_html=shorts_html)
 
                         #try:
                             #video_clip = VideoFileClip("output_video.mp4")
@@ -728,7 +729,8 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
                 "tags": section.select_one("div.shorts-tags").get_text(strip=True) if section.select_one("div.shorts-tags") else "",
                 "channel": section.select_one("div.shorts-channel").get_text(strip=True) if section.select_one("div.shorts-channel") else "",
                 "playlist": section.select_one("div.shorts-playlist").get_text(strip=True) if section.select_one("div.shorts-playlist") else "",
-                "ctatext": section.select_one("div.shorts-ctatext").get_text(strip=True) if section.select_one("div.shorts-ctatext") else ""
+                "ctatext": section.select_one("div.shorts-ctatext").get_text(strip=True) if section.select_one("div.shorts-ctatext") else "",
+                "shorts_html": str(section)
             }
 
             process_sections.append((name_suffix, section, metadata))

@@ -158,7 +158,7 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings,
     
     print("Captioning process completed successfully!")
 
-def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output", language="english", story_text="",description ="", tags="",playlist="",channel="",title="", schedule_date=""):
+def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output", language="english", story_text="",description ="", tags="",playlist="",channel="",title="", schedule_date="", shorts_html=""):
     
     #print("Received add_captions Arguments:", locals())
 
@@ -244,7 +244,7 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
         with open('temp/full_text.txt', 'w', encoding='utf-8') as f:
             json.dump(full_text, f, indent=4, ensure_ascii=False)
     else:
-        full_text = extract_full_text_with_positions(url)
+        full_text = extract_full_text_with_positions(url, shorts_html)
 
     """Compare each word in sequence and set matched flag."""
     matched_results = []
@@ -487,22 +487,29 @@ def is_skippable(element):
         # Skip <div> with specific classes
         skip_classes = {
             "audio-details", "image-props", "video-props", "video-listitem-props",
-            "video-hdr-props", "audio-desc", "video1-desc", "image1-desc"
+            "video-hdr-props", "audio-desc", "video1-desc", "shorts-props", "image1-desc"
         }
         if element.name == "div" and any(cls in element.get("class", []) for cls in skip_classes):
             return True
 
     return False
             
-def extract_full_text_with_positions(url):
+def extract_full_text_with_positions(url,shorts_html=""):
     """Extracts full website text and marks positions of headings and list items."""
 
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "html.parser")
+    if shorts_html != "":
+        responseText = shorts_html
+        objClass = ".shorts"
+    else:
+        response = requests.get(url)
+        responseText = response.text
+        objClass = ".songLyrics"
+
+    soup = BeautifulSoup(responseText, "html.parser")
     full_text = []  # Store all words with their type (regular, heading, list_item)
     position_index = 0  # Track word positions
 
-    for element in soup.select_one(".songLyrics").descendants:  # Capture text elements including headings and list items
+    for element in soup.select_one(objClass).descendants:  # Capture text elements including headings and list items
 
         if isinstance(element, Tag):  # Only process HTML tags, ignore NavigableStrings directly
             if element.name in ("script", "style", "p", "button"):
