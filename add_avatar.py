@@ -60,7 +60,7 @@ def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", av
     ffmpeg_command_3 = [
         "ffmpeg", "-i", UPDATED_BACKGROUND,
         "-i", AVATAR_WITHOUT_WHITEBG,
-        "-filter_complex", "[1:v]scale=256:256[avatar];[0:v][avatar] overlay=W-w:H-h:format=auto",
+        "-filter_complex", "[1:v]scale=256:256[avatar];[0:v][avatar] overlay=W-w:0:format=auto", # position top right
         "-c:v", "libx264",  # Or your preferred output codec
         "-preset", "ultrafast",
         "-crf", "18",  # Adjust CRF for quality

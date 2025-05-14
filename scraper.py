@@ -3,6 +3,7 @@ import subprocess
 import shutil
 from tempfile import NamedTemporaryFile
 import traceback
+import psutil
 import requests
 from bs4 import BeautifulSoup
 import urllib.request
@@ -52,10 +53,23 @@ def is_excel_file_locked(file_path):
     except PermissionError:
         return True
 
+def is_server_running(script_name="server.py"):
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            cmdline = proc.info.get('cmdline')
+            if cmdline and script_name in cmdline:
+                return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+    return False
+
 def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
                        selected_voice, language, gender, tts_engine, skip_puppeteer):
 
-
+    if skip_puppeteer == "no":
+        if not is_server_running("server.py"):
+            messagebox.showerror("Server Not Running", "To record the video, please start the server first by running server.py.")
+            return
     EXCEL_FILE = "video_records.xlsx"
     if is_excel_file_locked(EXCEL_FILE):
         print(f"Error: Please close '{EXCEL_FILE}' before running the application.")
@@ -111,9 +125,10 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         channel = metadata.get("channel", "")
                         playlist = metadata.get("playlist", "")
                         ctatext = metadata.get("ctatext", "")
+                        avatar = metadata.get("avatar", "")
                         shorts_html = metadata.get("shorts_html", "")
 
-                        create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
+                        create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar)
                         
                         output_file = "composed_video.mp4"
                         #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
@@ -458,7 +473,8 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                 # Resize the video clip to the target resolution
                 video_clip = resize(video_clip, newsize=target_resolution)
                 vid_duration = element["vid_duration"]
-
+                loop_video = element.get("loop_video", "n")  # Default is 'n'
+                
                 # Calculate total audio duration
                 combined_audio_duration = sum([clip.duration for clip in audio_clips]) if audio_clips else 0
                 print(f"combined_audio_duration: {combined_audio_duration}")
@@ -473,12 +489,12 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                     except ValueError:
                         print(f"Warning: Unable to convert vid_duration ('{vid_duration}') to float. Skipping.")
 
-                if local_video_flag == 'y':
+                # Repeat video if it's shorter than the combined audio duration
+                if local_video_flag == 'y' or loop_video == 'y':
                     if video_clip.duration < combined_audio_duration:
                         num_loops = int(combined_audio_duration // video_clip.duration) + 1
                         repeated_clips = [video_clip] * num_loops
                         video_clip = concatenate_videoclips(repeated_clips).subclip(0, combined_audio_duration + BUFFER_DURATION)
-
                 
                 # Clip video if it's longer than the combined audio duration
                 if video_clip.duration > combined_audio_duration:
@@ -510,7 +526,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                 #video_with_audio = video_clip.set_audio(combined_audio)
                 video_with_audio = video_clip.set_audio(combined_audio.subclip(0, video_clip.duration))
 
-                if avatar_flag == 'y':
+                if avatar_flag == 'y' or avatar != "":
                     temp_audio_path = "temp/audio.wav"
                     temp_output_path = "temp/video_b4_adding_avatar.mp4"
                     video_with_audio.write_videofile(temp_output_path, fps=24)
@@ -638,7 +654,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             video_with_audio = video_clip.set_audio(combined_audio)
 
             
-            if avatar_flag == 'y':
+            if avatar_flag == 'y' or avatar != "":
                 temp_audio_path = "temp/audio.wav"
                 temp_output_path = "temp/video_b4_adding_avatar.mp4"
                 video_with_audio.write_videofile(temp_output_path, fps=24)
@@ -734,6 +750,7 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
                 "channel": section.select_one("div.shorts-channel").get_text(strip=True) if section.select_one("div.shorts-channel") else "",
                 "playlist": section.select_one("div.shorts-playlist").get_text(strip=True) if section.select_one("div.shorts-playlist") else "",
                 "ctatext": section.select_one("div.shorts-ctatext").get_text(strip=True) if section.select_one("div.shorts-ctatext") else "",
+                "avatar": section.select_one("div.shorts-avatar").get_text(strip=True) if section.select_one("div.shorts-avatar") else "",
                 "shorts_html": str(section)
             }
 
@@ -864,13 +881,19 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
                 except:
                     add_avatar = 'n'
 
+                try:
+                    loop_video = element.select_one("[id$='-loopflag']").text.strip()
+                except:
+                    loop_video = 'n'
+
                 video_data = {
                     "type": "video",
                     "text": None,
                     "audio": None,
                     "video": video_src,
                     "vid_duration": vid_duration,
-                    "avatar_flag": add_avatar
+                    "avatar_flag": add_avatar,
+                    "loop_video": loop_video,
                 }
 
                 if current_text.strip() :
@@ -896,6 +919,7 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
                     add_avatar = element.select_one("[id$='-avatarflag']").text.strip()
                 except:
                     add_avatar = 'n'
+
 
                 # Extract camera frame details
                 camera_frame = element.find("div", class_="camera-frame")
@@ -1124,13 +1148,19 @@ def scrape_page_with_camera_frame_DND(url, base_url="https://readernook.com"):
             except:
                 add_avatar = 'n'
 
+            try:
+                loop_video = element.select_one("[id$='-loopflag']").text.strip()
+            except:
+                loop_video = 'n'
+
             video_data = {
                 "type": "video",
                 "text": None,
                 "audio": None,
                 "video": video_src,
                 "vid_duration": vid_duration,
-                "avatar_flag": add_avatar
+                "avatar_flag": add_avatar,
+                "loop_video": loop_video,
             }
 
             if current_text.strip() :
