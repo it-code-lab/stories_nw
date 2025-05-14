@@ -343,7 +343,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
             df.to_excel(input_excel_file, index=False)
 
 
-def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video" ):
+def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video", avatar="" ):
     """
     Creates a video using the scrapped elements.
 
@@ -515,7 +515,9 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                     temp_output_path = "temp/video_b4_adding_avatar.mp4"
                     video_with_audio.write_videofile(temp_output_path, fps=24)
                     extract_audio(temp_output_path, temp_audio_path)
-                    video_with_audio  = create_avatar_video(temp_output_path, gender)
+                    if avatar == "":
+                        avatar = gender
+                    video_with_audio  = create_avatar_video(temp_output_path, avatar)
 
                 video_clips.append(video_with_audio)
                 #DND-Working but can alter the clip so that the final video may not have the camera movement
@@ -641,7 +643,9 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                 temp_output_path = "temp/video_b4_adding_avatar.mp4"
                 video_with_audio.write_videofile(temp_output_path, fps=24)
                 extract_audio(temp_output_path, temp_audio_path)
-                video_with_audio  = create_avatar_video(temp_output_path, gender)
+                if avatar == "":
+                    avatar = gender
+                video_with_audio  = create_avatar_video(temp_output_path, avatar)
             
             video_clips.append(video_with_audio)
 

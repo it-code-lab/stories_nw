@@ -3,6 +3,8 @@ import gfpgan
 from moviepy.editor import VideoFileClip
 from concurrent.futures import ThreadPoolExecutor
 
+from caption_generator import extract_audio
+
 # Paths for AI avatar generation
 WAV2LIP_PATH = "Wav2Lip"
 SADTALKER_PATH = "SadTalker"
@@ -17,9 +19,9 @@ def run_subprocess(command):
     print(f"Running command: {' '.join(command)}")
     subprocess.run(command, check=True)
 
-def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", gender = "Male"):
+def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", avatar = "Male"):
 
-    INPUT_IMAGE = f"Avatar_4_SadTalker/avatar_{gender}.jpg"
+    INPUT_IMAGE = f"Avatar_4_SadTalker/avatar_{avatar}.jpg"
 
     # Step : Use SadTalker to Add Facial Expressions
     sadtalker_command = [
@@ -58,7 +60,7 @@ def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", ge
     ffmpeg_command_3 = [
         "ffmpeg", "-i", UPDATED_BACKGROUND,
         "-i", AVATAR_WITHOUT_WHITEBG,
-        "-filter_complex", "[1:v]scale=256:256[avatar];[0:v][avatar] overlay=W-w:0:format=auto", # position top right
+        "-filter_complex", "[1:v]scale=256:256[avatar];[0:v][avatar] overlay=W-w:H-h:format=auto",
         "-c:v", "libx264",  # Or your preferred output codec
         "-preset", "ultrafast",
         "-crf", "18",  # Adjust CRF for quality
@@ -69,6 +71,9 @@ def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", ge
     #DND - For bottom right avatar position
     #"-filter_complex", "[1:v]scale=256:256[avatar];[0:v][avatar] overlay=W-w:H-h:format=auto",
 
+    #DND - For top right avatar position
+    #"-filter_complex", "[1:v]scale=256:256[avatar];[0:v][avatar] overlay=W-w:0:format=auto", # position top right
+
     print("Merging avatar video onto background...")
     subprocess.run(ffmpeg_command_3, check=True)
 
@@ -77,9 +82,9 @@ def create_avatar_video(BACKGROUND_VIDEO = "temp/video_b4_adding_avatar.mp4", ge
     return VideoFileClip(FINAL_VIDEO)
 
 
-def create_avatar_video_from_ref(REFERENCE_VIDEO = "Avatar_4_SadTalker/reference_video.mp4", gender = "Male"):
+def create_avatar_video_from_ref(REFERENCE_VIDEO = "Avatar_4_SadTalker/reference_video.mp4", avatar = "Male"):
 
-    INPUT_IMAGE = f"Avatar_4_SadTalker/avatar_{gender}.jpg"
+    INPUT_IMAGE = f"Avatar_4_SadTalker/avatar_{avatar}.jpg"
 
     # Step : Use SadTalker to Add Facial Expressions
     sadtalker_command = [
@@ -95,7 +100,22 @@ def create_avatar_video_from_ref(REFERENCE_VIDEO = "Avatar_4_SadTalker/reference
     print("SadTalker command:", sadtalker_command)
     subprocess.run(sadtalker_command)
 
+
 # Example Usage
 if __name__ == "__main__":
-    create_avatar_video("temp/video_b4_adding_avatar.mp4", "feMale")
+    avatar = "Krishna"
+    temp_audio_path = "temp/audio.wav"
+    temp_output_path = "temp/video_b4_adding_avatar.mp4"
+    input_video_path="composed_video.mp4"
+
+    # ✅ Convert string to VideoFileClip and save with desired FPS
+    clip = VideoFileClip(input_video_path)
+    clip.write_videofile(temp_output_path, fps=24)
+
+    extract_audio(temp_output_path, temp_audio_path)
+    video_with_audio  = create_avatar_video(temp_output_path, avatar)
+
+    #create_avatar_video("temp/video_b4_adding_avatar.mp4", avatar)
+
+    #create_avatar_video("temp/video_b4_adding_avatar.mp4", "feMale")
     #create_avatar_video_from_ref( "Avatar_4_SadTalker/reference_video.mp4",  "Male")
