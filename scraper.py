@@ -128,14 +128,19 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         avatar = metadata.get("avatar", "")
                         shorts_html = metadata.get("shorts_html", "")
 
+                        start = time.time()
                         create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar)
-                        
+                        print(f"[{time.strftime('%H:%M:%S')}] Step create_video_using_camera_frames completed in {time.time() - start:.2f} seconds")
+                        start = time.time()
+
                         output_file = "composed_video.mp4"
                         #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
                         #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
                         #prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name, language,story_text="")
                         
                         prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text="", description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date="",shorts_html=shorts_html)
+                        print(f"[{time.strftime('%H:%M:%S')}] Step prepare_file_for_adding_captions_n_headings_thru_html completed in {time.time() - start:.2f} seconds")
+                        start = time.time()
 
                         #try:
                             #video_clip = VideoFileClip("output_video.mp4")
@@ -269,8 +274,11 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                 elements.append(video_data)
 
                 results = elements
-                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
                 
+                start = time.time() 
+                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
+                print(f"[{time.strftime('%H:%M:%S')}] Step create_video_using_camera_frames completed in {time.time() - start:.2f} seconds")
+                start = time.time()                
                 output_file = "composed_video.mp4"
                 url = title
                 #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video

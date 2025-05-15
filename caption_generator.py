@@ -5,6 +5,7 @@ import os
 import re
 import difflib
 import shutil
+import time
 from bs4 import BeautifulSoup, Tag
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 import requests
@@ -199,7 +200,7 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
 
     word_timestamps = []
     position_index = 0  # Track word positions
-
+    start = time.time()  
     for segment in captions_data["segments"]:
         for word_data in segment.get("words", []):
             word_timestamps.append({
@@ -216,6 +217,8 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
         end = word["end"]
         if end - start > MAX_WORD_DURATION:
             word["end"] = start + MAX_WORD_DURATION
+    print(f"[{time.strftime('%H:%M:%S')}] Logic of building word_timestamps completed in {time.time() - start:.2f} seconds")
+    start = time.time()  
 
     with open('temp/word_timestamps.json', 'w', encoding='utf-8') as f:
         json.dump(word_timestamps, f,indent=4, ensure_ascii=False)
@@ -245,6 +248,9 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
             json.dump(full_text, f, indent=4, ensure_ascii=False)
     else:
         full_text = extract_full_text_with_positions(url, shorts_html)
+
+    print(f"[{time.strftime('%H:%M:%S')}] Logic of building full_text completed in {time.time() - start:.2f} seconds")
+    start = time.time() 
 
     """Compare each word in sequence and set matched flag."""
     matched_results = []
@@ -329,6 +335,8 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     with open('temp/matched_results.txt', 'w', encoding='utf-8') as f:
         json.dump(matched_results, f,indent=4, ensure_ascii=False)
 
+    print(f"[{time.strftime('%H:%M:%S')}] Logic of building matched_results completed in {time.time() - start:.2f} seconds")
+    start = time.time() 
 
     output_file_path = "temp/structured_output.json"
 
@@ -339,6 +347,9 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     # Save structured output
     with open(output_file_path, "w", encoding="utf-8") as file:
         json.dump(structured_output, file, indent=4)
+
+    print(f"[{time.strftime('%H:%M:%S')}] Logic of building structured_output completed in {time.time() - start:.2f} seconds")
+    start = time.time() 
 
     #DND - working-Save a backup of the structured_output
     #shutil.copyfile('temp/structured_output.json', f"backup/structured_output_{base_file_name}.json")
