@@ -176,8 +176,14 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                                     shutil.copyfile(split_file, output_file)
                                     duration_seconds = split_file.duration
                                     duration_seconds = duration_seconds + duration_buffer
+                                    # cmd = [
+                                    #     "node", "puppeteer-recorder.js",
+                                    #     split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                                    #     selected_music, "0.05", "1"
+                                    # ]
+
                                     cmd = [
-                                        "node", "puppeteer-recorder.js",
+                                        "node", "puppeteer-launcher.js",
                                         split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
                                         selected_music, "0.05", "1"
                                     ]
@@ -189,8 +195,14 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                                 print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
                                 output_name = f"{output_folder}/{base_file_name}.mp4"
                                 duration_seconds = duration_seconds + duration_buffer
+                                # cmd = [
+                                #     "node", "puppeteer-recorder.js",
+                                #     output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                                #     selected_music, "0.05", "1"
+                                # ]
+
                                 cmd = [
-                                    "node", "puppeteer-recorder.js",
+                                    "node", "puppeteer-launcher.js",
                                     output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
                                     selected_music, "0.05", "1"
                                 ]
@@ -205,8 +217,14 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                             duration_seconds = duration_seconds + duration_buffer
                             #SM-DND
                             #safe_copy(output_file, output_name)
+                            # cmd = [
+                            #     "node", "puppeteer-recorder.js",
+                            #     output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
+                            #     selected_music, "0.05", "1"
+                            # ]
+
                             cmd = [
-                                "node", "puppeteer-recorder.js",
+                                "node", "puppeteer-launcher.js",
                                 output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
                                 selected_music, "0.05", "1"
                             ]
@@ -319,8 +337,14 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                             shutil.copyfile(split_file, output_file)
                             duration_seconds = split_file.duration
                             duration_seconds = duration_seconds + duration_buffer
+                            # cmd = [
+                            #     "node", "puppeteer-recorder.js",
+                            #     split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                            #     selected_music, "0.05", "1"
+                            # ]
+
                             cmd = [
-                                "node", "puppeteer-recorder.js",
+                                "node", "puppeteer-launcher.js",
                                 split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
                                 selected_music, "0.05", "1"
                             ]
@@ -332,8 +356,15 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         print(f"Video duration {duration_minutes:.2f} minutes. No splitting required.")
                         output_name = f"{output_folder}/{base_file_name}.mp4"
                         duration_seconds = duration_seconds + duration_buffer
+                        #SM-DND - Working
+                        # cmd = [
+                        #     "node", "puppeteer-recorder.js",
+                        #     output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
+                        #     selected_music, "0.05", "1"
+                        # ]
+
                         cmd = [
-                            "node", "puppeteer-recorder.js",
+                            "node", "puppeteer-launcher.js",
                             output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
                             selected_music, "0.05", "1"
                         ]
@@ -346,16 +377,41 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                 else:
                     output_name = f"{output_folder}/{base_file_name}.mp4"
                     duration_seconds = duration_seconds + duration_buffer
+                    orientation = "landscape"
+                    bg_music_volume = "0.05"
+                    effect_volume = "1"
                     #SM-DND
                     #safe_copy(output_file, output_name)
-                    cmd = [
-                        "node", "puppeteer-recorder.js",
-                        output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
-                        selected_music, "0.05", "1"
-                    ]
+
+                    #DND - Working
+                    # cmd = [
+                    #     "node", "puppeteer-recorder.js",
+                    #     output_name, f"{duration_seconds:.2f}", orientation, str(max_words), caption_style,
+                    #     selected_music, bg_music_volume, effect_volume
+                    # ]
+                    # 🟩 Step 1: Call Puppeteer to load the video page and prepare playback
+                    puppeteer_cmd = [
+                        "node", "puppeteer-launcher.js",
+                        output_name, f"{duration_seconds:.2f}", orientation, str(max_words), caption_style,
+                        selected_music, bg_music_volume, effect_volume
+                    ]                    
                     print("▶️ Running Puppeteer with:", cmd)
                     if skip_puppeteer == "no":
-                        subprocess.run(cmd)
+                        #DND - Working
+                        # subprocess.run(cmd)
+                        print("▶️ Launching Puppeteer to set up the video with:", puppeteer_cmd)
+                        subprocess.run(puppeteer_cmd)
+                        # 🕒 Optional: Add small delay to ensure page is fully ready
+                        subprocess.run(["timeout", "/t", "5"], shell=True)  # On Windows
+                        # subprocess.run(["sleep", "5"])  # On macOS/Linux
+
+                        # 🟩 Step 2: Call OBS to start recording
+                        scene_name = "LandscapeScene" if orientation == "landscape" else "PortraitScene"
+
+                        obs_cmd = ["node", "obs-recorder.js", scene_name, str(int(duration_seconds))]
+
+                        print("🎬 Starting OBS recording with:", obs_cmd)
+                        subprocess.run(obs_cmd)
 
                 print(f"Processing complete for {url}")
                 df.at[short_idx, "status"] = "success"
