@@ -39,7 +39,8 @@ const height = isLandscape ? 720 : 1280;
   });
 
   const [page] = await browser.pages();
-  const videoUrl = "file:///C:/0.data/4.SM-WSpace/6B.Python/1.Create_Video_From_Readernook_Story/application/index.html";
+  const videoUrl = "file:///" + __dirname + "/index.html";
+  // const videoUrl = "file:///C:/0.data/4.SM-WSpace/6B.Python/1.Create_Video_From_Readernook_Story/application/index.html";
   await page.goto(videoUrl);
 
   log("✅ Browser opened. Preparing video setup...");
