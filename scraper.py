@@ -64,7 +64,7 @@ def is_server_running(script_name="server.py"):
     return False
 
 def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
-                       selected_voice, language, gender, tts_engine, skip_puppeteer):
+                       selected_voice, language, gender, tts_engine, skip_puppeteer, skip_captions):
 
     if skip_puppeteer == "no":
         if not is_server_running("server.py"):
@@ -137,8 +137,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
                         #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
                         #prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name, language,story_text="")
-                        
-                        prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text="", description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date="",shorts_html=shorts_html)
+                        prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text="", description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date="",shorts_html=shorts_html,skip_captions=skip_captions)
                         print(f"[{time.strftime('%H:%M:%S')}] Step prepare_file_for_adding_captions_n_headings_thru_html completed in {time.time() - start:.2f} seconds")
                         start = time.time()
 
@@ -209,7 +208,9 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                                 print("▶️ Running Puppeteer with:", cmd)
                                 if skip_puppeteer == "no":
                                     subprocess.run(cmd)
-
+                                else:
+                                    if skip_captions == "yes":
+                                        safe_copy(output_file, output_name)
                                 #SM-DND
                                 #safe_copy(output_file, output_name)
                         else:
@@ -231,7 +232,9 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                             print("▶️ Running Puppeteer with:", cmd)
                             if skip_puppeteer == "no":
                                 subprocess.run(cmd)
-
+                            else:
+                                if skip_captions == "yes":
+                                    safe_copy(output_file, output_name)
                         print(f"Processing complete for {url}")
 
             except Exception as e:
@@ -301,7 +304,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                 url = title
                 #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
                 #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
-                prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text=story, description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date=schedule_date)
+                prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text=story, description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date=schedule_date,skip_captions=skip_captions)
 
                 #try:
                     #video_clip = VideoFileClip("output_video.mp4")
@@ -371,7 +374,9 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         print("▶️ Running Puppeteer with:", cmd)
                         if skip_puppeteer == "no":
                             subprocess.run(cmd)
-
+                        else:
+                            if skip_captions == "yes":
+                                safe_copy(output_file, output_name)
                         #SM-DND
                         #safe_copy(output_file, output_name)
                 else:
@@ -412,6 +417,9 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
 
                         print("🎬 Starting OBS recording with:", obs_cmd)
                         subprocess.run(obs_cmd)
+                    else:
+                        if skip_captions == "yes":
+                            safe_copy(output_file, output_name)
 
                 print(f"Processing complete for {url}")
                 df.at[short_idx, "status"] = "success"

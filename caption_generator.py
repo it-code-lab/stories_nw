@@ -159,10 +159,13 @@ def add_captions(max_words, fontsize, y_pos, style, website_text, font_settings,
     
     print("Captioning process completed successfully!")
 
-def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output", language="english", story_text="",description ="", tags="",playlist="",channel="",title="", schedule_date="", shorts_html=""):
+def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path="composed_video.mp4", base_file_name="output", language="english", story_text="",description ="", tags="",playlist="",channel="",title="", schedule_date="", shorts_html="",  skip_captions="no"):
     
     #print("Received add_captions Arguments:", locals())
-
+    if skip_captions == "yes":
+        print("Skipping captions generation as per user request.")
+        save_details_in_excel("", url, base_file_name, description, tags, playlist, channel,title,schedule_date)
+        return
     audio_path = "audio.wav"
 
 

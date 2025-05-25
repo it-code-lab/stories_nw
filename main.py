@@ -16,6 +16,7 @@ main_frame.pack(padx=20, pady=20, fill="both", expand=True)
 language_var = StringVar(value="english")
 excel_var = StringVar(value="no")
 skip_puppeteer_var = StringVar(value="no")
+skip_captions_var = StringVar(value="no")
 tts_var = StringVar(value="google")
 gender_var = StringVar(value="Female")
 voice_var = StringVar(value="Joanna")
@@ -89,13 +90,15 @@ Spinbox(main_frame, from_=1, to=10, textvariable=max_words, width=5).grid(row=7,
 # create_dropdown(main_frame, "Vertical Position(not in use):", y_pos, ["top", "center", "bottom"], 9)
 create_dropdown(main_frame, "Select Caption Style:", style_var, font_settings.keys(), 8)
 create_dropdown(main_frame, "Skip Puppeteer Call(Should be 'no' for multi-shorts):", skip_puppeteer_var, ["yes", "no"], 9)
+create_dropdown(main_frame, "Skip Captions(Select 'yes' for above as well with this):", skip_captions_var, ["yes", "no"], 10)
+
 # Process Button
 Button(
     main_frame, text="Process",
     command=lambda: scrape_and_process(
         get_urls(), excel_var.get(), size_var.get(), music_var.get(),
         max_words.get(), fontsize.get(), y_pos.get(),
-        style_var.get(), voice_var.get(), language_var.get(), gender_var.get(), tts_var.get(),skip_puppeteer_var.get()
+        style_var.get(), voice_var.get(), language_var.get(), gender_var.get(), tts_var.get(),skip_puppeteer_var.get(),skip_captions_var.get()
     ),
     width=20, height=2
 ).grid(row=10, columnspan=2, pady=15)
