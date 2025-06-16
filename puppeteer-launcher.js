@@ -29,8 +29,8 @@ if (!recordingDuration || !videoOrientationVal || !outputFile) {
 
 const isLandscape = videoOrientationVal === "landscape";
 const width = isLandscape ? 1280 : 720;
-//const height = isLandscape ? 720 : 1280; //Works on MSI laptop
-const height = isLandscape ? 640 : 1280; // Works on 14" dell latitude
+const height = isLandscape ? 720 : 1280; //Works on MSI laptop
+//const height = isLandscape ? 640 : 1280; // Works on 14" dell latitude
 
 (async () => {
   const browser = await puppeteer.launch({
