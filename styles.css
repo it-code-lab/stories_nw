@@ -587,7 +587,7 @@
 #subscribe-gif {
     position: absolute;
     top: 10px;
-    left: 10px;
+    left: 60px;
     width: 200px;  /* Adjust as needed */
     transition: opacity 0.5s ease-in-out;
 }
@@ -680,14 +680,16 @@
 #video-container {
     position: relative;
     width: 1280px; /* Increase video width */
-    height: 720px;  /* Increase video height */
-    margin-top: -50px; /* Move video up */
+    height: 100vh;
+    margin-top: -10px;
+    /* height: 720px;  
+    margin-top: -50px;  */
 }
 
 .portrait #video-container {
     width: 360px;
-    height: 640px; 
-    margin-top: -10px
+    /* height: 640px; 
+    margin-top: -10px */
 }
 
 /* 🔹 Adjust Captions & Overlays for Portrait Mode */

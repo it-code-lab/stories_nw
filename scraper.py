@@ -64,7 +64,7 @@ def is_server_running(script_name="server.py"):
     return False
 
 def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
-                       selected_voice, language, gender, tts_engine, skip_puppeteer, skip_captions):
+                       selected_voice, language, gender, tts_engine, skip_puppeteer, skip_captions, disable_subscribe):
 
     if skip_puppeteer == "no":
         if not is_server_running("server.py"):
@@ -184,7 +184,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                                     cmd = [
                                         "node", "puppeteer-launcher.js",
                                         split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
-                                        selected_music, "0.05", "1"
+                                        selected_music, "0.05", "1", disable_subscribe
                                     ]
                                     print("▶️ Running Puppeteer with:", cmd)
                                     if skip_puppeteer == "no":
@@ -203,7 +203,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                                 cmd = [
                                     "node", "puppeteer-launcher.js",
                                     output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
-                                    selected_music, "0.05", "1"
+                                    selected_music, "0.05", "1", disable_subscribe
                                 ]
                                 print("▶️ Running Puppeteer with:", cmd)
                                 if skip_puppeteer == "no":
@@ -227,7 +227,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                             cmd = [
                                 "node", "puppeteer-launcher.js",
                                 output_name, f"{duration_seconds:.2f}", "landscape", str(max_words), caption_style,
-                                selected_music, "0.05", "1"
+                                selected_music, "0.05", "1", disable_subscribe
                             ]
                             print("▶️ Running Puppeteer with:", cmd)
                             if skip_puppeteer == "no":
@@ -349,7 +349,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                             cmd = [
                                 "node", "puppeteer-launcher.js",
                                 split_output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
-                                selected_music, "0.05", "1"
+                                selected_music, "0.05", "1", disable_subscribe
                             ]
                             print("▶️ Running Puppeteer with:", cmd)
                             if skip_puppeteer == "no":
@@ -369,7 +369,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         cmd = [
                             "node", "puppeteer-launcher.js",
                             output_name, f"{duration_seconds:.2f}", "portrait", str(max_words), caption_style,
-                            selected_music, "0.05", "1"
+                            selected_music, "0.05", "1", disable_subscribe
                         ]
                         print("▶️ Running Puppeteer with:", cmd)
                         if skip_puppeteer == "no":
@@ -398,7 +398,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                     puppeteer_cmd = [
                         "node", "puppeteer-launcher.js",
                         output_name, f"{duration_seconds:.2f}", orientation, str(max_words), caption_style,
-                        selected_music, bg_music_volume, effect_volume
+                        selected_music, bg_music_volume, effect_volume, disable_subscribe
                     ]                    
                     print("▶️ Running Puppeteer with:", cmd)
                     if skip_puppeteer == "no":
