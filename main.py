@@ -17,7 +17,11 @@ language_var = StringVar(value="english")
 excel_var = StringVar(value="no")
 skip_puppeteer_var = StringVar(value="no")
 skip_captions_var = StringVar(value="no")
+<<<<<<< HEAD
 pitch_var = StringVar(value="adult")
+=======
+disable_subscribe_var = StringVar(value="no")
+>>>>>>> f4e7d4972b66e47441d7d7ac01b2237f2d3c9a17
 tts_var = StringVar(value="google")
 gender_var = StringVar(value="Female")
 voice_var = StringVar(value="Joanna")
@@ -93,6 +97,7 @@ create_dropdown(main_frame, "Select Caption Style:", style_var, font_settings.ke
 create_dropdown(main_frame, "Skip Puppeteer Call(Should be 'no' for multi-shorts):", skip_puppeteer_var, ["yes", "no"], 9)
 create_dropdown(main_frame, "Skip Captions(Select 'yes' for above as well with this):", skip_captions_var, ["yes", "no"], 10)
 create_dropdown(main_frame, "Add Sound Pitch:", pitch_var, ["adult", "child", "teen", "elderly"], 11)
+create_dropdown(main_frame, "Disable Subscribe Gif:", disable_subscribe_var, ["yes", "no"], 12)
 
 # Process Button
 Button(
@@ -101,8 +106,9 @@ Button(
         get_urls(), excel_var.get(), size_var.get(), music_var.get(),
         max_words.get(), fontsize.get(), y_pos.get(),
         style_var.get(), voice_var.get(), language_var.get(), gender_var.get(), tts_var.get(),skip_puppeteer_var.get(),skip_captions_var.get(), pitch_var.get()
+        ,disable_subscribe_var.get()
     ),
     width=20, height=2
-).grid(row=12, columnspan=2, pady=15)
+).grid(row=13, columnspan=2, pady=15)
 
 root.mainloop()

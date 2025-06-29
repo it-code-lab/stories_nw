@@ -108,6 +108,7 @@ const captionStyleDropdown = document.getElementById("captionStyle");
 //const captionPreview = document.getElementById("caption-preview");
 let selectedStyle ;
 const subscribeGif = document.getElementById("subscribe-gif");
+const disableSubscribeFlag = document.getElementById("disableSubscribe");
 
 video.volume = 1.0;  // Set default volume to max
 
@@ -263,7 +264,11 @@ function updateOverlayAndCaptions() {
     }
 
     let selectedOrientation = videoOrientation.value;
-    if (selectedOrientation === "portrait") {
+
+    if ((selectedOrientation === "portrait") || (disableSubscribeFlag.value === "yes")) {
+        // Hide GIF in portrait mode or if subscribe is disabled
+        subscribeGif.classList.add("hidden");
+        subscribeGif.classList.remove("show-gif");
     }else {
         if (currentTime >= 30 && currentTime <= 35) {
             // Show GIF 30 seconds after start (for 5 seconds)

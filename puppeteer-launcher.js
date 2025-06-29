@@ -1,7 +1,7 @@
 //DND - to test it run below command:
-//node puppeteer-launcher.js test.mp4 10 portrait 4 style2 story-classical-3-710.mp3 0.05 1 
+//node puppeteer-launcher.js test.mp4 10 portrait 4 style2 story-classical-3-710.mp3 0.05 1 no
 
-//node puppeteer-launcher.js test.mp4 10 landscape 4 style2 story-classical-3-710.mp3 0.05 1 
+//node puppeteer-launcher.js test.mp4 10 landscape 4 style2 story-classical-3-710.mp3 0.05 1 no
 
 
 // puppeteer-launcher.js
@@ -20,7 +20,7 @@ function log(msg) {
 }
 
 // Extract args
-const [,, outputFile, recordingDuration, videoOrientationVal, wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume] = process.argv;
+const [,, outputFile, recordingDuration, videoOrientationVal, wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, disableSubscribe] = process.argv;
 
 if (!recordingDuration || !videoOrientationVal || !outputFile) {
   log("❌ Usage: node puppeteer-launcher.js <duration> <orientation> <words> <style> <music> <musicVol> <fxVol> <outputFile>");
@@ -29,7 +29,8 @@ if (!recordingDuration || !videoOrientationVal || !outputFile) {
 
 const isLandscape = videoOrientationVal === "landscape";
 const width = isLandscape ? 1280 : 720;
-const height = isLandscape ? 720 : 1280;
+const height = isLandscape ? 720 : 1280; //Works on MSI laptop
+//const height = isLandscape ? 640 : 1280; // Works on 14" dell latitude
 
 (async () => {
   const browser = await puppeteer.launch({
@@ -47,8 +48,13 @@ const height = isLandscape ? 720 : 1280;
   await page.waitForSelector("video");
 
   await page.evaluate((params) => {
-    const { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, videoOrientationVal } = params;
+    const { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, videoOrientationVal, disableSubscribe } = params;
 
+
+    if (document.getElementById("disableSubscribe")) {
+      document.getElementById("disableSubscribe").value = disableSubscribe;
+      console.log("Disable Subscribe:", disableSubscribe);      
+    }  
     if (document.getElementById("videoOrientation"))
       document.getElementById("videoOrientation").value = videoOrientationVal;
     if (document.getElementById("captionLength"))
@@ -79,7 +85,7 @@ const height = isLandscape ? 720 : 1280;
         video.play();
       }, 1000); // delay 1 second to let OBS settle
       
-  }, { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, videoOrientationVal });
+  }, { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, videoOrientationVal, disableSubscribe });
 
   log("🎬 Video setup done. Launching OBS Recorder...");
 
