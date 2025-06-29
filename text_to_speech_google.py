@@ -6,7 +6,8 @@ def synthesize_speech_google(
     language="en-US", 
     gender="FEMALE", 
     voice_name="en-US-Neural2-F", 
-    speaking_rate=1.0
+    speaking_rate=1.0,
+    pitch=0.0,
 ):
     """
     Generate speech using Google Text-to-Speech API with specified parameters.
@@ -39,7 +40,8 @@ def synthesize_speech_google(
         # Audio config for synthesis
         audio_config = texttospeech.AudioConfig(
             audio_encoding=texttospeech.AudioEncoding.MP3,
-            speaking_rate=speaking_rate
+            speaking_rate=speaking_rate,
+            pitch=pitch
         )
 
         # Synthesize the speech

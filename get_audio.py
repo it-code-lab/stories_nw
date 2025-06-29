@@ -10,7 +10,7 @@ import re
 GOOGLE_MAX_CHARS = 4800
 AMAZON_MAX_CHARS = 2000  # Approximate limit
 
-def synthesize_speech_google(text, output_file, language, gender, voice_name, speaking_rate=1.0):
+def synthesize_speech_google(text, output_file, language, gender, voice_name, speaking_rate=1.0, pitch=0.0):
     """Synthesizes speech using Google Cloud Text-to-Speech."""
     client = texttospeech.TextToSpeechClient()
     input_text = texttospeech.SynthesisInput(text=text)
@@ -18,10 +18,20 @@ def synthesize_speech_google(text, output_file, language, gender, voice_name, sp
         language_code=language,
         name=voice_name,
     )
-    audio_config = texttospeech.AudioConfig(
+
+    if pitch != 0.0:
+        audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3,
+        speaking_rate=speaking_rate,
+        pitch=pitch
+        )
+    else:
+        audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.MP3,
         speaking_rate=speaking_rate
-    )
+        )
+
+
     response = client.synthesize_speech(
         request={"input": input_text, "voice": voice, "audio_config": audio_config}
     )
@@ -52,7 +62,7 @@ def merge_audio_files(file_paths, output_file):
         os.remove(file_path)
     return output_file
 
-def get_audio_file(text, audio_file_name, tts_engine="google", language="english", gender="Male", type="neural"):
+def get_audio_file(text, audio_file_name, tts_engine="google", language="english", gender="Male", type="neural", age_group="adult"):
     """
     Generate audio using TTS, handling large text by splitting and merging.
 
@@ -74,17 +84,22 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
         "google": {
             "neural": {
                 "english": {"Male": "en-US-Chirp3-HD-Orus", "Female": "en-US-Chirp3-HD-Leda"},
+                "english-with-pitch": {"Male": "en-US-Wavenet-B", "Female": "en-US-Wavenet-F"},
                 "english-india-n": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
                 "english-india": {"Male": "en-IN-Chirp3-HD-Orus", "Female": "en-IN-Chirp3-HD-Leda"},
-                "english-india-old": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
-                "hindi": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
+                "english-india-with-pitch": {"Male": "en-IN-Wavenet-B", "Female": "en-IN-Wavenet-E"},
+                "hindi-with-pitch": {"Male": "hi-IN-Wavenet-B", "Female": "hi-IN-Wavenet-E"},
+                "hindi": {"Male": "hi-IN-Wavenet-B", "Female": "hi-IN-Wavenet-A"},
             },
             "journey": {
                 "english": {"Male": "en-US-Journey-D", "Female": "en-US-Journey-F"},
+                "english-with-pitch": {"Male": "en-US-Wavenet-B", "Female": "en-US-Wavenet-F"},
                 "english-india-n": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
                 "english-india": {"Male": "en-IN-Chirp3-HD-Orus", "Female": "en-IN-Chirp3-HD-Leda"},
                 "english-india-old": {"Male": "en-IN-Chirp-HD-D", "Female": "en-IN-Chirp-HD-F"},
+                "english-india-with-pitch": {"Male": "en-IN-Wavenet-B", "Female": "en-IN-Wavenet-E"},
                 "hindi": {"Male": "hi-IN-Chirp3-HD-Orus", "Female": "hi-IN-Chirp3-HD-Leda"},
+                "hindi-with-pitch": {"Male": "hi-IN-Wavenet-B", "Female": "hi-IN-Wavenet-E"},
                 "hindi-old": {"Male": "hi-IN-Wavenet-B", "Female": "hi-IN-Wavenet-A"},
             },
         },
@@ -112,6 +127,11 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
     else:
         print("Odd day, using mail2")
         credentials_file = "notes-imgtotxt-7b07c59d85c6.json"
+
+    if age_group not in [ "adult"]:
+        language = language.__add__("-with-pitch") 
+        
+    speaking_rate, pitch = get_speaking_rate_and_pitch(age_group)
 
     # Set Google Application Credentials using a relative path (one level up)
     google_credentials_path = os.path.join(
@@ -146,7 +166,8 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
                 language=f"{voice_code[:5]}",
                 gender=gender.upper(),
                 voice_name=voice_code,
-                speaking_rate=0.9
+                speaking_rate=speaking_rate,
+                pitch=pitch
             )
         elif tts_engine == "amazon":
             text_type = "ssml" if type == "neural" else "text"
@@ -178,7 +199,8 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
                         language=f"{voice_code[:5]}",
                         gender=gender.upper(),
                         voice_name=voice_code,
-                        speaking_rate=0.9
+                        speaking_rate=speaking_rate,
+                        pitch=pitch
                     )
                 elif tts_engine == "amazon":
                     text_type = "ssml" if type == "neural" else "text"
@@ -206,7 +228,8 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
                     language=f"{voice_code[:5]}",
                     gender=gender.upper(),
                     voice_name=voice_code,
-                    speaking_rate=1
+                    speaking_rate=speaking_rate,
+                    pitch=pitch
                 )
             elif tts_engine == "amazon":
                 text_type = "ssml" if type == "neural" else "text"
@@ -229,6 +252,18 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
 
     raise ValueError("Unsupported TTS engine.")
 
+def get_speaking_rate_and_pitch(age_group):
+    if age_group == "child":
+        return 0.8, 5.0  # faster and higher pitch
+    elif age_group == "teen":
+        return 1.0, 0.0  # normal
+    elif age_group == "adult":
+        return 0.9, 0.0  # slightly slower
+    elif age_group == "elderly":
+        return 0.8, -5.0  # slower and lower pitch
+    else:
+        return 1.0, 0.0  # default
+    
 # Working DND - Needed enhancement to handle large text inputs
 def get_audio_file_Working_DND(text, audio_file_name, tts_engine="google", language="english", gender="Male", type="journey"):
     """
@@ -322,6 +357,8 @@ if __name__ == "__main__":
 
 
     output_audio_file = "test_audio.mp3"
-    
-    generated_file = get_audio_file(sample_text, output_audio_file,language="english", gender="Female", type="neural")
+
+    generated_file = get_audio_file(sample_text, output_audio_file,language="english", gender="Female", type="neural", age_group="child")
+
+    #generated_file = get_audio_file(sample_text, output_audio_file,language="english", gender="Female", type="neural")
     print(f"Generated audio file: {generated_file}")

@@ -64,7 +64,7 @@ def is_server_running(script_name="server.py"):
     return False
 
 def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
-                       selected_voice, language, gender, tts_engine, skip_puppeteer, skip_captions):
+                       selected_voice, language, gender, tts_engine, skip_puppeteer, skip_captions, pitch_age_group):
 
     if skip_puppeteer == "no":
         if not is_server_running("server.py"):
@@ -129,7 +129,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         shorts_html = metadata.get("shorts_html", "")
 
                         start = time.time()
-                        create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar)
+                        create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar,pitch_age_group)
                         print(f"[{time.strftime('%H:%M:%S')}] Step create_video_using_camera_frames completed in {time.time() - start:.2f} seconds")
                         start = time.time()
 
@@ -297,7 +297,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                 results = elements
                 
                 start = time.time() 
-                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name)
+                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar="", pitch_age_group=pitch_age_group)
                 print(f"[{time.strftime('%H:%M:%S')}] Step create_video_using_camera_frames completed in {time.time() - start:.2f} seconds")
                 start = time.time()                
                 output_file = "composed_video.mp4"
@@ -430,7 +430,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
             df.to_excel(input_excel_file, index=False)
 
 
-def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video", avatar="" ):
+def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video", avatar="", pitch_age_group="adult"):
     """
     Creates a video using the scrapped elements.
 
@@ -470,7 +470,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
                     else:
                         languageType = "journey"
 
-                    generated_audio = get_audio_file(element["text"], tts_audio_path,"google",language,gender, languageType)
+                    generated_audio = get_audio_file(element["text"], tts_audio_path,"google",language,gender, languageType, pitch_age_group)
                 elif tts_engine == "amazon":
                     generated_audio = get_audio_file(element["text"], tts_audio_path,"amazon",language,gender, "generative")
                 
