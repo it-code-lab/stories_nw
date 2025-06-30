@@ -15,8 +15,8 @@ tts_engine = {
 # }
 
 background_music_options = {
-    "horror-piano-671.mp3": "horror-piano-671.mp3",
     "story-classical-3-710.mp3": "story-classical-3-710.mp3",
+    "horror-piano-671.mp3": "horror-piano-671.mp3",
     "story-classical-10-717.mp3": "story-classical-10-717.mp3",
     "positive-mixkit-fun-jazz-647.mp3": "positive-mixkit-fun-jazz-647.mp3",
     "children-summers-here-91.mp3": "children-summers-here-91.mp3"
@@ -29,8 +29,8 @@ background_music_options = {
 # }
 
 font_settings = {
-    "style1": "style1",
     "style2": "style2",
+    "style1": "style1",
     "style3": "style3",
     "style4": "style4",
     "style5": "style5",

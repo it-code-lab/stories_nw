@@ -159,13 +159,14 @@
             <!-- Populated by JS -->
         </select>
 
-        <label>Select Video Type:</label>
+        <label>Select Video Type:
         <span class="tooltip-container">
             &#9432;
             <span class="tooltip-text">
                 Ensure camera frames marked on the web page match with the selection. Also OBS studio should have corresponding scene and profile.
             </span>
         </span>
+        </label>
         <select name="size">
             {% for label in sizes.keys() %}
             <option value="{{ label }}">{{ label }}</option>
@@ -202,13 +203,14 @@
             <option value="yes">yes</option>
         </select>
 
-        <label>Add Sound Pitch:</label>
+        <label>Add Sound Pitch:
         <span class="tooltip-container">
             &#9432;
             <span class="tooltip-text">
                 Id it is adult, it does not change anything.
             </span>
-        </span>        
+        </span>  
+        </label>      
         <select name="pitch">
             <option>adult</option>
             <option>child</option>
@@ -216,13 +218,14 @@
             <option>elderly</option>
         </select>
 
-        <label>Disable Subscribe Gif:</label>
+        <label>Disable Subscribe Gif:
         <span class="tooltip-container">
             &#9432;
             <span class="tooltip-text">
                 Disable it for advertisement videos.
             </span>
-        </span>        
+        </span>   
+        </label>     
         <select name="disable_subscribe">
             <option value="no">no</option>
             <option value="yes">yes</option>
