@@ -331,7 +331,7 @@ def wait_until_enabled(locator, timeout=60):
         elapsed += 1
     raise Exception(f"Timeout: Element {locator} was not enabled after {timeout} seconds.")
 
-def main():
+def upload_videos():
     # videos = load_videos()
     # init_csv()
 
@@ -401,4 +401,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    upload_videos()

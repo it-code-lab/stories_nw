@@ -915,3 +915,9 @@ video {
     padding: 0px !important;
     border: none !important;
 }
+
+#notebooklmText{
+    background-color: antiquewhite;
+    padding: 10px;
+    font-size: 18px;
+}

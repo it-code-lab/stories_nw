@@ -233,6 +233,40 @@
 
         <button type="submit">Process</button>
     </form>
+    <br>
+    <form id="runCaptionGenerator">
+        <h2>Prestep for Audio->WordTimeStamps-Video</h2>
+        <div>Run caption_generator.py: Prestep for Audio->WordTimeStamps-Video above
+            <ol> 
+            <li>Place audio.wav (from notebooklm) and then press below button.</li> 
+            <li>This would create WordTimeStamps file and captions (access from index.html).</li> 
+            <li>Use captions text on readernook.com and add images.</li>
+            <li>Then execute above program with Audio->WordTimeStamps-Video</li>
+            </ol>
+
+        </div>
+        <label>Language:</label>
+        <select name="language">
+            <option>english</option>
+            <option>english-india</option>
+            <option>hindi</option>
+            <option>french</option>
+        </select>
+
+        <button type="submit">Create WordTimeStamps and Caption Text</button>
+    </form>
+
+    <br>
+        <form id="uploadToYoutube">
+        <h2>Run Youtube Upload</h2>
+        <div> To be run after video created in Processed_video folder and record is added in video_records.xlsx
+
+
+        </div>
+
+
+        <button type="submit">Upload Videos to Youtube</button>
+    </form>
 
     <script>
         const voices = {{ voice_map | tojson }};
@@ -261,7 +295,26 @@
                 body: formData
             });
             const result = await response.text();
-            alert(result);
+            // alert(result);
+        };
+    
+        document.getElementById('runCaptionGenerator').onsubmit = async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('/caption', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.text();
+            // alert(result);
+        };
+        document.getElementById('uploadToYoutube').onsubmit = async function (e) {
+            e.preventDefault();
+            const response = await fetch('/upload', {
+                method: 'POST'
+            });
+            const result = await response.text();
+            // alert(result);
         };
     </script>
 </body>

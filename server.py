@@ -3,8 +3,10 @@ import json
 from flask_cors import CORS
 import os
 
+from caption_generator import prepare_captions_file_for_notebooklm_audio
 from scraper import scrape_and_process  # Ensure this exists
 from settings import background_music_options, font_settings, tts_engine, voices, sizes
+from youtube_uploader import upload_videos
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
@@ -88,9 +90,33 @@ def process():
                            skip_puppeteer, skip_captions, pitch, disable_subscribe, notebooklm)
 
         # return "✅ Processing started!"
+        return "✅ Processing completed successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500
 
+@app.route('/caption', methods=['POST'])
+def caption():
+    try:
+        language = request.form.get('language', 'english')
+        prepare_captions_file_for_notebooklm_audio(
+            audio_path="audio.wav",
+            language=language
+        )
+
+        # return "✅ Processing started!"
+        return "✅ Processing completed successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500
+    
+@app.route('/upload', methods=['POST'])
+def upload():
+    try:
+        upload_videos()  # Assuming this function is defined in youtube_uploader.py
+
+        # return "✅ Processing started!"
+        return "✅ Processing completed successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500
 # ------------------------ MAIN ------------------------ #
 
 if __name__ == '__main__':

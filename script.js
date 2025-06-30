@@ -33,6 +33,8 @@ const angles = ["angle1", "angle2", "angle3", "angle4", "angle5", "angle6"];
 
 const wordEditor = document.getElementById("word-editor");
 const notebookEditor = document.getElementById("notebooklm-editor");
+const notebooklmText = document.getElementById("notebooklmText");
+
 let markedSections = JSON.parse(localStorage.getItem("markedSections")) || [];
 let currentSection = {};
 
@@ -498,6 +500,8 @@ function startPreviewAnimation_Not_in_use() {
 function renderWordEditor() {
     wordEditor.innerHTML = ""; // Clear previous content
 
+    let captionstext = "";
+
     wordTimestamps.forEach((wordObj, index) => {
         let wordDiv = document.createElement("div");
         wordDiv.classList.add("word-editor-box");
@@ -534,6 +538,8 @@ function renderWordEditor() {
         textDiv.classList.add("view-noteword-details");
         textDiv.dataset.index = index;
 
+        captionstext += wordObj.word + " "; // Collect caption text
+
         // View Details Button
         // let notebookWorddetailsBtn = document.createElement("span");
         // notebookWorddetailsBtn.innerHTML = "ℹ️";  // Info icon
@@ -545,10 +551,22 @@ function renderWordEditor() {
         notebookWordDiv.appendChild(deleteBtn);
         notebookEditor.appendChild(notebookWordDiv); // Clone for notebook editor
     });
+    notebooklmText.innerHTML = captionstext ; // Set the full text in notebooklmText
+
 }
 
-
-
+function copyData() {
+    const textToCopy = notebooklmText.innerText;
+    navigator.clipboard.writeText(textToCopy)
+        .then(() => {
+            console.log("Text copied to clipboard successfully!");
+            // alert("Text copied to clipboard successfully!");
+        })
+        .catch(err => {
+            console.error("Failed to copy text: ", err);
+            // alert("Failed to copy text. Please try again.");
+    });
+}
 // 🔹 Handle Editing
 wordEditor.addEventListener("input", (event) => {
     if (event.target.tagName === "INPUT") {
