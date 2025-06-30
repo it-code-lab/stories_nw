@@ -15,13 +15,12 @@ main_frame.pack(padx=20, pady=20, fill="both", expand=True)
 # Field Variables # DEFAULT VALUES CAN BE CHANGED HERE
 language_var = StringVar(value="english")
 excel_var = StringVar(value="no")
+notebooklm_var = StringVar(value="no")
+
 skip_puppeteer_var = StringVar(value="no")
 skip_captions_var = StringVar(value="no")
-<<<<<<< HEAD
 pitch_var = StringVar(value="adult")
-=======
 disable_subscribe_var = StringVar(value="no")
->>>>>>> f4e7d4972b66e47441d7d7ac01b2237f2d3c9a17
 tts_var = StringVar(value="google")
 gender_var = StringVar(value="Female")
 voice_var = StringVar(value="Joanna")
@@ -31,6 +30,7 @@ max_words = IntVar(value=4)
 fontsize = IntVar(value=90)
 y_pos = StringVar(value="bottom")
 style_var = StringVar(value="style2")
+row_index = 0
 
 # Functions
 def get_urls():
@@ -73,32 +73,57 @@ scrollbar = Scrollbar(main_frame, command=url_input_text.yview)
 scrollbar.grid(row=0, column=2, sticky="ns")
 url_input_text["yscrollcommand"] = scrollbar.set
 
+row_index = row_index + 1
+create_dropdown(main_frame, "Audio->WordTimeStamps-Video:", notebooklm_var, ["no", "yes"], row_index)
+
+
 # Create Layout
-create_dropdown(main_frame, "Pick video background and story from video_story_input.xlsx:", excel_var, ["no", "yes"], 1)
+row_index = row_index + 1
+create_dropdown(main_frame, "Pick video background and story from video_story_input.xlsx:", excel_var, ["no", "yes"], row_index)
 
-create_dropdown(main_frame, "Language:", language_var, ["english", "english-india","hindi", "french"], 2)
-create_dropdown(main_frame, "Select TTS Engine:", tts_var, tts_engine.keys(), 3)
-create_dropdown(main_frame, "Select Voice Gender:", gender_var, voices.keys(), 4)
+row_index = row_index + 1
+create_dropdown(main_frame, "Language:", language_var, ["english", "english-india","hindi", "french"], row_index)
+
+row_index = row_index + 1
+create_dropdown(main_frame, "Select TTS Engine:", tts_var, tts_engine.keys(), row_index)
+
+row_index = row_index + 1
+create_dropdown(main_frame, "Select Voice Gender:", gender_var, voices.keys(), row_index)
 # create_dropdown(main_frame, "Select Voice: (not in use)", voice_var, voices["Female"], 4)
-create_dropdown(main_frame, "Select Video Type:", size_var, sizes.keys(), 5)
-create_dropdown(main_frame, "Select Background Music:", music_var, background_music_options.keys(), 6)
+
+row_index = row_index + 1
+create_dropdown(main_frame, "Select Video Type:", size_var, sizes.keys(), row_index)
+
+row_index = row_index + 1
+create_dropdown(main_frame, "Select Background Music:", music_var, background_music_options.keys(), row_index)
 
 
-
+row_index = row_index + 1
 # Additional Settings
-Label(main_frame, text="Max Words per Caption:").grid(row=7, column=0, sticky="w", padx=10, pady=5)
-Spinbox(main_frame, from_=1, to=10, textvariable=max_words, width=5).grid(row=7, column=1, padx=10, pady=5)
+Label(main_frame, text="Max Words per Caption:").grid(row=row_index, column=0, sticky="w", padx=10, pady=5)
+Spinbox(main_frame, from_=1, to=10, textvariable=max_words, width=5).grid(row=row_index, column=1, padx=10, pady=5)
 
 # Label(main_frame, text="Font Size(not in use):").grid(row=8, column=0, sticky="w", padx=10, pady=5)
 # Spinbox(main_frame, from_=30, to=150, textvariable=fontsize, width=5).grid(row=8, column=1, padx=10, pady=5)
 
 # create_dropdown(main_frame, "Vertical Position(not in use):", y_pos, ["top", "center", "bottom"], 9)
-create_dropdown(main_frame, "Select Caption Style:", style_var, font_settings.keys(), 8)
-create_dropdown(main_frame, "Skip Puppeteer Call(Should be 'no' for multi-shorts):", skip_puppeteer_var, ["yes", "no"], 9)
-create_dropdown(main_frame, "Skip Captions(Select 'yes' for above as well with this):", skip_captions_var, ["yes", "no"], 10)
-create_dropdown(main_frame, "Add Sound Pitch:", pitch_var, ["adult", "child", "teen", "elderly"], 11)
-create_dropdown(main_frame, "Disable Subscribe Gif:", disable_subscribe_var, ["yes", "no"], 12)
 
+row_index = row_index + 1
+create_dropdown(main_frame, "Select Caption Style:", style_var, font_settings.keys(), row_index)
+
+row_index = row_index + 1
+create_dropdown(main_frame, "Skip Puppeteer Call(Should be 'no' for multi-shorts):", skip_puppeteer_var, ["yes", "no"], row_index)
+
+row_index = row_index + 1
+create_dropdown(main_frame, "Skip Captions(Select 'yes' for above as well with this):", skip_captions_var, ["yes", "no"], row_index)
+
+row_index = row_index + 1
+create_dropdown(main_frame, "Add Sound Pitch:", pitch_var, ["adult", "child", "teen", "elderly"], row_index)
+
+row_index = row_index + 1
+create_dropdown(main_frame, "Disable Subscribe Gif:", disable_subscribe_var, ["yes", "no"], row_index)
+
+row_index = row_index + 1
 # Process Button
 Button(
     main_frame, text="Process",
@@ -106,9 +131,9 @@ Button(
         get_urls(), excel_var.get(), size_var.get(), music_var.get(),
         max_words.get(), fontsize.get(), y_pos.get(),
         style_var.get(), voice_var.get(), language_var.get(), gender_var.get(), tts_var.get(),skip_puppeteer_var.get(),skip_captions_var.get(), pitch_var.get()
-        ,disable_subscribe_var.get()
+        ,disable_subscribe_var.get(), notebooklm_var.get()
     ),
     width=20, height=2
-).grid(row=13, columnspan=2, pady=15)
+).grid(row=row_index, columnspan=2, pady=15)
 
 root.mainloop()

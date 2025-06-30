@@ -11,27 +11,31 @@ let dummyCaptionsData = [
 ];
 
 const textColors = [
-    "#222222",  
-    "#9f2f16",  
-    "#85540d",  
-    "#46850d",  
-    "#0d5a85",  
-    "#5f0d85"   
+    "#222222",
+    "#9f2f16",
+    "#85540d",
+    "#46850d",
+    "#0d5a85",
+    "#5f0d85"
 ];
 
 const bgColors = [
-    "#e9d7f2",  
-    "#d7eaf2",  
-    "#adf3e2",  
-    "#d2f3ad",  
-    "#f3efad",  
-    "#f3c7ad"   
+    "#e9d7f2",
+    "#d7eaf2",
+    "#adf3e2",
+    "#d2f3ad",
+    "#f3efad",
+    "#f3c7ad"
 ];
 
 const fontSizes = ["1.9em", "1.8em", "2em", "2.5em", "2.3em"];
 const angles = ["angle1", "angle2", "angle3", "angle4", "angle5", "angle6"];
 
 const wordEditor = document.getElementById("word-editor");
+const notebookEditor = document.getElementById("notebooklm-editor");
+let markedSections = JSON.parse(localStorage.getItem("markedSections")) || [];
+let currentSection = {};
+
 const saveWordChanges = document.getElementById("save-word-changes");
 let wordTimestamps = [];
 
@@ -84,7 +88,7 @@ fetch("http://localhost:5000/get_structured_output")
     .then(response => response.json())
     .then(data => {
         overlayData = data;
-      
+
     })
     .catch(error => console.error("Error loading overlay data:", error));
 
@@ -95,7 +99,7 @@ fetch("http://localhost:5000/get_word_timestamps")
     .then(data => {
         captionsData = data;
         wordTimestamps = data;
-        renderWordEditor();          
+        renderWordEditor();
     })
     .catch(error => console.error("Error loading captions data:", error));
 
@@ -106,7 +110,7 @@ const videoTimeDisplay = document.getElementById("video-time");
 const timeline = document.getElementById("timeline");
 const captionStyleDropdown = document.getElementById("captionStyle");
 //const captionPreview = document.getElementById("caption-preview");
-let selectedStyle ;
+let selectedStyle;
 const subscribeGif = document.getElementById("subscribe-gif");
 const disableSubscribeFlag = document.getElementById("disableSubscribe");
 
@@ -125,7 +129,7 @@ playPauseBtn.addEventListener("click", () => {
             audioBackground.loop = true;
             audioBackground.volume = bgMusicVolume.value; // Keep it subtle
             audioBackground.play();
-        }        
+        }
         playPauseBtn.innerHTML = "⏸ Pause";
     } else {
         video.pause();
@@ -144,7 +148,7 @@ restartBtn.addEventListener("click", () => {
         audioBackground.loop = true;
         audioBackground.volume = 0.3; // Keep it subtle
         audioBackground.play();
-    }      
+    }
     playPauseBtn.innerHTML = "⏸ Pause";  // Change button to "Pause" when restarted
 
     //currentCaptionIndex = 0;  // Reset caption tracking
@@ -166,12 +170,12 @@ function formatTime(time) {
 
 // 🔹 Update Total Duration When Metadata Loads
 video.addEventListener("loadedmetadata", () => {
-    console.log("🔹 Video Duration:", video.duration); 
+    console.log("🔹 Video Duration:", video.duration);
     timeline.max = video.duration;
     videoTimeDisplay.innerHTML = `00:00 / ${formatTime(video.duration)}`;
 });
 
-function updateProperties(){
+function updateProperties() {
     // Update properties based on user input
     captionWordLimit = parseInt(captionInput.value, 10) || 5; // Default to 5 if input is empty
     console.log("captionInput.value:", captionInput.value);
@@ -239,7 +243,7 @@ function updateOverlayAndCaptions() {
 
 
     // Find the current word being spoken
-    let currentWordIndex = wordTimestamps.findIndex(word => 
+    let currentWordIndex = wordTimestamps.findIndex(word =>
         currentTime >= word.start && currentTime <= word.end
     );
 
@@ -260,7 +264,7 @@ function updateOverlayAndCaptions() {
         if (currentWordBox) {
             let wordOffset = currentWordBox.offsetLeft - wordEditor.offsetWidth / 2 + currentWordBox.offsetWidth / 2;
             wordEditor.scrollLeft = wordOffset;
-        }        
+        }
     }
 
     let selectedOrientation = videoOrientation.value;
@@ -269,7 +273,7 @@ function updateOverlayAndCaptions() {
         // Hide GIF in portrait mode or if subscribe is disabled
         subscribeGif.classList.add("hidden");
         subscribeGif.classList.remove("show-gif");
-    }else {
+    } else {
         if (currentTime >= 30 && currentTime <= 35) {
             // Show GIF 30 seconds after start (for 5 seconds)
             subscribeGif.classList.add("show-gif");
@@ -311,7 +315,7 @@ function updateOverlayAndCaptions() {
                 audioEffect.play();
                 playedSounds.add(activeOverlay.text);
             }
-        } 
+        }
         else if (activeOverlay.type === "staying-list-item") {
             // Ensure list item is not duplicated
             if (!stayingListItems.includes(activeOverlay.text)) {
@@ -328,7 +332,7 @@ function updateOverlayAndCaptions() {
                 audioEffect.play();
                 playedSounds.add(activeOverlay.text);
             }
-        } 
+        }
         else {
             // Handle regular headings & list items (disappear after time)
             if (activeOverlay.text !== currentOverlayText) {
@@ -345,11 +349,11 @@ function updateOverlayAndCaptions() {
                 overlay.classList.remove("hide");
                 currentOverlayText = activeOverlay.text;
                 //hide onscreen captions when overlay is shown
-                let selectedOrientation = videoOrientation.value;    
+                let selectedOrientation = videoOrientation.value;
                 if (selectedOrientation === "portrait") {
                     captions.classList.add("none");
                 }
-                
+
             }
 
             if ((audioEffect.src !== headingSound) && !playedSounds.has(activeOverlay.text)) {
@@ -390,12 +394,12 @@ function updateOverlayAndCaptions() {
                 bgColor: bgColors[Math.floor(Math.random() * bgColors.length)],
                 fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
                 angle: angles[Math.floor(Math.random() * angles.length)]
-            }));            
-        }else if (currentIndex < currentBlockStart) {
+            }));
+        } else if (currentIndex < currentBlockStart) {
             // 🔹 Handling backward seeking (reset block start)
-            currentBlockStart = Math.max(0, currentIndex - Math.floor(captionWordLimit / 2)); 
+            currentBlockStart = Math.max(0, currentIndex - Math.floor(captionWordLimit / 2));
             lastCaptionUpdateTime = currentTime;
-    
+
             // Recalculate styles for this block when seeking backward
             blockWordStyles = captionsData.slice(currentBlockStart, Math.min(currentBlockStart + captionWordLimit, captionsData.length)).map(wordObj => ({
                 textColor: textColors[Math.floor(Math.random() * textColors.length)],
@@ -419,7 +423,7 @@ function updateOverlayAndCaptions() {
             displayedWords = currentBlockWords.map((wordObj, index) => {
                 let span = document.createElement("span");
                 span.innerText = wordObj.word;
-        
+
                 // Retrieve previously stored styles for this block
                 let style = blockWordStyles[index] || {};
 
@@ -491,7 +495,7 @@ function startPreviewAnimation_Not_in_use() {
 // Start the caption animation loop on page load
 //startPreviewAnimation();
 
-function renderWordEditor() { 
+function renderWordEditor() {
     wordEditor.innerHTML = ""; // Clear previous content
 
     wordTimestamps.forEach((wordObj, index) => {
@@ -520,41 +524,30 @@ function renderWordEditor() {
         wordDiv.appendChild(detailsBtn);
         wordDiv.appendChild(deleteBtn);
         wordEditor.appendChild(wordDiv);
-    });
-}
 
-// 🔹 Render Editable Words
-function renderWordEditor_old() {
-    wordEditor.innerHTML = ""; // Clear previous content
-
-    wordTimestamps.forEach((wordObj, index) => {
-        let wordDiv = document.createElement("div");
-        wordDiv.classList.add("word-editor-box");
+        let notebookWordDiv = document.createElement("div");
+        notebookWordDiv.classList.add("word-editor-box");
 
         // Editable input field
-        let input = document.createElement("input");
-        input.type = "text";
-        input.value = wordObj.word;
-        input.dataset.index = index;
-
-        // Delete button
-        let deleteBtn = document.createElement("span");
-        deleteBtn.innerHTML = "❌";
-        deleteBtn.classList.add("delete-word");
-        deleteBtn.dataset.index = index;
+        let textDiv = document.createElement("div");
+        textDiv.innerHTML = wordObj.word;
+        textDiv.classList.add("view-noteword-details");
+        textDiv.dataset.index = index;
 
         // View Details Button
-        let detailsBtn = document.createElement("span");
-        detailsBtn.innerHTML = "ℹ️";  // Info icon
-        detailsBtn.classList.add("view-details");
-        detailsBtn.dataset.index = index;
+        // let notebookWorddetailsBtn = document.createElement("span");
+        // notebookWorddetailsBtn.innerHTML = "ℹ️";  // Info icon
+        // notebookWorddetailsBtn.classList.add("view-noteword-details");
+        // notebookWorddetailsBtn.dataset.index = index;
 
-        wordDiv.appendChild(input);
-        wordDiv.appendChild(detailsBtn); // Add details button
-        wordDiv.appendChild(deleteBtn);
-        wordEditor.appendChild(wordDiv);
+        notebookWordDiv.appendChild(textDiv);
+        // notebookWordDiv.appendChild(notebookWorddetailsBtn);
+        notebookWordDiv.appendChild(deleteBtn);
+        notebookEditor.appendChild(notebookWordDiv); // Clone for notebook editor
     });
 }
+
+
 
 // 🔹 Handle Editing
 wordEditor.addEventListener("input", (event) => {
@@ -563,6 +556,162 @@ wordEditor.addEventListener("input", (event) => {
         wordTimestamps[index].word = event.target.value.trim();
     }
 });
+
+function autoSetStart(index) {
+    currentSection = {
+        startIndex: index,
+        startTime: parseFloat(wordTimestamps[index].start)
+    };
+    highlightWord(index, "start");
+}
+
+document.body.addEventListener("change", (e) => {
+    const index = parseInt(e.target.dataset.index);
+
+    // START checkbox logic
+    if (e.target.classList.contains("start-checkbox")) {
+        if (e.target.checked) {
+            currentSection = {
+                startIndex: index,
+                startTime: parseFloat(wordTimestamps[index].start)
+            };
+            highlightWord(index, "start");
+        } else {
+            // Uncheck = clear current start
+            if (currentSection.startIndex == index) {
+                currentSection = {};
+                highlightWord(index, null);
+            }
+        }
+    }
+
+    // END checkbox logic
+    if (e.target.classList.contains("end-checkbox")) {
+        if (e.target.checked && currentSection.startIndex !== undefined) {
+            const endTime = parseFloat(wordTimestamps[index].end);
+            const section = {
+                startIndex: currentSection.startIndex,
+                startTime: currentSection.startTime,
+                endIndex: index,
+                endTime,
+                duration: (endTime - currentSection.startTime).toFixed(2)
+            };
+
+            // Prevent duplicate startIndex entries
+            markedSections = markedSections.filter(s => s.startIndex !== section.startIndex);
+            markedSections.push(section);
+            localStorage.setItem("markedSections", JSON.stringify(markedSections));
+
+            highlightWord(index, "end");
+
+            const nextStartIndex = index + 1;
+            if (nextStartIndex < wordTimestamps.length) {
+                currentSection = {
+                    startIndex: nextStartIndex,
+                    startTime: parseFloat(wordTimestamps[nextStartIndex].start)
+                };
+                highlightWord(nextStartIndex, "start");
+            } else {
+                currentSection = {};
+            }
+
+            //renderSectionList();
+        } else if (!e.target.checked) {
+            // Remove that section
+            markedSections = markedSections.filter(s => s.endIndex !== index);
+            localStorage.setItem("markedSections", JSON.stringify(markedSections));
+            highlightWord(index, null);
+            //renderSectionList();
+        }
+    }
+});
+
+// On page load, set first word as start
+window.addEventListener("load", () => {  
+
+    setTimeout(() => {
+        if (markedSections.length === 0) autoSetStart(0); // first word
+
+        markedSections.forEach(section => {
+            highlightWord(section.startIndex, "start");
+            highlightWord(section.endIndex, "end");
+        });
+    }, timeout = 1000); // wait for UI to load
+
+
+    //renderSectionList(); // optional UI
+});
+
+function renderSectionList() {
+    const list = document.getElementById("sectionList");
+    list.innerHTML = markedSections.map((s, i) => `
+        <div>
+            Image ${i + 1}: ${s.startTime}s → ${s.endTime}s (${s.duration}s)
+            <button onclick="removeSection(${i})">❌</button>
+        </div>
+    `).join("");
+}
+
+function removeSection(i) {
+    markedSections.splice(i, 1);
+    localStorage.setItem("markedSections", JSON.stringify(markedSections));
+    //renderSectionList();
+    location.reload(); // Refresh to re-highlight correctly
+}
+
+
+// Mark End Logic
+document.body.addEventListener("click", (e) => {
+    if (e.target.classList.contains("mark-start")) {
+        const i = e.target.dataset.index;
+        currentSection = {
+            startIndex: i,
+            startTime: wordTimestamps[i].start
+        };
+        highlightWord(i, "start");
+    }
+    if (e.target.classList.contains("mark-end")) {
+        const i = parseInt(e.target.dataset.index);
+        if (currentSection.startIndex !== undefined) {
+            const section = {
+                startIndex: currentSection.startIndex,
+                startTime: currentSection.startTime,
+                endIndex: i,
+                endTime: parseFloat(wordTimestamps[i].end),
+                duration: (parseFloat(wordTimestamps[i].end) - currentSection.startTime).toFixed(2)
+            };
+
+            markedSections.push(section);
+            localStorage.setItem("markedSections", JSON.stringify(markedSections));
+            highlightWord(i, "end");
+
+            // Smart: pick next word as next start
+            const nextStartIndex = i + 1;
+            if (nextStartIndex < wordTimestamps.length) {
+                autoSetStart(nextStartIndex);
+            } else {
+                currentSection = {}; // no more words
+            }
+
+            //renderSectionList();
+        }
+    }
+});
+
+function highlightWord(index, type) {
+    const wordDiv = notebookEditor.querySelector(`[data-index="${index}"]`);
+    if (wordDiv) {
+        if (type === "start") {
+            wordDiv.style.backgroundColor = "#d1e7dd"; // green
+        } else if (type === "end") {
+            wordDiv.style.backgroundColor = "#f8d7da"; // red
+        } else {
+            wordDiv.style.backgroundColor = ""; // reset
+        }
+    }
+}
+
+
 
 // Function to create the floating tooltip for word properties
 function showWordDetails(index, event) {
@@ -585,9 +734,40 @@ function showWordDetails(index, event) {
     tooltip.style.position = "absolute";
     tooltip.style.left = `${event.clientX + 10}px`;
     tooltip.style.top = `${event.clientY + 10}px`;
-    
+
     document.body.appendChild(tooltip);
 }
+
+
+function showNoteWordDetails(index, event) {
+    let wordObj = wordTimestamps[index];
+
+    // Remove any previous tooltip
+    let existingTooltip = document.querySelector(".word-tooltip");
+    if (existingTooltip) existingTooltip.remove();
+
+    const isStart = currentSection.startIndex == index;
+    const isEnd = markedSections.some(s => s.endIndex == index);
+    const existingEnd = markedSections.find(s => s.endIndex == index);
+
+    let tooltip = document.createElement("div");
+    tooltip.classList.add("word-tooltip");
+    tooltip.innerHTML = `
+        <strong>📖 Word:</strong> ${wordObj.word} <br>
+        <strong>⏳ Start:</strong> ${wordObj.start.toFixed(2)}<br>
+        <strong>⏳ End:</strong> ${wordObj.end.toFixed(2)}<br>
+        ${isEnd ? `<strong>⏱ Duration:</strong> ${existingEnd.duration}s<br>` : ''}
+        <label><input type="checkbox" class="start-checkbox" data-index="${index}" ${isStart ? 'checked' : ''}> Mark Start</label><br>
+        <label><input type="checkbox" class="end-checkbox" data-index="${index}" ${isEnd ? 'checked' : ''}> Mark End</label>
+        <button class="close-parent-btn" onClick="closeParent(event)">Close</button>
+    `;
+    tooltip.style.position = "absolute";
+    tooltip.style.left = `${event.clientX + 10}px`;
+    tooltip.style.top = `${event.clientY + 10}px`;
+
+    document.body.appendChild(tooltip);
+}
+
 
 // Event listener for copying times to clipboard
 document.body.addEventListener("click", (event) => {
@@ -608,6 +788,30 @@ wordEditor.addEventListener("click", (event) => {
     }
 });
 
+// Event listener for showing details
+notebookEditor.addEventListener("click", (event) => {
+    if (event.target.classList.contains("view-noteword-details")) {
+        let index = event.target.dataset.index;
+        showNoteWordDetails(index, event);
+    }
+    // if (event.target.classList.contains("close-parent-btn")) {
+    //     // Close the tooltip when the close button is clicked
+    //     let tooltip = event.target.closest(".word-tooltip");
+    //     if (tooltip) {
+    //         tooltip.remove();
+    //     }
+    // }
+});
+
+
+function closeParent(event) {
+    // Close the tooltip when the close button is clicked
+    let tooltip = event.target.closest(".word-tooltip");
+    if (tooltip) {
+        tooltip.remove();
+    }
+}
+
 // 🔹 Handle Deletion
 wordEditor.addEventListener("click", (event) => {
     if (event.target.classList.contains("delete-word")) {
@@ -625,9 +829,9 @@ saveWordChanges.addEventListener("click", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(wordTimestamps)
     })
-    .then(response => response.json())
-    .then(data => alert(data.message))
-    .catch(error => console.error("Error saving word timestamps:", error));
+        .then(response => response.json())
+        .then(data => alert(data.message))
+        .catch(error => console.error("Error saving word timestamps:", error));
 });
 
 // 🔹 Play Selected Background Music for Preview
@@ -665,7 +869,7 @@ videoVolumeSlider.addEventListener("input", () => {
 // 🔹 Function to Update Video Orientation
 function updateVideoOrientation() {
     const selectedOrientation = videoOrientation.value;
-    
+
     if (selectedOrientation === "portrait") {
         document.body.classList.add("portrait");
         // video.width = 720;
@@ -682,3 +886,37 @@ videoOrientation.addEventListener("change", updateVideoOrientation);
 
 // 🔹 Set Initial Orientation on Page Load
 updateVideoOrientation();
+
+// 🔹 Render Editable Words
+function renderWordEditor_old() {
+    wordEditor.innerHTML = ""; // Clear previous content
+
+    wordTimestamps.forEach((wordObj, index) => {
+        let wordDiv = document.createElement("div");
+        wordDiv.classList.add("word-editor-box");
+
+        // Editable input field
+        let input = document.createElement("input");
+        input.type = "text";
+        input.value = wordObj.word;
+        input.dataset.index = index;
+
+        // Delete button
+        let deleteBtn = document.createElement("span");
+        deleteBtn.innerHTML = "❌";
+        deleteBtn.classList.add("delete-word");
+        deleteBtn.dataset.index = index;
+
+        // View Details Button
+        let detailsBtn = document.createElement("span");
+        detailsBtn.innerHTML = "ℹ️";  // Info icon
+        detailsBtn.classList.add("view-details");
+        detailsBtn.dataset.index = index;
+
+        wordDiv.appendChild(input);
+        wordDiv.appendChild(detailsBtn); // Add details button
+        wordDiv.appendChild(deleteBtn);
+        wordEditor.appendChild(wordDiv);
+        notebookEditor.appendChild(wordDiv.cloneNode(true)); // Clone for notebook editor
+    });
+}

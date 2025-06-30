@@ -367,6 +367,66 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     #DND - Working but not in use
     #save_details_in_csv(captions_data, url, base_file_name)
 
+
+def prepare_captions_file_for_notebooklm_audio( audio_path="audio.wav",  language="english"):    
+
+    
+    #model = whisper.load_model("base")
+    #model = whisper.load_model("medium")
+
+    if language == "hindi":
+        # model = whisper.load_model("medium")
+        # captions_data = model.transcribe(audio_path, word_timestamps=True, language="hi")
+        model = whisper.load_model("large")
+        captions_data = model.transcribe(
+                            audio_path,
+                            word_timestamps=True,
+                            language="hi",     # or "en" for English
+                            verbose=True,
+                            fp16=False,         # Important on CPU
+                            initial_prompt="यह एक कहानी है",
+                            condition_on_previous_text=False,
+                            temperature=(0.0, 0.2, 0.4)
+                        )
+
+    else:
+        model = whisper.load_model("base")
+        captions_data = model.transcribe(audio_path, word_timestamps=True)
+
+    print("Detected language:", captions_data.get("language"))
+
+    word_timestamps = []
+    position_index = 0  # Track word positions
+    start = time.time()  
+    for segment in captions_data["segments"]:
+        for word_data in segment.get("words", []):
+            word_timestamps.append({
+                "word": word_data["word"].lower(),  # Normalize case
+                "start": word_data["start"],
+                "end": word_data["end"],
+                "position": position_index,  # Assign position index
+                "matched": False  # Initialize as not matched
+            })
+            position_index += 1
+
+    for word in word_timestamps:
+        start = word["start"]
+        end = word["end"]
+        if end - start > MAX_WORD_DURATION:
+            word["end"] = start + MAX_WORD_DURATION
+    print(f"[{time.strftime('%H:%M:%S')}] Logic of building word_timestamps completed in {time.time() - start:.2f} seconds")
+    start = time.time()  
+
+    with open('temp/word_timestamps.json', 'w', encoding='utf-8') as f:
+        json.dump(word_timestamps, f,indent=4, ensure_ascii=False)
+
+    # Only capture the simple text, not full captions_data
+    captions_text = captions_data.get("text", "").strip()
+
+    #save_details_in_excel(captions_text, url, base_file_name, description, tags, playlist, channel,title,schedule_date)
+
+
+
 def save_details_in_excel(captions_text, url, base_file_name, description="", tags="", playlist="", channel="", title="",schedule_date=""):
     """Safely write data to an Excel file, creating it if it doesn't exist."""
     excel_file = "video_records.xlsx"
@@ -683,4 +743,12 @@ if __name__ == "__main__":
 
     
     #prepare_file_for_adding_captions_n_headings_thru_html(url, "composed_video.mp4")
-    prepare_file_for_adding_captions_n_headings_thru_html("", "composed_video.mp4", "output", "hindi", story_text="प्राचीन काल की बात है।भारतवर्ष के काशी नगर में एक ब्राह्मण रहता था।उसका जीवन अत्यंत कठिनाइयों से भरा हुआ था।घर में न चूल्हा जलता, न दीपक। न वस्त्र, न बर्तन।वह वृद्ध हो चला था, शरीर दुर्बल और आँखों में निरंतर चिंता का बादल।")
+
+    # DND - Working
+    #prepare_file_for_adding_captions_n_headings_thru_html("", "composed_video.mp4", "output", "hindi", story_text="प्राचीन काल की बात है।भारतवर्ष के काशी नगर में एक ब्राह्मण रहता था।उसका जीवन अत्यंत कठिनाइयों से भरा हुआ था।घर में न चूल्हा जलता, न दीपक। न वस्त्र, न बर्तन।वह वृद्ध हो चला था, शरीर दुर्बल और आँखों में निरंतर चिंता का बादल।")
+
+    # DND - Working
+    prepare_captions_file_for_notebooklm_audio(
+        audio_path="audio.wav",
+        language="english"
+    )

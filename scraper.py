@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import shutil
@@ -26,17 +27,31 @@ from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
 from moviepy.video.fx.resize import resize
 import pandas as pd
+from bs4 import Tag, NavigableString
+word_timestamps = []
 
-def clear_folders():
+# Fetch word timestamps from the Flask server
+import requests
+
+
+def clear_folders(notebooklm="no"):
     shutil.rmtree("audios", ignore_errors=True)
     shutil.rmtree("images", ignore_errors=True)
     shutil.rmtree("splits", ignore_errors=True)
-    shutil.rmtree("temp", ignore_errors=True)
+    if notebooklm == "no":
+        shutil.rmtree("temp", ignore_errors=True)
+        os.makedirs("temp", exist_ok=True)
+        structured_output_path = "temp/structured_output.json"
+        # Find start & end word timings
+        structured_output = []
+        # Save structured output
+        with open(structured_output_path, "w", encoding="utf-8") as file:
+            json.dump(structured_output, file, indent=4)
 
     os.makedirs("audios", exist_ok=True)
     os.makedirs("images", exist_ok=True)
     os.makedirs("splits", exist_ok=True)
-    os.makedirs("temp", exist_ok=True)
+
 
 # scraper.py
 
@@ -64,7 +79,9 @@ def is_server_running(script_name="server.py"):
     return False
 
 def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
-                       selected_voice, language, gender, tts_engine, skip_puppeteer, skip_captions, pitch_age_group, disable_subscribe):
+                       selected_voice, language, gender, tts_engine, skip_puppeteer, skip_captions, pitch_age_group, disable_subscribe, notebooklm="no"):
+
+    print("scrape_and_process - Received scrape_and_process Arguments:", locals())
 
     if skip_puppeteer == "no":
         if not is_server_running("server.py"):
@@ -79,7 +96,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
         if not urls or selected_size not in sizes or selected_music not in background_music_options:
             raise ValueError("Invalid input parameters")
 
-    clear_folders()
+    clear_folders(notebooklm)
 
     target_size = sizes.get(selected_size)  # Ensure it gets a tuple like (1080, 1920)
     if not target_size:
@@ -97,7 +114,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
 
             try:
 
-                results = scrape_page_with_camera_frame(url)
+                results = scrape_page_with_camera_frame(url, "https://readernook.com", notebooklm)
                 if not results:
                     print(f"No valid content found in {url}. Skipping.")
                 else:
@@ -129,7 +146,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         shorts_html = metadata.get("shorts_html", "")
 
                         start = time.time()
-                        create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar,pitch_age_group)
+                        create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar,pitch_age_group, notebooklm)
                         print(f"[{time.strftime('%H:%M:%S')}] Step create_video_using_camera_frames completed in {time.time() - start:.2f} seconds")
                         start = time.time()
 
@@ -137,8 +154,9 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
                         #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
                         #prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name, language,story_text="")
-                        prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text="", description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date="",shorts_html=shorts_html,skip_captions=skip_captions)
-                        print(f"[{time.strftime('%H:%M:%S')}] Step prepare_file_for_adding_captions_n_headings_thru_html completed in {time.time() - start:.2f} seconds")
+                        if notebooklm == "no":
+                            prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text="", description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date="",shorts_html=shorts_html,skip_captions=skip_captions)
+                            print(f"[{time.strftime('%H:%M:%S')}] Step prepare_file_for_adding_captions_n_headings_thru_html completed in {time.time() - start:.2f} seconds")
                         start = time.time()
 
                         #try:
@@ -297,14 +315,15 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                 results = elements
                 
                 start = time.time() 
-                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar="", pitch_age_group=pitch_age_group)
+                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar="", pitch_age_group=pitch_age_group, notebooklm=notebooklm)
                 print(f"[{time.strftime('%H:%M:%S')}] Step create_video_using_camera_frames completed in {time.time() - start:.2f} seconds")
                 start = time.time()                
                 output_file = "composed_video.mp4"
                 url = title
                 #SM- DND - Working. Commented out for now as captions are going to be added thru HTML. REF: https://readernook.com/topics/scary-stories/chatgpt-commands-for-youtube-video
                 #add_captions(max_words, fontsize, y_pos, style, " ", font_settings, "composed_video.mp4")
-                prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text=story, description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date=schedule_date,skip_captions=skip_captions)
+                if notebooklm == "no":
+                    prepare_file_for_adding_captions_n_headings_thru_html(url,output_file,base_file_name,language,story_text=story, description=description, tags=tags, playlist=playlist, channel=channel, title=title, schedule_date=schedule_date,skip_captions=skip_captions)
 
                 #try:
                     #video_clip = VideoFileClip("output_video.mp4")
@@ -430,7 +449,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
             df.to_excel(input_excel_file, index=False)
 
 
-def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video", avatar="", pitch_age_group="adult"):
+def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video", avatar="", pitch_age_group="adult", notebooklm="no"):
     """
     Creates a video using the scrapped elements.
 
@@ -460,23 +479,23 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
 
         if element["type"] == "text":
             try:
+                if notebooklm == "no":
+                    tts_audio_path = NamedTemporaryFile(delete=False, suffix=".mp3").name
+                    
 
-                tts_audio_path = NamedTemporaryFile(delete=False, suffix=".mp3").name
-                
+                    if tts_engine == "google":
+                        if (language == "english-india"):
+                            languageType = "neural"
+                        else:
+                            languageType = "journey"
 
-                if tts_engine == "google":
-                    if (language == "english-india"):
-                        languageType = "neural"
-                    else:
-                        languageType = "journey"
-
-                    generated_audio = get_audio_file(element["text"], tts_audio_path,"google",language,gender, languageType, pitch_age_group)
-                elif tts_engine == "amazon":
-                    generated_audio = get_audio_file(element["text"], tts_audio_path,"amazon",language,gender, "generative")
-                
-                if generated_audio:
-                    tts_audio = AudioFileClip(tts_audio_path)
-                    audio_clips.append(tts_audio)
+                        generated_audio = get_audio_file(element["text"], tts_audio_path,"google",language,gender, languageType, pitch_age_group)
+                    elif tts_engine == "amazon":
+                        generated_audio = get_audio_file(element["text"], tts_audio_path,"amazon",language,gender, "generative")
+                    
+                    if generated_audio:
+                        tts_audio = AudioFileClip(tts_audio_path)
+                        audio_clips.append(tts_audio)
 
             except Exception as e:
                 print(f"Error processing text: {e}")
@@ -625,9 +644,10 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             
             # Attempt to get the image size
             try:
-                if not audio_clips:
-                    print("No audio clips available. Skipping image processing.")
-                    continue  # Skip to the next element
+                if notebooklm == "no":
+                    if not audio_clips:
+                        print("No audio clips available. Skipping image processing.")
+                        continue  # Skip to the next element
                 actual_width, actual_height = img_clip.size
                 #DND - For Debugging purposes
                 #print(f"Image dimensions: width={actual_width}, height={actual_height}")
@@ -708,23 +728,25 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
             #     clip if isinstance(clip, AudioFileClip) else AudioFileClip(clip)
             #     for clip in audio_clips
             # ]
+            if notebooklm == "no":
+                audio_clips_loaded = [
+                    clip if isinstance(clip, (AudioFileClip, CompositeAudioClip)) else None # Handle other types gracefully
+                    for clip in audio_clips
+                ]
 
-            audio_clips_loaded = [
-                clip if isinstance(clip, (AudioFileClip, CompositeAudioClip)) else None # Handle other types gracefully
-                for clip in audio_clips
-            ]
-
-            audio_clips_loaded = [clip for clip in audio_clips_loaded if clip is not None] #Remove None from the list
+                audio_clips_loaded = [clip for clip in audio_clips_loaded if clip is not None] #Remove None from the list
 
 
-            combined_audio = concatenate_audioclips(audio_clips_loaded)
+                combined_audio = concatenate_audioclips(audio_clips_loaded)
 
-            if combined_audio.duration > video_clip.duration:
-                combined_audio = combined_audio.subclip(0, video_clip.duration)
+                if combined_audio.duration > video_clip.duration:
+                    combined_audio = combined_audio.subclip(0, video_clip.duration)
 
-            # Set the combined audio to the video
-            video_with_audio = video_clip.set_audio(combined_audio)
-
+                # Set the combined audio to the video
+                video_with_audio = video_clip.set_audio(combined_audio)
+            else:
+                # If notebooklm is "yes", we assume audio_clips are already in the correct format
+                video_with_audio = video_clip
             
             if avatar_flag == 'y' or avatar != "":
                 temp_audio_path = "temp/audio.wav"
@@ -751,6 +773,13 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
     #final_video = concatenate_videoclips(video_clips, method="compose")
     final_video = concatenate_videoclips(video_clips, method="chain")
 
+    if notebooklm == "yes":
+        # set audi from audio.wav file
+        audio_path = "audio.wav"
+        if os.path.exists(audio_path):
+            final_audio = AudioFileClip(audio_path)
+            final_video = final_video.set_audio(final_audio)
+        
     # # Check for audio in video_clips
     # audio_clips = [clip.audio for clip in video_clips if clip.audio is not None]
 
@@ -791,7 +820,9 @@ def download_file(url, temp_dir="temp_audio"):
 
     return local_filename
 
-def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
+
+
+def scrape_page_with_camera_frame(url, base_url="https://readernook.com", notebooklm="no"):
     """
     Scrapes text, sound effects, and images along with camera movement properties.
 
@@ -803,39 +834,18 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
         list[dict]: A list of elements with text, audio, image, and camera frame details.
     """
    # Scrape the page
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "html.parser")
 
 
-    shorts_sections = soup.select("div.shorts")
-    process_sections = []
+    resp = requests.get("http://localhost:5000/get_word_timestamps")
 
-    if shorts_sections:
-        for idx, section in enumerate(shorts_sections, 1):
-            name_suffix = f"shorts_{idx}"
-
-            # ✅ Extract metadata fields from input elements
-            metadata = {
-                "title": section.select_one("div.shorts-title").get_text(strip=True) if section.select_one("div.shorts-title") else "",
-                "description": section.select_one("div.shorts-description").get_text(strip=True) if section.select_one("div.shorts-description") else "",
-                "tags": section.select_one("div.shorts-tags").get_text(strip=True) if section.select_one("div.shorts-tags") else "",
-                "channel": section.select_one("div.shorts-channel").get_text(strip=True) if section.select_one("div.shorts-channel") else "",
-                "playlist": section.select_one("div.shorts-playlist").get_text(strip=True) if section.select_one("div.shorts-playlist") else "",
-                "ctatext": section.select_one("div.shorts-ctatext").get_text(strip=True) if section.select_one("div.shorts-ctatext") else "",
-                "avatar": section.select_one("div.shorts-avatar").get_text(strip=True) if section.select_one("div.shorts-avatar") else "",
-                "shorts_html": str(section)
-            }
-
-            process_sections.append((name_suffix, section, metadata))
+    if resp.status_code == 200:
+        word_timestamps = resp.json()  # this is now a Python list of dicts
+        print("Fetched word timestamps successfully.")
+        # Now you can use it as needed
+        # print(word_timestamps[0])  # print first word entry
     else:
-        song_lyrics = soup.select_one(".songLyrics")
-        if song_lyrics:
-            process_sections.append(("main", song_lyrics, {}))
-        else:
-            return []  # No valid section found
-
-    all_results = []
-
+        print("Failed to fetch captions:", resp.status_code)
+        exit(1)
 
     def is_skippable(element):
         """
@@ -870,6 +880,150 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
             return True
                                                
         return False
+    
+    def updateShortsHTMLImagesTimes(shortsObj, word_timestamps):       
+        
+        elements = []
+
+        def is_inside_skippable_text(tag_or_string):
+            """Skip only text or nested non-img tags inside skippable containers."""
+            parent = tag_or_string.parent if isinstance(tag_or_string, NavigableString) else tag_or_string
+            while parent and isinstance(parent, Tag):
+                cls = parent.get("class", [])
+                if any("shorts-props" in c or ("image" in c and "desc" in c) or "imgPropsInput" in c for c in cls):
+                    return True
+                parent = parent.parent
+            return False
+        word_position = 0
+        text_start_position = 0
+
+        for child in shortsObj.descendants:
+            if isinstance(child, Tag):
+                if child.name == "img":
+                    # ✅ Always include image tags (even if inside .image1-desc)
+                    elements.append({"type": "img", "tag": child, "text_start_position": text_start_position, "text_end_position": word_position -1})
+                    text_start_position = word_position   # Update start position for next text segment
+                    continue
+
+                if is_inside_skippable_text(child):
+                    continue  # ❌ skip container text
+
+                if child.name in ["p", "span", "div"]:
+                    text = child.get_text(strip=True, separator=" ")
+                    words = text.split()
+                    for word in words:
+                        elements.append({"type": "word", "word": word, "position": word_position})
+                        word_position += 1
+
+
+            elif isinstance(child, NavigableString):
+                if is_inside_skippable_text(child):
+                    continue  # ❌ skip container text
+
+                words = child.strip().split()
+                for word in words:
+                    elements.append({"type": "word", "word": word, "position": word_position})
+                    word_position += 1
+
+        # DND - For debugging purposes
+        # print(elements)
+
+        # Step 2: Compute durations between images and update imgduration inputs
+
+
+        # Map position -> timestamp object for fast lookup
+        position_map = {w['position']: w for w in word_timestamps}
+
+        for i, el in enumerate(elements):
+            if el["type"] == "img":
+                start_pos = el.get("text_start_position")
+                end_pos = el.get("text_end_position")
+
+                start_ts = position_map.get(start_pos, {}).get("start")
+                end_ts = position_map.get(end_pos, {}).get("end")
+
+                if start_ts is not None and end_ts is not None and end_ts > start_ts:
+                    duration = round(end_ts - start_ts, 2)
+                else:
+                    duration = 0.0
+
+                # Set the data-imgduration on the imgPropsInput div (used for downstream processing)
+                img_tag = el["tag"]
+                parent_div = img_tag.find_parent("div", class_="image1-desc") or img_tag.find_parent("div", class_="image2-desc")
+
+                if parent_div:
+                    # Look for the imgPropsInput wrapper
+                    image_props_div = parent_div.find("div", class_="image-props")
+                    if image_props_div:
+                        duration_updated = False
+                        for div in image_props_div.find_all("div", class_="imgPropsInput"):
+                            div_id = div.get("id", "")
+                            if div_id.endswith("-imgduration"):
+                                print(f"✅ Updating duration in: {div_id} from {div.string} → {duration:.2f}")
+                                div.string = f"{duration:.2f}"
+                                div["data-imgduration"] = f"{duration:.2f}"  # Optional, if needed in JS
+                                duration_updated = True
+                        if not duration_updated:
+                            print("⚠️ No -imgduration field found inside image-props.")
+                    else:
+                        print("⚠️ No .image-props found in image1-desc container.")
+                else:
+                    print("⚠️ Image tag not inside .image1-desc or .image2-desc")
+
+
+                # Also update on the image tag directly if needed
+                # img_tag["data-imgduration"] = str(duration)
+
+                # 🧾 Print debug info
+                start_word = position_map.get(start_pos, {}).get("word", "?")
+                end_word = position_map.get(end_pos, {}).get("word", "?")
+                print(f"\n🖼️ Image at index {i}")
+                print(f"   Start Word: '{start_word}' (Position: {start_pos}, Time: {start_ts})")
+                print(f"   End Word:   '{end_word}' (Position: {end_pos}, Time: {end_ts})")
+                print(f"   ⏳ Duration: {duration} seconds")
+
+        return shortsObj
+    
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    shorts_sections = soup.select("div.shorts")
+    process_sections = []
+
+    if shorts_sections:
+        for idx, section in enumerate(shorts_sections, 1):
+            name_suffix = f"shorts_{idx}"
+
+            if notebooklm == "yes":
+                shorts_html = updateShortsHTMLImagesTimes(section, word_timestamps)
+                # print(shorts_html.prettify())
+            else:
+                shorts_html = str(section)
+
+            # ✅ Extract metadata fields from input elements
+            metadata = {
+                "title": section.select_one("div.shorts-title").get_text(strip=True) if section.select_one("div.shorts-title") else "",
+                "description": section.select_one("div.shorts-description").get_text(strip=True) if section.select_one("div.shorts-description") else "",
+                "tags": section.select_one("div.shorts-tags").get_text(strip=True) if section.select_one("div.shorts-tags") else "",
+                "channel": section.select_one("div.shorts-channel").get_text(strip=True) if section.select_one("div.shorts-channel") else "",
+                "playlist": section.select_one("div.shorts-playlist").get_text(strip=True) if section.select_one("div.shorts-playlist") else "",
+                "ctatext": section.select_one("div.shorts-ctatext").get_text(strip=True) if section.select_one("div.shorts-ctatext") else "",
+                "avatar": section.select_one("div.shorts-avatar").get_text(strip=True) if section.select_one("div.shorts-avatar") else "",
+                "shorts_html": shorts_html
+            }
+
+            process_sections.append((name_suffix, section, metadata))
+    else:
+        song_lyrics = soup.select_one(".songLyrics")
+        if song_lyrics:
+            process_sections.append(("main", song_lyrics, {}))
+        else:
+            return []  # No valid section found
+
+    all_results = []
+
+
+    
+
     
 
     for name_suffix, section, metadata  in process_sections:

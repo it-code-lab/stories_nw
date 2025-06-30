@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Content Processor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 30px;
+        }
+
+        form {
+            background: #fff;
+            padding: 25px 40px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        form h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+
+        textarea,
+        select,
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            display: block;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 200px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #555;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 260px;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            /* Position above the icon */
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-size: 13px;
+            line-height: 1.3;
+        }
+
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+
+</head>
+
+<body>
+    <form id="contentForm">
+        <h2>Content Processor</h2>
+
+        <label>Website URLs (semicolon-separated):</label>
+        <textarea name="urls" rows="4"></textarea>
+
+        <label>Audio->WordTimeStamps-Video
+            <span class="tooltip-container">
+                &#9432;
+                <span class="tooltip-text">
+                    Designed for NotebookLM type audios. There should be image at the end of the shorts text. Shorts text should match with the
+                    WordTimeStamps text.
+                </span>
+            </span>
+
+        </label>
+        <select name="notebooklm">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+
+        <label>Pick video background and story from Excel:</label>
+        <select name="excel">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+
+        <label>Language:</label>
+        <select name="language">
+            <option>english</option>
+            <option>english-india</option>
+            <option>hindi</option>
+            <option>french</option>
+        </select>
+
+        <label>Select TTS Engine:</label>
+        <select name="tts">
+            {% for key in tts_options.keys() %}
+            <option value="{{ key }}">{{ key }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Select Voice Gender:</label>
+        <select name="gender" id="gender" onchange="updateVoices()">
+            {% for g in voice_genders %}
+            <option value="{{ g }}">{{ g }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Select Voice:</label>
+        <select name="voice" id="voice">
+            <!-- Populated by JS -->
+        </select>
+
+        <label>Select Video Type:</label>
+        <span class="tooltip-container">
+            &#9432;
+            <span class="tooltip-text">
+                Ensure camera frames marked on the web page match with the selection. Also OBS studio should have corresponding scene and profile.
+            </span>
+        </span>
+        <select name="size">
+            {% for label in sizes.keys() %}
+            <option value="{{ label }}">{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Select Background Music:</label>
+        <select name="music">
+            {% for filename in music_options.keys() %}
+            <option value="{{ filename }}">{{ filename }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Max Words per Caption:</label>
+        <input type="number" name="max_words" min="1" max="10" value="4">
+
+        <label>Select Caption Style:</label>
+        <select name="style">
+            {% for style_key in style_options.keys() %}
+            <option value="{{ style_key }}">{{ style_key }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Skip Puppeteer Call:</label>
+
+        <select name="skip_puppeteer">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+
+        <label>Skip Captions:</label>
+        <select name="skip_captions">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+
+        <label>Add Sound Pitch:</label>
+        <span class="tooltip-container">
+            &#9432;
+            <span class="tooltip-text">
+                Id it is adult, it does not change anything.
+            </span>
+        </span>        
+        <select name="pitch">
+            <option>adult</option>
+            <option>child</option>
+            <option>teen</option>
+            <option>elderly</option>
+        </select>
+
+        <label>Disable Subscribe Gif:</label>
+        <span class="tooltip-container">
+            &#9432;
+            <span class="tooltip-text">
+                Disable it for advertisement videos.
+            </span>
+        </span>        
+        <select name="disable_subscribe">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+
+        <button type="submit">Process</button>
+    </form>
+
+    <script>
+        const voices = {{ voice_map | tojson }};
+        function updateVoices() {
+            const gender = document.getElementById("gender").value;
+            const voiceDropdown = document.getElementById("voice");
+            const voiceList = voices[gender];
+
+            voiceDropdown.innerHTML = '';
+            voiceList.forEach(function (v) {
+                const opt = document.createElement("option");
+                opt.value = v;
+                opt.text = v;
+                voiceDropdown.appendChild(opt);
+            });
+        }
+
+        // On page load, initialize voices for default gender
+        window.onload = updateVoices;
+
+        document.getElementById('contentForm').onsubmit = async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('/process', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.text();
+            alert(result);
+        };
+    </script>
+</body>
+
+</html>
