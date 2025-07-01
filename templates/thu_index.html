@@ -344,14 +344,31 @@
         </div>
       </div>
 
-      <div class="preview-area">
+      <div class="final-selection">
+        <!-- <h2>Final Selection</h2> -->
+        <div class="image1-desc">
+          <canvas id="finalCanvas"></canvas>
+          <div class="camera-frame" id="cropFrame"></div>
+        </div>
+        <button id="frameDownloadButton">Download Framed Image</button>
+        <button id="downloadButton">Download Full Image</button>
+      </div>
+
+      <!-- <div class="preview-area">
         <h2>Preview</h2>
         <div id="imageContainer">
           <canvas id="previewCanvas"></canvas>
         </div>
-      </div>
+      </div> -->
     </div>
-    <div class="final-selection">
+
+    <div class="preview-area">
+      <h2>Other Designs</h2>
+      <div id="imageContainer">
+        <canvas id="previewCanvas"></canvas>
+      </div>
+    </div>  
+    <!-- <div class="final-selection">
       <h2>Final Selection</h2>
       <div class="image1-desc">
         <canvas id="finalCanvas"></canvas>
@@ -359,7 +376,7 @@
       </div>
       <button id="frameDownloadButton">Download Framed Image</button>
       <button id="downloadButton">Download Full Image</button>
-    </div>
+    </div> -->
   </div>
 
   <script>
