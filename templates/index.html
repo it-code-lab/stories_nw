@@ -115,7 +115,8 @@
             <span class="tooltip-container">
                 &#9432;
                 <span class="tooltip-text">
-                    Designed for NotebookLM type audios. There should be image at the end of the shorts text. Shorts text should match with the
+                    Designed for NotebookLM type audios. There should be image at the end of the shorts text. Shorts
+                    text should match with the
                     WordTimeStamps text.
                 </span>
             </span>
@@ -160,12 +161,13 @@
         </select>
 
         <label>Select Video Type:
-        <span class="tooltip-container">
-            &#9432;
-            <span class="tooltip-text">
-                Ensure camera frames marked on the web page match with the selection. Also OBS studio should have corresponding scene and profile.
+            <span class="tooltip-container">
+                &#9432;
+                <span class="tooltip-text">
+                    Ensure camera frames marked on the web page match with the selection. Also OBS studio should have
+                    corresponding scene and profile.
+                </span>
             </span>
-        </span>
         </label>
         <select name="size">
             {% for label in sizes.keys() %}
@@ -204,13 +206,13 @@
         </select>
 
         <label>Add Sound Pitch:
-        <span class="tooltip-container">
-            &#9432;
-            <span class="tooltip-text">
-                Id it is adult, it does not change anything.
+            <span class="tooltip-container">
+                &#9432;
+                <span class="tooltip-text">
+                    Id it is adult, it does not change anything.
+                </span>
             </span>
-        </span>  
-        </label>      
+        </label>
         <select name="pitch">
             <option>adult</option>
             <option>child</option>
@@ -219,13 +221,13 @@
         </select>
 
         <label>Disable Subscribe Gif:
-        <span class="tooltip-container">
-            &#9432;
-            <span class="tooltip-text">
-                Disable it for advertisement videos.
+            <span class="tooltip-container">
+                &#9432;
+                <span class="tooltip-text">
+                    Disable it for advertisement videos.
+                </span>
             </span>
-        </span>   
-        </label>     
+        </label>
         <select name="disable_subscribe">
             <option value="no">no</option>
             <option value="yes">yes</option>
@@ -237,11 +239,11 @@
     <form id="runCaptionGenerator">
         <h2>Prestep for Audio->WordTimeStamps-Video</h2>
         <div>Run caption_generator.py: Prestep for Audio->WordTimeStamps-Video above
-            <ol> 
-            <li>Place audio.wav (from notebooklm) and then press below button.</li> 
-            <li>This would create WordTimeStamps file and captions (access from index.html).</li> 
-            <li>Use captions text on readernook.com and add images.</li>
-            <li>Then execute above program with Audio->WordTimeStamps-Video</li>
+            <ol>
+                <li>Place audio.wav (from notebooklm) and then press below button.</li>
+                <li>This would create WordTimeStamps file and captions (access from index.html).</li>
+                <li>Use captions text on readernook.com and add images.</li>
+                <li>Then execute above program with Audio->WordTimeStamps-Video</li>
             </ol>
 
         </div>
@@ -257,7 +259,7 @@
     </form>
 
     <br>
-        <form id="uploadToYoutube">
+    <form id="uploadToYoutube">
         <h2>Run Youtube Upload</h2>
         <div> To be run after video created in Processed_video folder and record is added in video_records.xlsx
 
@@ -266,6 +268,23 @@
 
 
         <button type="submit">Upload Videos to Youtube</button>
+    </form>
+
+    <br>
+    <form id="runOBSRecorder">
+        <h2>Run OBS Recorder</h2>
+        <div> To be run if recording as part of whole Process above failed
+        </div>
+
+        <select name="orientation">
+            <option value="landscape">landscape</option>
+            <option value="portrait">portrait</option>
+        </select>
+
+        <label>Duration:</label>
+        <input type="text" name="duration" >
+
+        <button type="submit">Play video and run OBS Recorder</button>
     </form>
 
     <script>
@@ -298,7 +317,7 @@
             const result = await response.text();
             // alert(result);
         };
-    
+
         document.getElementById('runCaptionGenerator').onsubmit = async function (e) {
             e.preventDefault();
             console.log("Processing request...caption");
@@ -315,6 +334,17 @@
             console.log("Processing request...upload_videos");
             const response = await fetch('/upload', {
                 method: 'POST'
+            });
+            const result = await response.text();
+            // alert(result);
+        };
+        document.getElementById('runOBSRecorder').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...run OBS recorder");
+            const formData = new FormData(this);
+            const response = await fetch('/runobsrecorder', {
+                method: 'POST',
+                body: formData
             });
             const result = await response.text();
             // alert(result);

@@ -120,6 +120,30 @@ def upload():
         return "✅ Processing completed successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500
+    
+@app.route('/runobsrecorder', methods=['POST'])
+def run_obs_recorder():
+    try:
+        print("Processing request...run OBS recorder")
+        orientation = request.form.get('orientation', 'landscape')
+        duration = request.form.get('duration', '10')  # Default to 10 seconds if not provided
+
+        cmd = [
+            "node", "puppeteer-launcher.js",
+            "test.mp4", duration, orientation, "4", "style2",
+            "story-classical-3-710.mp3", "0.05", "1", "yes"
+        ]
+        print("▶️ Running Puppeteer with:", cmd)
+        import subprocess
+        subprocess.run(cmd)
+
+        # Here you would call the function to run OBS recorder
+        # For example: run_obs_recorder_function()
+
+        # return "✅ Processing started!"
+        return "✅ OBS Recorder started successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500
 # ------------------------ MAIN ------------------------ #
 
 if __name__ == '__main__':
