@@ -67,6 +67,7 @@ def index():
 @app.route('/process', methods=['POST'])
 def process():
     try:
+        print("Processing request...")
         urls = request.form.get('urls', '')
         excel = request.form.get('excel', 'no')
         notebooklm = request.form.get('notebooklm', 'no')
@@ -97,6 +98,7 @@ def process():
 @app.route('/caption', methods=['POST'])
 def caption():
     try:
+        print("Processing request...caption")
         language = request.form.get('language', 'english')
         prepare_captions_file_for_notebooklm_audio(
             audio_path="audio.wav",
@@ -111,6 +113,7 @@ def caption():
 @app.route('/upload', methods=['POST'])
 def upload():
     try:
+        print("Processing request...upload_videos")
         upload_videos()  # Assuming this function is defined in youtube_uploader.py
 
         # return "✅ Processing started!"
