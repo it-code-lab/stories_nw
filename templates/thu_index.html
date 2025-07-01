@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Text Overlay Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Impact&family=Bebas+Neue&family=Anton&family=Oswald:wght@700&family=Montserrat:wght@800&family=Poppins:wght@800&family=Raleway:wght@800&family=Lilita+One&family=Bangers&family=Permanent+Marker&family=Luckiest+Guy&family=Black+Han+Sans&family=Rubik+Mono+One&family=Staatliches&family=Playfair+Display:wght@900&family=Archivo+Black&family=Fjalla+One&family=Shrikhand&family=Changa+One&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pickr/1.8.2/themes/classic.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pickr/1.8.2/pickr.min.js"></script>
+  <!-- <link rel="stylesheet" href="thu_styles.css" /> -->
+  <style>
+    /* styles.css */
+    body {
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background-color: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      width: 95%;
+      /* Adjust as needed */
+      max-width: 1400px;
+    }
+
+    .upload-area,
+    .input-area,
+    .preview-area,
+    .final-selection {
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 5px;
+    }
+
+    .upload-button {
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      /* Green */
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .input-area input,
+    .input-area textarea,
+    .input-area select {
+      width: calc(100% - 22px);
+      /* Account for padding and border */
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      /* Include padding and border in element's total width and height */
+    }
+
+    .input-area textarea {
+      height: 100px;
+      /* Adjust as needed */
+      resize: vertical;
+    }
+
+    .preview-area,
+    .final-selection {
+      text-align: center;
+      /* Center the canvas */
+    }
+
+    #previewCanvas,
+    #finalCanvas {
+      /* max-width: 700px; */
+      /* max-width: 100%; */
+      max-width: 90%;
+      height: auto;
+      border: 1px solid #ccc;
+    }
+
+    .text-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      min-width: 150px
+    }
+
+    .text-options label {
+      margin-right: 5px;
+    }
+
+    #downloadButton , #frameDownloadButton{
+      padding: 10px 20px;
+      background-color: #007bff;
+      /* Blue */
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .preview-area {
+      display: flex;
+      /* Use flexbox for layout */
+      flex-direction: column;
+      /* Align items vertically */
+      align-items: flex-start;
+      /* Align items to the left */
+      overflow-x: auto;
+      /* Add horizontal scrolling if necessary */
+      border: 1px solid #ccc;
+      /* Add a border to the preview area */
+      padding: 10px;
+      /* Add some padding */
+    }
+
+    #imageContainer {
+      display: flex;
+      /* Use flexbox for the preview grid */
+      flex-wrap: wrap;
+      /* Prevent wrapping */
+      gap: 10px;
+      /* Space between the preview items */
+    }
+
+    .input-area {
+      display: flex;
+      flex-direction: column;
+      /* Stack the form elements */
+    }
+
+    .input-area>* {
+      /* Target direct children of input-area */
+      margin-bottom: 10px;
+      /* Consistent spacing */
+    }
+
+    .text-options {
+      display: grid;
+      /* Use grid for better layout control */
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      /* Responsive columns */
+      gap: 10px;
+    }
+
+    .text-options label,
+    .text-options select,
+    .text-options input[type="color"],
+    .text-options input[type="number"] {
+      display: block;
+      /* Make labels and inputs stack vertically in each grid item */
+      width: 100%;
+      /* Make inputs take full width of their grid cell */
+      margin-bottom: 5px;
+    }
+
+    .text-options input[type="checkbox"] {
+      display: inline-block;
+      /* Keep checkboxes inline with their labels */
+      margin-right: 5px;
+    }
+
+
+    .input-n-preview-area {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+    }
+
+    .fontCheck {
+      visibility: hidden;
+
+    }
+
+    .camera-frame {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border: 2px dashed red;
+      background-color: rgba(255, 255, 255, 0.01);
+      cursor: move;
+      overflow: hidden;
+      z-index: 10;
+      display: block;
+    }
+
+    .story-image-resize-handle {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      cursor: nwse-resize;
+      display: block;
+    }
+
+    .final-selection {
+      position: relative;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>YouTube Thumbnail & Video Text Overlay</h1>
+
+    <div class="upload-area">
+      <input type="file" id="imageUpload" accept="image/*" />
+
+      <br /><br />
+      <span class="paste-instructions">Or paste image using Ctrl+V (Windows) or Cmd+V (Mac)</span>
+      <div class="fontCheck">
+        <span style="font-family: 'Luckiest Guy', cursive;">A</span>
+        <span style="font-family: 'Anton', sans-serif">A</span>
+        <span style="font-family: 'Shrikhand', cursive">A</span>
+        <span style="font-family: 'Raleway', sans-serif">A</span>
+        <span style="font-family: 'Lilita One', cursive">A</span>
+        <span style="font-family: 'Permanent Marker', cursive">A</span>
+        <span style="font-family: 'Bangers', cursive">A</span>
+        <span style="font-family: sans-serif">A</span>
+        <span style="font-family: serif">A</span>
+        <span style="font-family: monospace">A</span>
+        <span style="font-family: cursive">A</span>
+        <span style="font-family: Impact">A</span>
+        <span style="font-family: 'Bebas Neue', sans-serif">A</span>
+        <span style="font-family: 'Oswald', sans-serif">A</span>
+        <span style="font-family: 'Montserrat', sans-serif">A</span>
+        <span style="font-family: 'Poppins', sans-serif">A</span>
+        <span style="font-family: 'Rubik Mono One', monospace">A</span>
+        <span style="font-family: 'Staatliches', sans-serif">A</span>
+        <span style="font-family: 'Playfair Display', serif">A</span>
+        <span style="font-family: 'Archivo Black', sans-serif">A</span>
+      </div>
+      <div class="input-area">
+        <select id="layoutType">
+          <option value="center">Center Heading</option>
+          <option value="bullets">Content</option>
+          <!-- <option value="info">Information Block</option>
+              <option value="thumbnail">Thumbnail Style</option>
+              <option value="headingBullets">Heading & Bullets</option> -->
+        </select>
+
+        <input type="text" id="heading" placeholder="Heading (Single Line)" />
+        <textarea id="bullets" placeholder="Bullets (One per line)"></textarea>
+        <textarea id="infoText" placeholder="Information Text" style="display: none;"></textarea>
+      </div>
+    </div>
+
+    <div class="input-n-preview-area">
+      <div class="input-area">
+        <button type="button" id="reset" onclick="resetView()">Reset</button>
+        <div class="text-options">
+
+          <label for="fontSize">Font Size:</label>
+          <input type="number" id="fontSize" value="30" min="1" />
+          <label for="fontColor">Font Color:</label>
+          <input type="color" id="fontColor" value="#ffffff" />
+
+          <label for="bgColor">Background Color:</label>
+          <input type="color" id="bgColor" value="#000000" />
+
+          <label for="bgOpacity">BG Transparency:</label>
+          <input type="range" id="bgOpacity" min="0" max="1" value="0.8" step="0.1" />
+
+          <label for="fontFamily">Font Family:</label>
+          <select id="fontFamily">
+            <option value="'Luckiest Guy', cursive">Luckiest Guy</option>
+            <option value="'Anton', sans-serif">Anton</option>
+            <option value="'Shrikhand', cursive">Shrikhand</option>
+            <option value="'Raleway', sans-serif">Raleway ExtraBold</option>
+            <option value="'Lilita One', cursive">Lilita One</option>
+            <option value="'Permanent Marker', cursive">Permanent Marker</option>
+
+            <option value="'Bangers', cursive">Bangers</option>
+
+            <option value="sans-serif">Sans-Serif</option>
+            <option value="serif">Serif</option>
+            <option value="monospace">Monospace</option>
+            <option value="cursive">Cursive</option>
+
+            <option value="Impact">Impact</option>
+            <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+
+            <option value="'Oswald', sans-serif">Oswald</option>
+            <option value="'Montserrat', sans-serif">Montserrat ExtraBold</option>
+            <option value="'Poppins', sans-serif">Poppins ExtraBold</option>
+
+            <option value="'Rubik Mono One', monospace">Rubik Mono One</option>
+            <option value="'Staatliches', sans-serif">Staatliches</option>
+            <option value="'Playfair Display', serif">Playfair Display Black</option>
+            <option value="'Archivo Black', sans-serif">Archivo Black</option>
+
+
+            <!-- <option value="font-poppins">Poppins</option>
+                <option value="font-roboto">roboto </option>
+                <option value="font-lato">lato </option>
+                <option value="heading-font">heading </option>
+                <option value="font-open-sans">open-sans </option> -->
+          </select>
+
+          <label for="fontStyle">Font Style:</label>
+          <select id="fontStyle">
+            <option value="normal">Normal</option>
+            <option value="bold">Bold</option>
+            <option value="italic">Italic</option>
+          </select>
+          <label for="textAlign">Text Align:</label>
+          <select id="textAlign">
+            <option value="center">Center</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
+          <div style="display: flex; flex-direction: row;">
+            <label for="shadow">Shadow:</label>
+            <input type="checkbox" id="shadow" checked />
+          </div>
+          <div style="display: flex; flex-direction: row;">
+            <label for="border">Border:</label>
+            <input type="checkbox" id="border" />
+          </div>
+        </div>
+        <div class="customization-options">
+          <label for="xPosition">X Position (%):</label>
+          <input type="number" id="xPosition" value="50" min="0" max="100" />
+          <label for="yPosition">Y Position (%):</label>
+          <input type="number" id="yPosition" value="50" min="0" max="100" />
+        </div>
+      </div>
+
+      <div class="preview-area">
+        <h2>Preview</h2>
+        <div id="imageContainer">
+          <canvas id="previewCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="final-selection">
+      <h2>Final Selection</h2>
+      <div class="image1-desc">
+        <canvas id="finalCanvas"></canvas>
+        <div class="camera-frame" id="cropFrame"></div>
+      </div>
+      <button id="frameDownloadButton">Download Framed Image</button>
+      <button id="downloadButton">Download Full Image</button>
+    </div>
+  </div>
+
+  <script>
+    // script.js
+    const imageUpload = document.getElementById('imageUpload');
+    const pasteImage = document.getElementById('pasteImage');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const finalCanvas = document.getElementById('finalCanvas');
+    const layoutType = document.getElementById('layoutType');
+    const heading = document.getElementById('heading');
+    const bullets = document.getElementById('bullets');
+    const infoText = document.getElementById('infoText');
+    const fontSize = document.getElementById('fontSize');
+    const fontColor = document.getElementById('fontColor');
+    const bgColor = document.getElementById('bgColor');
+    const bgOpacity = document.getElementById('bgOpacity');
+    const fontStyle = document.getElementById('fontStyle');
+    const textAlign = document.getElementById('textAlign');
+    const shadow = document.getElementById('shadow');
+    const border = document.getElementById('border');
+    const downloadButton = document.getElementById('downloadButton');
+    const frameDownloadButton = document.getElementById('frameDownloadButton');
+    const imageContainer = document.getElementById('imageContainer'); // Get the container
+    const fontFamily = document.getElementById('fontFamily'); // Get the select element
+    const xPosition = document.getElementById('xPosition'); // Get the input element
+    const yPosition = document.getElementById('yPosition');
+
+    let firstLoad = true;
+
+    let useCommonFontSize = false;
+    let useCommonFontColor = false;
+    let useCommonBgColor = false;
+    let useCommonBgOpacity = false;
+    let useCommonFontFamily = false;
+    let useCommonFontStyle = false;
+    let useCommonXPosition = false;
+    let useCommonYPosition = false;
+
+    let image;
+    let designs = []; // Store generated designs
+    let selectedDesign = null; // Initialize to null
+
+    // Image Upload
+    imageUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        image = new Image();
+        image.onload = () => {
+          drawImage(previewCanvas, image);
+          generateDesigns();
+        };
+        image.src = event.target.result;
+      };
+
+      reader.readAsDataURL(file);
+    });
+
+    // Paste Image
+    document.addEventListener('paste', async (event) => {
+      let items = (event.clipboardData || event.originalEvent.clipboardData).items;
+      if (items) { // Check if items exist (for browsers that support it)
+        for (let index in items) {
+          let item = items[index];
+          if (item.kind === 'file' && item.type.startsWith('image/')) {
+            event.preventDefault(); // Prevent default paste behavior
+            let blob = item.getAsFile();
+            handlePastedImage(blob);
+            return; // Exit after handling the image
+          }
+        }
+      } else {
+        // Fallback for very old browsers (unlikely to have images in clipboard anyway)
+        alert("Your browser does not support pasting images. Please use the 'Upload Image' option.");
+      }
+    });
+
+    // document.fonts.ready.then(function () {
+    //     document.querySelector('.fontCheck').style.visibility = 'visible';
+    // });
+
+    function handlePastedImage(blob) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        image = new Image();
+        image.onload = () => {
+          drawImage(previewCanvas, image);
+          generateDesigns();
+        };
+        image.src = event.target.result;
+      };
+      reader.readAsDataURL(blob);
+    }
+
+    function resetView() {
+      firstLoad = true;
+
+      useCommonFontSize = false;
+      useCommonFontColor = false;
+      useCommonBgColor = false;
+      useCommonBgOpacity = false;
+      useCommonFontFamily = false;
+      useCommonFontStyle = false;
+      useCommonXPosition = false;
+      useCommonYPosition = false;
+
+      generateDesigns();
+    }
+    function generateDesignsUpdate(flagToUpdate) {
+      if (flagToUpdate == "fontSize") {
+        useCommonFontSize = true
+      } else if (flagToUpdate == "fontColor") {
+        useCommonFontColor = true
+      } else if (flagToUpdate == "bgColor") {
+        useCommonBgColor = true
+      } else if (flagToUpdate == "bgOpacity") {
+        useCommonBgOpacity = true
+      } else if (flagToUpdate == "fontFamily") {
+        useCommonFontFamily = true
+      } else if (flagToUpdate == "fontStyle") {
+        useCommonFontStyle = true
+      } else if (flagToUpdate == "xPosition") {
+        useCommonXPosition = true
+      } else if (flagToUpdate == "yPosition") {
+        useCommonYPosition = true
+      }
+
+      firstLoad = false;
+      generateDesigns();
+    }
+
+    // Design Generation and Preview
+    function generateDesigns() {
+      if (!image) return;
+
+      designs = []; // Clear previous designs
+      const layout = layoutType.value;
+      const text = (layout === 'headingBullets') ? heading.value : (layout === 'bullets') ? bullets.value : (layout === 'info') ? infoText.value : heading.value;
+
+
+      let variations;
+      if (layout === 'center') {
+        variations = [
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(0, 255, 0)', colorDefault: 'black', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' }, // Example green background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(0, 255, 0)', colorDefault: 'white', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' }, // Example green background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(0, 255, 0)', colorDefault: 'yellow', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' }, // Example green background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(250, 247, 247)', colorDefault: 'black', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' }, // Example green background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(200, 115, 4)', colorDefault: 'white', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' }, // Example green background
+
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(0,0,0)', colorDefault: 'white', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(0, 0, 255)', colorDefault: 'white', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },  // Example blue background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(255, 242, 0)', colorDefault: 'black', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },  // Example blue background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(255, 242, 0)', colorDefault: 'white', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },  // Example blue background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(255, 162, 0)', colorDefault: 'white', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },  // Example blue background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(250, 247, 247)', colorDefault: 'orange', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },  // Example blue background
+
+        ];
+      } else if (layout === 'bullets') {
+        variations = [
+          { xDefault: 0.2, yDefault: 0.2, alignDefault: 'center', bgColorDefault: 'rgb(0,0,0)', colorDefault: 'white', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },
+          { xDefault: 0.5, yDefault: 0.2, alignDefault: 'center', bgColorDefault: 'rgb(255,255,255)', colorDefault: 'black', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },
+          { xDefault: 0.9, yDefault: 0.2, alignDefault: 'center', bgColorDefault: 'rgb(0,0,0)', colorDefault: 'yellow', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },
+          { xDefault: 0.2, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(244, 224, 9)', colorDefault: 'black', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' }, // Example red background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(0, 255, 0)', colorDefault: 'black', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' }, // Example green background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(0, 255, 0)', colorDefault: 'rgb(248, 216, 8)', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' }, // Example green background
+          { xDefault: 0.5, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(0,0,0)', colorDefault: 'white', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' },
+          { xDefault: 0.9, yDefault: 0.5, alignDefault: 'center', bgColorDefault: 'rgb(0, 0, 255)', colorDefault: 'white', bgOpacityDefault: '0.8', fontFamilyDefault: 'sans-serif' }  // Example blue background
+        ];
+      }
+      variations.forEach(variation => {
+        const design = {
+          ...variation,
+          text,
+          layout,
+          fontSize: parseInt(fontSize.value),
+          fontColor: fontColor.value,
+          bgColor: bgColor.value,
+          bgOpacity: bgOpacity.value,
+          fontStyle: fontStyle.value,
+          fontFamily: fontFamily.value, // Add fontFamily to the design object
+          align: textAlign.value,
+          shadow: shadow.checked,
+          border: border.checked,
+          color: fontColor.value,
+          x: xPosition.value / 100, // Convert to 0-1 range
+          y: yPosition.value / 100 // Convert to 0-1 range
+
+        };
+        designs.push(design);
+      });
+
+      renderPreviews();
+    }
+
+
+    function renderPreviews() {
+      imageContainer.innerHTML = ''; // Clear previous previews
+
+      designs.forEach((design, index) => {
+        const previewCanvas = document.createElement('canvas');
+        previewCanvas.width = 300;  // Reduced width
+        // previewCanvas.height = 224; // Reduced height (maintain aspect ratio)
+        previewCanvas.style.margin = '5px';
+        previewCanvas.style.cursor = 'pointer';
+        previewCanvas.style.border = '1px solid #ccc'; // Add border for visibility
+
+
+        drawImage(previewCanvas, image);
+        drawText(previewCanvas, design);
+
+        previewCanvas.addEventListener('click', () => {
+          selectedDesign = { ...design }; // Create a copy!
+          drawImage(finalCanvas, image);
+          drawText(finalCanvas, selectedDesign,"Y");
+          //drawFinalCanvasText(finalCanvas, selectedDesign);
+          updateCustomizationOptions(); // Update customization inputs
+          setTimeout(() => {
+              addImageFrames();
+          }, 1000);          
+        });
+
+        imageContainer.appendChild(previewCanvas);
+
+        if (index == 2){
+          selectedDesign = { ...design }; // Create a copy!
+          drawImage(finalCanvas, image);
+          drawText(finalCanvas, selectedDesign,"Y");
+          //drawFinalCanvasText(finalCanvas, selectedDesign);
+          // updateCustomizationOptions(); // Update customization inputs
+          setTimeout(() => {
+              addImageFrames();
+          }, 1000); 
+        }
+      });
+
+
+
+      // Adjust preview container width dynamically (optional)
+      const numPreviews = designs.length;
+      //imageContainer.style.width = `${numPreviews * 160}px`; // 160px per preview (including margin)
+      imageContainer.style.overflowX = 'auto'; // Add horizontal scroll if needed
+    }
+
+    function updateCustomizationOptions() {
+      if (!selectedDesign) return;
+
+      fontSize.value = selectedDesign.fontSize;
+      fontColor.value = selectedDesign.fontColor;
+      bgColor.value = selectedDesign.bgColor || '#000000'; // Set default if not defined
+      bgOpacity.value = selectedDesign.bgOpacity || 0.8; // Set default if not defined
+      fontStyle.value = selectedDesign.fontStyle;
+      fontFamily.value = selectedDesign.fontFamily;
+      textAlign.value = selectedDesign.align;
+      shadow.checked = selectedDesign.shadow;
+      border.checked = selectedDesign.border;
+
+      // Add more customization options and set their values here
+      // For example, if you add position controls:
+      // xPosition.value = selectedDesign.x * 100; // Assuming x is 0-1
+      // yPosition.value = selectedDesign.y * 100;
+    }
+
+    // Event listeners for customization changes (add these)
+    fontSize.addEventListener('input', () => {
+      if (selectedDesign) {
+        selectedDesign.fontSize = parseInt(fontSize.value);
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+
+    fontColor.addEventListener('input', () => {
+      if (selectedDesign) {
+        selectedDesign.fontColor = fontColor.value;
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+
+    bgColor.addEventListener('input', () => {
+      if (selectedDesign) {
+        selectedDesign.bgColor = bgColor.value;
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+
+    bgOpacity.addEventListener('input', () => {
+      if (selectedDesign) {
+        selectedDesign.bgOpacity = parseFloat(bgOpacity.value);
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+    fontStyle.addEventListener('change', () => {
+      if (selectedDesign) {
+        selectedDesign.fontStyle = fontStyle.value;
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+
+    fontFamily.addEventListener('change', () => {
+      if (selectedDesign) {
+        selectedDesign.fontFamily = fontFamily.value;  // Update the font family in selectedDesign
+        drawText(finalCanvas, selectedDesign); // Redraw the canvas
+      }
+    });
+
+    textAlign.addEventListener('change', () => {
+      if (selectedDesign) {
+        selectedDesign.align = textAlign.value;
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+
+    shadow.addEventListener('change', () => {
+      if (selectedDesign) {
+        selectedDesign.shadow = shadow.checked;
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+
+    border.addEventListener('change', () => {
+      if (selectedDesign) {
+        selectedDesign.border = border.checked;
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+
+
+    // Example for position controls (add these to your HTML):
+    xPosition.addEventListener('input', () => {
+      if (selectedDesign) {
+        selectedDesign.x = parseFloat(xPosition.value) / 100;
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+
+    yPosition.addEventListener('input', () => {
+      if (selectedDesign) {
+        selectedDesign.y = parseFloat(yPosition.value) / 100;
+        drawText(finalCanvas, selectedDesign);
+      }
+    });
+
+    function drawImage(canvas, img) {
+      const ctx = canvas.getContext('2d');
+      const aspectRatio = img.height / img.width;
+      // Set desired dimensions for final canvas
+      if (canvas.id === 'finalCanvas') {
+        canvas.width = 1200; // Example width (adjust as needed)
+        canvas.height = canvas.width * aspectRatio; // Maintain aspect ratio
+      } else {
+        canvas.height = canvas.width * aspectRatio; // Maintain aspect ratio for preview
+      }
+
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+
+    function drawText(canvas, design, finalCanv = "N") {
+      const ctx = canvas.getContext('2d');
+
+      if (firstLoad) {
+        design.x = design.xDefault;
+        design.y = design.yDefault;
+        design.align = design.alignDefault;
+        design.bgColor = design.bgColorDefault;
+        design.fontColor = design.colorDefault;
+        design.bgOpacity = design.bgOpacityDefault;
+        design.fontFamily = design.fontFamilyDefault;
+      } else {
+        if (!useCommonFontColor) {
+          design.fontColor = design.colorDefault;
+        }
+        if (!useCommonBgColor) {
+          design.bgColor = design.bgColorDefault;
+        }
+        if (!useCommonBgOpacity) {
+          design.bgOpacity = design.bgOpacityDefault;
+        }
+        if (!useCommonFontFamily) {
+          design.fontFamily = design.fontFamilyDefault;
+        }
+        if (!useCommonXPosition) {
+          design.x = design.xDefault;
+        }
+        if (!useCommonYPosition) {
+          design.y = design.yDefault;
+        }
+      }
+
+      let fontFactor = 1;
+      if (finalCanv == "Y"){
+        fontFactor = 4;
+        // design.fontSize = design.fontSize * fontFactor;
+      }
+
+      ctx.font = `${design.fontStyle} ${design.fontSize * fontFactor}px ${design.fontFamily}`; // Use design.fontFamily
+      ctx.fillStyle = design.fontColor;
+      ctx.textAlign = design.align;
+
+      const lines = design.text.split('\n'); // Split into lines for bullets
+
+      let y = design.y * canvas.height;
+      const lineHeight = design.fontSize * fontFactor * 1.2; // Adjust line height as needed
+
+      lines.forEach(line => {
+        let x; // Declare x outside the if/else block
+
+        if (design.align === 'left') {
+          x = design.x * canvas.width;
+        } else if (design.align === 'center') {
+          x = canvas.width / 2;  // Center the text
+        } else if (design.align === 'right') {
+          x = canvas.width - (design.x * canvas.width); // Align to the right edge
+        } else {
+          x = design.x * canvas.width; // Default to left if alignment is invalid
+        }
+
+
+        if (design.bgColor) {
+          ctx.fillStyle = design.bgColor;
+          ctx.globalAlpha = design.bgOpacity;
+          const metrics = ctx.measureText(line);
+          let rectX;
+
+          if (design.align === 'left') {
+            rectX = x;
+          } else if (design.align === 'center') {
+            rectX = x - metrics.width / 2;
+          } else if (design.align === 'right') {
+            rectX = x - metrics.width;
+          } else {
+            rectX = x;
+          }
+
+          // Calculate actual text height using font metrics
+          const actualTextHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+
+          // Calculate vertical padding (adjust as needed)
+          const padding = (lineHeight - actualTextHeight) / 2; // Even padding top and bottom
+
+          ctx.fillRect(rectX - 5, y - actualTextHeight - padding, metrics.width + 10, lineHeight); // Use actualTextHeight and padding
+
+          //ctx.fillRect(rectX - 5, y - lineHeight + 5, metrics.width + 10, lineHeight);
+
+          ctx.globalAlpha = 1; // Reset alpha for the text!
+          ctx.fillStyle = design.fontColor;
+
+        }
+
+        ctx.textAlign = design.align; // Set text alignment here, after calculating x!
+        ctx.fillText(line, x, y);
+
+        if (design.shadow) {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 5;
+          ctx.shadowOffsetX = 3;
+          ctx.shadowOffsetY = 3;
+          ctx.fillText(line, x, y); // Redraw with shadow
+          ctx.shadowColor = 'transparent'; // Reset shadow
+        }
+        if (design.border) {
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 2;
+          const metrics = ctx.measureText(line);
+
+          let rectX;
+
+          if (design.align === 'left') {
+            rectX = x;
+          } else if (design.align === 'center') {
+            rectX = x - metrics.width / 2;
+          } else if (design.align === 'right') {
+            rectX = x - metrics.width;
+          } else {
+            rectX = x;
+          }
+          ctx.strokeRect(rectX - 5, y - lineHeight + 5, metrics.width + 10, lineHeight);
+
+
+        }
+
+        y += lineHeight;
+      });
+    }
+
+
+
+    // Event listeners for input changes
+    layoutType.addEventListener('change', generateDesigns);
+    heading.addEventListener('input', generateDesigns);
+    bullets.addEventListener('input', generateDesigns);
+    infoText.addEventListener('input', generateDesigns);
+
+    fontSize.addEventListener('input', () => generateDesignsUpdate("fontSize"));
+    fontColor.addEventListener('input', () => generateDesignsUpdate("fontColor"));
+    bgColor.addEventListener('input', () => generateDesignsUpdate("bgColor"));
+    bgOpacity.addEventListener('change', () => generateDesignsUpdate("bgOpacity"));
+    fontStyle.addEventListener('change', () => generateDesignsUpdate("fontStyle"));
+    fontFamily.addEventListener('change', () => generateDesignsUpdate("fontFamily"));
+
+
+    textAlign.addEventListener('change', generateDesignsUpdate);
+    shadow.addEventListener('change', generateDesignsUpdate);
+    border.addEventListener('change', generateDesignsUpdate);
+
+    xPosition.addEventListener('input', () => generateDesignsUpdate("xPosition"));
+    yPosition.addEventListener('input', () => generateDesignsUpdate("yPosition"));
+
+    // Download functionality
+    downloadButton.addEventListener('click', () => {
+      if (selectedDesign) {
+        const link = document.createElement('a');
+        link.download = 'thumbnail.png';
+        link.href = finalCanvas.toDataURL('image/png');
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    });
+
+    frameDownloadButton.addEventListener('click', () => {
+      if (selectedDesign) {
+          const cropFrame = document.getElementById("cropFrame");
+          const canvasRect = finalCanvas.getBoundingClientRect();
+
+          const frameRect = cropFrame.getBoundingClientRect();
+
+          const scaleX = finalCanvas.width / canvasRect.width;
+          const scaleY = finalCanvas.height / canvasRect.height;
+
+          const sx = (frameRect.left - canvasRect.left) * scaleX;
+          const sy = (frameRect.top - canvasRect.top) * scaleY;
+          const sw = frameRect.width * scaleX;
+          const sh = frameRect.height * scaleY;
+
+          const croppedCanvas = document.createElement('canvas');
+          croppedCanvas.width = sw;
+          croppedCanvas.height = sh;
+          const ctx = croppedCanvas.getContext('2d');
+          ctx.drawImage(finalCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+
+          const link = document.createElement('a');
+          link.download = 'thumbnail.png';
+          link.href = croppedCanvas.toDataURL('image/png');
+          link.click();
+      }
+    });
+
+    const copyButton = document.createElement('button'); // Create the button
+    copyButton.textContent = 'Copy to Clipboard';
+    copyButton.id = 'copyButton';
+    copyButton.classList.add('upload-button'); // Use the same style as upload button
+    document.querySelector('.final-selection').appendChild(copyButton); // Add to final-selection
+
+
+    copyButton.addEventListener('click', async () => {
+      if (selectedDesign) {
+        try {
+          const blob = await new Promise(resolve => finalCanvas.toBlob(resolve, 'image/png')); // Get blob from canvas
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'image/png': blob
+            })
+          ]);
+          alert('Image copied to clipboard!'); // Or a less intrusive notification
+        } catch (err) {
+          console.error('Failed to copy:', err);
+          alert('Failed to copy image. Check console.'); // User-friendly error message
+        }
+      }
+    });
+    function addImageFrames() {
+      document.querySelectorAll(".image1-desc").forEach((container) => {
+        // Check if a frame already exists
+        let storyImageFrame = container.querySelector(".camera-frame")
+        let storyImageResizeHandle = container.querySelector(".story-image-resize-handle")
+        // let storyImageResizeHandle = null;
+
+        if (storyImageResizeHandle) {
+          // storyImageResizeHandle = storyImageFrame.querySelector(".story-image-resize-handle");
+         }
+         else {
+          // Create the camera frame
+          //storyImageFrame = document.createElement("div");
+          //storyImageFrame.classList.add("camera-frame");
+
+          // Create the resize handle
+          storyImageResizeHandle = document.createElement("div");
+          storyImageResizeHandle.classList.add("story-image-resize-handle");
+
+          // Append the resize handle to the frame
+          storyImageFrame.appendChild(storyImageResizeHandle);
+
+          // Append the frame to the container
+          container.appendChild(storyImageFrame);
+
+
+          // Initialize frame size to match the parent container
+          const parentWidth = container.offsetWidth * 0.99;
+          storyImageFrame.style.width = `${parentWidth}px`;
+          storyImageFrame.style.height = `${(parentWidth / 16) * 9}px`;
+        }
+
+
+        let isFrameDragging = false;
+        let isFrameResizing = false;
+        let initialMouseX, initialMouseY, initialFrameX, initialFrameY;
+        let initialWidth, initialHeight;
+
+        // Dragging functionality
+        storyImageFrame.addEventListener("mousedown", (event) => {
+          if (event.target === storyImageResizeHandle) return; // Avoid dragging when resizing
+
+          isFrameDragging = true;
+          initialMouseX = event.clientX;
+          initialMouseY = event.clientY;
+          initialFrameX = storyImageFrame.offsetLeft;
+          initialFrameY = storyImageFrame.offsetTop;
+        });
+
+        // Resizing functionality
+        storyImageResizeHandle.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+          isFrameResizing = true;
+          initialMouseX = event.clientX;
+          initialMouseY = event.clientY;
+          initialWidth = storyImageFrame.offsetWidth;
+          initialHeight = storyImageFrame.offsetHeight;
+        });
+
+        document.addEventListener("mousemove", (event) => {
+          const storyImageContainerRect = container.getBoundingClientRect();
+
+          // Handle dragging
+          if (isFrameDragging) {
+            const deltaX = event.clientX - initialMouseX;
+            const deltaY = event.clientY - initialMouseY;
+
+            // Constrain within container
+            const newLeft = Math.max(
+              0,
+              Math.min(
+                storyImageContainerRect.width - storyImageFrame.offsetWidth,
+                initialFrameX + deltaX
+              )
+            );
+            const newTop = Math.max(
+              0,
+              Math.min(
+                storyImageContainerRect.height - storyImageFrame.offsetHeight,
+                initialFrameY + deltaY
+              )
+            );
+
+            storyImageFrame.style.left = `${newLeft}px`;
+            storyImageFrame.style.top = `${newTop}px`;
+          }
+
+          // Handle resizing
+          if (isFrameResizing) {
+            const deltaX = event.clientX - initialMouseX;
+            // const aspectRatioCheckbox = document.getElementById("toggleAspectRatio");
+            let newWidth = initialWidth + deltaX;
+            let aspectRatio =  (9 / 16) 
+            let newHeight = newWidth * aspectRatio;
+
+            // Constrain within container
+            if (storyImageFrame.offsetLeft + newWidth > storyImageContainerRect.width) {
+              newWidth = storyImageContainerRect.width - storyImageFrame.offsetLeft;
+              newHeight = newWidth * aspectRatio;
+            }
+            if (storyImageFrame.offsetTop + newHeight > storyImageContainerRect.height) {
+              newHeight = storyImageContainerRect.height - storyImageFrame.offsetTop;
+              newWidth = newHeight / aspectRatio;
+            }
+            storyImageFrame.style.width = `${newWidth}px`;
+            storyImageFrame.style.height = `${newHeight}px`;
+          }
+        });
+
+        // Stop dragging or resizing on mouseup
+        document.addEventListener("mouseup", () => {
+          isFrameDragging = false;
+          isFrameResizing = false;
+        });
+      });
+    }
+
+  </script>
+</body>
+
+</html>

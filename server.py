@@ -63,6 +63,10 @@ def index():
         sizes=sizes
     )
 
+@app.route('/thumbnail')
+def thumbnail():
+    return render_template('thu_index.html')
+
 
 @app.route('/process', methods=['POST'])
 def process():
