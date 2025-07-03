@@ -325,6 +325,7 @@
                 body: formData
             });
             const result = await response.text();
+            console.log("Completed Processing");
             // alert(result);
         };
 
@@ -337,6 +338,7 @@
                 body: formData
             });
             const result = await response.text();
+            console.log("Completed creating caption");
             // alert(result);
         };
         document.getElementById('uploadToYoutube').onsubmit = async function (e) {
@@ -346,6 +348,7 @@
                 method: 'POST'
             });
             const result = await response.text();
+            console.log("Completed upload");
             // alert(result);
         };
         document.getElementById('runOBSRecorder').onsubmit = async function (e) {
@@ -356,6 +359,7 @@
                 method: 'POST',
                 body: formData
             });
+            console.log("Completed OBS recorder run");
             const result = await response.text();
             // alert(result);
         };
