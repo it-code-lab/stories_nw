@@ -35,8 +35,10 @@ const height = isLandscape ? 720 : 1280; //Works on MSI laptop
 (async () => {
   const browser = await puppeteer.launch({
     headless: false,
-    defaultViewport: { width, height },
-    args: ['--start-maximized', '--autoplay-policy=no-user-gesture-required']
+    // defaultViewport: { width, height },  
+    //Jul-03-2025 : Commented out as it might be causing extra space at the top of the lauched browser   
+    args: ['--start-maximized', '--autoplay-policy=no-user-gesture-required'],
+    defaultViewport: null  // <- This disables puppeteer's default resizing
   });
 
   const [page] = await browser.pages();

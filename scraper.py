@@ -844,8 +844,9 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com", notebo
         # Now you can use it as needed
         # print(word_timestamps[0])  # print first word entry
     else:
-        print("Failed to fetch captions:", resp.status_code)
-        exit(1)
+        if notebooklm == "yes":
+            print("Failed to fetch captions:", resp.status_code)
+            exit(1)
 
     def is_skippable(element):
         """
