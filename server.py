@@ -6,6 +6,7 @@ import os
 from caption_generator import prepare_captions_file_for_notebooklm_audio
 from scraper import scrape_and_process  # Ensure this exists
 from settings import background_music_options, font_settings, tts_engine, voices, sizes
+from video_editor import batch_process
 from youtube_uploader import upload_videos
 
 app = Flask(__name__, template_folder='templates')
@@ -148,6 +149,56 @@ def run_obs_recorder():
         return "✅ OBS Recorder started successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500
+    
+@app.route('/editvideos', methods=['POST'])
+def run_video_editor():
+    try:
+        print("Processing request...run edit videos")
+        orientation = request.form.get('orientation', 'auto')
+        add_music = True
+        bg_music_folder = request.form.get('bgmusic')
+        if bg_music_folder == 'none':
+            add_music = False
+        topcut = request.form.get('topcut',0)
+        if topcut == '':
+            topcut = 0
+
+        bottomcut = request.form.get('bottomcut',0)
+        if bottomcut == '':
+            bottomcut = 0
+
+        slowfactor = request.form.get('slowfactor',0)
+        if slowfactor == '':
+            slowfactor = 0
+
+        slow_down = True
+        if slowfactor == 0:
+            slow_down = False
+
+        add_watermark = True
+
+        watermarkposition = request.form.get('watermarkposition','bottom-left')
+        if watermarkposition == "none":
+            add_watermark = False
+
+        batch_process(
+            input_folder="edit_vid_input",
+            output_folder="edit_vid_output",
+            bg_music_folder="god_bg",
+            remove_top=float(topcut),
+            remove_bottom=float(bottomcut),
+            add_music=add_music,
+            slow_down=slow_down,
+            slow_down_factor=float(slowfactor),
+            target_orientation=orientation, 
+            add_watermark=add_watermark,
+            watermark_path="logo.png",
+            watermark_position=watermarkposition,
+            watermark_scale=0.15
+        )
+        return "✅ Videos Processed successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500    
 # ------------------------ MAIN ------------------------ #
 
 if __name__ == '__main__':

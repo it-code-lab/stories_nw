@@ -127,7 +127,14 @@
             <option value="yes">yes</option>
         </select>
 
-        <label>Pick video background and story from Excel:</label>
+        <label>Pick video background and story from Excel:
+        <span class="tooltip-container">
+            &#9432;
+            <span class="tooltip-text">
+                For using this option, provide captions, video background,and YouTube metadata in video_story_input.xlsx.
+            </span> 
+        </span>     
+        </label>  
         <select name="excel">
             <option value="no">no</option>
             <option value="yes">yes</option>
@@ -279,6 +286,7 @@
             Move that to under processed_video folder with right name before running the YouTube Upload.
         </div>
         <br>
+        <label>Orientation:</label>
         <select name="orientation">
             <option value="landscape">landscape</option>
             <option value="portrait">portrait</option>
@@ -290,13 +298,59 @@
         <button type="submit">Play video and run OBS Recorder</button>
     </form>
 
-        <br>
+    <br>
     <form id="thumbnailMaker">
         <h2>Open Thumbnail Maker</h2>
         <a href="thumbnail" target="_blank">Open Thumbnail Maker</a>
         (Opens in new tab)
     </form>
 
+    <br>
+    <form id="runVideoEditor">
+        <h2>Bulk Video Editor</h2>
+        <div> To be used to slow (pixverse) video speed to increase length. Cut portion of video to remove watermark. Add own watermark. Add background audio.
+              <br><br>Place the input mp4 files in edit_vid_input folder. Output files will be created in edit_vid_output.
+        </div>
+        <br>
+        <label>Orientation:</label>
+        <select name="orientation">
+            <option value="auto">auto</option>
+            <option value="landscape">landscape</option>
+            <option value="portrait">portrait</option>
+        </select>
+
+        <label>Background Music:</label>
+        <select name="bgmusic">
+            <option value="none">none</option>
+            <option value="god_bg">Random from folder god_bg</option>
+        </select>
+
+        <label>Remove from Top(leave blank/50/60):</label>
+        <input type="number" name="topcut" >
+
+        <label>Remove from bottom(leave blank/50/60):</label>
+        <input type="number" name="bottomcut" >
+
+        <label>Slow down video by factor (leave blank/2,3):</label>
+        <input type="number" name="slowfactor" >
+
+        <!-- <label>Watermark:</label>
+        <select name="watermark">
+            <option value="none">none</option>
+            <option value="logo.png">logo.png</option>
+        </select> -->
+
+        <label>Watermark position:</label>
+        <select name="watermarkposition">
+            <option value="none">none</option>
+            <option value="bottom-left">bottom-left</option>
+            <option value="bottom-right">bottom-right</option>
+            <option value="top-left">top-left</option>
+            <option value="top-right">top-right</option>            
+        </select>
+
+        <button type="submit">Process Videos</button>
+    </form>    
     <script>
         const voices = {{ voice_map | tojson }};
         function updateVoices() {
@@ -360,6 +414,19 @@
                 body: formData
             });
             console.log("Completed OBS recorder run");
+            const result = await response.text();
+            // alert(result);
+        };
+        
+        document.getElementById('runVideoEditor').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...edit Videos");
+            const formData = new FormData(this);
+            const response = await fetch('/editvideos', {
+                method: 'POST',
+                body: formData
+            });
+            console.log("Completed ..edit Videos");
             const result = await response.text();
             // alert(result);
         };
