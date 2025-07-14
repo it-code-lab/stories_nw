@@ -29,10 +29,10 @@ background_music_options = {
 # }
 
 font_settings = {
+    "style4": "style4",
     "style2": "style2",
     "style1": "style1",
     "style3": "style3",
-    "style4": "style4",
     "style5": "style5",
     "style6": "style6",
     "style7": "style7",

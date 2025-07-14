@@ -23,9 +23,11 @@ from get_audio import get_audio_file
 from moviepy.editor import VideoFileClip
 from call_to_action import add_gif_to_video
 from pydub import AudioSegment
+from pydub import AudioSegment
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
 from moviepy.video.fx.resize import resize
+from tempfile import NamedTemporaryFile
 import pandas as pd
 from bs4 import Tag, NavigableString
 word_timestamps = []
@@ -146,7 +148,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                         shorts_html = metadata.get("shorts_html", "")
 
                         start = time.time()
-                        create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar,pitch_age_group, notebooklm)
+                        create_video_using_camera_frames(section_elements, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar,pitch_age_group, notebooklm, title)
                         print(f"[{time.strftime('%H:%M:%S')}] Step create_video_using_camera_frames completed in {time.time() - start:.2f} seconds")
                         start = time.time()
 
@@ -315,7 +317,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
                 results = elements
                 
                 start = time.time() 
-                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar="", pitch_age_group=pitch_age_group, notebooklm=notebooklm)
+                create_video_using_camera_frames(results, "composed_video.mp4", language, gender, tts_engine, target_size,base_file_name,avatar="", pitch_age_group=pitch_age_group, notebooklm=notebooklm, title=title)
                 print(f"[{time.strftime('%H:%M:%S')}] Step create_video_using_camera_frames completed in {time.time() - start:.2f} seconds")
                 start = time.time()                
                 output_file = "composed_video.mp4"
@@ -449,7 +451,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
             df.to_excel(input_excel_file, index=False)
 
 
-def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video", avatar="", pitch_age_group="adult", notebooklm="no"):
+def create_video_using_camera_frames(elements, output_path, language="english", gender="Female", tts_engine="google", target_resolution = (1920, 1080),base_file_name="output_video", avatar="", pitch_age_group="adult", notebooklm="no", title="title_to_match_audio"):
     """
     Creates a video using the scrapped elements.
 
@@ -458,10 +460,11 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
         output_path (str): Path to save the final video.
     """
 
-    #print("Received create_video_using_camera_frames Arguments:", locals())
+    print("Received create_video_using_camera_frames Arguments:", locals())
 
     video_clips = []
     audio_clips = []
+    READY_AUDIO_DIR = "ready_audio"
     #last_image_clip = None
     #target_resolution = (1920, 1080)  # Define the desired full frame resolution
 
@@ -480,22 +483,43 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
         if element["type"] == "text":
             try:
                 if notebooklm == "no":
-                    tts_audio_path = NamedTemporaryFile(delete=False, suffix=".mp3").name
-                    
 
-                    if tts_engine == "google":
-                        if (language == "english-india"):
-                            languageType = "neural"
-                        else:
-                            languageType = "journey"
+                    base_audio_name = title
+                    mp3_path = os.path.join(READY_AUDIO_DIR, f"{base_audio_name}.mp3")
+                    wav_path = os.path.join(READY_AUDIO_DIR, f"{base_audio_name}.wav")
 
-                        generated_audio = get_audio_file(element["text"], tts_audio_path,"google",language,gender, languageType, pitch_age_group)
-                    elif tts_engine == "amazon":
-                        generated_audio = get_audio_file(element["text"], tts_audio_path,"amazon",language,gender, "generative")
-                    
-                    if generated_audio:
-                        tts_audio = AudioFileClip(tts_audio_path)
+                    if os.path.exists(wav_path):
+                        # Use wav directly
+                        print(f"Using pre-existing WAV audio: {wav_path}")
+                        tts_audio = AudioFileClip(wav_path)
                         audio_clips.append(tts_audio)
+
+                    elif os.path.exists(mp3_path):
+                        # Convert MP3 to WAV and use it
+                        print(f"Converting MP3 to WAV: {mp3_path}")
+                        sound = AudioSegment.from_mp3(mp3_path)
+                        converted_wav = NamedTemporaryFile(delete=False, suffix=".wav").name
+                        sound.export(converted_wav, format="wav")
+                        tts_audio = AudioFileClip(converted_wav)
+                        audio_clips.append(tts_audio)
+                    else:
+
+                        tts_audio_path = NamedTemporaryFile(delete=False, suffix=".mp3").name
+                        
+
+                        if tts_engine == "google":
+                            if (language == "english-india"):
+                                languageType = "neural"
+                            else:
+                                languageType = "journey"
+
+                            generated_audio = get_audio_file(element["text"], tts_audio_path,"google",language,gender, languageType, pitch_age_group)
+                        elif tts_engine == "amazon":
+                            generated_audio = get_audio_file(element["text"], tts_audio_path,"amazon",language,gender, "generative")
+                        
+                        if generated_audio:
+                            tts_audio = AudioFileClip(tts_audio_path)
+                            audio_clips.append(tts_audio)
 
             except Exception as e:
                 print(f"Error processing text: {e}")
