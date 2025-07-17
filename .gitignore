@@ -39,3 +39,5 @@ bulkShorts_input.xlsx
 bulkShorts_input.json
 puppeteer-obs.log
 bulkShorts_input.xlsx
+edit_vid_input/*
+edit_vid_output/*
