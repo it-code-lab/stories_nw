@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 import json
 from flask_cors import CORS
 import os
@@ -68,6 +68,13 @@ def index():
 def thumbnail():
     return render_template('thu_index.html')
 
+@app.route('/prepare_captions')
+def prep_caption():
+    return render_template('index_captions.html')
+
+@app.route('/video/<filename>')
+def serve_video(filename):
+    return send_from_directory(directory='.', path=filename)
 
 @app.route('/process', methods=['POST'])
 def process():
@@ -219,6 +226,7 @@ def add_overlays():
         return "✅ Overlays added successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500  
+
 
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)
