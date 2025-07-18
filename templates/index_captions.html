@@ -41,7 +41,8 @@
             <div id="captions" class="captions-text style1"></div>
 
             <!-- 🔹 Subscribe GIF Overlay -->
-            <img id="subscribe-gif" src="{{ url_for('static', filename='subscribe.gif') }}" alt="Subscribe" class="hidden">
+            <img id="subscribe-gif" src="{{ url_for('static', filename='subscribe.gif') }}" alt="Subscribe"
+                class="hidden">
 
         </div>
 
@@ -128,6 +129,24 @@
         </div>
         <button id="save-word-changes">Save Changes</button>
     </div>
+    <button id="caption-view" class="myBtn" onclick="setCaptionView()">Switch to Caption View</button>
+    <label for="playbackSpeed">Playback Speed:</label>
+    <select id="playbackSpeed">
+    <option value="0.25">0.25x</option>
+    <option value="0.5">0.5x</option>
+    <option value="0.75">0.75x</option>
+    <option value="1" selected>1x (Normal)</option>
+    <option value="1.5">1.5x</option>
+    <option value="2">2x</option>
+    </select>
+    <div style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;">
+        <h3>📝 Paste Captions or Lyrics</h3>
+        <textarea id="manualCaptions" rows="3" cols="100" placeholder="Paste your captions here..."></textarea>
+        <br>
+        <button id="generateDummyTimestamps">Generate Dummy Timestamps</button>
+    </div>
+
+
 
     <div id="notebooklm-editor-container">
         <h3>NotebookLM Caption Editor</h3>
@@ -139,6 +158,8 @@
         <button onclick=copyData()>Copy</button>
         <br><br><br><br><br><br><br>
     </div>
+
+
 
     <div class="fontCheck">
         <span style="font-family: 'Luckiest Guy', cursive;">A</span>
@@ -164,6 +185,92 @@
     </div>
 
     <script src="{{ url_for('static', filename='script_captions.js') }}"></script>
+    <script>
+        let tempWordTimestamps = [];
+
+        // 🔹 Generate Dummy Word Timestamps from Text
+        function createDummyTimestampsFromText(text, increment = 0.5) {
+            const words = text.trim().split(/\s+/);
+            return words.map((word, i) => ({
+                word,
+                start: parseFloat((i * increment).toFixed(2)),
+                end: parseFloat(((i + 1) * increment).toFixed(2)),
+                position: i,
+                matched: true
+            }));
+        }
+
+        // 🔹 Render Editable Word List with Sliders
+        function renderWordDragEditor() {
+            const container = document.getElementById("word-drag-editor");
+            container.innerHTML = "";
+
+            tempWordTimestamps.forEach((w, i) => {
+                const div = document.createElement("div");
+                div.classList.add("word-slider");
+
+                const wordLabel = document.createElement("span");
+                wordLabel.textContent = w.word;
+
+                const startSlider = document.createElement("input");
+                startSlider.type = "range";
+                startSlider.min = 0;
+                startSlider.max = 600;
+                startSlider.step = 0.01;
+                startSlider.value = w.start;
+                startSlider.style.width = '200px';
+
+                const endSlider = document.createElement("input");
+                endSlider.type = "range";
+                endSlider.min = 0;
+                endSlider.max = 600;
+                endSlider.step = 0.01;
+                endSlider.value = w.end;
+                endSlider.style.width = '200px';
+
+                const timeLabel = document.createElement("span");
+                timeLabel.textContent = `(${w.start.toFixed(2)} - ${w.end.toFixed(2)})`;
+
+                // Events to update data and label
+                startSlider.oninput = () => {
+                    tempWordTimestamps[i].start = parseFloat(startSlider.value);
+                    timeLabel.textContent = `(${startSlider.value} - ${endSlider.value})`;
+                };
+                endSlider.oninput = () => {
+                    tempWordTimestamps[i].end = parseFloat(endSlider.value);
+                    timeLabel.textContent = `(${startSlider.value} - ${endSlider.value})`;
+                };
+
+                div.appendChild(wordLabel);
+                div.appendChild(startSlider);
+                div.appendChild(endSlider);
+                div.appendChild(timeLabel);
+                container.appendChild(div);
+            });
+        }
+
+        // 🔹 Hook: Generate Dummy Captions
+        const generateBtn = document.getElementById("generateDummyTimestamps");
+        generateBtn.addEventListener("click", () => {
+            const text = document.getElementById("manualCaptions").value;
+            tempWordTimestamps = createDummyTimestampsFromText(text);
+            renderWordDragEditor();
+        });
+
+        // 🔹 Hook: Save to Flask API
+        const saveBtn = document.getElementById("save-word-changes");
+        saveBtn.addEventListener("click", () => {
+            fetch("/save_word_timestamps", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(tempWordTimestamps)
+            })
+                .then(res => res.json())
+                .then(data => alert("✅ Saved: " + data.message))
+                .catch(err => alert("❌ Error saving timestamps"));
+        });
+    </script>
+
 </body>
 
 </html>

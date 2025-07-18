@@ -79,6 +79,8 @@ const videoVolumeSlider = document.getElementById("videoVolume");
 const bgMusicVolume = document.getElementById("bgMusicVolume");
 const effectVolume = document.getElementById("effectVolume");
 
+const playbackSpeed = document.getElementById("playbackSpeed");
+
 const audioBackground = new Audio();
 
 const videoContainer = document.getElementById("video-container");
@@ -120,6 +122,7 @@ video.volume = 1.0;  // Set default volume to max
 
 // 🔹 Hide Default Video Controls
 video.removeAttribute("controls");
+video.playbackRate = parseFloat(playbackSpeed.value);
 
 // 🔹 Play/Pause Button Functionality
 playPauseBtn.addEventListener("click", () => {
@@ -524,8 +527,14 @@ function renderWordEditor() {
         detailsBtn.classList.add("view-details");
         detailsBtn.dataset.index = index;
 
+        const snapBtn = document.createElement("button");
+        snapBtn.textContent = "⏱️";
+        snapBtn.style.marginLeft = "10px";
+        snapBtn.onclick = () => snapWordToVideoTime(index);
+
         wordDiv.appendChild(input);
         wordDiv.appendChild(detailsBtn);
+        wordDiv.appendChild(snapBtn);
         wordDiv.appendChild(deleteBtn);
         wordEditor.appendChild(wordDiv);
 
@@ -938,3 +947,48 @@ function renderWordEditor_old() {
         notebookEditor.appendChild(wordDiv.cloneNode(true)); // Clone for notebook editor
     });
 }
+
+document.getElementById("generateDummyTimestamps").addEventListener("click", () => {
+    const inputText = document.getElementById("manualCaptions").value.trim();
+    if (!inputText) return;
+
+    const words = inputText.split(/\s+/);
+    const startTimeIncrement = 0.5;  // Default gap between words
+    wordTimestamps = words.map((word, i) => ({
+        word: word,
+        start: parseFloat((i * startTimeIncrement).toFixed(2)),
+        end: parseFloat(((i + 1) * startTimeIncrement).toFixed(2)),
+        position: i,
+        matched: true
+    }));
+
+    // Optional: Save to localStorage or backend
+    renderWordEditor();  // Re-render the editable timeline
+});
+
+function snapWordToVideoTime(index) {
+    const video = document.getElementById("video");
+    const startTime = parseFloat(video.currentTime.toFixed(2));
+    const duration = 0.5;
+    console.log("Snapping word at index:", index, "to video time:", startTime);
+    for (let i = index; i < wordTimestamps.length; i++) {
+        wordTimestamps[i].start = parseFloat((startTime + duration * (i - index)).toFixed(2));
+        wordTimestamps[i].end = parseFloat((startTime + duration * (i - index + 1)).toFixed(2));
+    }
+
+    renderWordEditor(); // Refresh editor view
+}
+
+function setCaptionView() {
+    const videoContainer = document.getElementById("video-container");
+    videoContainer.style.display = "none";
+
+    const controlsContainer = document.getElementById("controls-container");
+    controlsContainer.style.display = "flex";
+    controlsContainer.style.flexDirection = "row";
+
+}
+
+document.getElementById("playbackSpeed").addEventListener("change", (e) => {
+    video.playbackRate = parseFloat(e.target.value);
+});
