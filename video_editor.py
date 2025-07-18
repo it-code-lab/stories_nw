@@ -32,9 +32,7 @@ def process_video(
     add_watermark=False,
     watermark_path="logo.png",
     watermark_position="bottom-right",
-    watermark_scale=0.2,
-    add_petal_overlay=False,
-    add_sparkle_overlay=False
+    watermark_scale=0.2
 ):
     # Get video size
     probe_cmd = [

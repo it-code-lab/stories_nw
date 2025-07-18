@@ -351,6 +351,28 @@
 
         <button type="submit">Process Videos</button>
     </form>    
+    <br>
+    <form id="addOverlay">
+        <h2>Add Overlay</h2>
+        <div> To be used to add flower petals/sparkle on the video.
+              <br><br>Place the input mp4 files in edit_vid_input folder. Output files will be created in edit_vid_output.
+        </div>
+        <br>
+        <label>Add Petals:</label>
+        <select name="add_petals">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+
+        <label>Add Sparkles:</label>
+        <select name="add_sparkles">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+ 
+        <button type="submit">Process Videos</button>
+    </form>    
+
     <script>
         const voices = {{ voice_map | tojson }};
         function updateVoices() {
@@ -427,6 +449,19 @@
                 body: formData
             });
             console.log("Completed ..edit Videos");
+            const result = await response.text();
+            // alert(result);
+        };
+
+        document.getElementById('addOverlay').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...add overlay");
+            const formData = new FormData(this);
+            const response = await fetch('/addoverlay', {
+                method: 'POST',
+                body: formData
+            });
+            console.log("Completed add overlay");
             const result = await response.text();
             // alert(result);
         };

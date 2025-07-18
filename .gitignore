@@ -41,3 +41,6 @@ puppeteer-obs.log
 bulkShorts_input.xlsx
 edit_vid_input/*
 edit_vid_output/*
+convert_to_alpha-del.py
+add_overlays-del.py
+overlays/*

@@ -200,6 +200,25 @@ def run_video_editor():
     except Exception as e:
         return f"❌ Error: {str(e)}", 500    
 # ------------------------ MAIN ------------------------ #
+@app.route('/addoverlays', methods=['POST'])
+def add_overlays():
+    try:
+        print("Processing request...add overlays")
+        add_petal_overlay = request.form.get('add_petals', 'no') == 'yes'
+        add_sparkle_overlay = request.form.get('add_sparkles', 'no') == 'yes'
+        overlay_position = (0, 0)  # Default position, can be modified as needed
+
+        from add_overlays import add_gif_overlays_to_videos
+        add_gif_overlays_to_videos(
+            input_folder="edit_vid_input",
+            output_folder="edit_vid_output",
+            add_petal_overlay=add_petal_overlay,
+            add_sparkle_overlay=add_sparkle_overlay,
+            overlay_position=overlay_position
+        )
+        return "✅ Overlays added successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500  
 
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)
