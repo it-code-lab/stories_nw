@@ -257,18 +257,18 @@
             renderWordDragEditor();
         });
 
-        // 🔹 Hook: Save to Flask API
-        const saveBtn = document.getElementById("save-word-changes");
-        saveBtn.addEventListener("click", () => {
-            fetch("/save_word_timestamps", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(tempWordTimestamps)
-            })
-                .then(res => res.json())
-                .then(data => alert("✅ Saved: " + data.message))
-                .catch(err => alert("❌ Error saving timestamps"));
-        });
+        // // 🔹 Hook: Save to Flask API
+        // const saveBtn = document.getElementById("save-word-changes");
+        // saveBtn.addEventListener("click", () => {
+        //     fetch("/save_word_timestamps", {
+        //         method: "POST",
+        //         headers: { "Content-Type": "application/json" },
+        //         body: JSON.stringify(tempWordTimestamps)
+        //     })
+        //         .then(res => res.json())
+        //         .then(data => alert("✅ Saved: " + data.message))
+        //         .catch(err => alert("❌ Error saving timestamps"));
+        // });
     </script>
 
 </body>

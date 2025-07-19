@@ -457,7 +457,7 @@
             e.preventDefault();
             console.log("Processing request...add overlay");
             const formData = new FormData(this);
-            const response = await fetch('/addoverlay', {
+            const response = await fetch('/addoverlays', {
                 method: 'POST',
                 body: formData
             });

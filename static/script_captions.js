@@ -98,7 +98,7 @@ fetch("http://localhost:5000/get_structured_output")
 
 // Load full_text and word_timestamps (for captions)
 //fetch('temp/word_timestamps.json')
-fetch("http://localhost:5000/get_word_timestamps")
+fetch("/get_word_timestamps")
     .then(response => response.json())
     .then(data => {
         captionsData = data;
@@ -523,13 +523,13 @@ function renderWordEditor() {
 
         // View Details Button
         let detailsBtn = document.createElement("span");
-        detailsBtn.innerHTML = "ℹ️";  // Info icon
+        detailsBtn.innerHTML = "ℹ️" + index;  // Info icon
         detailsBtn.classList.add("view-details");
         detailsBtn.dataset.index = index;
 
         const snapBtn = document.createElement("button");
-        snapBtn.textContent = "⏱️";
-        snapBtn.style.marginLeft = "10px";
+        snapBtn.textContent = "⏱";
+        // snapBtn.style.marginLeft = "10px";
         snapBtn.onclick = () => snapWordToVideoTime(index);
 
         wordDiv.appendChild(input);
