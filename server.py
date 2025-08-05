@@ -142,7 +142,7 @@ def run_obs_recorder():
 
         cmd = [
             "node", "puppeteer-launcher.js",
-            "test.mp4", duration, orientation, "4", "style2",
+            "test.mp4", duration, orientation, "4", "style4",
             "story-classical-3-710.mp3", "0.05", "1", "yes"
         ]
         print("▶️ Running Puppeteer with:", cmd)
