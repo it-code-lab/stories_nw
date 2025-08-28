@@ -13,6 +13,7 @@
     rel="stylesheet">
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pickr/1.8.2/themes/classic.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Rozha+One&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pickr/1.8.2/pickr.min.js"></script>
   <!-- <link rel="stylesheet" href="thu_styles.css" /> -->
   <style>
@@ -214,6 +215,13 @@
     .final-selection {
       position: relative;
     }
+
+    .rozha-one-regular {
+      font-family: "Rozha One", serif;
+      font-weight: 400;
+      font-style: normal;
+    }
+
   </style>
 </head>
 
@@ -247,6 +255,7 @@
         <span style="font-family: 'Staatliches', sans-serif">A</span>
         <span style="font-family: 'Playfair Display', serif">A</span>
         <span style="font-family: 'Archivo Black', sans-serif">A</span>
+        <span style="font-family: 'Rozha One', sans-serif">A</span>
       </div>
       <div class="input-area">
         <select id="layoutType">
@@ -287,7 +296,7 @@
             <option value="'Raleway', sans-serif">Raleway ExtraBold</option>
             <option value="'Lilita One', cursive">Lilita One</option>
             <option value="'Permanent Marker', cursive">Permanent Marker</option>
-
+            <option value="'Rozha One', cursive">Hi-Rozha One</option>
             <option value="'Bangers', cursive">Bangers</option>
 
             <option value="sans-serif">Sans-Serif</option>
@@ -830,10 +839,21 @@
         ctx.fillText(line, x, y);
 
         if (design.shadow) {
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-          ctx.shadowBlur = 5;
-          ctx.shadowOffsetX = 3;
-          ctx.shadowOffsetY = 3;
+          //ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          //ctx.shadowBlur = 5;
+          //ctx.shadowOffsetX = 3;
+          //ctx.shadowOffsetY = 3;
+
+          // Strong black shadow glow
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';  // Darker & stronger
+          ctx.shadowBlur = 15;                      // Bigger blur radius
+          ctx.shadowOffsetX = 10;                    // No horizontal offset
+          ctx.shadowOffsetY = 10;                    // No vertical offset
+
+          ctx.lineWidth = 18; 
+          ctx.strokeStyle = 'black';
+          ctx.strokeText(line, x, y);
+
           ctx.fillText(line, x, y); // Redraw with shadow
           ctx.shadowColor = 'transparent'; // Reset shadow
         }

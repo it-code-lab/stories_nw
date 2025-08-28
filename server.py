@@ -227,7 +227,58 @@ def add_overlays():
     except Exception as e:
         return f"❌ Error: {str(e)}", 500  
 
+@app.route('/multiplyvideo', methods=['POST'])
+def multiply_video():
+    try:
+        print("Processing request...multiplyvideo")
+        repeat_factor = request.form.get('repeat_factor', 1)
+        if repeat_factor == '':
+            repeat_factor = 1
 
+        from multiply_video import multiply_videos
+        multiply_videos(
+            input_folder="edit_vid_input",
+            output_folder="edit_vid_output",
+            repeat_factor=int(repeat_factor)
+        )
+        return "✅ Video multiplied successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500  
+
+@app.route('/makekbvideofromimages', methods=['POST'])
+def make_kb_video():
+    try:
+        print("Processing request...makekbvideo")
+
+        from make_kb_videos import export_kb_videos
+        export_kb_videos(
+            input_folder="edit_vid_input",   # folder with images
+            out_folder="edit_vid_output",    # where to save KB clips
+            per_image=10,
+            output_size=(1920,1080),
+            zoom_start=1.0, zoom_end=1.05
+        )
+        return "✅ Ken Burns videos created successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500
+
+@app.route('/assembleclipstomakevideosong', methods=['POST'])
+def assemble_clips_to_make_video_song():    
+    try:
+        print("Processing request...asseleclipstomakevideosong")
+        from assemble_from_videos import assemble_videos
+        assemble_videos(
+            video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
+            audio_folder="edit_vid_audio",
+            output_path="edit_vid_output/final_video.mp4",
+            fps=30,
+            shuffle=True,                                   # different order each run
+            prefer_ffmpeg_concat=True                       # auto-uses concat if safe; else MoviePy
+        )
+        return "✅ Video song assembled successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500
+            
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)
     app.run(debug=True, host='0.0.0.0', port=5000)  # Use host='

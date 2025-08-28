@@ -373,6 +373,39 @@
         <button type="submit">Process Videos</button>
     </form>    
 
+    <br>
+    <form id="multiplyVideo">
+        <h2>Multiply Video</h2>
+        <div> To be used to repeat the video by a factor.
+              <br><br>Place the input mp4 files in edit_vid_input folder. Output files will be created in edit_vid_output. E.g. enter 10 if the video is to be made 10 times long
+        </div>
+        <br>
+        <label>Repeat Factor:</label>
+        <input type="number" name="repeat_factor" min="1" value="1">
+
+        <button type="submit">Process Videos</button>
+    </form> 
+
+    <br>
+    <form id="makeKBVideoFromImages">
+        <h2>Make Ken Burn Videos from Images</h2>
+        <div> To be used to make image video clips that will be used to make song videos later.
+              <br><br>Place the images in edit_vid_input folder. Output files will be created in edit_vid_output. 
+        </div>
+
+        <button type="submit">Process Images</button>
+    </form> 
+
+        <br>
+    <form id="asseleClipsToMakeVideoSong">
+        <h2>Assemble small video clips to make video song</h2>
+        <div> To be used to make make song videos using video clips.
+              <br><br>Place the video clips in edit_vid_input folder. Place the audio file in edit_vid_audio. Output song will be created in edit_vid_output. 
+        </div>
+
+        <button type="submit">Create Video</button>
+    </form> 
+
     <script>
         const voices = {{ voice_map | tojson }};
         function updateVoices() {
@@ -465,6 +498,44 @@
             const result = await response.text();
             // alert(result);
         };
+        document.getElementById('multiplyVideo').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...multiply video");
+            const formData = new FormData(this);
+            const response = await fetch('/multiplyvideo', {
+                method: 'POST',
+                body: formData
+            });
+            console.log("Completed multiply video");
+            const result = await response.text();
+            // alert(result);
+        };       
+        document.getElementById('makeKBVideoFromImages').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...make Ken Burn Videos from Images");
+            const formData = new FormData(this);
+            const response = await fetch('/makekbvideofromimages', {
+                method: 'POST',
+                body: formData
+            });
+            console.log("Completed make Ken Burn Videos from Images");
+            const result = await response.text();
+            // alert(result);
+        }; 
+
+        document.getElementById('asseleClipsToMakeVideoSong').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...Assemble small video clips to make video song");
+            const formData = new FormData(this);
+            const response = await fetch('/assembleclipstomakevideosong', {
+                method: 'POST',
+                body: formData
+            });
+            console.log("Completed Assemble small video clips to make video song");
+            const result = await response.text();
+            // alert(result);
+        };
+
     </script>
 </body>
 

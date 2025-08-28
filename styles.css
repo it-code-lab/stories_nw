@@ -695,7 +695,7 @@
 /* 🔹 Adjust Captions & Overlays for Portrait Mode */
 .portrait #captions {
     /* bottom: 20%; */
-    font-size: 2em;
+    font-size: 1.5em;
     white-space: normal; /* Allows text to wrap */
     word-wrap: break-word; /* Breaks long words */
     overflow-wrap: break-word; /* Ensures wrapping */
@@ -703,7 +703,7 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    height: 210px;
+    height: 110px;
     /* margin: 20px; */
     width: 80%;
 
