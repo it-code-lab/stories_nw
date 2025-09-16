@@ -13,10 +13,81 @@ def cover_resize(clip, target_w, target_h):
     else:
         return clip.resize(width=target_w)
 
+def ken_burns_clip(img_path, duration, size=(1920,1080),
+                   zoom_start=1.05, zoom_end=1.15, pan="auto",
+                   overscan=1.01):
+    """
+    Ken Burns with dynamic overflow so the frame is always fully covered.
+    `overscan` adds a tiny extra scale to avoid 1px slivers from rounding.
+    """
+    import random
+    from moviepy.editor import ImageClip, CompositeVideoClip
+
+    W, H = size
+    base = ImageClip(img_path)
+    # Resize once to COVER the canvas; at scale=1 we already fill the frame
+    def cover_resize(clip, target_w, target_h):
+        iw, ih = clip.size
+        target_ratio = target_w / target_h
+        img_ratio = iw / ih
+        if img_ratio >= target_ratio:
+            return clip.resize(height=target_h)
+        else:
+            return clip.resize(width=target_w)
+    base = cover_resize(base, W, H)
+
+    if pan == "auto":
+        pan = random.choice(["left", "right", "up", "down", "in", "out"])
+
+    # Swap zoom if "out" so it feels like zooming out
+    z0, z1 = (zoom_start, zoom_end)
+    if pan == "out":
+        z0, z1 = zoom_end, zoom_start
+
+    # Scale is always >= 1 (because base is already COVERed) and we add overscan
+    def scale_at(t):
+        s = z0 + (z1 - z0) * (t / duration)
+        return s * overscan
+
+    # Position now uses the *current* overflow at time t so we never reveal borders
+    def pos_at(t):
+        s = scale_at(t)
+        sw, sh = base.w * s, base.h * s
+        overflow_x = max(0, sw - W)
+        overflow_y = max(0, sh - H)
+
+        if pan in ("left", "right"):
+            start_x = 0 if pan == "left" else -overflow_x
+            end_x   = -overflow_x if pan == "left" else 0
+            x = start_x + (end_x - start_x) * (t / duration)
+            y = 0
+        elif pan in ("up", "down"):
+            start_y = 0 if pan == "up" else -overflow_y
+            end_y   = -overflow_y if pan == "up" else 0
+            y = start_y + (end_y - start_y) * (t / duration)
+            x = 0
+        elif pan == "in":
+            x = -overflow_x * (t / duration) * 0.6
+            y = -overflow_y * (t / duration) * 0.6
+        elif pan == "out":
+            x = -overflow_x * (1 - (t / duration)) * 0.6
+            y = -overflow_y * (1 - (t / duration)) * 0.6
+        else:
+            x = y = 0
+        return (x, y)
+
+    kb = (base
+          .fx(lambda c: c.resize(lambda t: scale_at(t)))
+          .set_position(lambda t: pos_at(t))
+          .set_duration(duration))
+
+    return CompositeVideoClip([kb], size=size).set_duration(duration)
+
+
 # def ken_burns_clip(img_path, duration, size=(1920,1080),
 #                    zoom_start=1.05, zoom_end=1.15, pan="auto"):
     
-def ken_burns_clip(img_path, duration, size=(1920,1080),
+def ken_burns_clip_DND(img_path, duration, size=(1920,1080),
                    zoom_start=1.05, zoom_end=1.15, pan="auto"):
     """Create a Ken Burns effect (slow zoom + gentle pan) on a single image."""
     W, H = size
