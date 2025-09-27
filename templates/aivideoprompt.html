@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Prompt Generator</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --secondary-color: #F3F6F9;
+            --text-color: #333;
+            --background-color: #F8F9FA;
+            --border-color: #E0E0E0;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: var(--secondary-color);
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #3a7bc8;
+            transform: translateY(-2px);
+        }
+
+        .result-container {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        #outputPrompt {
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 250px;
+        }
+
+        .copy-button {
+            margin-top: 10px;
+            background-color: #28a745;
+        }
+
+        .copy-button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>AI Video Prompt Generator</h1>
+    <p style="text-align: center; margin-bottom: 30px;">Fill out the form below to generate a command to help create your video's prompts.</p>
+    
+    <form id="promptForm">
+        <div class="form-group">
+            <label for="genre">Video Genre</label>
+            <select id="genre">
+                <option value="fantasy" selected>Fantasy</option>
+                <option value="sci-fi">Sci-Fi</option>
+                <option value="historical">Historical</option>
+                <option value="mythological">Mythological</option>
+                <option value="adventure">Adventure</option>
+                <option value="cyberpunk">Cyberpunk</option>
+                <option value="steampunk">Steampunk</option>
+                <option value="horror">Horror</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="storySummary">Story Summary</label>
+            <textarea id="storySummary" placeholder="Provide a brief summary of the video's plot, emotional journey, or core message."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="characters">Main Character(s)</label>
+            <textarea id="characters" placeholder="Describe the main character(s) and their role. For example: 'a wise old wizard with a long white beard,' 'a courageous knight in shining armor.'"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="artStyle">Desired Art Style</label>
+            <select id="artStyle">
+                <option value="realistic digital painting" selected>Realistic Digital Painting</option>
+                <option value="epic fantasy art with rich colors">Epic Fantasy Art with Rich Colors</option>
+                <option value="gritty cyberpunk">Gritty Cyberpunk</option>
+                <option value="soft, watercolor animation">Soft, Watercolor Animation</option>
+                <option value="dark fantasy with dramatic lighting">Dark Fantasy with Dramatic Lighting</option>
+                <option value="vibrant cartoon animation">Vibrant Cartoon Animation</option>
+                <option value="photorealistic cinematic still">Photorealistic Cinematic Still</option>
+                <option value="pixel art">Pixel Art</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="scenesList">Scene-by-Scene Progression</label>
+            <textarea id="scenesList" placeholder="List each scene on a new line. For example:&#10;&#10;Scene 1: Introduction of the hero.&#10;Scene 2: The hero facing a challenge.&#10;Scene 3: A moment of reflection.&#10;Scene 4: The climax.&#10;Scene 5: The resolution."></textarea>
+        </div>
+
+        <button type="button" onclick="generatePrompt()">Generate Command</button>
+    </form>
+
+    <div class="result-container">
+        <h2>Your Command</h2>
+        <textarea id="outputPrompt" readonly></textarea>
+        <button class="copy-button" onclick="copyPrompt()">Copy Command</button>
+    </div>
+</div>
+
+<script>
+    function generatePrompt() {
+        const genre = document.getElementById('genre').value;
+        const storySummary = document.getElementById('storySummary').value.trim();
+        const characters = document.getElementById('characters').value.trim();
+        const artStyle = document.getElementById('artStyle').value;
+        const scenesList = document.getElementById('scenesList').value.trim();
+        
+        if (!storySummary || !characters || !scenesList) {
+            alert("Please fill in all the text fields to generate the command.");
+            return;
+        }
+
+        const sceneCount = scenesList.split('\n').filter(line => line.trim() !== '').length;
+
+        const promptTemplate = `I am creating a video for a ${genre} story. I need you to generate a set of paired commands for AI image and video tools. The pairs should include a detailed image creation prompt and a corresponding animation command.
+
+Here is a summary of the story's narrative or theme: ${storySummary}
+
+The main character is: ${characters}
+
+The desired art style is: ${artStyle}
+
+The video should have ${sceneCount} distinct scenes. Please create the image and animation pairs for each scene, following this sequence:
+${scenesList}
+
+Please ensure the prompts are written in a way that allows for dynamic character movement, not just camera effects.`;
+
+        document.getElementById('outputPrompt').value = promptTemplate;
+    }
+
+    function copyPrompt() {
+        const outputPrompt = document.getElementById('outputPrompt');
+        if (outputPrompt.value.trim() === '') {
+            alert("Nothing to copy. Please generate the command first.");
+            return;
+        }
+
+        outputPrompt.select();
+        outputPrompt.setSelectionRange(0, 99999); // For mobile devices
+
+        navigator.clipboard.writeText(outputPrompt.value).then(() => {
+            alert("Command copied to clipboard!");
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert("Failed to copy. Please try again or copy manually.");
+        });
+    }
+</script>
+
+</body>
+</html>

@@ -68,6 +68,10 @@ def index():
 def thumbnail():
     return render_template('thu_index.html')
 
+@app.route('/aivideoprompt')
+def aivideoprompt():
+    return render_template('aivideoprompt.html')
+
 @app.route('/prepare_captions')
 def prep_caption():
     return render_template('index_captions.html')
