@@ -60,6 +60,9 @@ const listItemSound = "sounds/list_item_pop.wav";  // Example sound for list ite
 let captionsData = [];
 let currentCaption = "";
 
+let minLineGapSec = 0.40;        // default, overwritten by UI
+let captionSegments = [];        // [{startIndex, endIndex}] inclusive
+
 let captionWordLimit = 5;  // Default number of words per block
 let currentBlockStart = 0; // Track where the current caption block starts
 let lastSpokenWordIndex = -1; // Last word index processed
@@ -103,6 +106,7 @@ fetch("/get_word_timestamps")
     .then(data => {
         captionsData = data;
         wordTimestamps = data;
+        computeCaptionSegments();          // ⬅️ build initial segments
         renderWordEditor();
     })
     .catch(error => console.error("Error loading captions data:", error));
@@ -242,6 +246,14 @@ let videoDuration = video.duration;
 video.addEventListener("timeupdate", () => {
     updateOverlayAndCaptions();
 });
+
+const minLineGapInput = document.getElementById("minLineGapSec");
+minLineGapInput.addEventListener("input", () => {
+    const v = parseFloat(minLineGapInput.value);
+    minLineGapSec = isNaN(v) ? 0.40 : Math.max(0, v);
+    computeCaptionSegments();
+});
+
 
 function updateOverlayAndCaptions() {
     let currentTime = video.currentTime;
@@ -385,58 +397,59 @@ function updateOverlayAndCaptions() {
     timeline.max = video.duration;
     videoTimeDisplay.innerHTML = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
 
-    let currentIndex = captionsData.findIndex(word => currentTime >= word.start && currentTime <= word.end);
+    let currentIndex = captionsData.findIndex(w => currentTime >= w.start && currentTime <= w.end);
 
     if (currentIndex !== -1) {
-        // Only update if we reach the last word of the current block
-        if (currentIndex >= currentBlockStart + captionWordLimit) {
-            currentBlockStart = currentIndex; // Move to the next block
-            lastCaptionUpdateTime = currentTime; // Update last update time
-
-            // Store styles for this block only once
-            blockWordStyles = captionsData.slice(currentBlockStart, Math.min(currentBlockStart + captionWordLimit, captionsData.length)).map(wordObj => ({
-                textColor: textColors[Math.floor(Math.random() * textColors.length)],
-                bgColor: bgColors[Math.floor(Math.random() * bgColors.length)],
-                fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
-                angle: angles[Math.floor(Math.random() * angles.length)]
-            }));
-        } else if (currentIndex < currentBlockStart) {
-            // 🔹 Handling backward seeking (reset block start)
-            currentBlockStart = Math.max(0, currentIndex - Math.floor(captionWordLimit / 2));
-            lastCaptionUpdateTime = currentTime;
-
-            // Recalculate styles for this block when seeking backward
-            blockWordStyles = captionsData.slice(currentBlockStart, Math.min(currentBlockStart + captionWordLimit, captionsData.length)).map(wordObj => ({
-                textColor: textColors[Math.floor(Math.random() * textColors.length)],
-                bgColor: bgColors[Math.floor(Math.random() * bgColors.length)],
-                fontSize: fontSizes[Math.floor(Math.random() * fontSizes.length)],
-                angle: angles[Math.floor(Math.random() * angles.length)]
-            }));
+        // find the segment that contains currentIndex
+        let seg = null;
+        // fast path: linear scan (arrays are small); swap to binary search if desired
+        for (let s of captionSegments) {
+            if (currentIndex >= s.startIndex && currentIndex <= s.endIndex) {
+                seg = s;
+                break;
+            }
         }
 
-        let endIdx = Math.min(currentBlockStart + captionWordLimit, captionsData.length);
-        let currentBlockWords = captionsData.slice(currentBlockStart, endIdx);
-        let displayedWords = "";
+        if (!seg) {
+            // fallback: keep previous behavior if no segment found (shouldn't happen)
+            seg = { startIndex: currentIndex, endIndex: currentIndex };
+        }
 
+        // Option A (strict “one line at a time”): show the entire segment as one line
+        // Option B (optional safety): if a segment is very long, allow sub-chunks capped by captionWordLimit
+        let segWords = captionsData.slice(seg.startIndex, seg.endIndex + 1);
+
+        // ---- Optional: keep very long lines readable using your existing "Words per Caption" cap ----
+        let wordsPer = Math.max(1, captionWordLimit || segWords.length);
+        if (segWords.length > wordsPer) {
+            // compute which sub-chunk of this line we are in, based on currentIndex
+            let localIdx = currentIndex - seg.startIndex;                  // 0..segWords.length-1
+            let chunkIdx = Math.floor(localIdx / wordsPer);                // which chunk
+            let chunkStart = seg.startIndex + chunkIdx * wordsPer;
+            let chunkEnd = Math.min(chunkStart + wordsPer - 1, seg.endIndex);
+            segWords = captionsData.slice(chunkStart, chunkEnd + 1);
+        }
+        // ---------------------------------------------------------------------------------------------
+
+        // Build the HTML with current-word highlighting (keeps your styles intact)
+        let displayedWords;
         if (selectedStyle !== "block-style") {
-            displayedWords = currentBlockWords.map((wordObj) => {
+            displayedWords = segWords.map((wordObj) => {
                 return (currentTime >= wordObj.start && currentTime <= wordObj.end)
-                    ? `<span class="current-word">${wordObj.word}</span>` // Highlight spoken word
+                    ? `<span class="current-word">${wordObj.word}</span>`
                     : wordObj.word;
             });
         } else {
-            displayedWords = currentBlockWords.map((wordObj, index) => {
+            // reuse your block-style logic but scoped to segWords
+            displayedWords = segWords.map((wordObj, index) => {
                 let span = document.createElement("span");
                 span.innerText = wordObj.word;
 
-                // Retrieve previously stored styles for this block
-                let style = blockWordStyles[index] || {};
-
+                let style = blockWordStyles?.[index] || {};
                 span.style.color = style.textColor || "#FFF";
                 span.style.backgroundColor = style.bgColor || "#000";
                 span.style.fontSize = style.fontSize || "1em";
-                //span.classList.add(style.angle || "angle1"); // Apply stored angle
-                span.classList.add("word-box"); // Applies bold block style
+                span.classList.add("word-box");
 
                 // 🔹 Highlight spoken word
                 if (currentTime >= wordObj.start && currentTime <= wordObj.end) {
@@ -455,6 +468,8 @@ function updateOverlayAndCaptions() {
             captions.classList.add("show-caption");
             captions.classList.remove("hide-caption");
         }
+
+        lastCaptionUpdateTime = currentTime; // refresh so pauses keep last line
     } else if (currentTime - lastCaptionUpdateTime < 4) {
         // 🔹 If there’s a pause, keep the last caption visible for 4 seconds
         captions.classList.add("show-caption");
@@ -470,6 +485,23 @@ timeline.addEventListener("input", () => {
     video.currentTime = timeline.value;
     updateOverlayAndCaptions();
 });
+
+
+function computeCaptionSegments() {
+    captionSegments = [];
+    if (!Array.isArray(captionsData) || captionsData.length === 0) return;
+
+    let segStart = 0;
+    for (let i = 0; i < captionsData.length - 1; i++) {
+        const gap = captionsData[i + 1].start - captionsData[i].end;
+        if (gap >= minLineGapSec) {
+            captionSegments.push({ startIndex: segStart, endIndex: i });
+            segStart = i + 1;
+        }
+    }
+    // flush last segment
+    captionSegments.push({ startIndex: segStart, endIndex: captionsData.length - 1 });
+}
 
 // 🔹 Simulate Caption Animation in Preview Section
 function startPreviewAnimation_Not_in_use() {

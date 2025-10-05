@@ -518,6 +518,21 @@
     border-radius: 4px;
 }
 
+.style11 {
+    /* font-family: "Rozha One", serif;
+    font-weight: 400;
+    font-style: normal; */
+    text-shadow: 0px 0px 4px black;
+
+    font-family: 'Oswald', sans-serif;
+    
+}
+.style11 .current-word {
+    background-color: rgb(231, 74, 105);
+    border-radius: 4px;
+    display: inline;
+}
+
 .none {
     display: none !important;
 }
