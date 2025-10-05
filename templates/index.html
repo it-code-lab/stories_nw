@@ -267,6 +267,35 @@
     </form>
 
     <br>
+    <form id="sunoToVideoGenerator">
+        <h2>Suno.com song + Video Clip to video generator</h2>
+        <div>
+            <ol>
+                <li>Place song audio.wav inside edit_vid_audio.</li>
+                <li>Place video clip (5/8 secs) at edit_vid_input.</li>
+                <li>Click on below button</li>
+                <li>This would make longer clip by slowing speed to 25% and then create video by repeating to audio length
+                    It will then place the video as composed_video.mp4 inside the root folder. 
+                    And will place the input audio file as audio.wav inside the root folder.
+                    Then it will call script to make WordTimeStamps file.</li>
+                </li>
+                <li>After processing is done, review the captions at <a href="prepare_captions" target="_blank">Open Caption Editor</a>
+        (Opens in new tab) and make necessary change. </li>
+        <li>Then Run OBS Recorder to create final video for upload. Parameters: Caption-style1, words per caption-10,outputfile - edit_vid_output/output.mp4 </li>
+            </ol>
+
+        </div>
+        <label>Language:</label>
+        <select name="language">
+            <option>english</option>
+            <option>english-india</option>
+            <option>hindi</option>
+            <option>french</option>
+        </select>
+
+        <button type="submit">Create Video and Caption Text</button>
+    </form>    
+    <br>
     <form id="uploadToYoutube">
         <h2>Run Youtube Upload</h2>
         <div> To be run after video created in Processed_video folder and record is added in video_records.xlsx
@@ -292,8 +321,56 @@
             <option value="portrait">portrait</option>
         </select>
 
+        <label for="captionStyle">Caption Style</label>
+        <select id="captionStyle">
+            <option value="style1">Style 1</option>
+            <option value="style2">Style 2</option>
+            <option value="style3">Style 3</option>
+            <option value="style4">Style 4</option>
+            <option value="style5">Style 5</option>
+            <option value="style6">Style 6</option>
+            <option value="style7">Style 7</option>
+            <option value="style8">Style 8</option>
+            <option value="style9">Style 9</option>
+            <option value="style10">Style 10</option>
+            <option value="style11">Style 11</option>
+            <option value="none">No Caption</option>
+            <option value="block-style">Block Caption</option>
+        </select>        
         <label>Duration (Seconds):</label>
         <input type="text" name="duration" >
+
+        <label for="captionLength">Words per Caption</label>
+        <input type="number" id="captionLength" value="5" min="1" max="10">
+        
+        <label for="minLineGapSec">Min gap between lines (sec)</label>
+        <input type="number" id="minLineGapSec" value="0.40" step="0.05" min="0" />
+
+        <label for="bgMusicSelect">Background Music:</label>
+        <select id="bgMusicSelect">
+            <option value="none">None</option>
+            <option value="children-a-baby-story-530.mp3">Children-story</option>
+            <option value="children-close-your-eyes-now-1022.mp3">Children-eyes</option>
+            <option value="children-lullaby-night-531.mp3">Children-lullaby</option>
+            <option value="children-summers-here-91.mp3">Children-summers</option>
+            <option value="horror-fright-night-871.mp3">Horror-fright</option>
+            <option value="horror-piano-671.mp3">Horror-piano</option>
+            <option value="positive-a-very-happy-christmas-897.mp3">Positive-christmas</option>
+            <option value="positive-mixkit-fun-jazz-647.mp3">Positive-fun</option>
+            <option value="positive-wedding-01-657.mp3">Positive-wedding</option>
+            <option value="story-classical-3-710.mp3">Story-1</option>
+            <option value="story-classical-6-713.mp3">Story-6</option>
+            <option value="story-classical-10-717.mp3">story-10</option>
+        </select>
+
+        <label for="disableSubscribe">Disable Subscribe Gif</label>
+        <select id="disableSubscribe">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>				
+
+        <label>Output file(e.g.):"edit_vid_output/output.mp4", "test.mp4"</label>
+        <input type="text" name="outputfile" >
 
         <button type="submit">Play video and run OBS Recorder</button>
     </form>
@@ -543,6 +620,18 @@
             // alert(result);
         };
 
+        document.getElementById('sunoToVideoGenerator').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...sunoToVideoGenerator");
+            const formData = new FormData(this);
+            const response = await fetch('/sunotovideogenerator', {
+                method: 'POST',
+                body: formData
+            });
+            console.log("Completed sunoToVideoGenerator");
+            const result = await response.text();
+            // alert(result);
+        };
     </script>
 </body>
 

@@ -143,11 +143,17 @@ def run_obs_recorder():
         print("Processing request...run OBS recorder")
         orientation = request.form.get('orientation', 'landscape')
         duration = request.form.get('duration', '10')  # Default to 10 seconds if not provided
+        selectedStyle = request.form.get('captionStyle', 'style1')
+        captionLength = request.form.get('captionLength', '5')
+        bgMusicSelected = request.form.get('bgMusicSelect', 'None')
+        minLineGapSec = request.form.get('minLineGapSec', '0.40')
+        disableSubscribe = request.form.get('disableSubscribe', 'yes')
+        outputfile = request.form.get('outputfile', 'test.mp4')
 
         cmd = [
             "node", "puppeteer-launcher.js",
-            "test.mp4", duration, orientation, "4", "style4",
-            "story-classical-3-710.mp3", "0.05", "1", "yes"
+            outputfile, duration, orientation, captionLength, selectedStyle,
+            bgMusicSelected, "0.05", "1", disableSubscribe, minLineGapSec
         ]
         print("▶️ Running Puppeteer with:", cmd)
         import subprocess
@@ -206,6 +212,79 @@ def run_video_editor():
             watermark_path="logo.png",
             watermark_position=watermarkposition,
             watermark_scale=0.15
+        )
+        return "✅ Videos Processed successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500    
+
+@app.route('/sunotovideogenerator', methods=['POST'])
+def run_sunotovideogenerator():
+    try:
+        print("*** Processing request sunotovideogenerator: Enlarging clip")
+        orientation = 'auto'
+        add_music = False
+        topcut = 0
+        bottomcut = 0
+        slowfactor = 4
+        slow_down = True
+        add_watermark = False
+        watermarkposition = 'bottom-left'
+
+        batch_process(
+            input_folder="edit_vid_input",
+            output_folder="edit_vid_output",
+            bg_music_folder="god_bg",
+            remove_top=float(topcut),
+            remove_bottom=float(bottomcut),
+            add_music=add_music,
+            slow_down=slow_down,
+            slow_down_factor=float(slowfactor),
+            target_orientation=orientation, 
+            add_watermark=add_watermark,
+            watermark_path="logo.png",
+            watermark_position=watermarkposition,
+            watermark_scale=0.15
+        )
+
+        print("*** Processing request sunotovideogenerator: Assembling clips to make video song")
+        from assemble_from_videos import assemble_videos
+        assemble_videos(
+            video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
+            audio_folder="edit_vid_audio",
+            output_path="composed_video.mp4",
+            fps=30,
+            shuffle=True,                                   # different order each run
+            prefer_ffmpeg_concat=True                       # auto-uses concat if safe; else MoviePy
+        )
+
+        # place copy of audio file (mp3/wav) from edit_vid_audio to root folder as audio.wav
+
+        audio_folder = "edit_vid_audio"
+        import shutil
+        from pydub import AudioSegment
+        # get the first file found in that folder
+        audio_file = os.listdir(audio_folder)[0]
+        audio_path = os.path.join(audio_folder, audio_file)
+
+        # output path in root folder
+        output_path = "audio.wav"
+
+        # convert mp3 → wav (if needed), else just copy
+        if audio_file.lower().endswith(".mp3"):
+            # convert using pydub (requires ffmpeg installed)
+            sound = AudioSegment.from_mp3(audio_path)
+            sound.export(output_path, format="wav")
+        else:
+            # already wav → overwrite if exists
+            shutil.copy(audio_path, output_path)
+
+        print(f"✅ Saved audio file as {output_path}")
+
+        print("*** Processing request sunotovideogenerator...creating captions file ")
+        language = request.form.get('language', 'english')
+        prepare_captions_file_for_notebooklm_audio(
+            audio_path="audio.wav",
+            language=language
         )
         return "✅ Videos Processed successfully!", 200
     except Exception as e:

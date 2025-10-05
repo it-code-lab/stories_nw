@@ -20,7 +20,7 @@ function log(msg) {
 }
 
 // Extract args
-const [,, outputFile, recordingDuration, videoOrientationVal, wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, disableSubscribe] = process.argv;
+const [,, outputFile, recordingDuration, videoOrientationVal, wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, disableSubscribe, minLineGapSec] = process.argv;
 
 if (!recordingDuration || !videoOrientationVal || !outputFile) {
   log("❌ Usage: node puppeteer-launcher.js <duration> <orientation> <words> <style> <music> <musicVol> <fxVol> <outputFile>");
@@ -42,7 +42,8 @@ const height = isLandscape ? 720 : 1280; //Works on MSI laptop
   });
 
   const [page] = await browser.pages();
-  const videoUrl = "file:///" + __dirname + "/index.html";
+  const videoUrl = "http://localhost:5000/prepare_captions"
+  //const videoUrl = "file:///" + __dirname + "/index.html";
   // const videoUrl = "file:///C:/0.data/4.SM-WSpace/6B.Python/1.Create_Video_From_Readernook_Story/application/index.html";
   await page.goto(videoUrl);
 
@@ -50,7 +51,7 @@ const height = isLandscape ? 720 : 1280; //Works on MSI laptop
   await page.waitForSelector("video");
 
   await page.evaluate((params) => {
-    const { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, videoOrientationVal, disableSubscribe } = params;
+    const { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, videoOrientationVal, disableSubscribe,minLineGapSec } = params;
 
 
     if (document.getElementById("disableSubscribe")) {
@@ -69,6 +70,8 @@ const height = isLandscape ? 720 : 1280; //Works on MSI laptop
       document.getElementById("bgMusicVolume").value = backgroundMusicVolume;
     if (document.getElementById("effectVolume"))
       document.getElementById("effectVolume").value = soundEffectVolume;
+    if (document.getElementById("minLineGapSec"))
+      document.getElementById("minLineGapSec").value = minLineGapSec;
 
     const selectedMusic = backgroundMusic;
     if (selectedMusic !== "none") {

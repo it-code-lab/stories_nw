@@ -374,8 +374,28 @@
     padding: 5px;
 }
 
-/* 🔹 Caption Style 1 (Default) */
 .style1 {
+    /* font-family: "Rozha One", serif;
+    font-weight: 400;
+    font-style: normal; */
+    color: #ffd000;
+    font-size: 1.8em;
+    font-weight: bold;
+    text-shadow: 0px 0px 4px black;
+    -webkit-text-stroke: 1px black;
+    /* font-family: 'Luckiest Guy', cursive; */
+     font-family: 'Oswald', sans-serif; 
+    
+}
+.style1 .current-word {
+    background-color: rgb(231, 74, 105);
+    /* background-color: rgb(122, 43, 219); */
+    border-radius: 4px;
+    border: 1px solid #969693;
+}
+
+/* 🔹 Caption Style 1 (Default) */
+.style11 {
 
     color: #fff;
     font-size: 1.5em;
@@ -386,7 +406,7 @@
 }
 
 /* 🔹 Highlight Current Word */
-.style1 .current-word {
+.style11 .current-word {
     background-color: #512085;
     border-radius: 4px;
 }
@@ -518,20 +538,7 @@
     border-radius: 4px;
 }
 
-.style11 {
-    /* font-family: "Rozha One", serif;
-    font-weight: 400;
-    font-style: normal; */
-    text-shadow: 0px 0px 4px black;
 
-    font-family: 'Oswald', sans-serif;
-    
-}
-.style11 .current-word {
-    background-color: rgb(231, 74, 105);
-    border-radius: 4px;
-    display: inline;
-}
 
 .none {
     display: none !important;
