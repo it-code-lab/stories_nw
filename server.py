@@ -245,18 +245,24 @@ def run_sunotovideogenerator():
             watermark_position=watermarkposition,
             watermark_scale=0.15
         )
+        print("✅ Processing request sunotovideogenerator: Enlarging completed successfully")
+        # copy files from edit_vid_output to edit_vid_input for next step
+        import shutil
+        for filename in os.listdir("edit_vid_output"):
+            shutil.copy(os.path.join("edit_vid_output", filename), os.path.join("edit_vid_input", filename))
 
         print("*** Processing request sunotovideogenerator: Assembling clips to make video song")
         from assemble_from_videos import assemble_videos
         assemble_videos(
             video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
             audio_folder="edit_vid_audio",
-            output_path="composed_video.mp4",
+            output_path="edit_vid_output/composed_video.mp4",
             fps=30,
             shuffle=True,                                   # different order each run
             prefer_ffmpeg_concat=True                       # auto-uses concat if safe; else MoviePy
         )
 
+        print("✅ Processing request sunotovideogenerator: Assembling completed successfully")
         # place copy of audio file (mp3/wav) from edit_vid_audio to root folder as audio.wav
 
         audio_folder = "edit_vid_audio"
@@ -279,6 +285,12 @@ def run_sunotovideogenerator():
             shutil.copy(audio_path, output_path)
 
         print(f"✅ Saved audio file as {output_path}")
+
+        #place copy of composed_video.mp4 from edit_vid_output to root folder as composed_video.mp4. Replace if exists
+        
+        shutil.copy("edit_vid_output/composed_video.mp4", "composed_video.mp4")
+        print("✅ Copied composed video to root folder as composed_video.mp4")
+
 
         print("*** Processing request sunotovideogenerator...creating captions file ")
         language = request.form.get('language', 'english')

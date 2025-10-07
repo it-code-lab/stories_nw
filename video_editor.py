@@ -164,16 +164,16 @@ def batch_process(
 # ✅ Example usage
 if __name__ == '__main__':
     batch_process(
-        input_folder="input",
-        output_folder="output",
+        input_folder="edit_vid_input",
+        output_folder="edit_vid_output",
         bg_music_folder="god_bg",
-        remove_top=50,
+        remove_top=0,
         remove_bottom=0,
         add_music=False,
         slow_down=True,
-        slow_down_factor=2.0,
+        slow_down_factor=4.0,
         target_orientation="auto", 
-        add_watermark=True,
+        add_watermark=False,
         watermark_path="logo.png",
         watermark_position="bottom-left",
         watermark_scale=0.15

@@ -383,6 +383,7 @@
     font-weight: bold;
     text-shadow: 0px 0px 4px black;
     -webkit-text-stroke: 1px black;
+    font-size: 3em !important;
     /* font-family: 'Luckiest Guy', cursive; */
      font-family: 'Oswald', sans-serif; 
     
