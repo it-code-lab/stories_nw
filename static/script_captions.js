@@ -91,7 +91,7 @@ const videoOrientation = document.getElementById("videoOrientation");
 
 // Load structured_output.json (for headings & list items)
 //fetch('temp/structured_output.json')
-fetch("http://localhost:5000/get_structured_output")
+fetch("/get_structured_output")
     .then(response => response.json())
     .then(data => {
         overlayData = data;
@@ -883,7 +883,7 @@ wordEditor.addEventListener("click", (event) => {
 // 🔹 Save Updated Words to `word_timestamps.json`
 // 🔹 Save Updated Words to `word_timestamps.json` via Python server
 saveWordChanges.addEventListener("click", () => {
-    fetch("http://localhost:5000/save_word_timestamps", {
+    fetch("/save_word_timestamps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(wordTimestamps)
