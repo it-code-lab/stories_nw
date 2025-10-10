@@ -225,8 +225,13 @@ def run_sunotovideogenerator():
         add_music = False
         topcut = 0
         bottomcut = 0
-        slowfactor = 4
         slow_down = True
+        slowfactor = request.form.get('slowfactor',1)
+        if slowfactor == '' or slowfactor == '1':
+            slowfactor = 1
+            slow_down = False
+
+        
         add_watermark = False
         watermarkposition = 'bottom-left'
 
@@ -287,7 +292,7 @@ def run_sunotovideogenerator():
         print(f"✅ Saved audio file as {output_path}")
 
         #place copy of composed_video.mp4 from edit_vid_output to root folder as composed_video.mp4. Replace if exists
-        
+
         shutil.copy("edit_vid_output/composed_video.mp4", "composed_video.mp4")
         print("✅ Copied composed video to root folder as composed_video.mp4")
 
@@ -301,6 +306,86 @@ def run_sunotovideogenerator():
         return "✅ Videos Processed successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500    
+
+
+@app.route('/sunonimagetovideogenerator', methods=['POST'])
+def run_sunonimagetovideogenerator():
+    try:
+        print("*** Processing request sunonimagetovideogenerator: creating clips")
+        duration = request.form.get('duration',10)
+        if duration == '':
+            duration = 10
+
+        video_size = (1920,1080)
+        size = request.form.get('size', 'landscape')
+        if size == 'portrait':
+            video_size = (1080,1920)
+
+        from make_kb_videos import export_kb_videos
+        export_kb_videos(
+            input_folder="edit_vid_input",   # folder with images
+            out_folder="edit_vid_output",    # where to save KB clips
+            per_image=duration,            # seconds per image
+            output_size=video_size,
+            zoom_start=1.0, zoom_end=1.05
+        )
+        print("✅ Processing request sunonimagetovideogenerator: Creating clips completed successfully")
+        # copy files from edit_vid_output to edit_vid_input for next step
+        import shutil
+        for filename in os.listdir("edit_vid_output"):
+            shutil.copy(os.path.join("edit_vid_output", filename), os.path.join("edit_vid_input", filename))
+
+        print("*** Processing request sunonimagetovideogenerator: Assembling clips to make video song")
+        from assemble_from_videos import assemble_videos
+        assemble_videos(
+            video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
+            audio_folder="edit_vid_audio",
+            output_path="edit_vid_output/composed_video.mp4",
+            fps=30,
+            shuffle=True,                                   # different order each run
+            prefer_ffmpeg_concat=True                       # auto-uses concat if safe; else MoviePy
+        )
+
+        print("✅ Processing request sunonimagetovideogenerator: Assembling completed successfully")
+        # place copy of audio file (mp3/wav) from edit_vid_audio to root folder as audio.wav
+
+        audio_folder = "edit_vid_audio"
+        import shutil
+        from pydub import AudioSegment
+        # get the first file found in that folder
+        audio_file = os.listdir(audio_folder)[0]
+        audio_path = os.path.join(audio_folder, audio_file)
+
+        # output path in root folder
+        output_path = "audio.wav"
+
+        # convert mp3 → wav (if needed), else just copy
+        if audio_file.lower().endswith(".mp3"):
+            # convert using pydub (requires ffmpeg installed)
+            sound = AudioSegment.from_mp3(audio_path)
+            sound.export(output_path, format="wav")
+        else:
+            # already wav → overwrite if exists
+            shutil.copy(audio_path, output_path)
+
+        print(f"✅ Saved audio file as {output_path}")
+
+        #place copy of composed_video.mp4 from edit_vid_output to root folder as composed_video.mp4. Replace if exists
+
+        shutil.copy("edit_vid_output/composed_video.mp4", "composed_video.mp4")
+        print("✅ Copied composed video to root folder as composed_video.mp4")
+
+
+        print("*** Processing request sunotovideogenerator...creating captions file ")
+        language = request.form.get('language', 'english')
+        prepare_captions_file_for_notebooklm_audio(
+            audio_path="audio.wav",
+            language=language
+        )
+        return "✅ Videos Processed successfully!", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500    
+
 # ------------------------ MAIN ------------------------ #
 @app.route('/addoverlays', methods=['POST'])
 def add_overlays():
@@ -345,12 +430,21 @@ def make_kb_video():
     try:
         print("Processing request...makekbvideo")
 
+        duration = request.form.get('duration',10)
+        if duration == '':
+            duration = 10
+
+        video_size = (1920,1080)
+        size = request.form.get('size', 'landscape')
+        if size == 'portrait':
+            video_size = (1080,1920)
+
         from make_kb_videos import export_kb_videos
         export_kb_videos(
             input_folder="edit_vid_input",   # folder with images
             out_folder="edit_vid_output",    # where to save KB clips
-            per_image=10,
-            output_size=(1920,1080),
+            per_image=duration,            # seconds per image
+            output_size=video_size,
             zoom_start=1.0, zoom_end=1.05
         )
         return "✅ Ken Burns videos created successfully!", 200

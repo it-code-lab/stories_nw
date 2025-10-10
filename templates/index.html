@@ -272,9 +272,9 @@
         <div>
             <ol>
                 <li>Place song audio.wav inside edit_vid_audio.</li>
-                <li>Place video clip (5/8 secs) at edit_vid_input.</li>
+                <li>Place video clip (5/8 secs) at edit_vid_input. (Change slow down factor below if needed)</li>
                 <li>Click on below button</li>
-                <li>This would make longer clip by slowing speed to 25% and then create video by repeating to audio length
+                <li>This would make longer clip by slowing speed and then create video by repeating to audio length
                     It will then place the video as composed_video.mp4 inside the root folder. 
                     And will place the input audio file as audio.wav inside the root folder.
                     Then it will call script to make WordTimeStamps file.</li>
@@ -285,6 +285,10 @@
             </ol>
 
         </div>
+
+        <label>Slow down video clips by factor:</label>
+        <input type="number" name="slowfactor" min="1" max="10" value="4">
+
         <label>Language:</label>
         <select name="language">
             <option>english</option>
@@ -296,6 +300,48 @@
         <button type="submit">Create Video and Caption Text</button>
     </form>    
     <br>
+
+
+    <form id="sunoNImageToVideoGenerator">
+        <h2>Suno.com song + Images to video generator</h2>
+        <div>
+            <ol>
+                <li>Place song audio.wav inside edit_vid_audio.</li>
+                <li>Place images in edit_vid_input. (If needed, change input image size and clip duration for each image )</li>
+                <li>Click on below button</li>
+                <li>This would make video clips and then create video by repeating to audio length
+                    It will then place the video as composed_video.mp4 inside the root folder. 
+                    And will place the input audio file as audio.wav inside the root folder.
+                    Then it will call script to make WordTimeStamps file.</li>
+                </li>
+                <li>After processing is done, review the captions at <a href="prepare_captions" target="_blank">Open Caption Editor</a>
+        (Opens in new tab) and make necessary change. </li>
+        <li>Then Run OBS Recorder to create final video for upload. Parameters: Caption-style1, words per caption-10,outputfile - edit_vid_output/output.mp4 </li>
+            </ol>
+
+        </div>
+
+        <label>Input image size:</label>
+        <select name="size">
+            <option value="landscape">landscape</option>
+            <option value="portrait">portrait</option>
+        </select>
+
+        <label>Duration of video per image (Seconds):</label>
+        <input type="number" name="duration" min="1" max="60" value="10">
+
+        <label>Language:</label>
+        <select name="language">
+            <option>english</option>
+            <option>english-india</option>
+            <option>hindi</option>
+            <option>french</option>
+        </select>
+
+        <button type="submit">Create Video and Caption Text</button>
+    </form>    
+    <br>
+
     <form id="uploadToYoutube">
         <h2>Run Youtube Upload</h2>
         <div> To be run after video created in Processed_video folder and record is added in video_records.xlsx
@@ -477,6 +523,14 @@
               <br><br>Place the images in edit_vid_input folder. Output files will be created in edit_vid_output. 
         </div>
 
+        <label>Input image size:</label>
+        <select name="size">
+            <option value="landscape">landscape</option>
+            <option value="portrait">portrait</option>
+        </select>
+
+        <label>Duration of video per image (Seconds):</label>
+        <input type="number" name="duration" min="1" max="60" value="10">
         <button type="submit">Process Images</button>
     </form> 
 
@@ -632,7 +686,20 @@
             const result = await response.text();
             // alert(result);
         };
-    </script>
+
+        document.getElementById('sunoNImageToVideoGenerator').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...sunoNImageToVideoGenerator");
+            const formData = new FormData(this);
+            const response = await fetch('/sunonimagetovideogenerator', {
+                method: 'POST',
+                body: formData
+            });
+            console.log("Completed sunoNImageToVideoGenerator");
+            const result = await response.text();
+            // alert(result);
+        };
+</script>
 </body>
 
 </html>
