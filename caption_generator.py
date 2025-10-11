@@ -17,6 +17,9 @@ from settings import sizes, background_music_options, font_settings
 import csv
 from datetime import datetime
 from openpyxl import Workbook, load_workbook
+import subprocess, shlex
+from typing import Optional  # or: from typing import Union
+
 #from transformers import pipeline
 
 MAX_WORD_DURATION = 2.0  # seconds
@@ -373,7 +376,113 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     #save_details_in_csv(captions_data, url, base_file_name)
 
 
-def prepare_captions_file_for_notebooklm_audio( audio_path="audio.wav",  language="english"):    
+
+def prepare_captions_file_for_notebooklm_audio(
+    audio_path: str = "audio.wav",
+    language: str = "english",
+    *,
+    is_song: bool = False,
+    isolate_vocals: Optional[bool] = None,
+    normalize_vocals: Optional[bool] = None,
+    model_size_for_songs: Optional[str] = None,
+):
+
+    # * in the parameter list is Python’s keyword-only separator.
+    # everything after * must be passed by keyword, not positionally. 
+    # This allows passing optional parameters easier.
+
+    print("Received prepare_captions_file_for_notebooklm_audio Arguments:", locals())
+
+    # --- Derive defaults from is_song, unless explicitly overridden ---
+    if isolate_vocals is None:
+        isolate_vocals = is_song
+    if normalize_vocals is None:
+        normalize_vocals = is_song
+    if model_size_for_songs is None:
+        model_size_for_songs = "medium" if is_song else "base"
+
+    vocal_path = audio_path
+
+    # --- Optional: isolate vocals (Demucs), only if requested/derived ---
+    if isolate_vocals:
+        try:
+            subprocess.run(shlex.split(f'demucs --two-stems=vocals "{audio_path}"'), check=True)
+            base = os.path.splitext(os.path.basename(audio_path))[0]
+            vocal_path = os.path.join("separated", "htdemucs", base, "vocals.wav")
+            if not os.path.exists(vocal_path):
+                print("[WARN] Demucs finished but vocals not found; using original audio.")
+                vocal_path = audio_path
+        except Exception as e:
+            print(f"[WARN] Vocal isolation failed: {e}; using original audio.")
+            vocal_path = audio_path
+
+    # --- Optional: normalize vocals with loudnorm ---
+    if normalize_vocals and os.path.exists(vocal_path):
+        try:
+            norm_path = os.path.splitext(vocal_path)[0] + "_loud.wav"
+            subprocess.run(
+                shlex.split(f'ffmpeg -y -i "{vocal_path}" -af loudnorm "{norm_path}"'),
+                check=True
+            )
+            vocal_path = norm_path
+        except Exception as e:
+            print(f"[WARN] Normalization failed: {e}; using unnormalized audio.")
+
+    # --- Load Whisper model (larger for songs) ---
+    model_name = model_size_for_songs  # "base" | "medium" | "large"
+    model = whisper.load_model(model_name)
+
+    # --- Transcribe (keep condition_on_previous_text=False) ---
+    if language.lower().startswith("hi"):
+        captions_data = model.transcribe(
+            vocal_path, word_timestamps=True, language="hi",
+            verbose=True, fp16=False,
+            initial_prompt="यह एक कहानी है",
+            condition_on_previous_text=False,
+            temperature=(0.0, 0.2, 0.4)
+        )
+    else:
+        captions_data = model.transcribe(
+            vocal_path, word_timestamps=True, language="en",
+            condition_on_previous_text=False,
+            temperature=0.0
+        )
+
+    # ... your word_timestamps building & JSON write stays the same ...
+    #return captions_data.get("text", "").strip()
+    word_timestamps = []
+    position_index = 0  # Track word positions
+    start = time.time()  
+    for segment in captions_data["segments"]:
+        for word_data in segment.get("words", []):
+            word_timestamps.append({
+                "word": word_data["word"].lower(),  # Normalize case
+                "start": word_data["start"],
+                "end": word_data["end"],
+                "position": position_index,  # Assign position index
+                "matched": False  # Initialize as not matched
+            })
+            position_index += 1
+
+    for word in word_timestamps:
+        start = word["start"]
+        end = word["end"]
+        if end - start > MAX_WORD_DURATION:
+            word["end"] = start + MAX_WORD_DURATION
+    print(f"[{time.strftime('%H:%M:%S')}] Logic of building word_timestamps completed in {time.time() - start:.2f} seconds")
+    start = time.time()  
+
+    with open('temp/word_timestamps.json', 'w', encoding='utf-8') as f:
+        json.dump(word_timestamps, f,indent=4, ensure_ascii=False)
+
+    # Only capture the simple text, not full captions_data
+    #captions_text = captions_data.get("text", "").strip()
+
+    #save_details_in_excel(captions_text, url, base_file_name, description, tags, playlist, channel,title,schedule_date)
+
+
+#DND - Working but not in use
+def prepare_captions_file_for_notebooklm_audio_DND( audio_path="audio.wav",  language="english"):    
 
     
     #model = whisper.load_model("base")
@@ -755,5 +864,6 @@ if __name__ == "__main__":
     # DND - Working
     prepare_captions_file_for_notebooklm_audio(
         audio_path="audio.wav",
-        language="english"
+        language="english",
+        is_song=False
     )

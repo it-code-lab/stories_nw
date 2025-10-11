@@ -244,7 +244,8 @@
     </form>
     <br>
     <form id="runCaptionGenerator">
-        <h2>Prestep for Audio->WordTimeStamps-Video</h2>
+        <h2>Captions Generator</h2>
+        <h3>Prestep for Audio->WordTimeStamps-Video</h3>
         <div>Run caption_generator.py: Prestep for Audio->WordTimeStamps-Video above
             <ol>
                 <li>Place audio.wav (from notebooklm) and then press below button.</li>
@@ -255,6 +256,11 @@
             </ol>
 
         </div>
+        <label>Audio has music (Vocals would be seperated before creating captions):</label>
+        <select name="music">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>        
         <label>Language:</label>
         <select name="language">
             <option>english</option>
@@ -285,6 +291,12 @@
             </ol>
 
         </div>
+
+        <label>Audio has music (Vocals would be seperated before creating captions):</label>
+        <select name="music">
+            <option value="yes">yes</option>
+            <option value="no">no</option>
+        </select>  
 
         <label>Slow down video clips by factor:</label>
         <input type="number" name="slowfactor" min="1" max="10" value="4">
@@ -320,6 +332,12 @@
             </ol>
 
         </div>
+
+        <label>Audio has music (Vocals would be seperated before creating captions):</label>
+        <select name="music">
+            <option value="yes">yes</option>
+            <option value="no">no</option>
+        </select>  
 
         <label>Input image size:</label>
         <select name="size">

@@ -1021,6 +1021,15 @@ function setCaptionView() {
 
 }
 
+function setCaptionUpdateView() {
+    wordEditor.style.display = "block";
+    let wordEditorWrapper = document.getElementById("word-editor-wrapper");
+    wordEditorWrapper.style.whiteSpace = "normal";
+
+    let wordEditorContainer = document.getElementById("word-editor-container");
+    wordEditorContainer.style.overflow = "auto";
+}
+
 document.getElementById("playbackSpeed").addEventListener("change", (e) => {
     video.playbackRate = parseFloat(e.target.value);
 });

@@ -21,6 +21,7 @@ def get_full_text():
             data = json.load(f)
         return jsonify(data)
     except Exception as e:
+        traceback.print_exc() 
         return jsonify({"error": str(e)}), 500
 
 @app.route('/get_word_timestamps', methods=['GET'])
@@ -30,6 +31,7 @@ def get_word_timestamps():
             data = json.load(f)
         return jsonify(data)
     except Exception as e:
+        traceback.print_exc() 
         return jsonify({"error": str(e)}), 500
 
 @app.route('/save_word_timestamps', methods=['POST'])
@@ -40,6 +42,7 @@ def save_word_timestamps():
             json.dump(data, f, indent=4, ensure_ascii=False)
         return jsonify({"message": "✅ Word timestamps updated successfully!"})
     except Exception as e:
+        traceback.print_exc() 
         return jsonify({"error": str(e)}), 500
 
 @app.route('/get_structured_output', methods=['GET'])
@@ -49,6 +52,7 @@ def get_structured_output():
             data = json.load(f)
         return jsonify(data)
     except Exception as e:
+        traceback.print_exc() 
         return jsonify({"error": str(e)}), 500
 
 # ------------------------ HTML UI ROUTES ------------------------ #
@@ -109,21 +113,25 @@ def process():
         # return "✅ Processing started!"
         return "✅ Processing completed successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
 
 @app.route('/caption', methods=['POST'])
 def caption():
     try:
         print("Processing request...caption")
+        music = request.form.get('music', 'no')
         language = request.form.get('language', 'english')
         prepare_captions_file_for_notebooklm_audio(
             audio_path="audio.wav",
-            language=language
+            language=language,
+            is_song=music == 'yes'
         )
 
         # return "✅ Processing started!"
         return "✅ Processing completed successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
     
 @app.route('/upload', methods=['POST'])
@@ -135,6 +143,7 @@ def upload():
         # return "✅ Processing started!"
         return "✅ Processing completed successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
     
 @app.route('/runobsrecorder', methods=['POST'])
@@ -165,6 +174,7 @@ def run_obs_recorder():
         # return "✅ Processing started!"
         return "✅ OBS Recorder started successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
     
 @app.route('/editvideos', methods=['POST'])
@@ -215,6 +225,7 @@ def run_video_editor():
         )
         return "✅ Videos Processed successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500    
 
 @app.route('/sunotovideogenerator', methods=['POST'])
@@ -298,13 +309,16 @@ def run_sunotovideogenerator():
 
 
         print("*** Processing request sunotovideogenerator...creating captions file ")
+        music = request.form.get('music', 'no')
         language = request.form.get('language', 'english')
         prepare_captions_file_for_notebooklm_audio(
             audio_path="audio.wav",
-            language=language
+            language=language,
+            is_song=music == 'yes'
         )
         return "✅ Videos Processed successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500    
 
 
@@ -378,9 +392,11 @@ def run_sunonimagetovideogenerator():
 
         print("*** Processing request sunotovideogenerator...creating captions file ")
         language = request.form.get('language', 'english')
+        music = request.form.get('music', 'no')
         prepare_captions_file_for_notebooklm_audio(
             audio_path="audio.wav",
-            language=language
+            language=language,
+            is_song=music == 'yes'
         )
         return "✅ Videos Processed successfully!", 200
     except Exception as e:
@@ -406,6 +422,7 @@ def add_overlays():
         )
         return "✅ Overlays added successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500  
 
 @app.route('/multiplyvideo', methods=['POST'])
@@ -424,6 +441,7 @@ def multiply_video():
         )
         return "✅ Video multiplied successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500  
 
 @app.route('/makekbvideofromimages', methods=['POST'])
@@ -468,6 +486,7 @@ def assemble_clips_to_make_video_song():
         )
         return "✅ Video song assembled successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
             
 if __name__ == '__main__':
