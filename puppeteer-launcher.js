@@ -23,7 +23,7 @@ function log(msg) {
 const [,, outputFile, recordingDuration, videoOrientationVal, wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, disableSubscribe, minLineGapSec] = process.argv;
 
 if (!recordingDuration || !videoOrientationVal || !outputFile) {
-  log("❌ Usage: node puppeteer-launcher.js <duration> <orientation> <words> <style> <music> <musicVol> <fxVol> <outputFile>");
+  log("❌ Argument missing: node puppeteer-launcher.js <duration> <orientation> <words> <style> <music> <musicVol> <fxVol> <outputFile>");
   process.exit(1);
 }
 
@@ -53,7 +53,8 @@ const height = isLandscape ? 720 : 1280; //Works on MSI laptop
   await page.evaluate((params) => {
     const { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, videoOrientationVal, disableSubscribe,minLineGapSec } = params;
 
-
+    console.log("Configuring video with:", params);
+    
     if (document.getElementById("disableSubscribe")) {
       document.getElementById("disableSubscribe").value = disableSubscribe;
       console.log("Disable Subscribe:", disableSubscribe);      
@@ -90,7 +91,7 @@ const height = isLandscape ? 720 : 1280; //Works on MSI laptop
         video.play();
       }, 1000); // delay 1 second to let OBS settle
       
-  }, { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, videoOrientationVal, disableSubscribe });
+  }, { wordsPerCaption, captionStyle, backgroundMusic, backgroundMusicVolume, soundEffectVolume, videoOrientationVal, disableSubscribe, minLineGapSec });
 
   log("🎬 Video setup done. Launching OBS Recorder...");
 

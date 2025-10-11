@@ -152,8 +152,8 @@ def run_obs_recorder():
         print("Processing request...run OBS recorder")
         orientation = request.form.get('orientation', 'landscape')
         duration = request.form.get('duration', '10')  # Default to 10 seconds if not provided
-        selectedStyle = request.form.get('captionStyle', 'style1')
-        captionLength = request.form.get('captionLength', '5')
+        selectedStyle = request.form.get('captStyle', 'style1')
+        captionLength = request.form.get('captLength', '5')
         bgMusicSelected = request.form.get('bgMusicSelect', 'None')
         minLineGapSec = request.form.get('minLineGapSec', '0.40')
         disableSubscribe = request.form.get('disableSubscribe', 'yes')

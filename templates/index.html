@@ -190,7 +190,7 @@
         </select>
 
         <label>Max Words per Caption:</label>
-        <input type="number" name="max_words" min="1" max="10" value="4">
+        <input type="number" name="max_words" min="1" max="20" value="4">
 
         <label>Select Caption Style:</label>
         <select name="style">
@@ -385,8 +385,8 @@
             <option value="portrait">portrait</option>
         </select>
 
-        <label for="captionStyle">Caption Style</label>
-        <select id="captionStyle">
+        <label for="captStyle">Caption Style</label>
+        <select id="captStyle" name="captStyle">
             <option value="style1">Style 1</option>
             <option value="style2">Style 2</option>
             <option value="style3">Style 3</option>
@@ -401,12 +401,14 @@
             <option value="none">No Caption</option>
             <option value="block-style">Block Caption</option>
         </select>        
+
+
+        <label for="captLength">Words per Caption</label>
+        <input type="number" id="captLength" name="captLength" value="5" min="1" max="20">
+
         <label>Duration (Seconds):</label>
         <input type="text" name="duration" >
 
-        <label for="captionLength">Words per Caption</label>
-        <input type="number" id="captionLength" value="5" min="1" max="10">
-        
         <label for="minLineGapSec">Min gap between lines (sec)</label>
         <input type="number" id="minLineGapSec" value="0.40" step="0.05" min="0" />
 
@@ -434,7 +436,7 @@
         </select>				
 
         <label>Output file(e.g.):"edit_vid_output/output.mp4", "test.mp4"</label>
-        <input type="text" name="outputfile" >
+        <input type="text" name="outputfile" value="edit_vid_output/output.mp4" >
 
         <button type="submit">Play video and run OBS Recorder</button>
     </form>
@@ -717,6 +719,27 @@
             const result = await response.text();
             // alert(result);
         };
+
+        document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('runOBSRecorder');
+        if (!form) return; // safety check
+
+        const orientationSelect = form.querySelector('select[name="orientation"]');
+        const captionStyleSelect = form.querySelector('#captStyle');
+        const captionLengthInput = form.querySelector('#captLength');
+
+        if (orientationSelect && captionStyleSelect && captionLengthInput) {
+            orientationSelect.addEventListener('change', function() {
+            if (orientationSelect.value === 'portrait') {
+                captionStyleSelect.value = 'style4';
+                captionLengthInput.value = 3;
+            } else  if (orientationSelect.value === 'landscape') {
+                captionStyleSelect.value = 'style1';
+                captionLengthInput.value = 6;
+            }
+            });
+        }
+        });        
 </script>
 </body>
 
