@@ -151,6 +151,8 @@ def assemble_videos(
     - If using MoviePy: trims the last clip exactly to fit.
     - If using FFmpeg concat: concatenates whole clips, then muxes audio with -shortest.
     """
+    
+    print("Received add_captions Arguments:", locals())
     clear_folder("edit_vid_output")
     
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

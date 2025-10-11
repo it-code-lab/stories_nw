@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 import json
 from flask_cors import CORS
 import os
-
+import traceback  # to print detailed error info
 from caption_generator import prepare_captions_file_for_notebooklm_audio
 from scraper import scrape_and_process  # Ensure this exists
 from settings import background_music_options, font_settings, tts_engine, voices, sizes
@@ -325,7 +325,7 @@ def run_sunonimagetovideogenerator():
         export_kb_videos(
             input_folder="edit_vid_input",   # folder with images
             out_folder="edit_vid_output",    # where to save KB clips
-            per_image=duration,            # seconds per image
+            per_image=int(duration),            # seconds per image
             output_size=video_size,
             zoom_start=1.0, zoom_end=1.05
         )
@@ -384,6 +384,7 @@ def run_sunonimagetovideogenerator():
         )
         return "✅ Videos Processed successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500    
 
 # ------------------------ MAIN ------------------------ #
@@ -443,12 +444,13 @@ def make_kb_video():
         export_kb_videos(
             input_folder="edit_vid_input",   # folder with images
             out_folder="edit_vid_output",    # where to save KB clips
-            per_image=duration,            # seconds per image
+            per_image=int(duration),            # seconds per image
             output_size=video_size,
             zoom_start=1.0, zoom_end=1.05
         )
         return "✅ Ken Burns videos created successfully!", 200
     except Exception as e:
+        traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
 
 @app.route('/assembleclipstomakevideosong', methods=['POST'])
