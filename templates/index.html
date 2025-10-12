@@ -307,8 +307,11 @@
             <option value="no">no</option>
         </select>
 
-        <label>Slow down video clips by factor:</label>
-        <input type="number" name="slowfactor" min="1" max="10" value="4">
+        <!-- <label>Slow down video clips by factor:</label>
+        <input type="number" name="slowfactor" min="1" max="10" value="4"> -->
+
+        <label>Change speed by factor (e.g. 2.0/3.0 will make video 2/3 times longer, 0.5 for 2 x faster):</label>
+        <input type="number" name="slowfactor" step="any" placeholder="4.0">
 
         <label>Input clip size:</label>
         <select name="size">
@@ -525,8 +528,9 @@
         <label>Remove from bottom(leave blank/50/60):</label>
         <input type="number" name="bottomcut">
 
-        <label>Slow down video by factor (leave blank/2,3):</label>
-        <input type="number" name="slowfactor">
+        <label>Change speed by factor (e.g. 2.0/3.0 will make video 2/3 times longer, 0.5 for 2 x faster):</label>
+        <input type="number" name="slowfactor" step="any" placeholder="2.0">
+
 
         <!-- <label>Watermark:</label>
         <select name="watermark">
