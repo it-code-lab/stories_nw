@@ -12,6 +12,7 @@ def add_captions_to_video(input_path, captions_path, output_path):
     try:
         command = [
             "ffmpeg",
+            "-y",  
             "-i", input_path,
             "-vf", f"ass={captions_path}",
             "-c:a", "copy",
