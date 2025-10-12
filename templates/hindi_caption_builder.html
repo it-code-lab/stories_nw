@@ -272,6 +272,19 @@
             <div class="controls">
               <button id="build" class="primary">Create rows</button>
               <button id="clearAll" class="ghost">Clear rows</button>
+              <label>
+                Animation<br>
+                <select id="animStyle">
+                  <option value="cinematic" selected>Cinematic (fade + slide-up + zoom)</option>
+                  <option value="pro_pop">Professional Pop-Up (recommended)</option>
+                  <option value="drift_up">Smooth Drift-Up</option>
+                  <option value="typewriter">Typewriter Reveal</option>
+                  <option value="fade">Soft Fade</option>
+                  <option value="wordpop">Word Pop</option>
+                  <option value="softzoom">Soft Zoom</option>
+                  <option value="glowpulse">Glow Pulse</option>
+                </select>
+              </label>
               <button id="exportBtn" class="primary">Export .ass file(Landscape + Portrait)</button>
               <button id="export" class="primary">Export block → clipboard</button>
             </div>
@@ -580,6 +593,109 @@
     }
 
     function buildAssFor(orientation, parsedRows) {
+      const isPortrait = orientation === 'portrait';
+
+      // Render space & base style
+      const PlayResX = isPortrait ? 1080 : 1920;
+      const PlayResY = isPortrait ? 1920 : 1080;
+      const WrapStyle = 0; // smart word wrap
+
+      const font = 'Noto Sans Devanagari';
+      const fontsize = isPortrait ? 58 : 72;
+      const scaleX = isPortrait ? 95 : 100;
+      const outlinePx = 3;
+      const shadowPx = 4;
+
+      const pri = '&H00FFFFFF';
+      const sec = '&H000000FF';
+      const out = '&HAA000000';
+      const back = '&H64000000';
+
+      // Bottom-center alignment + margins tuned per orientation
+      const alignVal = 2; // bottom-center
+      const mL = isPortrait ? 60 : 80;
+      const mR = isPortrait ? 60 : 80;
+      const mV = isPortrait ? 110 : 90;
+
+      // Animation style from UI
+      const styleSel = (document.getElementById('animStyle')?.value || 'cinematic');
+
+      // Coordinates for animations
+      const xCenter = Math.round(PlayResX / 2);
+      const yRest = Math.round(PlayResY - mV);            // final resting Y
+      const yStart = yRest + (isPortrait ? 100 : 120);     // start a bit lower
+      const driftDy = isPortrait ? 10 : 10;                 // small lift for drift-up
+      const zoomDur = 3000;                                 // ms
+
+      // Build animation tag PER ROW (needed for typewriter duration)
+      function makeAnimTag(rowText) {
+        switch (styleSel) {
+          case 'cinematic':
+            // Fade + Slide-Up + Gentle Zoom (default)
+            return `{\\an2\\move(${xCenter},${yStart},${xCenter},${yRest})\\t(0,${zoomDur},\\fscx105\\fscy105)\\fad(200,150)}`;
+
+          case 'pro_pop':
+            // Professional Pop-Up (corrected: start scaled at 85% then grow to 100%)
+            return `{\\an2\\fscx85\\fscy85\\t(0,250,\\fscx100\\fscy100)\\fad(250,150)}`;
+
+          case 'drift_up': {
+            // Smooth Drift-Up: start 10px lower, rise to final in 300ms
+            const x = xCenter;
+            const y1 = yRest + driftDy;
+            const y2 = yRest;
+            return `{\\an2\\move(${x},${y1},${x},${y2},0,300)\\fad(250,150)}`;
+          }
+
+          case 'typewriter': {
+            // Typewriter Reveal using \kf — units are centiseconds (1/100 s).
+            // We'll scale duration to text length: ~18 ms per character, clamped 400–1200 ms.
+            const ms = Math.max(400, Math.min(1200, (rowText?.length || 0) * 18));
+            const cs = Math.round(ms / 10); // convert ms to centiseconds for \kf
+            // \kf progressively fills over the line; add a tiny fade to polish.
+            return `{\\an2\\kf${cs}\\fad(100,120)}`;
+          }
+
+          case 'fade':
+            return `{\\an2\\fad(200,150)}`;
+
+          case 'softzoom':
+            return `{\\an2\\t(0,${zoomDur},\\fscx105\\fscy105)\\fad(200,150)}`;
+
+          case 'wordpop':
+            return `{\\an2\\t(0,200,\\fscx120\\fscy120)\\t(200,400,\\fscx100\\fscy100)\\fad(200,100)}`;
+
+          case 'glowpulse':
+            return `{\\an2\\bord${outlinePx}\\t(0,800,\\bord${outlinePx + 2})\\t(800,1600,\\bord${outlinePx})\\fad(200,150)}`;
+
+          default:
+            return `{\\an2\\fad(200,150)}`;
+        }
+      }
+
+      const header = `[Script Info]
+Title: Hindi Captions (${isPortrait ? 'Portrait' : 'Landscape'})
+ScriptType: v4.00+
+PlayResX: ${PlayResX}
+PlayResY: ${PlayResY}
+WrapStyle: ${WrapStyle}
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+; Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: HindiStyle,${font},${fontsize},${pri},${sec},${out},${back},1,0,0,0,${scaleX},100,0,0,1,${outlinePx},${shadowPx},${alignVal},${mL},${mR},${mV},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+`;
+
+      const events = parsedRows.map(r =>
+        `Dialogue: 0,${secToAss(r.start)},${secToAss(r.end)},HindiStyle,,0,0,0,,${makeAnimTag(r.text)}${r.text}`
+      ).join('\n');
+
+      return header + events + '\n';
+    }
+    //DND - Working without animation
+    function buildAssFor_DND(orientation, parsedRows) {
       const isPortrait = orientation === 'portrait';
 
       // Fixed, modern presets (auto-wrap, bottom-center)

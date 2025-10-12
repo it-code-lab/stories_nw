@@ -34,6 +34,121 @@ def process_video(
     watermark_position="bottom-right",
     watermark_scale=0.2
 ):
+    # Probe size
+    probe_cmd = [
+        'ffprobe', '-v', 'error',
+        '-select_streams', 'v:0',
+        '-show_entries', 'stream=width,height',
+        '-of', 'csv=s=x:p=0', input_path
+    ]
+    result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
+    width, height = map(int, result.stdout.strip().split('x'))
+
+    # Orientation
+    orientation = ("portrait" if height > width else "landscape") if target_orientation == "auto" else target_orientation
+
+    filter_parts = []
+
+    if orientation == "portrait":
+        cropped_height = height - remove_top - remove_bottom
+        cropped_height = max(1, cropped_height)
+        pad_top = (height - cropped_height) // 2
+        filter_parts.append(f"crop={width}:{cropped_height}:0:{remove_top}")
+        filter_parts.append(f"pad={width}:{height}:0:{pad_top}")
+    elif orientation == "landscape":
+        if remove_top > 0 or remove_bottom > 0:
+            cropped_height = height - remove_top - remove_bottom
+            cropped_height = max(1, cropped_height)
+            filter_parts.append(f"crop={width}:{cropped_height}:0:{remove_top}")
+
+    if slow_down:
+        # 2.0 makes it 2x longer (slower). If you want 0.5 to mean 2x faster, invert before using.
+        filter_parts.append(f"setpts={slow_down_factor}*PTS")
+
+    base_filter = ",".join(filter_parts)
+
+    # If nothing to do on the video stream, use a no-op to keep filtergraph valid in watermark path.
+    if not base_filter:
+        base_filter = "null"
+
+    # Watermark overlay position
+    pos = {
+        "top-left": "5:5",
+        "top-right": "W-w-5:5",
+        "bottom-left": "5:H-h-5",
+        "bottom-right": "W-w-5:H-h-5"
+    }.get(watermark_position, "W-w-5:H-h-5")
+
+    # Build command
+    ffmpeg_cmd = ['ffmpeg', '-y', '-i', input_path]
+
+    have_bg = bool(add_music and bg_music_path and os.path.exists(bg_music_path))
+    have_wm = bool(add_watermark and watermark_path and os.path.exists(watermark_path))
+
+    if have_wm:
+        ffmpeg_cmd += ['-i', watermark_path]
+    if have_bg:
+        ffmpeg_cmd += ['-i', bg_music_path]
+
+    # Filter graph
+    if have_wm:
+        # Scale watermark by width to keep AR; cap height ~80px equivalent using min()
+        wm_scale = max(0.01, float(watermark_scale))
+        # Scale expression avoids shell quoting issues since we pass argv list.
+        wm_scale_expr = f"scale=iw*{wm_scale}:-1"
+        filter_str = (
+            f"[0:v]{base_filter}[v1];"
+            f"[1:v]{wm_scale_expr}[wm];"
+            f"[v1][wm]overlay={pos}[outv]"
+        )
+        ffmpeg_cmd += ['-filter_complex', filter_str, '-map', '[outv]']
+    else:
+        # Only attach -filter:v if not the no-op; otherwise just map the input video directly
+        if base_filter != "null":
+            ffmpeg_cmd += ['-filter:v', base_filter]
+        ffmpeg_cmd += ['-map', '0:v:0']
+
+    # Audio mapping
+    if have_bg:
+        # Map background track as audio
+        # input indices: 0=video, 1=wm (if present), 2=bg (if present & wm), else 1
+        bg_index = 2 if have_wm else 1
+        ffmpeg_cmd += ['-map', f'{bg_index}:a:0', '-c:a', 'aac', '-b:a', '192k']
+    else:
+        # No audio
+        ffmpeg_cmd += ['-an']
+
+    # Output opts
+    ffmpeg_cmd += [
+        '-shortest',
+        '-c:v', 'libx264',
+        '-preset', 'fast',
+        '-movflags', '+faststart',
+        output_path
+    ]
+
+    # If you need to debug:
+    # ffmpeg_cmd += ['-loglevel', 'debug']
+
+    subprocess.run(ffmpeg_cmd, check=True)
+    print(f"✅ {orientation.upper()} Processed: {os.path.basename(output_path)}")
+
+#DND - working except when slow_down is False
+def process_video_DND(
+    input_path,
+    output_path,
+    remove_top=50,
+    remove_bottom=0,
+    add_music=True,
+    slow_down=True,
+    slow_down_factor=2.0,
+    bg_music_path=None,
+    target_orientation="auto",
+    add_watermark=False,
+    watermark_path="logo.png",
+    watermark_position="bottom-right",
+    watermark_scale=0.2
+):
     # Get video size
     probe_cmd = [
         'ffprobe', '-v', 'error',

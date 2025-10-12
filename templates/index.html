@@ -110,7 +110,8 @@
 
         <label>Website URLs (semicolon-separated):</label>
         <textarea name="urls" rows="4"></textarea>
-        If want to use prerecorded audios, place them in ready_audio folder with file name matching the title of the story/Short
+        If want to use prerecorded audios, place them in ready_audio folder with file name matching the title of the
+        story/Short
         <label>Audio->WordTimeStamps-Video
             <span class="tooltip-container">
                 &#9432;
@@ -128,13 +129,14 @@
         </select>
 
         <label>Pick video background and story from Excel:
-        <span class="tooltip-container">
-            &#9432;
-            <span class="tooltip-text">
-                For using this option, provide captions, video background,and YouTube metadata in video_story_input.xlsx.
-            </span> 
-        </span>     
-        </label>  
+            <span class="tooltip-container">
+                &#9432;
+                <span class="tooltip-text">
+                    For using this option, provide captions, video background,and YouTube metadata in
+                    video_story_input.xlsx.
+                </span>
+            </span>
+        </label>
         <select name="excel">
             <option value="no">no</option>
             <option value="yes">yes</option>
@@ -260,7 +262,7 @@
         <select name="music">
             <option value="no">no</option>
             <option value="yes">yes</option>
-        </select>        
+        </select>
         <label>Language:</label>
         <select name="language">
             <option>english</option>
@@ -281,20 +283,20 @@
                 <li>Place video clip (5/8 secs) at edit_vid_input. (Change slow down factor below if needed)</li>
                 <li>Click on below button</li>
                 <li>This would make longer clip by slowing speed and then create video by repeating to audio length
-                    It will then place the video as composed_video.mp4 inside the root folder. 
-                    And will place the input audio file as audio.wav inside the root folder.                    
+                    It will then place the video as composed_video.mp4 inside the root folder.
+                    And will place the input audio file as audio.wav inside the root folder.
                 </li>
                 <li>Then for <b>English</b> language audio</li>
                 <ul>
-                <li>it will call script to make WordTimeStamps file.</li>
-                <li>After processing is done, review the captions at <a href="prepare_captions" target="_blank">Open Caption Editor</a>
-        (Opens in new tab) and make necessary change. </li>
-        <li>Then Run OBS Recorder to create final video for upload. Parameters: Caption-style1, words per caption-10,outputfile - edit_vid_output/output.mp4 </li>
-        </ul>
-        <li>Then for <b>Hindi</b> language audio</li>
-        <ul>
-            <li>Create Hindi captions using <a href="hindi_caption_builder" target="_blank">hindi_caption_builder</a> It will create the captions file for both landscape and portrait mode</li>
-        </ul>
+                    <li>it will call script to make WordTimeStamps file.</li>
+                    <li>After processing is done, review the captions at <a href="prepare_captions" target="_blank">Open
+                            Caption Editor</a>
+                        (Opens in new tab) and make necessary change. </li>
+                    <li>Then Run OBS Recorder to create final video for upload. Parameters: Caption-style1, words per
+                        caption-10,outputfile - edit_vid_output/output.mp4 </li>
+                </ul>
+                <li>For <b>Hindi</b> language audio, if provided size is Landscape it will also create portait video so that captions can be applied together</li>
+
             </ol>
 
         </div>
@@ -303,10 +305,16 @@
         <select name="music">
             <option value="yes">yes</option>
             <option value="no">no</option>
-        </select>  
+        </select>
 
         <label>Slow down video clips by factor:</label>
         <input type="number" name="slowfactor" min="1" max="10" value="4">
+
+        <label>Input clip size:</label>
+        <select name="size">
+            <option value="landscape">landscape</option>
+            <option value="portrait">portrait</option>
+        </select>
 
         <label>Language:</label>
         <select name="language">
@@ -317,7 +325,17 @@
         </select>
 
         <button type="submit">Create Video and Caption Text</button>
-    </form>    
+
+        For <b>Hindi</b> language audio
+        <ul>
+            <li>Create Hindi captions using <a href="hindi_caption_builder" target="_blank">hindi_caption_builder</a> It
+                will create the captions file for both
+                landscape and portrait mode in the edit_vid_output folder.</li>
+            <li><a href="apply_caption" target="_blank">Create Videos with Caption</a>. If input clip
+                size is "landscape", Create video button will additionally create Portrait
+                video with captions in the edit_vid_output folder.</li>
+        </ul>
+    </form>
     <br>
 
 
@@ -326,16 +344,24 @@
         <div>
             <ol>
                 <li>Place song audio.wav inside edit_vid_audio.</li>
-                <li>Place images in edit_vid_input. (If needed, change input image size and clip duration for each image )</li>
+                <li>Place images in edit_vid_input. (If needed, change input image size and clip duration for each image
+                    )</li>
                 <li>Click on below button</li>
                 <li>This would make video clips and then create video by repeating to audio length
-                    It will then place the video as composed_video.mp4 inside the root folder. 
+                    It will then place the video as composed_video.mp4 inside the root folder.
                     And will place the input audio file as audio.wav inside the root folder.
-                    Then it will call script to make WordTimeStamps file.</li>
                 </li>
-                <li>After processing is done, review the captions at <a href="prepare_captions" target="_blank">Open Caption Editor</a>
-        (Opens in new tab) and make necessary change. </li>
-        <li>Then Run OBS Recorder to create final video for upload. Parameters: Caption-style1, words per caption-10,outputfile - edit_vid_output/output.mp4 </li>
+                <li>Then for <b>English</b> language audio</li>
+                <ul>
+                    <li>it will call script to make WordTimeStamps file.</li>
+                    <li>After processing is done, review the captions at <a href="prepare_captions" target="_blank">Open
+                            Caption Editor</a>
+                        (Opens in new tab) and make necessary change. </li>
+                    <li>Then Run OBS Recorder to create final video for upload. Parameters: Caption-style1, words per
+                        caption-10,outputfile - edit_vid_output/output.mp4 </li>
+                </ul>
+                <li>For <b>Hindi</b> language audio, if provided size is Landscape it will also create portait video so that captions can be applied together</li>
+
             </ol>
 
         </div>
@@ -344,7 +370,7 @@
         <select name="music">
             <option value="yes">yes</option>
             <option value="no">no</option>
-        </select>  
+        </select>
 
         <label>Input image size:</label>
         <select name="size">
@@ -353,7 +379,7 @@
         </select>
 
         <label>Duration of video per image (Seconds):</label>
-        <input type="number" name="duration" min="1" max="60" value="10">
+        <input type="number" name="duration" min="1" max="60" value="20">
 
         <label>Language:</label>
         <select name="language">
@@ -364,7 +390,17 @@
         </select>
 
         <button type="submit">Create Video and Caption Text</button>
-    </form>    
+
+        For <b>Hindi</b> language audio
+        <ul>
+            <li>Create Hindi captions using <a href="hindi_caption_builder" target="_blank">hindi_caption_builder</a> It
+                will create the captions file for both
+                landscape and portrait mode in the edit_vid_output folder.</li>
+            <li><a href="apply_caption" target="_blank">Create Videos with Caption</a>. If input clip
+                size is "landscape", Create video button will additionally create Portrait
+                video with captions in the edit_vid_output folder.</li>
+        </ul>
+    </form>
     <br>
 
     <form id="uploadToYoutube">
@@ -381,8 +417,8 @@
     <br>
     <form id="runOBSRecorder">
         <h2>Run OBS Recorder</h2>
-        <div> To be run if recording as part of whole Process above failed. 
-            The output will be created as test.mp4. 
+        <div> To be run if recording as part of whole Process above failed.
+            The output will be created as test.mp4.
             Move that to under processed_video folder with right name before running the YouTube Upload.
         </div>
         <br>
@@ -407,14 +443,14 @@
             <option value="style11">Style 11</option>
             <option value="none">No Caption</option>
             <option value="block-style">Block Caption</option>
-        </select>        
+        </select>
 
 
         <label for="captLength">Words per Caption</label>
         <input type="number" id="captLength" name="captLength" value="5" min="1" max="20">
 
         <label>Duration (Seconds):</label>
-        <input type="text" name="duration" >
+        <input type="text" name="duration">
 
         <label for="minLineGapSec">Min gap between lines (sec)</label>
         <input type="number" id="minLineGapSec" value="0.40" step="0.05" min="0" />
@@ -440,10 +476,10 @@
         <select id="disableSubscribe">
             <option value="no">no</option>
             <option value="yes">yes</option>
-        </select>				
+        </select>
 
         <label>Output file(e.g.):"edit_vid_output/output.mp4", "test.mp4"</label>
-        <input type="text" name="outputfile" value="edit_vid_output/output.mp4" >
+        <input type="text" name="outputfile" value="edit_vid_output/output.mp4">
 
         <button type="submit">Play video and run OBS Recorder</button>
     </form>
@@ -465,8 +501,9 @@
     <br>
     <form id="runVideoEditor">
         <h2>Bulk Video Editor</h2>
-        <div> To be used to slow (pixverse) video speed to increase length. Cut portion of video to remove watermark. Add own watermark. Add background audio.
-              <br><br>Place the input mp4 files in edit_vid_input folder. Output files will be created in edit_vid_output.
+        <div> To be used to slow (pixverse) video speed to increase length. Cut portion of video to remove watermark.
+            Add own watermark. Add background audio.
+            <br><br>Place the input mp4 files in edit_vid_input folder. Output files will be created in edit_vid_output.
         </div>
         <br>
         <label>Orientation:</label>
@@ -483,13 +520,13 @@
         </select>
 
         <label>Remove from Top(leave blank/50/60):</label>
-        <input type="number" name="topcut" >
+        <input type="number" name="topcut">
 
         <label>Remove from bottom(leave blank/50/60):</label>
-        <input type="number" name="bottomcut" >
+        <input type="number" name="bottomcut">
 
         <label>Slow down video by factor (leave blank/2,3):</label>
-        <input type="number" name="slowfactor" >
+        <input type="number" name="slowfactor">
 
         <!-- <label>Watermark:</label>
         <select name="watermark">
@@ -503,16 +540,16 @@
             <option value="bottom-left">bottom-left</option>
             <option value="bottom-right">bottom-right</option>
             <option value="top-left">top-left</option>
-            <option value="top-right">top-right</option>            
+            <option value="top-right">top-right</option>
         </select>
 
         <button type="submit">Process Videos</button>
-    </form>    
+    </form>
     <br>
     <form id="addOverlay">
         <h2>Add Overlay</h2>
         <div> To be used to add flower petals/sparkle on the video.
-              <br><br>Place the input mp4 files in edit_vid_input folder. Output files will be created in edit_vid_output.
+            <br><br>Place the input mp4 files in edit_vid_input folder. Output files will be created in edit_vid_output.
         </div>
         <br>
         <label>Add Petals:</label>
@@ -526,28 +563,29 @@
             <option value="no">no</option>
             <option value="yes">yes</option>
         </select>
- 
+
         <button type="submit">Process Videos</button>
-    </form>    
+    </form>
 
     <br>
     <form id="multiplyVideo">
         <h2>Multiply Video/Audio</h2>
         <div> To be used to repeat the video/audio by a factor.
-              <br><br>Place the input mp4/mp3 files in edit_vid_input folder. Output files will be created in edit_vid_output. E.g. enter 10 if the video is to be made 10 times long
+            <br><br>Place the input mp4/mp3 files in edit_vid_input folder. Output files will be created in
+            edit_vid_output. E.g. enter 10 if the video is to be made 10 times long
         </div>
         <br>
         <label>Repeat Factor:</label>
         <input type="number" name="repeat_factor" min="1" value="1">
 
         <button type="submit">Process Videos</button>
-    </form> 
+    </form>
 
     <br>
     <form id="makeKBVideoFromImages">
         <h2>Make Ken Burn Videos from Images</h2>
         <div> To be used to make image video clips that will be used to make song videos later.
-              <br><br>Place the images in edit_vid_input folder. Output files will be created in edit_vid_output. 
+            <br><br>Place the images in edit_vid_input folder. Output files will be created in edit_vid_output.
         </div>
 
         <label>Input image size:</label>
@@ -557,19 +595,20 @@
         </select>
 
         <label>Duration of video per image (Seconds):</label>
-        <input type="number" name="duration" min="1" max="60" value="10">
+        <input type="number" name="duration" min="1" max="60" value="20">
         <button type="submit">Process Images</button>
-    </form> 
+    </form>
 
-        <br>
+    <br>
     <form id="asseleClipsToMakeVideoSong">
         <h2>Assemble small video clips to make video song</h2>
         <div> To be used to make make song videos using video clips.
-              <br><br>Place the video clips in edit_vid_input folder. Place the audio file in edit_vid_audio. Output song will be created in edit_vid_output. 
+            <br><br>Place the video clips in edit_vid_input folder. Place the audio file in edit_vid_audio. Output song
+            will be created in edit_vid_output.
         </div>
 
         <button type="submit">Create Video</button>
-    </form> 
+    </form>
 
     <script>
         const voices = {{ voice_map | tojson }};
@@ -637,7 +676,7 @@
             const result = await response.text();
             // alert(result);
         };
-        
+
         document.getElementById('runVideoEditor').onsubmit = async function (e) {
             e.preventDefault();
             console.log("Processing request...edit Videos");
@@ -674,7 +713,7 @@
             console.log("Completed multiply video");
             const result = await response.text();
             // alert(result);
-        };       
+        };
         document.getElementById('makeKBVideoFromImages').onsubmit = async function (e) {
             e.preventDefault();
             console.log("Processing request...make Ken Burn Videos from Images");
@@ -686,7 +725,7 @@
             console.log("Completed make Ken Burn Videos from Images");
             const result = await response.text();
             // alert(result);
-        }; 
+        };
 
         document.getElementById('asseleClipsToMakeVideoSong').onsubmit = async function (e) {
             e.preventDefault();
@@ -727,27 +766,27 @@
             // alert(result);
         };
 
-        document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('runOBSRecorder');
-        if (!form) return; // safety check
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('runOBSRecorder');
+            if (!form) return; // safety check
 
-        const orientationSelect = form.querySelector('select[name="orientation"]');
-        const captionStyleSelect = form.querySelector('#captStyle');
-        const captionLengthInput = form.querySelector('#captLength');
+            const orientationSelect = form.querySelector('select[name="orientation"]');
+            const captionStyleSelect = form.querySelector('#captStyle');
+            const captionLengthInput = form.querySelector('#captLength');
 
-        if (orientationSelect && captionStyleSelect && captionLengthInput) {
-            orientationSelect.addEventListener('change', function() {
-            if (orientationSelect.value === 'portrait') {
-                captionStyleSelect.value = 'style4';
-                captionLengthInput.value = 3;
-            } else  if (orientationSelect.value === 'landscape') {
-                captionStyleSelect.value = 'style1';
-                captionLengthInput.value = 6;
+            if (orientationSelect && captionStyleSelect && captionLengthInput) {
+                orientationSelect.addEventListener('change', function () {
+                    if (orientationSelect.value === 'portrait') {
+                        captionStyleSelect.value = 'style4';
+                        captionLengthInput.value = 3;
+                    } else if (orientationSelect.value === 'landscape') {
+                        captionStyleSelect.value = 'style1';
+                        captionLengthInput.value = 6;
+                    }
+                });
             }
-            });
-        }
         });        
-</script>
+    </script>
 </body>
 
 </html>

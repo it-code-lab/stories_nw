@@ -89,6 +89,52 @@ def prep_caption():
 def serve_video(filename):
     return send_from_directory(directory='.', path=filename)
 
+@app.route('/create_portrait_n_add_caption')
+def create_portrait_n_add_caption():
+    try:
+        print("Processing request...create_portrait_n_add_caption")
+        create_portrait()
+        add_caption()
+        return "✅ create_portrait_n_add_caption completed successfully!", 200
+    except Exception as e:
+        traceback.print_exc() 
+        return f"❌ Error: {str(e)}", 500
+
+@app.route('/apply_caption')
+def add_caption():
+    try:
+        print("Processing request...apply_caption")
+
+        from apply_captions import add_captions_to_video
+
+        # If edit_vid_output/out_landscape.mp4 and edit_vid_output/captions_landscape.ass exists
+        
+
+        if os.path.isfile("edit_vid_output/out_landscape.mp4") and os.path.isfile("edit_vid_output/captions_landscape.ass"):
+            add_captions_to_video("edit_vid_output/out_landscape.mp4", "edit_vid_output/captions_landscape.ass", "edit_vid_output/landscape_with_captions.mp4")
+        if os.path.isfile("edit_vid_output/out_portrait.mp4") and os.path.isfile("edit_vid_output/captions_portrait.ass"):
+            add_captions_to_video("edit_vid_output/out_portrait.mp4", "edit_vid_output/captions_portrait.ass", "edit_vid_output/portrait_with_captions.mp4")
+
+        return "✅ apply_caption completed successfully!", 200
+    except Exception as e:
+        traceback.print_exc() 
+        return f"❌ Error: {str(e)}", 500  
+
+
+@app.route('/convert_landscape_to_portrait')
+def create_portrait():
+    try:
+        print("Processing request...convert_landscape_to_portrait")
+
+        from convert_to_portrait import convert_landscape_to_portrait
+        if os.path.isfile("edit_vid_output/out_landscape.mp4"):
+            convert_landscape_to_portrait("edit_vid_output/out_landscape.mp4", "edit_vid_output/out_portrait.mp4")
+
+        return "✅ convert_landscape_to_portrait completed successfully!", 200
+    except Exception as e:
+        traceback.print_exc() 
+        return f"❌ Error: {str(e)}", 500  
+
 @app.route('/process', methods=['POST'])
 def process():
     try:
@@ -247,7 +293,8 @@ def run_sunotovideogenerator():
             slowfactor = 1
             slow_down = False
 
-        
+        size = request.form.get('size', 'landscape')
+
         add_watermark = False
         watermarkposition = 'bottom-left'
 
@@ -310,17 +357,26 @@ def run_sunotovideogenerator():
         #place copy of composed_video.mp4 from edit_vid_output to root folder as composed_video.mp4. Replace if exists
 
         shutil.copy("edit_vid_output/composed_video.mp4", "composed_video.mp4")
+
+        # Also place copy of composed_video.mp4 from edit_vid_output to edit_vid_output/out_{size}.mp4. Replace if exists
+        shutil.copy("edit_vid_output/composed_video.mp4", f"edit_vid_output/out_{size}.mp4")
+
         print("✅ Copied composed video to root folder as composed_video.mp4")
 
 
         print("*** Processing request sunotovideogenerator...creating captions file ")
         music = request.form.get('music', 'no')
         language = request.form.get('language', 'english')
-        prepare_captions_file_for_notebooklm_audio(
-            audio_path="audio.wav",
-            language=language,
-            is_song=music == 'yes'
-        )
+        if language != 'hindi':
+            prepare_captions_file_for_notebooklm_audio(
+                audio_path="audio.wav",
+                language=language,
+                is_song=music == 'yes'
+            )
+        else:
+            if size == 'landscape':
+                create_portrait()
+            # add_caption()
         return "✅ Videos Processed successfully!", 200
     except Exception as e:
         traceback.print_exc() 
@@ -394,15 +450,23 @@ def run_sunonimagetovideogenerator():
         shutil.copy("edit_vid_output/composed_video.mp4", "composed_video.mp4")
         print("✅ Copied composed video to root folder as composed_video.mp4")
 
+        # Also place copy of composed_video.mp4 from edit_vid_output to edit_vid_output/out_{size}.mp4. Replace if exists
+        shutil.copy("edit_vid_output/composed_video.mp4", f"edit_vid_output/out_{size}.mp4")
 
         print("*** Processing request sunotovideogenerator...creating captions file ")
         language = request.form.get('language', 'english')
         music = request.form.get('music', 'no')
-        prepare_captions_file_for_notebooklm_audio(
-            audio_path="audio.wav",
-            language=language,
-            is_song=music == 'yes'
-        )
+
+        if language != 'hindi':
+            prepare_captions_file_for_notebooklm_audio(
+                audio_path="audio.wav",
+                language=language,
+                is_song=music == 'yes'
+            )
+        else:
+            if size == 'landscape':
+                create_portrait()
+            # add_caption()
         return "✅ Videos Processed successfully!", 200
     except Exception as e:
         traceback.print_exc() 
@@ -515,12 +579,18 @@ def save_ass():
 
         # parent directory of this file's directory
         parent_dir    = os.path.dirname(os.path.abspath(__file__))
+
+        # Go to sub-folder with name edit_vid_output
+
+        # Path to the subfolder 'edit_vid_output'
+        output_dir = os.path.join(parent_dir, "edit_vid_output")
+
         #parent_dir = os.path.abspath(os.path.join(app_dir, os.pardir))
 
-        if not os.path.isdir(parent_dir) or not os.access(parent_dir, os.W_OK):
+        if not os.path.isdir(output_dir) or not os.access(output_dir, os.W_OK):
             return jsonify({"ok": False, "error": "Parent folder not writable"}), 500
 
-        target_path = os.path.join(parent_dir, filename)
+        target_path = os.path.join(output_dir, filename)
         with open(target_path, "w", encoding="utf-8") as f:
             f.write(content)
 
