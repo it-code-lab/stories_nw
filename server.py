@@ -8,6 +8,7 @@ from scraper import scrape_and_process  # Ensure this exists
 from settings import background_music_options, font_settings, tts_engine, voices, sizes
 from video_editor import batch_process
 from youtube_uploader import upload_videos
+import re
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
@@ -71,6 +72,10 @@ def index():
 @app.route('/thumbnail')
 def thumbnail():
     return render_template('thu_index.html')
+
+@app.route('/hindi_caption_builder')
+def hindicaptions():
+    return render_template('hindi_caption_builder.html')
 
 @app.route('/aivideoprompt')
 def aivideoprompt():
@@ -488,7 +493,42 @@ def assemble_clips_to_make_video_song():
     except Exception as e:
         traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
-            
+    
+@app.route('/save_ass', methods=['POST'])
+def save_ass():
+    """
+    Save a .ass subtitle file to the parent folder of this server.py.
+    Body: {"filename": "captions_landscape.ass", "content": "...ass text..."}
+    """
+    try:
+        data = request.get_json(force=True, silent=False)
+        if not data:
+            return jsonify({"ok": False, "error": "Empty payload"}), 400
+
+        filename = str(data.get("filename", "")).strip()
+        content  = str(data.get("content", ""))
+
+        # sanitize filename (letters, numbers, ., _, -) and require .ass
+        filename = re.sub(r'[^A-Za-z0-9._-]', '_', filename)
+        if not filename or not filename.endswith(".ass"):
+            return jsonify({"ok": False, "error": "Bad filename"}), 400
+
+        # parent directory of this file's directory
+        parent_dir    = os.path.dirname(os.path.abspath(__file__))
+        #parent_dir = os.path.abspath(os.path.join(app_dir, os.pardir))
+
+        if not os.path.isdir(parent_dir) or not os.access(parent_dir, os.W_OK):
+            return jsonify({"ok": False, "error": "Parent folder not writable"}), 500
+
+        target_path = os.path.join(parent_dir, filename)
+        with open(target_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        return jsonify({"ok": True, "path": target_path})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+                
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)
     app.run(debug=True, host='0.0.0.0', port=5000)  # Use host='

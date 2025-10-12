@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Caption Timing Builder → paste into Caption Maker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #334155;
+      --text: #e5e7eb
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, Segoe UI, Roboto, Inter, "Noto Sans Devanagari", sans-serif
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text)
+    }
+
+    header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #1f2937;
+      font-weight: 600
+    }
+
+    .wrap {
+      display: inline-grid;
+      grid-template-columns: 1fr 480px;
+      gap: 0;
+      height: calc(100vh - 52px)
+    }
+
+    .left {
+      padding: 14px;
+      width: 400px;
+    }
+
+    .right {
+      padding: 14px;
+      background: var(--card);
+      overflow: auto;
+      border-left: 1px solid #1f2937;
+      width: max-content;
+    }
+
+    .section {
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px
+    }
+
+    label {
+      font-size: 12px;
+      color: #cbd5e1
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      border-radius: 10px;
+      border: 1px solid #374151;
+      background: #0b1220;
+      color: #e5e7eb
+    }
+
+    input,
+    select {
+      padding: 8px
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px;
+      resize: vertical
+    }
+
+    button {
+      padding: 9px 12px;
+      cursor: pointer
+    }
+
+    button.primary {
+      background: #2563eb;
+      border: none
+    }
+
+    button.ghost {
+      background: #0b1220
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      width: 300px;
+    }
+
+    video {
+      width: 100%;
+      max-height: 55vh;
+      background: #000;
+      border-radius: 12px
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px
+    }
+
+    .table th,
+    .table td {
+      border-bottom: 1px solid #1f2937;
+      padding: 6px;
+      vertical-align: middle
+    }
+
+    .table td button {
+      padding: 6px 8px;
+      border-radius: 8px
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace
+    }
+
+    .muted {
+      color: #94a3b8
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #0b1220;
+      border: 1px solid #334155;
+      font-size: 11px
+    }
+
+    .warn {
+      color: #fbbf24
+    }
+
+    .err {
+      color: #f87171
+    }
+
+    .good {
+      color: #34d399
+    }
+
+    .num {
+      width: 90px
+    }
+
+    .tight {
+      padding: 6px 8px
+    }
+
+    .sticky {
+      position: sticky;
+      top: 0;
+      background: var(--card);
+      z-index: 10;
+      padding-bottom: 8px
+    }
+
+    .kbd {
+      font-family: ui-monospace, monospace;
+      background: #0b1220;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 1px 6px
+    }
+  </style>
+</head>
+
+<body>
+  <header>Caption Timing Builder — click Start/End while the video plays, then Export</header>
+  <div class="wrap">
+    <!-- VIDEO SIDE -->
+    <div class="left">
+      <div class="section">
+        <div class="controls">
+          <label>
+            <span class="muted" style="display:block;margin-bottom:4px">Load video</span>
+            <input type="file" id="videoFile" accept="video/*">
+          </label>
+          <button id="playPause" class="primary">Play / Pause (Space)</button>
+          <button id="back05" class="ghost">⏪ −0.5s</button>
+          <button id="back10" class="ghost">⏪ −1.0s</button>
+          <button id="fwd05" class="ghost">⏩ +0.5s</button>
+          <button id="fwd10" class="ghost">⏩ +1.0s</button>
+          <span class="pill mono" id="timeNow">00:00:00.000</span>
+          <span class="pill mono" id="duration">/ 00:00:00.000</span>
+
+          <!-- Speed control -->
+          <label>
+            <span class="muted" style="display:block;margin-bottom:4px">Speed (×)</span>
+            <select id="rate">
+              <option>0.25</option>
+              <option>0.5</option>
+              <option>0.75</option>
+              <option selected>1</option>
+              <option>1.25</option>
+              <option>1.5</option>
+              <option>2</option>
+            </select>
+          </label>
+          <span class="pill mono" id="rateNow">×1.00</span>
+
+        </div>
+        <video id="vid" controls></video>
+      </div>
+
+      <div class="section">
+        <div class="controls">
+          <label>Offset on Start (ms)<br><input type="number" class="num" id="offsetStart" value="0"></label>
+          <label>Offset on End (ms)<br><input type="number" class="num" id="offsetEnd" value="0"></label>
+          <label>Auto-advance on End?<br>
+            <select id="autoNext">
+              <option value="1" selected>Yes</option>
+              <option value="0">No</option>
+            </select>
+          </label>
+          <label>Snap End to Next Start?<br>
+            <select id="snapToNext">
+              <option value="0" selected>No</option>
+              <option value="1">Yes (no gap)</option>
+            </select>
+          </label>
+          <label>Frame rate (for rounding)<br>
+            <input type="number" class="num" id="fps" value="60">
+          </label>
+        </div>
+        <div class="muted" style="margin-top:6px">
+          Shortcuts: <span class="kbd">Space</span> play/pause, <span class="kbd">S</span> = Start, <span
+            class="kbd">E</span> = End,
+          <span class="kbd">N</span> = Next line, <span class="kbd">B</span> = Previous,
+          <span class="kbd">,</span>/<span class="kbd">.</span> = −/+ 0.5s.
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="right">
+      <div class="section sticky">
+        <div class="row">
+          <div>
+            <label>Caption lines (one per line). Use <span class="kbd">\N</span> for manual line breaks.</label>
+            <textarea id="linesInput"
+              placeholder="ॐ गं गणपतये नमः ॥&#10;वक्रतुंड महाकाय \N सूर्यकोटि समप्रभ"></textarea>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="controls">
+              <button id="build" class="primary">Create rows</button>
+              <button id="clearAll" class="ghost">Clear rows</button>
+              <button id="exportBtn" class="primary">Export .ass file(Landscape + Portrait)</button>
+              <button id="export" class="primary">Export block → clipboard</button>
+            </div>
+            <div style="margin-top:8px">
+              <label>Export preview</label>
+              <textarea id="out" class="mono" style="min-height:120px"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <table class="table mono" id="tbl">
+          <thead>
+            <tr>
+              <th style="width:36px">#</th>
+              <th>Text</th>
+              <th style="width:180px">Start</th>
+              <th style="width:180px">End</th>
+              <th style="width:280px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <!-- rows go here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ---------- helpers ---------- */
+    const $ = id => document.getElementById(id);
+    const hhmmToSec = s => { const m = s.trim().match(/^(\d{2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?$/); if (!m) return null; const [_, H, M, S, ms = '0'] = m; return (+H) * 3600 + (+M) * 60 + (+S) + (+ms) / 1000; };
+    const secToAss = t => { const cs = Math.round(t * 100); const H = Math.floor(cs / 360000); const M = Math.floor((cs % 360000) / 6000); const S = Math.floor((cs % 6000) / 100); const C = cs % 100; return `${H}:${String(M).padStart(2, '0')}:${String(S).padStart(2, '0')}.${String(C).padStart(2, '0')}`; };
+    const cssHexToASS = (hex, alpha = 0) => { const h = hex.replace('#', ''); const r = h.slice(0, 2), g = h.slice(2, 4), b = h.slice(4, 6); const AA = Number(alpha).toString(16).toUpperCase().padStart(2, '0'); return `&H${AA}${b.toUpperCase()}${g.toUpperCase()}${r.toUpperCase()}`; };
+
+
+    const fmt = t => {
+      if (!isFinite(t) || t < 0) t = 0;
+      const cs = Math.round(t * 1000) / 1; // millis
+      let ms = Math.floor(cs % 1000);
+      let S = Math.floor((cs / 1000) % 60);
+      let M = Math.floor((cs / 60000) % 60);
+      let H = Math.floor(cs / 3600000);
+      const pad = (n, z = 2) => String(n).padStart(z, '0');
+      return `${pad(H)}:${pad(M)}:${pad(S)}.${pad(ms, 3)}`;
+    };
+    const roundToFrame = (t, fps) => {
+      const frame = 1 / Math.max(1, fps);
+      return Math.round(t / frame) * frame;
+    };
+
+    let rows = []; // [{text, start:null|number, end:null|number}]
+    let currentIndex = 0;
+
+    /* ---------- video ---------- */
+    const vid = $('vid');
+    function loadVideoFile(f) {
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      vid.src = url;
+      vid.onloadedmetadata = () => {
+        $('duration').textContent = '/ ' + fmt(vid.duration);
+      };
+    }
+    $('videoFile').addEventListener('change', e => loadVideoFile(e.target.files?.[0]));
+
+    $('playPause').addEventListener('click', () => vid.paused ? vid.play() : vid.pause());
+    $('back05').addEventListener('click', () => vid.currentTime = Math.max(0, vid.currentTime - 0.5));
+    $('back10').addEventListener('click', () => vid.currentTime = Math.max(0, vid.currentTime - 1.0));
+    $('fwd05').addEventListener('click', () => vid.currentTime = Math.min(vid.duration || 1e9, vid.currentTime + 0.5));
+    $('fwd10').addEventListener('click', () => vid.currentTime = Math.min(vid.duration || 1e9, vid.currentTime + 1.0));
+
+    function tick() {
+      $('timeNow').textContent = fmt(vid.currentTime || 0);
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    /* ---------- table builder ---------- */
+    function rebuildTable() {
+      const tbody = $('tbody');
+      tbody.innerHTML = '';
+      rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        tr.dataset.idx = i;
+
+        const tdIdx = document.createElement('td');
+        tdIdx.textContent = i + 1;
+        tr.appendChild(tdIdx);
+
+        const tdText = document.createElement('td');
+        const input = document.createElement('textarea');
+        input.value = r.text;
+        input.style.width = '100%';
+        input.style.minHeight = '40px';
+        input.className = 'mono tight';
+        input.addEventListener('input', () => r.text = input.value);
+        tdText.appendChild(input);
+        tr.appendChild(tdText);
+
+        const tdStart = document.createElement('td');
+        tdStart.className = 'mono';
+        tdStart.id = `start_${i}`;
+        tdStart.textContent = r.start == null ? '—' : fmt(r.start);
+        tr.appendChild(tdStart);
+
+        const tdEnd = document.createElement('td');
+        tdEnd.className = 'mono';
+        tdEnd.id = `end_${i}`;
+        tdEnd.textContent = r.end == null ? '—' : fmt(r.end);
+        tr.appendChild(tdEnd);
+
+        const tdAct = document.createElement('td');
+        const btnS = document.createElement('button'); btnS.textContent = 'Start (S)'; btnS.className = 'ghost';
+        const btnE = document.createElement('button'); btnE.textContent = 'End (E)'; btnE.className = 'ghost';
+        const btnPlay = document.createElement('button'); btnPlay.textContent = '▶ Preview'; btnPlay.className = 'ghost';
+        const btnClr = document.createElement('button'); btnClr.textContent = 'Clear'; btnClr.className = 'ghost';
+
+        btnS.addEventListener('click', () => setStart(i));
+        btnE.addEventListener('click', () => setEnd(i));
+        btnPlay.addEventListener('click', () => previewRow(i));
+        btnClr.addEventListener('click', () => { rows[i].start = null; rows[i].end = null; rebuildTable(); });
+
+        tdAct.append(btnS, ' ', btnE, ' ', btnPlay, ' ', btnClr);
+        tr.appendChild(tdAct);
+
+        if (i === currentIndex) tr.style.background = '#0b1220';
+        tbody.appendChild(tr);
+      });
+
+      updateExportPreview();
+    }
+
+    $('build').addEventListener('click', () => {
+      const lines = $('linesInput').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      rows = lines.map(s => ({ text: s, start: null, end: null }));
+      currentIndex = 0;
+      rebuildTable();
+    });
+    $('clearAll').addEventListener('click', () => { rows = []; currentIndex = 0; rebuildTable(); });
+
+    /* ---------- timing actions ---------- */
+    function setStart(i) {
+      const fps = +$('fps').value || 60;
+      const offs = (+$('offsetStart').value || 0) / 1000;
+      rows[i].start = roundToFrame(Math.max(0, (vid.currentTime || 0) + offs), fps);
+      // optionally snap previous end to this start
+      if ($('snapToNext').value === '1' && i > 0 && rows[i - 1].start != null) {
+        rows[i - 1].end = Math.max(rows[i - 1].start, rows[i].start);
+      }
+      currentIndex = i;
+      rebuildTable();
+    }
+    function setEnd(i) {
+      const fps = +$('fps').value || 60;
+      const offs = (+$('offsetEnd').value || 0) / 1000;
+      rows[i].end = roundToFrame(Math.max(0, (vid.currentTime || 0) + offs), fps);
+      if (rows[i].start != null && rows[i].end < rows[i].start) {
+        rows[i].end = rows[i].start; // prevent negative
+      }
+      if ($('autoNext').value === '1' && i < rows.length - 1) {
+        currentIndex = i + 1;
+      }
+      rebuildTable();
+    }
+
+    function previewRow(i) {
+      const r = rows[i];
+      if (r.start == null || r.end == null || r.end <= r.start) return;
+      vid.currentTime = r.start + 0.001;
+      vid.play();
+      const stopAt = r.end;
+      const stop = () => {
+        if ((vid.currentTime || 0) >= stopAt) { vid.pause(); vid.removeEventListener('timeupdate', stop); }
+      };
+      vid.addEventListener('timeupdate', stop);
+    }
+
+    /* ---------- export ---------- */
+    function buildExportBlock() {
+      const ok = rows.filter(r => r.start != null && r.end != null && r.end >= r.start);
+      return ok.map(r => `${fmt(r.start)} → ${fmt(r.end)} | ${r.text}`).join('\n');
+    }
+    function updateExportPreview() {
+      $('out').value = buildExportBlock();
+    }
+    $('export').addEventListener('click', () => {
+      const text = buildExportBlock();
+      $('out').value = text;
+      navigator.clipboard?.writeText(text).catch(() => { /* not fatal */ });
+    });
+
+    /* ---------- keyboard shortcuts ---------- */
+    document.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) && e.key !== ' ') {
+        // allow typing normally except Space (we still handle Space for play/pause)
+      }
+      if (e.code === 'Space') { e.preventDefault(); vid.paused ? vid.play() : vid.pause(); }
+      if (e.key.toLowerCase() === 's') { e.preventDefault(); setStart(currentIndex); }
+      if (e.key.toLowerCase() === 'e') { e.preventDefault(); setEnd(currentIndex); }
+      if (e.key.toLowerCase() === 'n') { e.preventDefault(); if (currentIndex < rows.length - 1) { currentIndex++; rebuildTable(); } }
+      if (e.key.toLowerCase() === 'b') { e.preventDefault(); if (currentIndex > 0) { currentIndex--; rebuildTable(); } }
+      if (e.key === ',') { e.preventDefault(); vid.currentTime = Math.max(0, (vid.currentTime || 0) - 0.5); }
+      if (e.key === '.') { e.preventDefault(); vid.currentTime = Math.min(vid.duration || 1e9, (vid.currentTime || 0) + 0.5); }
+    });
+
+    // ---- playback rate helpers ----
+    const RATE_LIST = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+    let heldRatePrev = null;         // for "hold-to-slow" key
+
+    function setRate(r) {
+      // clamp to nearest value from RATE_LIST
+      let best = RATE_LIST[0], diff = Infinity;
+      RATE_LIST.forEach(v => { const d = Math.abs(v - r); if (d < diff) { diff = d; best = v; } });
+      vid.playbackRate = best;
+      $('rate').value = String(best);
+      $('rateNow').textContent = '×' + best.toFixed(2);
+      // (optional) try to keep pitch natural where supported
+      try { vid.preservesPitch = true; vid.mozPreservesPitch = true; vid.webkitPreservesPitch = true; } catch { }
+    }
+
+    // init & UI change
+    $('rate').addEventListener('change', e => setRate(parseFloat(e.target.value)));
+    setRate(1);
+
+    // keyboard: [ slower, ] faster, number keys set preset, hold H = half-speed while held
+    document.addEventListener('keydown', e => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+      if (e.key === '[') { // slower
+        const i = RATE_LIST.indexOf(vid.playbackRate);
+        setRate(RATE_LIST[Math.max(0, i - 1)]);
+      }
+      if (e.key === ']') { // faster
+        const i = RATE_LIST.indexOf(vid.playbackRate);
+        setRate(RATE_LIST[Math.min(RATE_LIST.length - 1, i + 1)]);
+      }
+      if (/^[1-7]$/.test(e.key)) { // 1..7 map to list
+        setRate(RATE_LIST[Number(e.key) - 1]);
+      }
+      // hold-to-slow (H): while pressed, drop to 0.5×
+      if (e.key.toLowerCase() === 'h' && heldRatePrev == null) {
+        heldRatePrev = vid.playbackRate;
+        setRate(0.5);
+      }
+    });
+    document.addEventListener('keyup', e => {
+      if (e.key.toLowerCase() === 'h' && heldRatePrev != null) {
+        setRate(heldRatePrev);
+        heldRatePrev = null;
+      }
+    });
+
+    // bonus: frame-step when paused (Alt+, / Alt+.)
+    document.addEventListener('keydown', e => {
+      if (e.altKey && e.key === '.' && vid.paused) {
+        const fps = +$('fps').value || 60;
+        vid.currentTime = Math.min(vid.duration || 1e9, (vid.currentTime || 0) + 1 / fps);
+        e.preventDefault();
+      }
+      if (e.altKey && e.key === ',' && vid.paused) {
+        const fps = +$('fps').value || 60;
+        vid.currentTime = Math.max(0, (vid.currentTime || 0) - 1 / fps);
+        e.preventDefault();
+      }
+    });
+
+    function parseLines(raw) {
+      const rows = []; raw.split(/\r?\n/).forEach(line => {
+        if (!line.trim()) return;
+        const m = line.split('|'); if (m.length < 2) return;
+        const times = m[0].split('→'); if (times.length < 2) return;
+        const start = hhmmToSec(times[0].trim()), end = hhmmToSec(times[1].trim());
+        const text = m.slice(1).join('|').trim(); if (start == null || end == null || !text) return;
+        rows.push({ start, end, text });
+      }); return rows;
+    }
+    async function tryServerSave(filename, content) {
+      // Flask endpoint
+      const url = '/save_ass';
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, content })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        return data && data.ok === true;
+      } catch (e) {
+        console.warn('Server save failed for', filename, e);
+        return false;
+      }
+    }
+
+    function forceDownload(filename, content) {
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 200);
+    }
+
+    function buildAssFor(orientation, parsedRows) {
+      const isPortrait = orientation === 'portrait';
+
+      // Fixed, modern presets (auto-wrap, bottom-center)
+      const PlayResX = isPortrait ? 1080 : 1920;
+      const PlayResY = isPortrait ? 1920 : 1080;
+      const WrapStyle = 0; // smart auto-wrap
+      const font = 'Noto Sans Devanagari';
+      const fontsize = isPortrait ? 58 : 72;
+      const scaleX = isPortrait ? 95 : 100;
+      const outlinePx = 3;
+      const shadowPx = 4;
+
+      const pri = '&H00FFFFFF'; // white
+      const sec = '&H000000FF'; // (unused)
+      const out = '&HAA000000'; // semi-dark outline
+      const back = '&H64000000'; // subtle bg (unused w/BorderStyle=1)
+
+      const alignVal = 2; // bottom-center
+      const mL = isPortrait ? 60 : 80;
+      const mR = isPortrait ? 60 : 80;
+      const mV = isPortrait ? 110 : 90;
+
+      const header = `[Script Info]
+Title: Hindi Captions (${isPortrait ? 'Portrait' : 'Landscape'})
+ScriptType: v4.00+
+PlayResX: ${PlayResX}
+PlayResY: ${PlayResY}
+WrapStyle: ${WrapStyle}
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+; Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: HindiStyle,${font},${fontsize},${pri},${sec},${out},${back},1,0,0,0,${scaleX},100,0,0,1,${outlinePx},${shadowPx},${alignVal},${mL},${mR},${mV},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+`;
+
+      const events = parsedRows.map(r =>
+        `Dialogue: 0,${secToAss(r.start)},${secToAss(r.end)},HindiStyle,,0,0,0,,{\\fad(250,150)}${r.text}`
+      ).join('\n');
+
+      return header + events + '\n';
+    }
+
+
+
+    async function exportASS() {
+      try {
+        const parsed = parseLines(document.getElementById('out').value);
+        if (!parsed.length) { alert('Add at least one caption line, then click "Create rows" and set timings.'); return; }
+
+        const assLandscape = buildAssFor('landscape', parsed);
+        const assPortrait = buildAssFor('portrait', parsed);
+
+        const fileL = 'captions_landscape.ass';
+        const fileP = 'captions_portrait.ass';
+
+        // 1) Try saving to server parent folder via PHP endpoint
+        const savedL = await tryServerSave(fileL, assLandscape);
+        const savedP = await tryServerSave(fileP, assPortrait);
+
+        // 2) Fallback to browser download for any that failed
+        if (!savedL) forceDownload(fileL, assLandscape);
+        if (!savedP) forceDownload(fileP, assPortrait);
+
+        const msg =
+          `Export complete:\n` +
+          `• ${fileL} — ${savedL ? 'saved on server' : 'downloaded'}\n` +
+          `• ${fileP} — ${savedP ? 'saved on server' : 'downloaded'}`;
+        alert(msg);
+      } catch (e) {
+        console.error(e);
+        alert('Export failed. See console.');
+      }
+    }
+
+
+
+    $('exportBtn').addEventListener('click', exportASS);
+  </script>
+</body>
+
+</html>
