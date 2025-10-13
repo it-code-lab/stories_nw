@@ -1,9 +1,11 @@
+import shutil
 from flask import Flask, request, jsonify, render_template, send_from_directory
 import json
 from flask_cors import CORS
 import os
 import traceback  # to print detailed error info
 from caption_generator import prepare_captions_file_for_notebooklm_audio
+from get_audio import get_audio_file
 from scraper import scrape_and_process  # Ensure this exists
 from settings import background_music_options, font_settings, tts_engine, voices, sizes
 from video_editor import batch_process
@@ -184,7 +186,29 @@ def caption():
     except Exception as e:
         traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
-    
+
+@app.route('/generatettsaudio', methods=['POST'])
+def generatettsaudio():
+    try:
+        print("Processing request...generatettsaudio")
+
+        ttstext = request.form.get('ttstext', '')
+
+        language = request.form.get('language', 'english')
+        tts_engine = request.form.get('tts', 'google')
+        gender = request.form.get('gender', 'Female')
+        output_audio_file = "audio.wav"
+
+
+        generated_file = get_audio_file(ttstext, output_audio_file, tts_engine, language, gender)
+        shutil.copy("audio.wav", "edit_vid_audio/audio.wav")
+        
+        # return "✅ Processing started!"
+        return "✅ Processing completed successfully!", 200
+    except Exception as e:
+        traceback.print_exc() 
+        return f"❌ Error: {str(e)}", 500
+        
 @app.route('/upload', methods=['POST'])
 def upload():
     try:
@@ -553,6 +577,8 @@ def assemble_clips_to_make_video_song():
             shuffle=True,                                   # different order each run
             prefer_ffmpeg_concat=True                       # auto-uses concat if safe; else MoviePy
         )
+
+        shutil.copy("edit_vid_output/final_video.mp4", "composed_video.mp4")
         return "✅ Video song assembled successfully!", 200
     except Exception as e:
         traceback.print_exc() 

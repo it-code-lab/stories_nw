@@ -798,7 +798,7 @@ def create_video_using_camera_frames(elements, output_path, language="english", 
     final_video = concatenate_videoclips(video_clips, method="chain")
 
     if notebooklm == "yes":
-        # set audi from audio.wav file
+        # set audio from audio.wav file
         audio_path = "audio.wav"
         if os.path.exists(audio_path):
             final_audio = AudioFileClip(audio_path)

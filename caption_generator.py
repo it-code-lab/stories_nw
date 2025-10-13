@@ -19,6 +19,7 @@ from datetime import datetime
 from openpyxl import Workbook, load_workbook
 import subprocess, shlex
 from typing import Optional  # or: from typing import Union
+import unicodedata
 
 #from transformers import pipeline
 
@@ -29,8 +30,27 @@ def extract_audio(video_path, audio_path):
     video = VideoFileClip(video_path)
     video.audio.write_audiofile(audio_path)
 
-# Normalize Text with Enhanced Rules
 def normalize_text(text, language="english"):
+    # Unicode normalize (critical for Hindi matras/combos)
+    text = unicodedata.normalize("NFC", text)
+
+    # Remove zero-width joiners (ZWJ/ZWNJ) which break matching
+    text = text.replace("\u200c", "").replace("\u200d", "")
+
+    if language == "hindi":
+        # Lowercase is a no-op for Devanagari but harmless
+        text = text.lower()
+        # Keep only Devanagari letters, digits, and spaces
+        text = re.sub(r"[^\s\u0966-\u096F\u0900-\u097F]", " ", text)
+    else:
+        text = text.lower()
+        text = re.sub(r"\s*-\s*", " ", text)
+        text = re.sub(r"[^\w\s']", " ", text)
+
+    return re.sub(r"\s+", " ", text).strip()
+
+# DND - Working for non Hindi
+def normalize_text_DND(text, language="english"):
     text = text.lower()
 
     if language == "hindi":
@@ -191,14 +211,19 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
     if language == "hindi":
         # model = whisper.load_model("medium")
         # captions_data = model.transcribe(audio_path, word_timestamps=True, language="hi")
-        model = whisper.load_model("large")
+        #model = whisper.load_model("large")
+        model = whisper.load_model("large-v3")
         captions_data = model.transcribe(
                             audio_path,
+                            task="transcribe",
                             word_timestamps=True,
                             language="hi",     # or "en" for English
                             verbose=True,
                             fp16=False,         # Important on CPU
-                            initial_prompt="यह एक कहानी है",
+                            initial_prompt=(
+                                "यह एक शांत, भक्तिमय हिंदी कथा है। विराम चिह्न सरल रखें। "
+                                "देवनागरी में ही लिखें, अंग्रेज़ी लिप्यंतरण नहीं।"
+                            ),
                             condition_on_previous_text=False,
                             temperature=(0.0, 0.2, 0.4)
                         )
@@ -258,7 +283,7 @@ def prepare_file_for_adding_captions_n_headings_thru_html(url, input_video_path=
         with open('temp/full_text.txt', 'w', encoding='utf-8') as f:
             json.dump(full_text, f, indent=4, ensure_ascii=False)
     else:
-        full_text = extract_full_text_with_positions(url, shorts_html)
+        full_text = extract_full_text_with_positions(url, shorts_html, language)
 
     print(f"[{time.strftime('%H:%M:%S')}] Logic of building full_text completed in {time.time() - start:.2f} seconds")
     start = time.time() 
@@ -434,13 +459,21 @@ def prepare_captions_file_for_notebooklm_audio(
 
     # --- Transcribe (keep condition_on_previous_text=False) ---
     if language.lower().startswith("hi"):
+        model = whisper.load_model("large-v3")
         captions_data = model.transcribe(
-            vocal_path, word_timestamps=True, language="hi",
-            verbose=True, fp16=False,
-            initial_prompt="यह एक कहानी है",
-            condition_on_previous_text=False,
-            temperature=(0.0, 0.2, 0.4)
-        )
+                            vocal_path,
+                            task="transcribe",
+                            word_timestamps=True,
+                            language="hi",     # or "en" for English
+                            verbose=True,
+                            fp16=False,         # Important on CPU
+                            initial_prompt=(
+                                "यह एक शांत, भक्तिमय हिंदी कथा है। विराम चिह्न सरल रखें। "
+                                "देवनागरी में ही लिखें, अंग्रेज़ी लिप्यंतरण नहीं।"
+                            ),
+                            condition_on_previous_text=False,
+                            temperature=(0.0, 0.2, 0.4)
+                        )        
     else:
         captions_data = model.transcribe(
             vocal_path, word_timestamps=True, language="en",
@@ -491,14 +524,19 @@ def prepare_captions_file_for_notebooklm_audio_DND( audio_path="audio.wav",  lan
     if language == "hindi":
         # model = whisper.load_model("medium")
         # captions_data = model.transcribe(audio_path, word_timestamps=True, language="hi")
-        model = whisper.load_model("large")
+        #model = whisper.load_model("large")
+        model = whisper.load_model("large-v3")
         captions_data = model.transcribe(
                             audio_path,
+                            task="transcribe",
                             word_timestamps=True,
                             language="hi",     # or "en" for English
                             verbose=True,
                             fp16=False,         # Important on CPU
-                            initial_prompt="यह एक कहानी है",
+                            initial_prompt=(
+                                "यह एक शांत, भक्तिमय हिंदी कथा है। विराम चिह्न सरल रखें। "
+                                "देवनागरी में ही लिखें, अंग्रेज़ी लिप्यंतरण नहीं।"
+                            ),
                             condition_on_previous_text=False,
                             temperature=(0.0, 0.2, 0.4)
                         )
@@ -682,7 +720,7 @@ def is_skippable(element):
 
     return False
             
-def extract_full_text_with_positions(url,shorts_html=""):
+def extract_full_text_with_positions(url,shorts_html="", language="english"):
     """Extracts full website text and marks positions of headings and list items."""
 
     if shorts_html != "":
@@ -712,7 +750,9 @@ def extract_full_text_with_positions(url,shorts_html=""):
             if not any(parent for parent in element.parents if isinstance(parent, Tag) and is_skippable(parent)):
                 
                 element_text = element.strip()
-                words = re.findall(r'\b\w+\b', element_text.lower())  # Extract words
+                clean = normalize_text(element_text, language)
+                words = re.findall(r'[\u0900-\u097F]+', clean)
+                #words = re.findall(r'\b\w+\b', element_text.lower())  # Extract words
 
                 # Find element type (only for Tags)
                 element_type = "regular"
