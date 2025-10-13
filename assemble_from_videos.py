@@ -42,6 +42,23 @@ def _ffprobe_stream_info(path: str) -> Dict:
     except Exception:
         return {}
 
+def split_video(input_path,  max_duration=180):
+    print("✅ Received split_video Arguments:", locals())
+
+    output_dir="edit_vid_output"
+    os.makedirs(output_dir, exist_ok=True)
+    output_pattern = os.path.join(output_dir, "part_%02d.mp4")
+
+    cmd = [
+        "ffmpeg", "-y", "-i", input_path,
+        "-c", "copy", "-map", "0",
+        "-f", "segment",
+        "-segment_time", str(max_duration),
+        output_pattern
+    ]
+    subprocess.run(cmd, check=True)
+    print(f"✅ Video split into parts saved under: {output_dir}")
+
 def _ffprobe_duration(path: str) -> float:
     """Return duration in seconds using ffprobe (format duration)."""
     try:

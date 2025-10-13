@@ -15,6 +15,12 @@ import re
 app = Flask(__name__, template_folder='templates')
 CORS(app)
 
+
+@app.route('/sounds/<path:filename>')
+def serve_sound(filename):
+    sounds_dir = os.path.join(app.root_path, 'sounds')
+    return send_from_directory(sounds_dir, filename)
+
 # ------------------------ API ROUTES ------------------------ #
 
 @app.route('/get_full_text', methods=['GET'])
@@ -583,7 +589,27 @@ def assemble_clips_to_make_video_song():
     except Exception as e:
         traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
+
+
+@app.route('/splitvideotoparts', methods=['POST'])
+def splitvideotoparts():    
+    try:
+        print("Processing request...splitvideotoparts")
+        from assemble_from_videos import split_video
+
+        max_duration = request.form.get('duration', '178')  # Default to 178 seconds if not provided
+
+        split_video(
+            input_path="edit_vid_output/output.mp4",
+            max_duration=max_duration 
+        )
+
+        return "✅ splitvideotoparts completed successfully!", 200
+    except Exception as e:
+        traceback.print_exc() 
+        return f"❌ Error: {str(e)}", 500
     
+
 @app.route('/save_ass', methods=['POST'])
 def save_ass():
     """

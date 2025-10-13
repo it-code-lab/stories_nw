@@ -645,9 +645,20 @@
             will be created in edit_vid_output and will also be copied on root as composed_video.mp4.
         </div>
 
-        <button type="submit">Create Video</button>
+        <button type="submit">Create Parts</button>
     </form>
 
+        <br>
+    <form id="splitVideoToParts">
+        <h2>Split long video to parts </h2>
+        <div> Can be used for creating shorts for upload.
+            <br><br>Picks the input from edit_vid_output/output.mp4. Parts are created in edit_vid_output folder.
+            
+        </div>
+        <label>Max lenth of parts (Seconds):</label>
+        <input type="number" name="duration" min="1" max="1000" value="170">        
+        <button type="submit">Create Video</button>
+    </form>
     <script>
         const voices = {{ voice_map | tojson }};
         function updateVoices() {
@@ -778,6 +789,19 @@
             // alert(result);
         };
 
+        document.getElementById('splitVideoToParts').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...splitVideoToParts");
+            const formData = new FormData(this);
+            const response = await fetch('/splitvideotoparts', {
+                method: 'POST',
+                body: formData
+            });
+            console.log("Completed splitVideoToParts");
+            const result = await response.text();
+            // alert(result);
+        };
+
         document.getElementById('sunoToVideoGenerator').onsubmit = async function (e) {
             e.preventDefault();
             console.log("Processing request...sunoToVideoGenerator");
@@ -816,6 +840,20 @@
             const result = await response.text();
             // alert(result);
         };
+
+        document.getElementById('sunoNImageToVideoGenerator').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request...sunoNImageToVideoGenerator");
+            const formData = new FormData(this);
+            const response = await fetch('/sunonimagetovideogenerator', {
+                method: 'POST',
+                body: formData
+            });
+            console.log("Completed sunoNImageToVideoGenerator");
+            const result = await response.text();
+            // alert(result);
+        };
+
 
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.getElementById('runOBSRecorder');
