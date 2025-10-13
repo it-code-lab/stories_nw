@@ -241,8 +241,8 @@
           </label>
           <label>Snap End to Next Start?<br>
             <select id="snapToNext">
-              <option value="0" selected>No</option>
-              <option value="1">Yes (no gap)</option>
+              <option value="0" >No</option>
+              <option value="1" selected>Yes (no gap)</option>
             </select>
           </label>
           <label>Frame rate (for rounding)<br>
@@ -273,7 +273,7 @@
               <button id="build" class="primary">Create rows</button>
               <button id="clearAll" class="ghost">Clear rows</button>
               <label>
-                Animation<br>
+                Animation for .ass file<br>
                 <select id="animStyle">
                   <option value="typewriter" selected>Typewriter Reveal</option>
                   <option value="cinematic">Cinematic (fade + slide-up + zoom)</option>
@@ -290,7 +290,7 @@
 
               <button id="exportWrdtmsBtn" class="primary">Export to word_timestamps.json file</button>
 
-              <button id="exportBtn" class="primary">Export .ass file(Landscape + Portrait)</button>
+              <button id="exportBtn" class="primary">Export .ass file</button>
               <button id="export" class="primary">Export block → clipboard</button>
             </div>
             <div style="margin-top:8px">
@@ -452,6 +452,10 @@
       if (rows[i].start != null && rows[i].end < rows[i].start) {
         rows[i].end = rows[i].start; // prevent negative
       }
+      if ($('snapToNext').value === '1' && i < rows.length - 1 ) {
+        rows[i + 1].start = rows[i].end + 0.5;
+      }
+
       if ($('autoNext').value === '1' && i < rows.length - 1) {
         currentIndex = i + 1;
       }
@@ -849,6 +853,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       });
       if (!res.ok) throw new Error('Failed to save word_timestamps.json');
       console.log('word_timestamps.json saved on server');
+      alert("✅ word_timestamps.json saved on server")
       return res.json();
     }
 
