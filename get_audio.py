@@ -10,6 +10,43 @@ import re
 GOOGLE_MAX_CHARS = 4800
 AMAZON_MAX_CHARS = 2000  # Approximate limit
 
+def _utf8_len(s: str) -> int:
+    return len(s.encode("utf-8"))
+
+def _split_sentence_by_words_utf8(s: str, max_bytes: int) -> list[str]:
+    """
+    Split a single oversized sentence into word-based chunks
+    such that each chunk <= max_bytes (UTF-8 bytes).
+    """
+    words = s.split()
+    chunks, buf = [], ""
+    for w in words:
+        candidate = (buf + " " + w).strip()
+        if _utf8_len(candidate) <= max_bytes:
+            buf = candidate
+        else:
+            if buf:
+                chunks.append(buf)
+            # If a single word itself exceeds the limit, hard-cut it
+            if _utf8_len(w) > max_bytes:
+                # very rare; slice by bytes
+                b = w.encode("utf-8")
+                start = 0
+                while start < len(b):
+                    end = min(start + max_bytes, len(b))
+                    # avoid splitting in the middle of a UTF-8 codepoint
+                    while end > start and (b[end-1] & 0b11000000) == 0b10000000:
+                        end -= 1
+                    chunks.append(b[start:end].decode("utf-8", errors="ignore"))
+                    start = end
+                buf = ""
+            else:
+                buf = w
+    if buf:
+        chunks.append(buf)
+    return chunks
+
+
 def synthesize_speech_google(text, output_file, language, gender, voice_name, speaking_rate=1.0, pitch=0.0):
     """Synthesizes speech using Google Cloud Text-to-Speech."""
     client = texttospeech.TextToSpeechClient()
@@ -183,40 +220,101 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
                 file.write(response['AudioStream'].read())
             return audio_file_name
     else:
-        sentences = split_text_into_sentences(text, language)
+        # Normalize for sentence splitter: treat "english-with-pitch" as english rules
+        split_lang = "english" if str(language).lower().startswith("english") else "hindi"
+        sentences = split_text_into_sentences(text, split_lang)
+
         audio_files = []
         current_chunk = ""
         chunk_index = 0
-        for sentence in sentences:
-            if len((current_chunk + sentence + " ").encode('utf-8')) <= max_chars:  # +1 for potential space
-                current_chunk += (sentence + " ")
+        max_bytes = max_chars
+
+        def _flush_current_chunk():
+            nonlocal current_chunk, chunk_index
+            if not current_chunk.strip():
+                return
+            temp_audio_file = f"{audio_file_name.rsplit('.', 1)[0]}_part_{chunk_index}.mp3"
+            if tts_engine == "google":
+                tts_function(
+                    text=current_chunk.strip(),
+                    output_file=temp_audio_file,
+                    language=f"{voice_code[:5]}",
+                    gender=gender.upper(),
+                    voice_name=voice_code,
+                    speaking_rate=speaking_rate,
+                    pitch=pitch
+                )
+            else:  # amazon
+                text_type = "ssml" if type == "neural" else "text"
+                text_content = f'<speak><prosody rate="90%">{current_chunk.strip()}</prosody></speak>' if text_type == "ssml" else current_chunk.strip()
+                response = polly_client.synthesize_speech(
+                    TextType=text_type,
+                    Text=text_content,
+                    OutputFormat="mp3",
+                    VoiceId=voice_code,
+                    Engine=type
+                )
+                with open(temp_audio_file, "wb") as file:
+                    file.write(response['AudioStream'].read())
+            audio_files.append(temp_audio_file)
+            current_chunk = ""
+            chunk_index += 1
+
+        for s in sentences:
+            s = s.strip()
+            if not s:
+                continue
+            if _utf8_len(s) > max_bytes:
+                # This sentence alone is too big: split by words into smaller chunks
+                subchunks = _split_sentence_by_words_utf8(s, max_bytes)
+                for sub in subchunks:
+                    candidate = (current_chunk + " " + sub).strip() if current_chunk else sub
+                    if _utf8_len(candidate) <= max_bytes:
+                        current_chunk = candidate
+                    else:
+                        _flush_current_chunk()
+                        current_chunk = sub
             else:
-                temp_audio_file = f"{audio_file_name.rsplit('.', 1)[0]}_part_{chunk_index}.mp3"
-                if tts_engine == "google":
-                    tts_function(
-                        text=current_chunk.strip(),
-                        output_file=temp_audio_file,
-                        language=f"{voice_code[:5]}",
-                        gender=gender.upper(),
-                        voice_name=voice_code,
-                        speaking_rate=speaking_rate,
-                        pitch=pitch
-                    )
-                elif tts_engine == "amazon":
-                    text_type = "ssml" if type == "neural" else "text"
-                    text_content = f'<speak><prosody rate="90%">{current_chunk.strip()}</prosody></speak>' if text_type == "ssml" else current_chunk.strip()
-                    response = tts_function(
-                        TextType=text_type,
-                        Text=text_content,
-                        OutputFormat="mp3",
-                        VoiceId=voice_code,
-                        Engine=type
-                    )
-                    with open(temp_audio_file, "wb") as file:
-                        file.write(response['AudioStream'].read())
-                audio_files.append(temp_audio_file)
-                current_chunk = sentence + " "
-                chunk_index += 1
+                candidate = (current_chunk + " " + s).strip() if current_chunk else s
+                if _utf8_len(candidate) <= max_bytes:
+                    current_chunk = candidate
+                else:
+                    _flush_current_chunk()
+                    current_chunk = s
+
+        # flush the last chunk
+        _flush_current_chunk()
+
+        # for sentence in sentences:
+        #     if len((current_chunk + sentence + " ").encode('utf-8')) <= max_chars:  # +1 for potential space
+        #         current_chunk += (sentence + " ")
+        #     else:
+        #         temp_audio_file = f"{audio_file_name.rsplit('.', 1)[0]}_part_{chunk_index}.mp3"
+        #         if tts_engine == "google":
+        #             tts_function(
+        #                 text=current_chunk.strip(),
+        #                 output_file=temp_audio_file,
+        #                 language=f"{voice_code[:5]}",
+        #                 gender=gender.upper(),
+        #                 voice_name=voice_code,
+        #                 speaking_rate=speaking_rate,
+        #                 pitch=pitch
+        #             )
+        #         elif tts_engine == "amazon":
+        #             text_type = "ssml" if type == "neural" else "text"
+        #             text_content = f'<speak><prosody rate="90%">{current_chunk.strip()}</prosody></speak>' if text_type == "ssml" else current_chunk.strip()
+        #             response = tts_function(
+        #                 TextType=text_type,
+        #                 Text=text_content,
+        #                 OutputFormat="mp3",
+        #                 VoiceId=voice_code,
+        #                 Engine=type
+        #             )
+        #             with open(temp_audio_file, "wb") as file:
+        #                 file.write(response['AudioStream'].read())
+        #         audio_files.append(temp_audio_file)
+        #         current_chunk = sentence + " "
+        #         chunk_index += 1
 
         # Process the last chunk
         if current_chunk.strip():
