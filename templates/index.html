@@ -276,8 +276,8 @@
         <button type="submit">Gerenate Audio File</button>
         <br>
         <div>Created file will be saved as audio.wav in the root folder and edit_vid_audio.
-            </div>
-    </form>    
+        </div>
+    </form>
     <br>
     <form id="runCaptionGenerator">
         <h2>Captions Generator</h2>
@@ -329,7 +329,8 @@
                     <li>Then Run OBS Recorder to create final video for upload. Parameters: Caption-style1, words per
                         caption-10,outputfile - edit_vid_output/output.mp4 </li>
                 </ul>
-                <li>For <b>Hindi</b> language audio, if provided size is Landscape it will also create portait video so that captions can be applied together</li>
+                <li>For <b>Hindi</b> language audio, if provided size is Landscape it will also create portait video so
+                    that captions can be applied together</li>
 
             </ol>
 
@@ -397,7 +398,8 @@
                     <li>Then Run OBS Recorder to create final video for upload. Parameters: Caption-style1, words per
                         caption-10,outputfile - edit_vid_output/output.mp4 </li>
                 </ul>
-                <li>For <b>Hindi</b> language audio, if provided size is Landscape it will also create portait video so that captions can be applied together</li>
+                <li>For <b>Hindi</b> language audio, if provided size is Landscape it will also create portait video so
+                    that captions can be applied together</li>
 
             </ol>
 
@@ -459,6 +461,12 @@
             Move that to under processed_video folder with right name before running the YouTube Upload.
         </div>
         <br>
+        <label>Language:</label>
+        <select id="language" name="language">
+            <option>english</option>
+            <option>hindi</option>
+        </select>
+
         <label>Orientation:</label>
         <select name="orientation">
             <option value="landscape">landscape</option>
@@ -641,22 +649,22 @@
     <form id="asseleClipsToMakeVideoSong">
         <h2>Assemble small video clips to make large video with audio</h2>
         <div> To be used to make make song videos/large video using video clips.
-            <br><br>Place the video clips in edit_vid_input folder. Place the audio file in edit_vid_audio. Output 
+            <br><br>Place the video clips in edit_vid_input folder. Place the audio file in edit_vid_audio. Output
             will be created in edit_vid_output and will also be copied on root as composed_video.mp4.
         </div>
 
         <button type="submit">Create Parts</button>
     </form>
 
-        <br>
+    <br>
     <form id="splitVideoToParts">
         <h2>Split long video to parts </h2>
         <div> Can be used for creating shorts for upload.
             <br><br>Picks the input from edit_vid_output/output.mp4. Parts are created in edit_vid_output folder.
-            
+
         </div>
         <label>Max lenth of parts (Seconds):</label>
-        <input type="number" name="duration" min="1" max="1000" value="170">        
+        <input type="number" name="duration" min="1" max="1000" value="170">
         <button type="submit">Create Video</button>
     </form>
     <script>
@@ -862,10 +870,14 @@
             const orientationSelect = form.querySelector('select[name="orientation"]');
             const captionStyleSelect = form.querySelector('#captStyle');
             const captionLengthInput = form.querySelector('#captLength');
+            const languageSelect = form.querySelector('#language');
 
             if (orientationSelect && captionStyleSelect && captionLengthInput) {
                 orientationSelect.addEventListener('change', function () {
-                    if (orientationSelect.value === 'portrait') {
+                    if (languageSelect.value === 'hindi') {
+                        captionStyleSelect.value = 'style4';
+                        captionLengthInput.value = 1;
+                    } else if (orientationSelect.value === 'portrait') {
                         captionStyleSelect.value = 'style4';
                         captionLengthInput.value = 3;
                     } else if (orientationSelect.value === 'landscape') {
@@ -874,6 +886,22 @@
                     }
                 });
             }
+
+            languageSelect.addEventListener('change', function () {
+                if (languageSelect.value === 'hindi') {
+                    captionStyleSelect.value = 'style4';
+                    captionLengthInput.value = 1;
+                } else if (languageSelect.value === 'english') {
+                    // Reset to defaults for English
+                    if (orientationSelect.value === 'portrait') {
+                        captionStyleSelect.value = 'style4';
+                        captionLengthInput.value = 3;
+                    } else if (orientationSelect.value === 'landscape') {
+                        captionStyleSelect.value = 'style1';
+                        captionLengthInput.value = 6;
+                    }
+                }
+            });
         });        
     </script>
 </body>

@@ -276,16 +276,20 @@
                 Animation<br>
                 <select id="animStyle">
                   <option value="typewriter" selected>Typewriter Reveal</option>
-                  <option value="cinematic" >Cinematic (fade + slide-up + zoom)</option>
+                  <option value="cinematic">Cinematic (fade + slide-up + zoom)</option>
                   <option value="pro_pop">Professional Pop-Up</option>
                   <option value="drift_up">Smooth Drift-Up</option>
-                  
+
                   <option value="fade">Soft Fade</option>
                   <option value="wordpop">Word Pop</option>
                   <option value="softzoom">Soft Zoom</option>
                   <option value="glowpulse">Glow Pulse</option>
                 </select>
               </label>
+
+
+              <button id="exportWrdtmsBtn" class="primary">Export to word_timestamps.json file</button>
+
               <button id="exportBtn" class="primary">Export .ass file(Landscape + Portrait)</button>
               <button id="export" class="primary">Export block → clipboard</button>
             </div>
@@ -583,6 +587,7 @@
       }
     }
 
+
     function forceDownload(filename, content) {
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
       const a = document.createElement('a');
@@ -774,9 +779,81 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       }
     }
 
+    // --- Parse "HH:MM:SS.mmm" (or ,mmm) to seconds
+    function parseTimestamp(ts) {
+      const m = ts.trim().match(/^(\d{2}):(\d{2}):(\d{2})[.,](\d{1,3})$/);
+      if (!m) return null;
+      const [_, H, M, S, ms] = m;
+      return (+H) * 3600 + (+M) * 60 + (+S) + (+ms.padEnd(3, '0')) / 1000;
+    }
 
+    // --- Segment Hindi text into words (uses Intl.Segmenter if available)
+    function segmentWords(text) {
+      const clean = text.replace(/\\N/g, ' ').replace(/\s+/g, ' ').trim();
+      if (window.Intl && Intl.Segmenter) {
+        const seg = new Intl.Segmenter('hi', { granularity: 'word' });
+        return [...seg.segment(clean)]
+          .filter(s => s.isWordLike)
+          .map(s => s.segment);
+      }
+      return clean.split(/\s+/u);
+    }
+
+    /**
+ * Convert caption text block -> word_timestamps array
+ * Input line format:
+ *  00:00:00.450 → 00:00:02.150 | आपका टेक्स्ट \N अगली पंक्ति
+ */
+    function exportWordTimeStamp() {
+
+      leadingSpace = true
+      let captionText = document.getElementById('out').value;
+
+      const out = [];
+      let position = 0;
+
+      const re = /^(\d{2}:\d{2}:\d{2}[.,]\d{1,3})\s*→\s*(\d{2}:\d{2}:\d{2}[.,]\d{1,3})\s*\|\s*(.+)$/u;
+      const lines = captionText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+      for (const line of lines) {
+        const m = line.match(re);
+        if (!m) continue;
+        const start = parseTimestamp(m[1]);
+        const end = parseTimestamp(m[2]);
+        if (!(end > start)) continue;
+
+        // Keep text as-is (except trailing whitespace); \N stays for explicit newlines
+        let text = m[3].replace(/\s+$/u, '');
+        if (leadingSpace && (text.length === 0 || text[0] !== ' ')) {
+          text = ' ' + text.trimStart(); // match your sample which starts each "word" with a space
+        }
+
+        out.push({
+          word: text,
+          start: +start.toFixed(3),
+          end: +end.toFixed(3),
+          position: position++,
+          matched: false
+        });
+      }
+      //return out;
+      saveWordTimestampsToServer(out);
+    }
+
+    // --- Save to Flask (/temp/word_timestamps.json)
+    async function saveWordTimestampsToServer(wordArray) {
+      const res = await fetch('/save_word_timestamps_file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify(wordArray)
+      });
+      if (!res.ok) throw new Error('Failed to save word_timestamps.json');
+      console.log('word_timestamps.json saved on server');
+      return res.json();
+    }
 
     $('exportBtn').addEventListener('click', exportASS);
+    $('exportWrdtmsBtn').addEventListener('click', exportWordTimeStamp);
   </script>
 </body>
 

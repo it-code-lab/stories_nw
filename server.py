@@ -608,7 +608,15 @@ def splitvideotoparts():
     except Exception as e:
         traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
-    
+
+@app.route('/save_word_timestamps_file', methods=['POST'])
+def save_word_timestamps_file():
+  data = request.get_json(force=True)  # list of {word,start,end,position,matched}
+  os.makedirs('temp', exist_ok=True)
+  path = os.path.join('temp', 'word_timestamps.json')
+  with open(path, 'w', encoding='utf-8') as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+  return jsonify({"ok": True, "path": "/temp/word_timestamps.json"})    
 
 @app.route('/save_ass', methods=['POST'])
 def save_ass():
