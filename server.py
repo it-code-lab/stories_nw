@@ -403,9 +403,9 @@ def run_sunotovideogenerator():
                 language=language,
                 is_song=music == 'yes'
             )
-        else:
-            if size == 'landscape':
-                create_portrait()
+        # else:
+        #     if size == 'landscape':
+        #         create_portrait()
             # add_caption()
         return "✅ Videos Processed successfully!", 200
     except Exception as e:
@@ -493,10 +493,10 @@ def run_sunonimagetovideogenerator():
                 language=language,
                 is_song=music == 'yes'
             )
-        else:
-            if size == 'landscape':
-                create_portrait()
-            # add_caption()
+        # else:
+        #     if size == 'landscape':
+        #         create_portrait()
+        #     # add_caption()
         return "✅ Videos Processed successfully!", 200
     except Exception as e:
         traceback.print_exc() 
