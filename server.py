@@ -235,11 +235,13 @@ def run_obs_recorder():
         duration = request.form.get('duration', '10')  # Default to 10 seconds if not provided
         selectedStyle = request.form.get('captStyle', 'style1')
         captionLength = request.form.get('captLength', '5')
-        bgMusicSelected = request.form.get('bgMusicSelect', 'None')
+        bgMusicSelected = request.form.get('bgMusicSelect', 'none')
         minLineGapSec = request.form.get('minLineGapSec', '0.40')
         disableSubscribe = request.form.get('disableSubscribe', 'yes')
         outputfile = request.form.get('outputfile', 'test.mp4')
 
+        print("Form payload →", request.form.to_dict(flat=False))
+        
         cmd = [
             "node", "puppeteer-launcher.js",
             outputfile, duration, orientation, captionLength, selectedStyle,

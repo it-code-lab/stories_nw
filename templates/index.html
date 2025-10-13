@@ -500,10 +500,10 @@
         <input type="text" name="duration">
 
         <label for="minLineGapSec">Min gap between lines (sec)</label>
-        <input type="number" id="minLineGapSec" value="0.40" step="0.05" min="0" />
+        <input type="number" id="minLineGapSec" name="minLineGapSec" value="0.40" step="0.05" min="0" />
 
         <label for="bgMusicSelect">Background Music:</label>
-        <select id="bgMusicSelect">
+        <select id="bgMusicSelect" name="bgMusicSelect">
             <option value="none">None</option>
             <option value="children-a-baby-story-530.mp3">Children-story</option>
             <option value="children-close-your-eyes-now-1022.mp3">Children-eyes</option>
@@ -520,7 +520,7 @@
         </select>
 
         <label for="disableSubscribe">Disable Subscribe Gif</label>
-        <select id="disableSubscribe">
+        <select id="disableSubscribe" name="disableSubscribe">
             <option value="no">no</option>
             <option value="yes">yes</option>
         </select>
@@ -870,15 +870,17 @@
             if (!form) return; // safety check
 
             const orientationSelect = form.querySelector('select[name="orientation"]');
-            const captionStyleSelect = form.querySelector('#captStyle');
-            const captionLengthInput = form.querySelector('#captLength');
-            const languageSelect = form.querySelector('#language');
+            const captionStyleSelect  = form.querySelector('select[name="captStyle"]');
+            const captionLengthInput  = form.querySelector('input[name="captLength"]');
+            const languageSelect      = form.querySelector('select[name="language"]'); 
+            const bgMusicSelect      = form.querySelector('select[name="bgMusicSelect"]');
 
             if (orientationSelect && captionStyleSelect && captionLengthInput) {
                 orientationSelect.addEventListener('change', function () {
                     if (languageSelect.value === 'hindi') {
                         captionStyleSelect.value = 'style4';
                         captionLengthInput.value = 1;
+                        bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                     } else if (orientationSelect.value === 'portrait') {
                         captionStyleSelect.value = 'style4';
                         captionLengthInput.value = 3;
@@ -893,6 +895,7 @@
                 if (languageSelect.value === 'hindi') {
                     captionStyleSelect.value = 'style4';
                     captionLengthInput.value = 1;
+                    bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                 } else if (languageSelect.value === 'english') {
                     // Reset to defaults for English
                     if (orientationSelect.value === 'portrait') {

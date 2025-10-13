@@ -65,8 +65,14 @@ const height = isLandscape ? 720 : 1280; //Works on MSI laptop
       document.getElementById("captionLength").value = wordsPerCaption;
     if (document.getElementById("captionStyle"))
       document.getElementById("captionStyle").value = captionStyle;
-    if (document.getElementById("bgMusicSelect"))
+
+    if (document.getElementById("bgMusicSelect")) {
       document.getElementById("bgMusicSelect").value = backgroundMusic;
+      console.log("Background Music:", backgroundMusic)
+    } else {
+      console.warn("No bgMusicSelect element found")
+    }
+
     if (document.getElementById("bgMusicVolume"))
       document.getElementById("bgMusicVolume").value = backgroundMusicVolume;
     if (document.getElementById("effectVolume"))
