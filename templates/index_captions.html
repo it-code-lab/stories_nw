@@ -145,6 +145,16 @@
     <option value="2">2x</option>
     <option value="3">3x</option>
     </select>
+
+    <!-- *****COMMENTED OUT as Results are not good ******** -->
+    <!-- <button id="renderWithCaptions">🎬 Render Video w/ Word Captions</button>
+    <select id="renderAnim">
+    <option value="cinematic">Cinematic (default)</option>
+    <option value="pro_pop">Professional Pop-Up</option>
+    <option value="drift_up">Smooth Drift-Up</option>
+    <option value="typewriter">Typewriter Reveal</option>
+    </select> -->
+
     <div style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;">
         <h3>📝 Paste Captions or Lyrics</h3>
         <textarea id="manualCaptions" rows="3" cols="100" placeholder="Paste your captions here..."></textarea>
@@ -275,6 +285,33 @@
         //         .then(data => alert("✅ Saved: " + data.message))
         //         .catch(err => alert("❌ Error saving timestamps"));
         // });
+
+        document.getElementById('renderWithCaptions').addEventListener('click', async () => {
+        const orientation = document.getElementById('videoOrientation').value;
+        const style = document.getElementById('renderAnim').value;
+
+        // Read the same user knobs you use in JS
+        const min_gap_sec = parseFloat(document.getElementById('minLineGapSec').value || '0.40');
+        const words_per_caption = parseInt(document.getElementById('captionLength').value || '5', 10);
+
+        const body = {
+            input_video: "composed_video.mp4", // <-- set this path
+            orientation, style, min_gap_sec, words_per_caption
+        };
+
+        const res = await fetch('/render_captions', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!data.ok) {
+            alert('Render failed: ' + (data.error || 'unknown error'));
+            console.error(data.stderr || '');
+        } else {
+            alert('Done!\nASS (landscape): ' + data.ass_landscape + '\nASS (portrait): ' + data.ass_portrait + '\nVideo: ' + data.output_video);
+        }
+        });        
     </script>
 
 </body>

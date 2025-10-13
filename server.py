@@ -598,7 +598,88 @@ def save_ass():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
-                
+
+@app.route('/render_captions', methods=['POST'])
+def render_captions():
+
+    from wordtimestamps_to_ass_captions import build_ass_from_word_json, _ffmpeg_burn_subs
+
+    """
+    Body JSON:
+    {
+      "input_video": "/absolute/or/relative/path.mp4",
+      "orientation": "landscape"|"portrait",
+      "style": "cinematic"|"pro_pop"|"drift_up"|"typewriter"|"fade"|"softzoom"|"wordpop"|"glowpulse",
+      "min_gap_sec": 0.40,
+      "words_per_caption": 5,
+      "output": "/path/output_with_captions.mp4" (optional)
+    }
+    """
+    try:
+        data = request.get_json(force=True)
+        #input_video = data.get('input_video')
+        orientation = data.get('orientation', 'landscape')
+        style = data.get('style', 'cinematic')
+        min_gap = float(data.get('min_gap_sec', 0.40))
+        wpc = int(data.get('words_per_caption', 5))
+        #output = data.get('output')
+
+        if orientation == 'landscape':
+            create_portrait()
+
+        # if not input_video or not os.path.isfile(input_video):
+        #     return jsonify({"ok": False, "error": "input_video not found"}), 400
+
+        # Where is your word_timestamps.json?  Adjust if needed.
+        # (Uses the same JSON you already serve to the front end.)
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        temp_dir = os.path.join(app_dir, 'temp')
+        word_json_path = os.path.join(temp_dir, 'word_timestamps.json')
+        if not os.path.isfile(word_json_path):
+            # fallback: try parent folder
+            word_json_path = os.path.abspath(os.path.join(app_dir, os.pardir, 'word_timestamps.json'))
+        if not os.path.isfile(word_json_path):
+            return jsonify({"ok": False, "error": "word_timestamps.json not found"}), 400
+
+        # Build ASS (both orientations saved; use requested orientation for render)
+        parent_dir = os.path.abspath(os.path.join(app_dir, os.pardir))
+        out_dir = os.path.join(app_dir, 'edit_vid_output')
+        os.makedirs(out_dir, exist_ok=True)
+
+        ass_land = build_ass_from_word_json(word_json_path, 'landscape', style, min_gap, wpc)
+        ass_port = build_ass_from_word_json(word_json_path, 'portrait',  style, min_gap, wpc)
+
+        path_land = os.path.join(out_dir, 'captions_landscape.ass')
+        path_port = os.path.join(out_dir, 'captions_portrait.ass')
+        with open(path_land, 'w', encoding='utf-8') as f: f.write(ass_land)
+        with open(path_port, 'w', encoding='utf-8') as f: f.write(ass_port)
+
+        # Choose the ASS we render with
+        #ass_path = path_port if orientation == 'portrait' else path_land
+
+        # Output path
+        # if not output:
+        #     base = os.path.splitext(os.path.basename(input_video))[0]
+        #     output = os.path.join(parent_dir, f"{base}_with_captions.mp4")
+
+        # Burn it in
+        proc = _ffmpeg_burn_subs("edit_vid_output/out_landscape.mp4", path_land, "edit_vid_output/landscape_with_captions.mp4")
+        if proc.returncode != 0:
+            return jsonify({"ok": False, "error": "ffmpeg failed", "stderr": proc.stderr}), 500
+
+        proc = _ffmpeg_burn_subs("edit_vid_output/out_portrait.mp4", path_port, "edit_vid_output/portrait_with_captions.mp4")
+        if proc.returncode != 0:
+            return jsonify({"ok": False, "error": "ffmpeg failed", "stderr": proc.stderr}), 500
+
+
+        return jsonify({
+            "ok": True,
+            "ass_landscape": path_land,
+            "ass_portrait": path_port
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)
     app.run(debug=True, host='0.0.0.0', port=5000)  # Use host='
