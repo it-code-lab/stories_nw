@@ -935,6 +935,7 @@ function updateVideoOrientation() {
         // video.height = 1280;
     } else {
         document.body.classList.remove("portrait");
+        document.body.classList.add("landscape");
         // video.width = 1280;
         // video.height = 720;
     }

@@ -31,6 +31,8 @@ background_music_options = {
 font_settings = {
     "style4": "style4",
     "style2": "style2",
+    "style2-hindi-normal": "style2-hindi-normal",
+    "style-hindi-rozha": "style-hindi-rozha",
     "style1": "style1",
     "style3": "style3",
     "style5": "style5",

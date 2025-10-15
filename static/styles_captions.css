@@ -421,6 +421,23 @@
     text-transform: uppercase;
 }
 
+.style2-hindi-normal {
+    color: rgb(255, 255, 255);
+    font-size: 1.5em;
+    font-weight: bold;
+    text-shadow: 0px 0px 10px rgba(42, 42, 41, 0.8);
+    text-transform: uppercase;
+}
+
+.style-hindi-rozha {
+    color: rgb(255, 255, 255);
+    font-size: 1.5em;
+    font-weight: bold;
+    text-shadow: 0px 0px 10px rgba(42, 42, 41, 0.8);
+    font-family: 'Rozha One', cursive;
+
+}
+
 .style2 .current-word {
     background-color: rgb(231, 74, 105);
     border-radius: 4px;
@@ -456,6 +473,8 @@
     border-radius: 4px;
     border: 1px solid #969693;
 }
+
+
 
 /* 🔹 Caption Style 5 (Green Text) */
 .style5 {
@@ -812,6 +831,22 @@
 
 }
 
+.landscape #captions {
+
+    white-space: normal;
+    /* Allows text to wrap */
+    word-wrap: break-word;
+    /* Breaks long words */
+    overflow-wrap: break-word;
+    /* Ensures wrapping */
+    /* display: flex; */
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+
+    max-width: 80%;
+
+}
 .portrait #video {
     width: 100%;
     /* height: 95%; */

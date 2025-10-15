@@ -479,6 +479,8 @@
         <select id="captStyle" name="captStyle">
             <option value="style1">Style 1</option>
             <option value="style2">Style 2</option>
+            <option value="style2-hindi-normal">style2-hindi-normal</option>
+            <option value="style-hindi-rozha">style-hindi-rozha</option>
             <option value="style3">Style 3</option>
             <option value="style4">Style 4</option>
             <option value="style5">Style 5</option>
@@ -878,14 +880,14 @@
             if (orientationSelect && captionStyleSelect && captionLengthInput) {
                 orientationSelect.addEventListener('change', function () {
                     if (languageSelect.value === 'hindi') {
-                        captionStyleSelect.value = 'style4';
+                        captionStyleSelect.value = 'style2-hindi-normal';
                         captionLengthInput.value = 1;
                         bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                     } else if (orientationSelect.value === 'portrait') {
                         captionStyleSelect.value = 'style4';
                         captionLengthInput.value = 3;
                     } else if (orientationSelect.value === 'landscape') {
-                        captionStyleSelect.value = 'style1';
+                        captionStyleSelect.value = 'style4';
                         captionLengthInput.value = 6;
                     }
                 });
@@ -893,7 +895,7 @@
 
             languageSelect.addEventListener('change', function () {
                 if (languageSelect.value === 'hindi') {
-                    captionStyleSelect.value = 'style4';
+                    captionStyleSelect.value = 'style2-hindi-normal';
                     captionLengthInput.value = 1;
                     bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                 } else if (languageSelect.value === 'english') {
@@ -902,7 +904,7 @@
                         captionStyleSelect.value = 'style4';
                         captionLengthInput.value = 3;
                     } else if (orientationSelect.value === 'landscape') {
-                        captionStyleSelect.value = 'style1';
+                        captionStyleSelect.value = 'style4';
                         captionLengthInput.value = 6;
                     }
                 }
