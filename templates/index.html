@@ -672,6 +672,7 @@
             <option value="style11">Style 11</option>
             <option value="none">No Caption</option>
             <option value="block-style">Block Caption</option>
+            <option value="block-style-hindi">block-style-hindi</option>
         </select>
 
 
@@ -1245,6 +1246,7 @@
             const captionLengthInput = form.querySelector('input[name="captLength"]');
             const languageSelect = form.querySelector('select[name="language"]');
             const bgMusicSelect = form.querySelector('select[name="bgMusicSelect"]');
+            const minLineGapSecInput = form.querySelector('input[name="minLineGapSec"]');
 
             if (orientationSelect && captionStyleSelect && captionLengthInput) {
                 orientationSelect.addEventListener('change', function () {
@@ -1261,7 +1263,16 @@
                     }
                 });
             }
-
+            captionStyleSelect.addEventListener('change', function () {
+                if (captionStyleSelect.value == 'style2-hindi-normal') {
+                    captionLengthInput.value = 1;
+                    minLineGapSecInput.value = 0.40;
+                }
+                if (captionStyleSelect.value == 'block-style-hindi') {
+                    captionLengthInput.value = 5;
+                    minLineGapSecInput.value = 60;
+                }
+            });
             languageSelect.addEventListener('change', function () {
                 if (languageSelect.value === 'hindi') {
                     captionStyleSelect.value = 'style2-hindi-normal';

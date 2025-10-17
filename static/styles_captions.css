@@ -581,7 +581,22 @@
     font-size: 1em;
 }
 
-
+.block-style-hindi {
+    position: absolute;
+    left: 50%;
+    top: 10%;
+    /* transform: translate(-50%, -50%); */
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.6;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    /* transition: opacity 0.5s ease-in-out; */
+    font-size: 1em;
+}
 
 #captionStyle {
     font-size: 0.8em;
@@ -610,6 +625,15 @@
 
 /* 🔹 Current Spoken Word */
 .block-style .current-word {
+    background-color: rgb(231, 74, 105) !important;
+    color: white !important;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: transform 0.03s ease-in-out !important;
+}
+
+.block-style-hindi .current-word {
     background-color: rgb(231, 74, 105) !important;
     color: white !important;
     padding: 5px 12px;

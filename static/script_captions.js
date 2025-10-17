@@ -439,6 +439,12 @@ function updateOverlayAndCaptions() {
                     ? `<span class="current-word">${wordObj.word}</span>`
                     : wordObj.word;
             });
+        } if (selectedStyle == "block-style-hindi") {
+            displayedWords = segWords.map((wordObj) => {
+                return (currentTime >= wordObj.start && currentTime <= wordObj.end)
+                    ? `<span class="current-word">${wordObj.word}</span><br>`
+                    : `${wordObj.word}<br>`;
+            });
         } else {
             // reuse your block-style logic but scoped to segWords
             displayedWords = segWords.map((wordObj, index) => {
