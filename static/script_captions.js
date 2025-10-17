@@ -434,18 +434,25 @@ function updateOverlayAndCaptions() {
         // Build the HTML with current-word highlighting (keeps your styles intact)
         let displayedWords;
         if (selectedStyle !== "block-style") {
-            displayedWords = segWords.map((wordObj) => {
-                return (currentTime >= wordObj.start && currentTime <= wordObj.end)
-                    ? `<span class="current-word">${wordObj.word}</span>`
-                    : wordObj.word;
-            });
-        } if (selectedStyle == "block-style-hindi") {
-            displayedWords = segWords.map((wordObj) => {
-                return (currentTime >= wordObj.start && currentTime <= wordObj.end)
-                    ? `<span class="current-word">${wordObj.word}</span><br>`
-                    : `${wordObj.word}<br>`;
-            });
-        } else {
+
+            if (selectedStyle == "block-style-hindi") {
+                displayedWords = segWords.map((wordObj) => {
+                    return (currentTime >= wordObj.start && currentTime <= wordObj.end)
+                        ? `<span class="current-word">${wordObj.word}</span><br>`
+                        : `${wordObj.word}<br>`;
+                });
+            } else {
+                displayedWords = segWords.map((wordObj) => {
+                    return (currentTime >= wordObj.start && currentTime <= wordObj.end)
+                        ? `<span class="current-word">${wordObj.word}</span>`
+                        : wordObj.word;
+                });
+            }
+
+
+        }
+
+        else {
             // reuse your block-style logic but scoped to segWords
             displayedWords = segWords.map((wordObj, index) => {
                 let span = document.createElement("span");
@@ -598,7 +605,7 @@ function renderWordEditor() {
         notebookWordDiv.appendChild(deleteBtn);
         notebookEditor.appendChild(notebookWordDiv); // Clone for notebook editor
     });
-    notebooklmText.innerHTML = captionstext ; // Set the full text in notebooklmText
+    notebooklmText.innerHTML = captionstext; // Set the full text in notebooklmText
 
 }
 
@@ -612,7 +619,7 @@ function copyData() {
         .catch(err => {
             console.error("Failed to copy text: ", err);
             // alert("Failed to copy text. Please try again.");
-    });
+        });
 }
 // 🔹 Handle Editing
 wordEditor.addEventListener("input", (event) => {
@@ -692,7 +699,7 @@ document.body.addEventListener("change", (e) => {
 });
 
 // On page load, set first word as start
-window.addEventListener("load", () => {  
+window.addEventListener("load", () => {
 
     setTimeout(() => {
         if (markedSections.length === 0) autoSetStart(0); // first word
