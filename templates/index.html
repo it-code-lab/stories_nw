@@ -100,13 +100,189 @@
             visibility: visible;
             opacity: 1;
         }
+
+        /* --- Top nav bar --- */
+        .topnav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            background: #ffffffcc;
+            /* a bit translucent */
+            backdrop-filter: blur(6px);
+            border-bottom: 1px solid #e9e9e9;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+            padding: 8px 12px;
+        }
+
+        .topnav .scroller {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: thin;
+        }
+
+        .topnav a {
+            display: inline-block;
+            font: 600 13px/1.4 Arial, sans-serif;
+            color: #333;
+            text-decoration: none;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 999px;
+            padding: 8px 12px;
+        }
+
+        .topnav a:hover {
+            background: #e8eefc;
+            border-color: #cfe0ff;
+        }
+
+        .topnav a.active {
+            background: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+
+        /* Give the page top padding so content isn’t hidden under the fixed nav */
+        body {
+            padding-top: 64px;
+        }
+
+        /* Smooth scroll + make headings stop below the fixed nav */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        form {
+            scroll-margin-top: 72px;
+        }
+
+        /* keeps form title visible under nav */
+        /* Toggle button */
+        .nav-toggle {
+            margin-left: 8px;
+            padding: 8px 10px;
+            font: 600 13px/1 Arial, sans-serif;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 999px;
+            cursor: pointer;
+        }
+
+        .nav-toggle:hover {
+            background: #e0e7ff
+        }
+
+        /* Backdrop + panel */
+        .nav-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .25);
+            z-index: 9998;
+        }
+
+        .nav-expand {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 56px;
+            width: min(1100px, 96vw);
+            max-height: 70vh;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, .15);
+            z-index: 9999;
+            overflow: auto;
+        }
+
+        .nav-expand-inner {
+            padding: 14px;
+        }
+
+        .nav-expand-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #navSearch {
+            flex: 1;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .nav-close {
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        .nav-close:hover {
+            background: #f3f4f6
+        }
+
+        /* Grid of section links */
+        .nav-grid {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .nav-grid a {
+            display: block;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #f8fafc;
+            text-decoration: none;
+            color: #111827;
+            font: 600 14px/1.2 Arial, sans-serif;
+        }
+
+        .nav-grid a:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+        }
     </style>
 
 </head>
 
 <body>
+    <nav class="topnav">
+        <div class="scroller" id="topNavLinks"></div>
+
+        <!-- Toggle button (right side) -->
+        <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navExpand"
+            title="Show all sections">
+            ▤ All
+        </button>
+    </nav>
+
+    <!-- Expandable panel + backdrop -->
+    <div class="nav-backdrop" id="navBackdrop" hidden></div>
+    <div class="nav-expand" id="navExpand" hidden>
+        <div class="nav-expand-inner">
+            <div class="nav-expand-header">
+                <strong>All Sections</strong>
+                <input id="navSearch" type="text" placeholder="Filter…" aria-label="Filter sections">
+                <button id="navClose" class="nav-close" title="Close">✕</button>
+            </div>
+            <div class="nav-grid" id="navGrid"></div>
+        </div>
+    </div>
+
+
     <form id="contentForm">
-        <h2>Content Processor</h2>
+        <h2 style="background-color: yellow;">Content Processor</h2>
 
         <label>Website URLs (semicolon-separated):</label>
         <textarea name="urls" rows="4"></textarea>
@@ -246,7 +422,7 @@
     </form>
     <br>
     <form id="generateTTSAudio">
-        <h2>Generate TTS Audio</h2>
+        <h2 style="background-color:aqua;">Generate TTS</h2>
 
         <label>Enter Text:</label>
         <textarea name="ttstext" rows="20"></textarea>
@@ -280,7 +456,7 @@
     </form>
     <br>
     <form id="runCaptionGenerator">
-        <h2>Captions Generator</h2>
+        <h2 style="background-color:khaki;">Generate Captions</h2>
         <h3>Prestep for Audio->WordTimeStamps-Video</h3>
         <div>Run caption_generator.py: Prestep for Audio->WordTimeStamps-Video above
             <ol>
@@ -310,7 +486,7 @@
 
     <br>
     <form id="sunoToVideoGenerator">
-        <h2>Suno.com song + Video Clip to video generator</h2>
+        <h2 style="background-color:coral">Suno.com song + Video Clip</h2>
         <div>
             <ol>
                 <li>Place song audio.wav inside edit_vid_audio.</li>
@@ -366,9 +542,11 @@
 
         For <b>Hindi</b> language audio
         <ul>
-            <li>Create Hindi captions using <a href="hindi_caption_builder" target="_blank">hindi_caption_builder</a> Export the captions to word_timestamps.json.</li>
-                    <li>Then Run OBS Recorder to create final video for upload. Parameters: Language-Hindi, Caption-style4, words per
-                        caption-1,outputfile - edit_vid_output/output.mp4 </li>
+            <li>Create Hindi captions using <a href="hindi_caption_builder" target="_blank">hindi_caption_builder</a>
+                Export the captions to word_timestamps.json.</li>
+            <li>Then Run OBS Recorder to create final video for upload. Parameters: Language-Hindi, Caption-style4,
+                words per
+                caption-1,outputfile - edit_vid_output/output.mp4 </li>
 
             <!-- <li><a href="apply_caption" target="_blank">Create Videos with Caption</a>. If input clip
                 size is "landscape", Create video button will additionally create Portrait
@@ -379,7 +557,7 @@
 
 
     <form id="sunoNImageToVideoGenerator">
-        <h2>Suno.com song + Images to video generator</h2>
+        <h2>Suno.com song + Images</h2>
         <div>
             <ol>
                 <li>Place song audio.wav inside edit_vid_audio.</li>
@@ -433,9 +611,11 @@
 
         For <b>Hindi</b> language audio
         <ul>
-            <li>Create Hindi captions using <a href="hindi_caption_builder" target="_blank">hindi_caption_builder</a> Export the captions to word_timestamps.json.</li>
-                    <li>Then Run OBS Recorder to create final video for upload. Parameters: Language-Hindi, Caption-style4, words per
-                        caption-1,outputfile - edit_vid_output/output.mp4 </li>
+            <li>Create Hindi captions using <a href="hindi_caption_builder" target="_blank">hindi_caption_builder</a>
+                Export the captions to word_timestamps.json.</li>
+            <li>Then Run OBS Recorder to create final video for upload. Parameters: Language-Hindi, Caption-style4,
+                words per
+                caption-1,outputfile - edit_vid_output/output.mp4 </li>
 
             <!-- <li><a href="apply_caption" target="_blank">Create Videos with Caption</a>. If input clip
                 size is "landscape", Create video button will additionally create Portrait
@@ -445,7 +625,7 @@
     <br>
 
     <form id="uploadToYoutube">
-        <h2>Run Youtube Upload</h2>
+        <h2>Youtube Upload</h2>
         <div> To be run after video created in Processed_video folder and record is added in video_records.xlsx
 
 
@@ -457,7 +637,7 @@
 
     <br>
     <form id="runOBSRecorder">
-        <h2>Run OBS Recorder</h2>
+        <h2>OBS Recorder</h2>
         <div> To be run if recording as part of whole Process above failed.
             The output will be created as test.mp4.
             Move that to under processed_video folder with right name before running the YouTube Upload.
@@ -535,21 +715,21 @@
 
     <br>
     <form id="thumbnailMaker">
-        <h2>Open Thumbnail Maker</h2>
+        <h2>Thumbnail Maker</h2>
         <a href="thumbnail" target="_blank">Open Thumbnail Maker</a>
         (Opens in new tab)
     </form>
 
     <br>
     <form id="aiVideoPromptMaker">
-        <h2>Open AI Video Prompt Maker</h2>
+        <h2>AI Video Prompt Maker</h2>
         <a href="aivideoprompt" target="_blank">Open AI Video Prompt Maker</a>
         (Opens in new tab)
     </form>
 
     <br>
     <form id="runVideoEditor">
-        <h2>Bulk Video Editor</h2>
+        <h2>Video Editor</h2>
         <div> To be used to slow (pixverse) video speed to increase length. Cut portion of video to remove watermark.
             Add own watermark. Add background audio.
             <br><br>Place the input mp4 files in edit_vid_input folder. Output files will be created in edit_vid_output.
@@ -671,6 +851,195 @@
         <input type="number" name="duration" min="1" max="1000" value="170">
         <button type="submit">Create Video</button>
     </form>
+
+    <script>
+        // 1) Build a label for each form based on its H2 (fallback to form id)
+        function slugToLabel(slug) {
+            return slug
+                .replace(/[-_]+/g, ' ')
+                .replace(/\b\w/g, c => c.toUpperCase());
+        }
+
+        function buildTopNav() {
+            const container = document.getElementById('topNavLinks');
+            if (!container) return;
+
+            // Select all forms that have an ID
+            const forms = Array.from(document.querySelectorAll('form[id]'));
+
+            const frag = document.createDocumentFragment();
+
+            forms.forEach(form => {
+                const id = form.id;
+                const h2 = form.querySelector('h2');
+                const label = (h2 && h2.textContent.trim()) || slugToLabel(id);
+
+                const a = document.createElement('a');
+                a.href = `#${id}`;
+                a.textContent = label.length > 30 ? label.slice(0, 30) + '…' : label;
+                a.dataset.target = id;
+                frag.appendChild(a);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(frag);
+        }
+
+        // 2) Highlight the active link while scrolling
+        function activateOnScroll() {
+            const links = Array.from(document.querySelectorAll('.topnav a'));
+            const map = new Map(links.map(a => [a.dataset.target, a]));
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const id = entry.target.id;
+                    const link = map.get(id);
+                    if (!link) return;
+
+                    if (entry.isIntersecting) {
+                        links.forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                        // Ensure the active pill stays in view when scrolled
+                        link.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                    }
+                });
+            }, {
+                rootMargin: '-60px 0px -70% 0px', // triggers as the form’s top passes under the nav
+                threshold: 0
+            });
+
+            document.querySelectorAll('form[id]').forEach(section => observer.observe(section));
+        }
+
+        // 3) Prevent the fixed-nav from covering the target when navigating via hash (extra-safe)
+        function offsetHashJump() {
+            const headerH = document.querySelector('.topnav')?.offsetHeight || 64;
+            if (location.hash) {
+                const el = document.querySelector(location.hash);
+                if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - (headerH + 8) });
+            }
+            window.addEventListener('hashchange', () => {
+                const el = document.querySelector(location.hash);
+                if (el) {
+                    const headerH2 = document.querySelector('.topnav')?.offsetHeight || 64;
+                    window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - (headerH2 + 8), behavior: 'smooth' });
+                }
+            });
+        }
+
+        // 4) Init
+        document.addEventListener('DOMContentLoaded', () => {
+            buildTopNav();
+            activateOnScroll();
+            offsetHashJump();
+        });
+        // Build both the top pills and the expanded grid
+        function collectForms() {
+            return Array.from(document.querySelectorAll('form[id]')).map(f => {
+                const id = f.id;
+                const h2 = f.querySelector('h2');
+                const label = (h2 && h2.textContent.trim()) ||
+                    id.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                return { id, label };
+            });
+        }
+
+        function buildTopNav() {
+            const container = document.getElementById('topNavLinks');
+            if (!container) return;
+            const frag = document.createDocumentFragment();
+            collectForms().forEach(({ id, label }) => {
+                const a = document.createElement('a');
+                a.href = `#${id}`;
+                a.textContent = label.length > 30 ? label.slice(0, 30) + '…' : label;
+                a.dataset.target = id;
+                frag.appendChild(a);
+            });
+            container.innerHTML = '';
+            container.appendChild(frag);
+        }
+
+        function buildExpandedNav() {
+            const grid = document.getElementById('navGrid');
+            if (!grid) return;
+            const frag = document.createDocumentFragment();
+
+            collectForms()
+                .sort((a, b) => a.label.localeCompare(b.label)) // alphabetical
+                .forEach(({ id, label }) => {
+                    const a = document.createElement('a');
+                    a.href = `#${id}`;
+                    a.textContent = label;
+                    a.dataset.target = id;
+                    frag.appendChild(a);
+                });
+
+            grid.innerHTML = '';
+            grid.appendChild(frag);
+        }
+
+        // Open/close helpers
+        function openNavPanel() {
+            document.getElementById('navBackdrop').hidden = false;
+            document.getElementById('navExpand').hidden = false;
+            document.getElementById('navToggle').setAttribute('aria-expanded', 'true');
+            document.getElementById('navSearch').focus();
+        }
+        function closeNavPanel() {
+            document.getElementById('navBackdrop').hidden = true;
+            document.getElementById('navExpand').hidden = true;
+            document.getElementById('navToggle').setAttribute('aria-expanded', 'false');
+            // clear filter
+            const s = document.getElementById('navSearch');
+            if (s && s.value) { s.value = ''; filterNav(''); }
+        }
+
+        // Filter items while typing
+        function filterNav(q) {
+            const items = document.querySelectorAll('#navGrid a');
+            const term = q.trim().toLowerCase();
+            items.forEach(a => {
+                const show = a.textContent.toLowerCase().includes(term);
+                a.style.display = show ? '' : 'none';
+            });
+        }
+
+        // Wire up events
+        document.addEventListener('DOMContentLoaded', () => {
+            buildTopNav();
+            buildExpandedNav();
+
+            // Keep existing active-on-scroll behavior you already added
+            // (no changes needed)
+
+            const toggle = document.getElementById('navToggle');
+            const closeBtn = document.getElementById('navClose');
+            const backdrop = document.getElementById('navBackdrop');
+            const grid = document.getElementById('navGrid');
+            const search = document.getElementById('navSearch');
+
+            toggle?.addEventListener('click', () => {
+                const expanded = toggle.getAttribute('aria-expanded') === 'true';
+                expanded ? closeNavPanel() : openNavPanel();
+            });
+            closeBtn?.addEventListener('click', closeNavPanel);
+            backdrop?.addEventListener('click', closeNavPanel);
+
+            // Close on ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !document.getElementById('navExpand').hidden) closeNavPanel();
+            });
+
+            // Navigate & close when clicking an item
+            grid?.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A') closeNavPanel();
+            });
+
+            // Live filter
+            search?.addEventListener('input', (e) => filterNav(e.target.value));
+        });
+    </script>
+
     <script>
         const voices = {{ voice_map | tojson }};
         function updateVoices() {
@@ -872,10 +1241,10 @@
             if (!form) return; // safety check
 
             const orientationSelect = form.querySelector('select[name="orientation"]');
-            const captionStyleSelect  = form.querySelector('select[name="captStyle"]');
-            const captionLengthInput  = form.querySelector('input[name="captLength"]');
-            const languageSelect      = form.querySelector('select[name="language"]'); 
-            const bgMusicSelect      = form.querySelector('select[name="bgMusicSelect"]');
+            const captionStyleSelect = form.querySelector('select[name="captStyle"]');
+            const captionLengthInput = form.querySelector('input[name="captLength"]');
+            const languageSelect = form.querySelector('select[name="language"]');
+            const bgMusicSelect = form.querySelector('select[name="bgMusicSelect"]');
 
             if (orientationSelect && captionStyleSelect && captionLengthInput) {
                 orientationSelect.addEventListener('change', function () {
