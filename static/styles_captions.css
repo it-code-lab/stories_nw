@@ -581,7 +581,7 @@
     font-size: 1em;
 }
 
-.block-style-hindi {
+.hindi-song-block  {
     position: absolute;
     left: 50%;
     bottom: 20% !important;
@@ -596,6 +596,29 @@
     opacity: 0;
     /* transition: opacity 0.5s ease-in-out; */
     font-size: 1em !important;
+    background-color: rgba(0, 0, 0, 0.413) !important;
+    font-family: 'luckiest guy' !important;
+    width: max-content !important;
+}
+
+.hindi-story-block {
+    position: absolute;
+    left: 50%;
+    bottom: 20% !important;
+    /* transform: translate(-50%, -50%); */
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.6;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    /* transition: opacity 0.5s ease-in-out; */
+    font-size: 1em !important;
+    background-color: rgba(0, 0, 0, 0.413) !important;
+    font-family: 'luckiest guy' !important;
+    width: max-content !important;
 }
 
 #captionStyle {
@@ -633,15 +656,23 @@
     transition: transform 0.03s ease-in-out !important;
 }
 
-.block-style-hindi .current-word {
+.hindi-song-block .current-word {
     background-color: rgb(231, 74, 105) !important;
     color: white !important;
-    padding: 5px 12px;
+    /* padding: 5px 12px;
     border-radius: 5px;
-    font-weight: bold;
+    font-weight: bold; */
     transition: transform 0.03s ease-in-out !important;
 }
 
+ .hindi-story-block .current-word {
+    background-color: rgb(231, 74, 105) !important;
+    color: white !important;
+    /* padding: 5px 12px;
+    border-radius: 5px;
+    font-weight: bold; */
+    transition: transform 0.03s ease-in-out !important;
+}
 /* 🔹 Rotating Words for Visual Appeal */
 .angle1 {
     transform: rotate(-4deg);
@@ -855,10 +886,21 @@
 
 }
 
-.portrait #captions.block-style-hindi {
+.portrait #captions.hindi-song-block  {
     font-size: 0.8em !important;
 }
 
+.portrait #captions.hindi-story-block {
+    font-size: 0.8em !important;
+}
+
+.landscape #captions.hindi-song-block  {
+    font-size: 1.8em !important;
+}
+
+.landscape #captions.hindi-story-block {
+    font-size: 1.8em !important;
+}
 .landscape #captions {
 
     white-space: normal;
