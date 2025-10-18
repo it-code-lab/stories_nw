@@ -501,6 +501,7 @@ timeline.addEventListener("input", () => {
 
 
 function computeCaptionSegments() {
+    let minLineGapSec = document.getElementById("minLineGapSec");
     captionSegments = [];
     if (!Array.isArray(captionsData) || captionsData.length === 0) return;
 
@@ -944,6 +945,7 @@ function updateVideoOrientation() {
 
     if (selectedOrientation === "portrait") {
         document.body.classList.add("portrait");
+        document.body.classList.remove("landscape");
         // video.width = 720;
         // video.height = 1280;
     } else {

@@ -584,7 +584,7 @@
 .block-style-hindi {
     position: absolute;
     left: 50%;
-    top: 10%;
+    bottom: 20% !important;
     /* transform: translate(-50%, -50%); */
     text-align: center;
     font-family: 'Poppins', sans-serif;
@@ -595,7 +595,7 @@
     justify-content: center;
     opacity: 0;
     /* transition: opacity 0.5s ease-in-out; */
-    font-size: 1em;
+    font-size: 1em !important;
 }
 
 #captionStyle {
@@ -853,6 +853,10 @@
     /* margin: 20px; */
     width: 80%;
 
+}
+
+.portrait #captions.block-style-hindi {
+    font-size: 0.8em !important;
 }
 
 .landscape #captions {
