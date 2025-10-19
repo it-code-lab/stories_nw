@@ -1,6 +1,6 @@
 import shutil
-from flask import Flask, request, jsonify, render_template, send_from_directory
-import json
+from flask import Flask, request, jsonify, render_template, send_from_directory, abort
+import subprocess, json, math
 from flask_cors import CORS
 import os
 import traceback  # to print detailed error info
@@ -11,10 +11,68 @@ from settings import background_music_options, font_settings, tts_engine, voices
 from video_editor import batch_process
 from youtube_uploader import upload_videos
 import re
+from pathlib import Path
+import wave
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
 
+# Always resolve relative to this file (server.py)
+BASE_DIR = Path(__file__).resolve().parent
+AUDIO_PATH = BASE_DIR / "audio.wav"   # your file is beside server.py
+
+def _duration_via_wave(p: Path):
+    """Try Python wave for PCM WAV."""
+    import wave
+    with wave.open(str(p), 'rb') as w:
+        frames = w.getnframes()
+        rate = w.getframerate()
+        if rate == 0:
+            raise ValueError("Invalid WAV: sample rate is 0")
+        return frames / float(rate)
+
+def _duration_via_ffprobe(p: Path):
+    """Fallback: use ffprobe for any codec/container."""
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(p)
+    ]
+    out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True).strip()
+    # ffprobe prints a float in seconds (can be "N/A")
+    if not out or out.upper() == "N/A":
+        raise ValueError("ffprobe returned no duration")
+    dur = float(out)
+    if not math.isfinite(dur):
+        raise ValueError("Non-finite duration from ffprobe")
+    return dur
+
+@app.route("/api/audio-duration")
+def audio_duration():
+    p = AUDIO_PATH
+    if not p.exists():
+        return jsonify({"error": f"File not found: {str(p)}", "cwd": str(BASE_DIR)}), 404
+    try:
+        # 1) Try wave first (fast, if PCM)
+        try:
+            seconds = _duration_via_wave(p)
+        except Exception as e_wave:
+            # 2) Fallback to ffprobe
+            seconds = _duration_via_ffprobe(p)
+
+        return jsonify({"seconds": round(seconds, 2), "path": str(p)})
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            "error": "ffprobe failed",
+            "detail": e.output
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "error": type(e).__name__,
+            "detail": str(e),
+            "path": str(p)
+        }), 500
 
 @app.route('/sounds/<path:filename>')
 def serve_sound(filename):

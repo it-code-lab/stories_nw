@@ -681,7 +681,9 @@
         <input type="number" id="captLength" name="captLength" value="5" min="1" max="1000">
 
         <label>Duration (Seconds):</label>
-        <input type="text" name="duration">
+        <input type="text" name="duration" id="audioDuration" placeholder="auto-filled from audio.wav">
+        <button type="button" id="getDurationButton">Get Duration</button>
+
 
         <label for="minLineGapSec">Min gap between lines (sec)</label>
         <input type="number" id="minLineGapSec" name="minLineGapSec" value="0.40" step="0.05" min="0" />
@@ -856,25 +858,43 @@
 
     <br>
     <form id="splitTextForm">
-    <h2 style="background-color:lightgreen;">Split Content into Sentences</h2>
+        <h2 style="background-color:lightgreen;">Split Content into Sentences</h2>
 
-    <label>Enter Text (sentences separated by "|" or "?"):</label>
-    <textarea id="splitInput" rows="8" placeholder="Enter your text here..."></textarea>
+        <label>Enter Text (sentences separated by "|" or "?"):</label>
+        <textarea id="splitInput" rows="8" placeholder="Enter your text here..."></textarea>
 
-    <label>Result:</label>
-    <textarea id="splitOutput" rows="8" readonly placeholder="Result will appear here..."></textarea>
+        <label>Result:</label>
+        <textarea id="splitOutput" rows="8" readonly placeholder="Result will appear here..."></textarea>
 
-    <button type="button" id="splitButton">Split Text</button>
-    <button type="button" id="copyButton" style="margin-top:10px;">Copy Result</button>
+        <button type="button" id="splitButton">Split Text</button>
+        <button type="button" id="copyButton" style="margin-top:10px;">Copy Result</button>
     </form>
 
     <script>
-
+        async function fetchAudioDuration() {
+            const durationInput = document.getElementById('audioDuration');
+            try {
+                const res = await fetch('/api/audio-duration?v=' + Date.now()); // cache-bust
+                if (!res.ok) {
+                    alert('audio.wav not found (server returned ' + res.status + ').');
+                    return;
+                }
+                const { seconds } = await res.json();
+                durationInput.value = Number(seconds).toFixed(2);
+            } catch (e) {
+                console.error(e);
+                alert('Error fetching audio duration.');
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('getDurationButton')?.addEventListener('click', fetchAudioDuration);
+            // Or auto-run: fetchAudioDuration();
+        });
         document.getElementById("splitButton").addEventListener("click", () => {
             const input = document.getElementById("splitInput").value.trim();
             if (!input) {
-            alert("Please enter some text first!");
-            return;
+                alert("Please enter some text first!");
+                return;
             }
 
             // Match sentences that end with either | or ?
@@ -882,8 +902,8 @@
             const parts = input.match(/[^।?]+[।?]/g);
 
             if (!parts) {
-            alert("No '|' or '?' found in the text.");
-            return;
+                alert("No '|' or '?' found in the text.");
+                return;
             }
 
             // Clean and join with newlines (keeping the splitters)
@@ -896,8 +916,8 @@
         document.getElementById("copyButton").addEventListener("click", () => {
             const output = document.getElementById("splitOutput");
             if (!output.value.trim()) {
-            alert("Nothing to copy!");
-            return;
+                alert("Nothing to copy!");
+                return;
             }
             output.select();
             document.execCommand("copy");
@@ -1288,27 +1308,27 @@
 
 
         document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('runOBSRecorder');
-        if (!form) return; // safety
+            const form = document.getElementById('runOBSRecorder');
+            if (!form) return; // safety
 
-        const orientationSelect   = form.querySelector('select[name="orientation"]');
-        const captionStyleSelect  = form.querySelector('select[name="captStyle"]');
-        const captionLengthInput  = form.querySelector('input[name="captLength"]');
-        const languageSelect      = form.querySelector('select[name="language"]');
-        const bgMusicSelect       = form.querySelector('select[name="bgMusicSelect"]');
-        const minLineGapSecInput  = form.querySelector('input[name="minLineGapSec"]');
+            const orientationSelect = form.querySelector('select[name="orientation"]');
+            const captionStyleSelect = form.querySelector('select[name="captStyle"]');
+            const captionLengthInput = form.querySelector('input[name="captLength"]');
+            const languageSelect = form.querySelector('select[name="language"]');
+            const bgMusicSelect = form.querySelector('select[name="bgMusicSelect"]');
+            const minLineGapSecInput = form.querySelector('input[name="minLineGapSec"]');
 
-        // ✅ pass the function reference (no parentheses)
-        if (orientationSelect && captionStyleSelect && captionLengthInput) {
-            orientationSelect.addEventListener('change', updateCaptionDefaults);
-        }
-        captionStyleSelect.addEventListener('change', updateCaptionDefaults);
-        languageSelect.addEventListener('change', updateCaptionDefaults);
+            // ✅ pass the function reference (no parentheses)
+            if (orientationSelect && captionStyleSelect && captionLengthInput) {
+                orientationSelect.addEventListener('change', updateCaptionDefaults);
+            }
+            captionStyleSelect.addEventListener('change', updateCaptionDefaults);
+            languageSelect.addEventListener('change', updateCaptionDefaults);
 
-        // ✅ set initial values once on load
-        updateCaptionDefaults();
+            // ✅ set initial values once on load
+            updateCaptionDefaults();
         });
-   
+
         function updateCaptionDefaults() {
             const form = document.getElementById('runOBSRecorder');
             const orientationSelect = form.querySelector('select[name="orientation"]');
@@ -1317,6 +1337,7 @@
             const languageSelect = form.querySelector('select[name="language"]');
             const bgMusicSelect = form.querySelector('select[name="bgMusicSelect"]');
             const minLineGapSecInput = form.querySelector('input[name="minLineGapSec"]');
+            const vidDuration = form.querySelector('input[name="duration"]');
             if (languageSelect.value === 'hindi') {
                 if (orientationSelect.value === 'landscape') {
                     if (captionStyleSelect.value == 'style2-hindi-normal') {
@@ -1332,7 +1353,7 @@
                         minLineGapSecInput.value = 60;
                         bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                     }
-                }else if (orientationSelect.value === 'portrait') {
+                } else if (orientationSelect.value === 'portrait') {
                     if (captionStyleSelect.value == 'style2-hindi-normal') {
                         captionLengthInput.value = 1;
                         minLineGapSecInput.value = 0.40;
@@ -1346,6 +1367,7 @@
                         minLineGapSecInput.value = 60;
                         bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                     }
+
                 }
             } else if (orientationSelect.value === 'portrait') {
                 if (captionStyleSelect.value == 'song-block') {
@@ -1356,7 +1378,7 @@
                     captionLengthInput.value = 30;
                     minLineGapSecInput.value = 60;
                     bgMusicSelect.value = 'positive-wedding-01-657.mp3';
-                }else {
+                } else {
                     captionStyleSelect.value = 'style4';
                     captionLengthInput.value = 3;
                 }
@@ -1370,11 +1392,11 @@
                     captionLengthInput.value = 30;
                     minLineGapSecInput.value = 60;
                     bgMusicSelect.value = 'positive-wedding-01-657.mp3';
-                }else {
+                } else {
                     captionStyleSelect.value = 'style4';
                     captionLengthInput.value = 6;
                 }
-            }            
+            }
         }    
     </script>
 </body>
