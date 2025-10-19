@@ -599,6 +599,7 @@
     background-color: rgba(0, 0, 0, 0.413) !important;
     font-family: 'luckiest guy' !important;
     width: max-content !important;
+    max-width: 80%;
 }
 
 .hindi-story-block {
@@ -619,6 +620,7 @@
     background-color: rgba(0, 0, 0, 0.413) !important;
     font-family: 'luckiest guy' !important;
     width: max-content !important;
+    max-width: 80%;
 }
 
 #captionStyle {
