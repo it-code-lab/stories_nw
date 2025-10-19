@@ -518,7 +518,7 @@
     font-size: 1em;
 }
 
-.hindi-song-block , .hindi-story-block{
+.song-block , .story-block{
     position: absolute;
     left: 50%;
     top: 10%;
@@ -570,7 +570,7 @@
 }
 
 /* 🔹 Current Spoken Word */
-.hindi-song-block .current-word, hindi-story-block .current-word {
+.song-block .current-word, story-block .current-word {
     background-color: rgb(231, 74, 105) !important;
     color: white !important;
     padding: 5px 12px;

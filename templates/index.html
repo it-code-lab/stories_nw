@@ -672,8 +672,8 @@
             <option value="style11">Style 11</option>
             <option value="none">No Caption</option>
             <option value="block-style">Block Caption</option>
-            <option value="hindi-song-block">hindi-song-block</option>
-            <option value="hindi-story-block">hindi-story-block</option>
+            <option value="song-block">song-block</option>
+            <option value="story-block">story-block</option>
         </select>
 
 
@@ -854,7 +854,56 @@
         <button type="submit">Create Video</button>
     </form>
 
+    <br>
+    <form id="splitTextForm">
+    <h2 style="background-color:lightgreen;">Split Content into Sentences</h2>
+
+    <label>Enter Text (sentences separated by "|" or "?"):</label>
+    <textarea id="splitInput" rows="8" placeholder="Enter your text here..."></textarea>
+
+    <label>Result:</label>
+    <textarea id="splitOutput" rows="8" readonly placeholder="Result will appear here..."></textarea>
+
+    <button type="button" id="splitButton">Split Text</button>
+    <button type="button" id="copyButton" style="margin-top:10px;">Copy Result</button>
+    </form>
+
     <script>
+
+        document.getElementById("splitButton").addEventListener("click", () => {
+            const input = document.getElementById("splitInput").value.trim();
+            if (!input) {
+            alert("Please enter some text first!");
+            return;
+            }
+
+            // Match sentences that end with either | or ?
+            // Use a regex that captures the splitter too
+            const parts = input.match(/[^।?]+[।?]/g);
+
+            if (!parts) {
+            alert("No '|' or '?' found in the text.");
+            return;
+            }
+
+            // Clean and join with newlines (keeping the splitters)
+            const result = parts.map(s => s.trim()).join("\n");
+
+            document.getElementById("splitOutput").value = result;
+        });
+
+        // Optional: Copy result to clipboard
+        document.getElementById("copyButton").addEventListener("click", () => {
+            const output = document.getElementById("splitOutput");
+            if (!output.value.trim()) {
+            alert("Nothing to copy!");
+            return;
+            }
+            output.select();
+            document.execCommand("copy");
+            alert("Copied to clipboard!");
+        });
+
         // 1) Build a label for each form based on its H2 (fallback to form id)
         function slugToLabel(slug) {
             return slug
@@ -1239,58 +1288,94 @@
 
 
         document.addEventListener('DOMContentLoaded', function () {
-            const form = document.getElementById('runOBSRecorder');
-            if (!form) return; // safety check
+        const form = document.getElementById('runOBSRecorder');
+        if (!form) return; // safety
 
+        const orientationSelect   = form.querySelector('select[name="orientation"]');
+        const captionStyleSelect  = form.querySelector('select[name="captStyle"]');
+        const captionLengthInput  = form.querySelector('input[name="captLength"]');
+        const languageSelect      = form.querySelector('select[name="language"]');
+        const bgMusicSelect       = form.querySelector('select[name="bgMusicSelect"]');
+        const minLineGapSecInput  = form.querySelector('input[name="minLineGapSec"]');
+
+        // ✅ pass the function reference (no parentheses)
+        if (orientationSelect && captionStyleSelect && captionLengthInput) {
+            orientationSelect.addEventListener('change', updateCaptionDefaults);
+        }
+        captionStyleSelect.addEventListener('change', updateCaptionDefaults);
+        languageSelect.addEventListener('change', updateCaptionDefaults);
+
+        // ✅ set initial values once on load
+        updateCaptionDefaults();
+        });
+   
+        function updateCaptionDefaults() {
+            const form = document.getElementById('runOBSRecorder');
             const orientationSelect = form.querySelector('select[name="orientation"]');
             const captionStyleSelect = form.querySelector('select[name="captStyle"]');
             const captionLengthInput = form.querySelector('input[name="captLength"]');
             const languageSelect = form.querySelector('select[name="language"]');
             const bgMusicSelect = form.querySelector('select[name="bgMusicSelect"]');
             const minLineGapSecInput = form.querySelector('input[name="minLineGapSec"]');
-
-            if (orientationSelect && captionStyleSelect && captionLengthInput) {
-                orientationSelect.addEventListener('change', function () {
-                    if (languageSelect.value === 'hindi') {
-                        captionStyleSelect.value = 'style2-hindi-normal';
+            if (languageSelect.value === 'hindi') {
+                if (orientationSelect.value === 'landscape') {
+                    if (captionStyleSelect.value == 'style2-hindi-normal') {
                         captionLengthInput.value = 1;
+                        minLineGapSecInput.value = 0.40;
                         bgMusicSelect.value = 'positive-wedding-01-657.mp3';
-                    } else if (orientationSelect.value === 'portrait') {
-                        captionStyleSelect.value = 'style4';
-                        captionLengthInput.value = 3;
-                    } else if (orientationSelect.value === 'landscape') {
-                        captionStyleSelect.value = 'style4';
-                        captionLengthInput.value = 6;
+                    } else if (captionStyleSelect.value == 'song-block') {
+                        captionLengthInput.value = 4;
+                        minLineGapSecInput.value = 60;
+                        bgMusicSelect.value = 'none';
+                    } else if (captionStyleSelect.value == 'story-block') {
+                        captionLengthInput.value = 5;
+                        minLineGapSecInput.value = 60;
+                        bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                     }
-                });
-            }
-            captionStyleSelect.addEventListener('change', function () {
-                if (captionStyleSelect.value == 'style2-hindi-normal') {
-                    captionLengthInput.value = 1;
-                    minLineGapSecInput.value = 0.40;
+                }else if (orientationSelect.value === 'portrait') {
+                    if (captionStyleSelect.value == 'style2-hindi-normal') {
+                        captionLengthInput.value = 1;
+                        minLineGapSecInput.value = 0.40;
+                        bgMusicSelect.value = 'positive-wedding-01-657.mp3';
+                    } else if (captionStyleSelect.value == 'song-block') {
+                        captionLengthInput.value = 5;
+                        minLineGapSecInput.value = 60;
+                        bgMusicSelect.value = 'none';
+                    } else if (captionStyleSelect.value == 'story-block') {
+                        captionLengthInput.value = 5;
+                        minLineGapSecInput.value = 60;
+                        bgMusicSelect.value = 'positive-wedding-01-657.mp3';
+                    }
                 }
-                if (captionStyleSelect.value == 'hindi-song-block') {
-                    captionLengthInput.value = 5;
+            } else if (orientationSelect.value === 'portrait') {
+                if (captionStyleSelect.value == 'song-block') {
+                    captionLengthInput.value = 30;
                     minLineGapSecInput.value = 60;
-                }
-            });
-            languageSelect.addEventListener('change', function () {
-                if (languageSelect.value === 'hindi') {
-                    captionStyleSelect.value = 'style2-hindi-normal';
-                    captionLengthInput.value = 1;
+                    bgMusicSelect.value = 'none';
+                } else if (captionStyleSelect.value == 'story-block') {
+                    captionLengthInput.value = 30;
+                    minLineGapSecInput.value = 60;
                     bgMusicSelect.value = 'positive-wedding-01-657.mp3';
-                } else if (languageSelect.value === 'english') {
-                    // Reset to defaults for English
-                    if (orientationSelect.value === 'portrait') {
-                        captionStyleSelect.value = 'style4';
-                        captionLengthInput.value = 3;
-                    } else if (orientationSelect.value === 'landscape') {
-                        captionStyleSelect.value = 'style4';
-                        captionLengthInput.value = 6;
-                    }
+                }else {
+                    captionStyleSelect.value = 'style4';
+                    captionLengthInput.value = 3;
                 }
-            });
-        });        
+
+            } else if (orientationSelect.value === 'landscape') {
+                if (captionStyleSelect.value == 'song-block') {
+                    captionLengthInput.value = 30;
+                    minLineGapSecInput.value = 60;
+                    bgMusicSelect.value = 'none';
+                } else if (captionStyleSelect.value == 'story-block') {
+                    captionLengthInput.value = 30;
+                    minLineGapSecInput.value = 60;
+                    bgMusicSelect.value = 'positive-wedding-01-657.mp3';
+                }else {
+                    captionStyleSelect.value = 'style4';
+                    captionLengthInput.value = 6;
+                }
+            }            
+        }    
     </script>
 </body>
 

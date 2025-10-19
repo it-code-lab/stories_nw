@@ -581,7 +581,7 @@
     font-size: 1em;
 }
 
-.hindi-song-block  {
+.song-block  {
     position: absolute;
     left: 50%;
     bottom: 20% !important;
@@ -602,7 +602,7 @@
     max-width: 80%;
 }
 
-.hindi-story-block {
+.story-block {
     position: absolute;
     left: 50%;
     bottom: 20% !important;
@@ -658,7 +658,7 @@
     transition: transform 0.03s ease-in-out !important;
 }
 
-.hindi-song-block .current-word {
+.song-block .current-word {
     background-color: rgb(231, 74, 105) !important;
     color: white !important;
     /* padding: 5px 12px;
@@ -667,7 +667,7 @@
     transition: transform 0.03s ease-in-out !important;
 }
 
- .hindi-story-block .current-word {
+ .story-block .current-word {
     background-color: rgb(231, 74, 105) !important;
     color: white !important;
     /* padding: 5px 12px;
@@ -888,19 +888,19 @@
 
 }
 
-.portrait #captions.hindi-song-block  {
+.portrait #captions.song-block  {
     font-size: 0.8em !important;
 }
 
-.portrait #captions.hindi-story-block {
+.portrait #captions.story-block {
     font-size: 0.8em !important;
 }
 
-.landscape #captions.hindi-song-block  {
+.landscape #captions.song-block  {
     font-size: 1.8em !important;
 }
 
-.landscape #captions.hindi-story-block {
+.landscape #captions.story-block {
     font-size: 1.8em !important;
 }
 .landscape #captions {

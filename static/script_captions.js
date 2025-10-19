@@ -435,7 +435,7 @@ function updateOverlayAndCaptions() {
         let displayedWords;
         if (selectedStyle !== "block-style") {
 
-            if (selectedStyle == "hindi-song-block") {
+            if (selectedStyle == "song-block") {
                 displayedWords = segWords.map((wordObj) => {
                     return (currentTime >= wordObj.start && currentTime <= wordObj.end)
                         ? `<span class="current-word">${wordObj.word}</span><br>`

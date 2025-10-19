@@ -43,8 +43,8 @@ font_settings = {
     "style10": "style10",    
     "none": "none",
     "block-style": "block-style", 
-    "hindi-song-block": "hindi-song-block", 
-    "hindi-story-block": "hindi-story-block", 
+    "song-block": "song-block", 
+    "story-block": "story-block", 
 }
 # Supported Male and Female Voices for Neural Engine
 voices = {
