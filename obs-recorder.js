@@ -56,7 +56,8 @@ function waitForFileUnlock(sourcePath, targetPath, retries = 10, delayMs = 500) 
 
     const beforeFiles = listFiles();
 
-    await startOBSRecording(sceneName, profileName);
+    // await startOBSRecording(sceneName, profileName);
+    await startOBSRecording( profileName);
     await new Promise(res => setTimeout(res, duration * 1000));
     await stopOBSRecording();
 
