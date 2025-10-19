@@ -74,11 +74,79 @@ def audio_duration():
             "path": str(p)
         }), 500
 
+@app.route('/generate_thumbnail', methods=['POST'])
+def generate_thumbnail():
+    try:
+        from thumbnail_gen import create_thumbnail  # import the earlier script
+        image_path = request.form.get('image')
+        bg_color = request.form.get('bg_color', '#000000')
+        text = request.form.get('text', '')
+        colors = request.form.get('colors', 'auto')
+        output_path = os.path.join('edit_vid_thumbnail', 'thumbnail.png')
+
+        create_thumbnail(
+            image_path=image_path,
+            bg_color=bg_color,
+            text=text,
+            colors=colors,
+            output_path=output_path
+        )
+
+        return jsonify({
+            "message": "✅ Thumbnail created successfully!",
+            "thumbnail": output_path
+        })
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/list_thumbnail_images')
+def list_images():
+    """List available thumbnail images."""
+    img_dir = BASE_DIR / "thumbnail_images"
+    images = [f"/thumbnail_images/{f.name}" for f in img_dir.glob("*.png")]
+    images += [f"/thumbnail_images/{f.name}" for f in img_dir.glob("*.jpg")]
+    return jsonify({"images": images})
+
+@app.route('/list_background_videos')
+def list_videos():
+    """List available background videos."""
+    vid_dir = BASE_DIR / "background_videos"
+    videos = [f"/background_videos/{f.name}" for f in vid_dir.glob("*.mp4")]
+    return jsonify({"videos": videos})
+
+@app.route('/select_background_video', methods=['POST'])
+def select_background_video():
+    """Copy chosen video to edit_vid_input folder for use."""
+    data = request.json
+    src = data.get('video')
+    if not src:
+        return jsonify({"error": "Missing video path"}), 400
+
+    filename = os.path.basename(src)
+    src_path = os.path.join(BASE_DIR, src.strip("/"))
+    dest_path = os.path.join(BASE_DIR, "edit_vid_input", filename)
+    if not os.path.exists(src_path):
+        return jsonify({"error": f"File not found: {src_path}"}), 404
+
+    import shutil
+    shutil.copy(src_path, dest_path)
+    return jsonify({"message": "✅ Video selected and ready for editing!", "dest": dest_path})
+
 @app.route('/sounds/<path:filename>')
 def serve_sound(filename):
     sounds_dir = os.path.join(app.root_path, 'sounds')
     return send_from_directory(sounds_dir, filename)
 
+@app.route('/thumbnail_images/<path:filename>')
+def serve_thumbnail(filename):
+    sounds_dir = os.path.join(app.root_path, 'thumbnail_images')
+    return send_from_directory(sounds_dir, filename)
+
+@app.route('/background_videos/<path:filename>')
+def serve_bg_vid(filename):
+    sounds_dir = os.path.join(app.root_path, 'background_videos')
+    return send_from_directory(sounds_dir, filename)
 # ------------------------ API ROUTES ------------------------ #
 
 @app.route('/get_full_text', methods=['GET'])

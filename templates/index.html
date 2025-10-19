@@ -252,7 +252,39 @@
             background: #eef2ff;
             border-color: #c7d2fe;
         }
-    </style>
+
+        #previewContainer {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        #previewCanvas {
+            width: 640px;
+            height: 360px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #eee;
+        }
+
+        .color-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid #aaa;
+            display: inline-block;
+        }
+    .grid { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; justify-content:center; }
+    .item { border:2px solid transparent; border-radius:8px; overflow:hidden; cursor:pointer; transition:.2s; }
+    .item.selected { border-color:#007bff; box-shadow:0 0 8px rgba(0,123,255,.5); }
+    .item img, .item video { width:160px; height:100px; object-fit:cover; display:block; }
+
+</style>
 
 </head>
 
@@ -869,8 +901,173 @@
         <button type="button" id="splitButton">Split Text</button>
         <button type="button" id="copyButton" style="margin-top:10px;">Copy Result</button>
     </form>
+    <br>
+
+    <form id="thumbForm">
+        <h3>1️⃣ Select Thumbnail Image</h3>
+        <div id="imageContainer" class="grid"></div>
+        <input type="hidden" id="selectedImage" name="image">
+
+        <h3>2️⃣ Select Background Video</h3>
+        <div id="videoContainer" class="grid"></div>
+        <input type="hidden" id="selectedVideo">
+
+        <h3>3️⃣ Thumbnail Text and Styles</h3>
+
+        <label>Background Color (Left Side):</label>
+        <select id="bgColorSelect" name="bg_color">
+            <option value="#101010" data-color="#101010">Dark Gray</option>
+            <option value="#1E1E2F" data-color="#1E1E2F">Midnight Blue</option>
+            <option value="#0D7377" data-color="#0D7377">Teal</option>
+            <option value="#2E8B57" data-color="#2E8B57">Green</option>
+            <option value="#FF6600" data-color="#FF6600">Orange</option>
+            <option value="#8B0000" data-color="#8B0000">Maroon</option>
+            <option value="#800080" data-color="#800080">Purple</option>
+            <option value="#F5F5F5" data-color="#F5F5F5">Light Gray</option>
+        </select>
+
+        <label>Text (use "|" for new lines):</label>
+        <textarea name="text" id="textInput" rows="4"
+            placeholder="Example: Narak Chaturdashi|नरकासुर वध की कथा"></textarea>
+
+        <label>Text Colors (comma-separated or 'auto'):</label>
+        <input type="text" name="colors" id="colorInput" value="auto">
+
+        <button type="submit">Generate Thumbnail</button>
+
+        <div id="previewContainer">
+            <h3>🖼️ Live Preview</h3>
+            <canvas id="previewCanvas"></canvas>
+        </div>
+
+        <div id="result" style="text-align:center;margin-top:25px;"></div>
+    </form>
 
     <script>
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 640;
+        canvas.height = 360;
+
+        let selectedImage = null;
+        let selectedBgColor = '#101010';
+
+        // -------- Load Images and Videos --------
+        async function loadImages() {
+            const res = await fetch('/list_thumbnail_images');
+            const { images } = await res.json();
+            const c = document.getElementById('imageContainer');
+            c.innerHTML = '';
+            images.forEach(src => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<img src="${src}">`;
+                div.onclick = () => {
+                    document.querySelectorAll('#imageContainer .item').forEach(d => d.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedImage = src;
+                    document.getElementById('selectedImage').value = src;
+                    drawPreview();
+                };
+                //console.log('Adding image:', src);
+                c.appendChild(div);
+            });
+        }
+
+        async function loadVideos() {
+            const res = await fetch('/list_background_videos');
+            const { videos } = await res.json();
+            const c = document.getElementById('videoContainer');
+            c.innerHTML = '';
+            videos.forEach(src => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<video src="${src}" muted></video>`;
+                div.onclick = async () => {
+                    document.querySelectorAll('#videoContainer .item').forEach(d => d.classList.remove('selected'));
+                    div.classList.add('selected');
+                    document.getElementById('selectedVideo').value = src;
+                    await fetch('/select_background_video', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ video: src })
+                    });
+                };
+                //console.log('Adding video:', src);
+                c.appendChild(div);
+            });
+        }
+
+        // -------- Live Preview Drawing --------
+        async function drawPreview() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Left panel
+            const bg = selectedBgColor || '#101010';
+            const leftWidth = canvas.width / 2;
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, leftWidth, canvas.height);
+
+            // Right image
+            if (selectedImage) {
+                const img = new Image();
+                img.src = selectedImage;
+                await new Promise(res => { img.onload = res; });
+                const rightWidth = canvas.width - leftWidth;
+                ctx.drawImage(img, leftWidth, 0, rightWidth, canvas.height);
+            }
+
+            // Text overlay
+            const text = document.getElementById('textInput').value.trim();
+            if (text) {
+                const lines = text.split('|');
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                let y = canvas.height / 2 - ((lines.length - 1) * 40);
+                lines.forEach((line, i) => {
+                    ctx.font = 'bold 30px Arial';
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 3;
+                    ctx.strokeText(line, leftWidth / 2, y);
+                    ctx.fillText(line, leftWidth / 2, y);
+                    y += 60;
+                });
+            }
+        }
+
+        // -------- Events --------
+        document.getElementById('bgColorSelect').onchange = e => {
+            selectedBgColor = e.target.value;
+            drawPreview();
+        };
+        document.getElementById('textInput').oninput = drawPreview;
+        document.getElementById('colorInput').oninput = drawPreview;
+
+        document.getElementById('thumbForm').onsubmit = async e => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const res = await fetch('/generate_thumbnail', { method: 'POST', body: fd });
+            const result = await res.json();
+            const r = document.getElementById('result');
+            r.innerHTML = result.thumbnail
+                ? `<p>${result.message}</p><img src="${result.thumbnail}?v=${Date.now()}" width="640">`
+                : `<p style="color:red;">${result.error}</p>`;
+        };
+
+        window.addEventListener('load', () => {
+        loadImages().catch(console.error);
+        loadVideos().catch(console.error);
+        drawPreview();
+        });
+
+    </script>
+
+
+    <script>
+
+
         async function fetchAudioDuration() {
             const durationInput = document.getElementById('audioDuration');
             try {
@@ -1128,7 +1325,8 @@
         }
 
         // On page load, initialize voices for default gender
-        window.onload = updateVoices;
+        window.addEventListener('load', updateVoices);
+
 
         document.getElementById('contentForm').onsubmit = async function (e) {
             e.preventDefault();
@@ -1353,6 +1551,7 @@
                         minLineGapSecInput.value = 60;
                         bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                     }
+                    fetchAudioDuration();
                 } else if (orientationSelect.value === 'portrait') {
                     if (captionStyleSelect.value == 'style2-hindi-normal') {
                         captionLengthInput.value = 1;
@@ -1367,7 +1566,7 @@
                         minLineGapSecInput.value = 60;
                         bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                     }
-
+                    vidDuration.value = 176;
                 }
             } else if (orientationSelect.value === 'portrait') {
                 if (captionStyleSelect.value == 'song-block') {
@@ -1382,7 +1581,7 @@
                     captionStyleSelect.value = 'style4';
                     captionLengthInput.value = 3;
                 }
-
+                vidDuration.value = 176;
             } else if (orientationSelect.value === 'landscape') {
                 if (captionStyleSelect.value == 'song-block') {
                     captionLengthInput.value = 30;
@@ -1396,6 +1595,7 @@
                     captionStyleSelect.value = 'style4';
                     captionLengthInput.value = 6;
                 }
+                fetchAudioDuration()
             }
         }    
     </script>
