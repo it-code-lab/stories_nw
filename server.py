@@ -100,20 +100,81 @@ def generate_thumbnail():
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-@app.route('/list_thumbnail_images')
-def list_images():
-    """List available thumbnail images."""
-    img_dir = BASE_DIR / "thumbnail_images"
-    images = [f"/thumbnail_images/{f.name}" for f in img_dir.glob("*.png")]
-    images += [f"/thumbnail_images/{f.name}" for f in img_dir.glob("*.jpg")]
-    return jsonify({"images": images})
+def _safe_join(base: Path, sub: str) -> Path:
+    """Prevent path traversal; always return a child of base."""
+    p = (base / (sub or "")).resolve()
+    base = base.resolve()
+    if not str(p).startswith(str(base)):
+        abort(400, "Invalid folder")
+    return p
 
-@app.route('/list_background_videos')
-def list_videos():
-    """List available background videos."""
-    vid_dir = BASE_DIR / "background_videos"
-    videos = [f"/background_videos/{f.name}" for f in vid_dir.glob("*.mp4")]
-    return jsonify({"videos": videos})
+def _list_current(base_url: str, base_dir: Path, rel_folder: str, exts: set[str]):
+    """
+    Return files in the current folder and immediate subfolders.
+    - base_url: '/thumbnail_images' or '/background_videos'
+    - base_dir: BASE_DIR/'thumbnail_images' or 'background_videos'
+    - rel_folder: '' or 'krishna/diwali'
+    """
+    cur = _safe_join(base_dir, rel_folder)
+    if not cur.exists():
+        return {"cwd": rel_folder, "folders": [], "files": []}
+
+    # immediate subfolders
+    folders = []
+    for d in sorted([p for p in cur.iterdir() if p.is_dir()]):
+        rel = (Path(rel_folder) / d.name).as_posix()
+        folders.append(rel)
+
+    # files in current folder only
+    files = []
+    for f in sorted([p for p in cur.iterdir() if p.is_file()]):
+        if f.suffix.lower() in exts:
+            rel_file = (Path(rel_folder) / f.name).as_posix()
+            files.append(f"{base_url}/{rel_file}")
+
+    # build breadcrumb segments for UI
+    crumbs = []
+    accum = []
+    for part in Path(rel_folder).parts:
+        accum.append(part)
+        crumbs.append({"name": part, "path": "/".join(accum)})
+    return {"cwd": rel_folder, "folders": folders, "files": files, "breadcrumbs": crumbs}
+
+def _list_all_folders(base_dir: Path):
+    """Return ALL subfolders (including root '') for the folder dropdown."""
+    out = [""]
+    for d, subdirs, _ in os.walk(base_dir):
+        rel = os.path.relpath(d, base_dir)
+        if rel == ".":
+            continue
+        out.append(rel.replace("\\", "/"))
+    return sorted(out)
+
+# --- STATIC file serving (so subpaths are accessible from <img>/<video> tags) ---
+@app.route('/thumbnail_images/<path:filename>')
+def serve_thumb_image(filename):
+    return send_from_directory(BASE_DIR / 'thumbnail_images', filename)
+
+@app.route('/background_videos/<path:filename>')
+def serve_bg_video(filename):
+    return send_from_directory(BASE_DIR / 'background_videos', filename)
+
+# --- BROWSING APIs ---
+@app.get('/list_thumbnail_images')
+def list_thumbnail_images():
+    folder = request.args.get('folder', '').strip('/')
+    base = BASE_DIR / 'thumbnail_images'
+    data = _list_current('/thumbnail_images', base, folder, {'.png', '.jpg', '.jpeg', '.webp'})
+    data["all_folders"] = _list_all_folders(base)
+    return jsonify(data)
+
+@app.get('/list_background_videos')
+def list_background_videos():
+    folder = request.args.get('folder', '').strip('/')
+    base = BASE_DIR / 'background_videos'
+    data = _list_current('/background_videos', base, folder, {'.mp4', '.mov', '.mkv', '.webm'})
+    data["all_folders"] = _list_all_folders(base)
+    return jsonify(data)
 
 @app.route('/select_background_video', methods=['POST'])
 def select_background_video():
@@ -138,15 +199,7 @@ def serve_sound(filename):
     sounds_dir = os.path.join(app.root_path, 'sounds')
     return send_from_directory(sounds_dir, filename)
 
-@app.route('/thumbnail_images/<path:filename>')
-def serve_thumbnail(filename):
-    sounds_dir = os.path.join(app.root_path, 'thumbnail_images')
-    return send_from_directory(sounds_dir, filename)
 
-@app.route('/background_videos/<path:filename>')
-def serve_bg_vid(filename):
-    sounds_dir = os.path.join(app.root_path, 'background_videos')
-    return send_from_directory(sounds_dir, filename)
 # ------------------------ API ROUTES ------------------------ #
 
 @app.route('/get_full_text', methods=['GET'])

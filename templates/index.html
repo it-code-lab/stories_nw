@@ -905,12 +905,23 @@
 
     <form id="thumbForm">
         <h3>1️⃣ Select Thumbnail Image</h3>
-        <div id="imageContainer" class="grid"></div>
-        <input type="hidden" id="selectedImage" name="image">
+
+        <label>Image Folder:</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <select id="imageFolder"></select>
+        <div id="imageBreadcrumbs" style="font-size:13px; color:#666;"></div>
+        </div>
+        <div id="imageContainer" class="grid" style="min-height:110px;"></div>
 
         <h3>2️⃣ Select Background Video</h3>
-        <div id="videoContainer" class="grid"></div>
-        <input type="hidden" id="selectedVideo">
+
+        <label>Video Folder:</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <select id="videoFolder"></select>
+        <div id="videoBreadcrumbs" style="font-size:13px; color:#666;"></div>
+        </div>
+        <div id="videoContainer" class="grid" style="min-height:110px;"></div>
+
 
         <h3>3️⃣ Thumbnail Text and Styles</h3>
 
@@ -943,126 +954,147 @@
         <div id="result" style="text-align:center;margin-top:25px;"></div>
     </form>
 
-    <script>
-        const canvas = document.getElementById('previewCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 640;
-        canvas.height = 360;
+<script>
+let selectedImage = null;
+let selectedBgColor = '#101010';
+let currentImageFolder = '';
+let currentVideoFolder = '';
 
-        let selectedImage = null;
-        let selectedBgColor = '#101010';
+function breadcrumbsHTML(crumbs, rootLabel='root') {
+  if (!crumbs || crumbs.length === 0) return `<span>${rootLabel}</span>`;
+  const parts = [`<a href="#" data-path="">${rootLabel}</a>`];
+  crumbs.forEach(c => {
+    parts.push(`&nbsp;/&nbsp;<a href="#" data-path="${c.path}">${c.name}</a>`);
+  });
+  return parts.join('');
+}
 
-        // -------- Load Images and Videos --------
-        async function loadImages() {
-            const res = await fetch('/list_thumbnail_images');
-            const { images } = await res.json();
-            const c = document.getElementById('imageContainer');
-            c.innerHTML = '';
-            images.forEach(src => {
-                const div = document.createElement('div');
-                div.className = 'item';
-                div.innerHTML = `<img src="${src}">`;
-                div.onclick = () => {
-                    document.querySelectorAll('#imageContainer .item').forEach(d => d.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedImage = src;
-                    document.getElementById('selectedImage').value = src;
-                    drawPreview();
-                };
-                //console.log('Adding image:', src);
-                c.appendChild(div);
-            });
-        }
+async function loadImageFolder(folder = '') {
+  const res = await fetch('/list_thumbnail_images?folder=' + encodeURIComponent(folder));
+  if (!res.ok) { console.error('images list failed'); return; }
+  const data = await res.json();
+  currentImageFolder = data.cwd || '';
 
-        async function loadVideos() {
-            const res = await fetch('/list_background_videos');
-            const { videos } = await res.json();
-            const c = document.getElementById('videoContainer');
-            c.innerHTML = '';
-            videos.forEach(src => {
-                const div = document.createElement('div');
-                div.className = 'item';
-                div.innerHTML = `<video src="${src}" muted></video>`;
-                div.onclick = async () => {
-                    document.querySelectorAll('#videoContainer .item').forEach(d => d.classList.remove('selected'));
-                    div.classList.add('selected');
-                    document.getElementById('selectedVideo').value = src;
-                    await fetch('/select_background_video', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ video: src })
-                    });
-                };
-                //console.log('Adding video:', src);
-                c.appendChild(div);
-            });
-        }
+  // folder dropdown (all folders)
+  const sel = document.getElementById('imageFolder');
+  sel.innerHTML = '';
+  (data.all_folders || ['']).forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f || '(root)';
+    if (f === currentImageFolder) opt.selected = true;
+    sel.appendChild(opt);
+  });
 
-        // -------- Live Preview Drawing --------
-        async function drawPreview() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // breadcrumbs
+  const bc = document.getElementById('imageBreadcrumbs');
+  bc.innerHTML = breadcrumbsHTML(data.breadcrumbs);
+  bc.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      loadImageFolder(a.dataset.path || '');
+    });
+  });
 
-            // Left panel
-            const bg = selectedBgColor || '#101010';
-            const leftWidth = canvas.width / 2;
-            ctx.fillStyle = bg;
-            ctx.fillRect(0, 0, leftWidth, canvas.height);
+  // thumbnails
+  const c = document.getElementById('imageContainer');
+  c.innerHTML = '';
+  (data.files || []).forEach(src => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `<img src="${src}" alt="">`;
+    div.onclick = () => {
+      document.querySelectorAll('#imageContainer .item').forEach(d=>d.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedImage = src;
+      document.getElementById('selectedImage').value = src;
+      drawPreview();
+    };
+    c.appendChild(div);
+  });
 
-            // Right image
-            if (selectedImage) {
-                const img = new Image();
-                img.src = selectedImage;
-                await new Promise(res => { img.onload = res; });
-                const rightWidth = canvas.width - leftWidth;
-                ctx.drawImage(img, leftWidth, 0, rightWidth, canvas.height);
-            }
+  // subfolder tiles (click to drill down)
+  (data.folders || []).forEach(sub => {
+    const tile = document.createElement('div');
+    tile.className = 'item';
+    tile.style.width = '160px'; tile.style.height = '100px';
+    tile.style.display = 'grid'; tile.style.placeItems = 'center';
+    tile.style.background = '#f1f5f9'; tile.style.border = '1px dashed #cbd5e1';
+    tile.textContent = '📁 ' + sub.split('/').pop();
+    tile.onclick = () => loadImageFolder(sub);
+    document.getElementById('imageContainer').appendChild(tile);
+  });
+}
 
-            // Text overlay
-            const text = document.getElementById('textInput').value.trim();
-            if (text) {
-                const lines = text.split('|');
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
+async function loadVideoFolder(folder = '') {
+  const res = await fetch('/list_background_videos?folder=' + encodeURIComponent(folder));
+  if (!res.ok) { console.error('videos list failed'); return; }
+  const data = await res.json();
+  currentVideoFolder = data.cwd || '';
 
-                let y = canvas.height / 2 - ((lines.length - 1) * 40);
-                lines.forEach((line, i) => {
-                    ctx.font = 'bold 30px Arial';
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = 3;
-                    ctx.strokeText(line, leftWidth / 2, y);
-                    ctx.fillText(line, leftWidth / 2, y);
-                    y += 60;
-                });
-            }
-        }
+  const sel = document.getElementById('videoFolder');
+  sel.innerHTML = '';
+  (data.all_folders || ['']).forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f || '(root)';
+    if (f === currentVideoFolder) opt.selected = true;
+    sel.appendChild(opt);
+  });
 
-        // -------- Events --------
-        document.getElementById('bgColorSelect').onchange = e => {
-            selectedBgColor = e.target.value;
-            drawPreview();
-        };
-        document.getElementById('textInput').oninput = drawPreview;
-        document.getElementById('colorInput').oninput = drawPreview;
+  const bc = document.getElementById('videoBreadcrumbs');
+  bc.innerHTML = breadcrumbsHTML(data.breadcrumbs);
+  bc.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      loadVideoFolder(a.dataset.path || '');
+    });
+  });
 
-        document.getElementById('thumbForm').onsubmit = async e => {
-            e.preventDefault();
-            const fd = new FormData(e.target);
-            const res = await fetch('/generate_thumbnail', { method: 'POST', body: fd });
-            const result = await res.json();
-            const r = document.getElementById('result');
-            r.innerHTML = result.thumbnail
-                ? `<p>${result.message}</p><img src="${result.thumbnail}?v=${Date.now()}" width="640">`
-                : `<p style="color:red;">${result.error}</p>`;
-        };
+  const c = document.getElementById('videoContainer');
+  c.innerHTML = '';
+  (data.files || []).forEach(src => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `<video src="${src}" muted></video>`;
+    div.onclick = async () => {
+      document.querySelectorAll('#videoContainer .item').forEach(d=>d.classList.remove('selected'));
+      div.classList.add('selected');
+      document.getElementById('selectedVideo').value = src;
+      await fetch('/select_background_video', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ video: src })
+      }).catch(console.error);
+    };
+    c.appendChild(div);
+  });
 
-        window.addEventListener('load', () => {
-        loadImages().catch(console.error);
-        loadVideos().catch(console.error);
-        drawPreview();
-        });
+  (data.folders || []).forEach(sub => {
+    const tile = document.createElement('div');
+    tile.className = 'item';
+    tile.style.width = '160px'; tile.style.height = '100px';
+    tile.style.display = 'grid'; tile.style.placeItems = 'center';
+    tile.style.background = '#f1f5f9'; tile.style.border = '1px dashed #cbd5e1';
+    tile.textContent = '📁 ' + sub.split('/').pop();
+    tile.onclick = () => loadVideoFolder(sub);
+    c.appendChild(tile);
+  });
+}
 
-    </script>
+// react to folder dropdown changes
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'imageFolder') loadImageFolder(e.target.value);
+  if (e.target.id === 'videoFolder') loadVideoFolder(e.target.value);
+});
+
+// init
+window.addEventListener('load', () => {
+  loadImageFolder('').catch(console.error);
+  loadVideoFolder('').catch(console.error);
+});
+</script>
+
 
 
     <script>
