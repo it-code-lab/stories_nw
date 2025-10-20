@@ -215,8 +215,9 @@ def select_background_video():
     src = data.get('video')
     if not src:
         return jsonify({"error": "Missing video path"}), 400
-
-    filename = os.path.basename(src)
+    clear_folder("edit_vid_input")
+    filename = "bg_video.mp4"
+    # filename = os.path.basename(src)
     src_path = os.path.join(BASE_DIR, src.strip("/"))
     dest_path = os.path.join(BASE_DIR, "edit_vid_input", filename)
     if not os.path.exists(src_path):
@@ -1018,6 +1019,15 @@ def uploadVid():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
     
+def clear_folder(folder_path, extensions=None):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    for file in os.listdir(folder_path):
+        full_path = os.path.join(folder_path, file)
+        if os.path.isfile(full_path):
+            if not extensions or file.lower().endswith(extensions):
+                os.remove(full_path)
+
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)
     app.run(debug=True, host='0.0.0.0', port=5000)  # Use host='

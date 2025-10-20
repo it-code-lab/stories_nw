@@ -701,19 +701,30 @@
         <div class="row">
             <div>
                 <label>Video File (basename without .mp4)</label>
-                <input type="text" name="video_path" placeholder="my_video_filename" required />
-                <div class="hint">Uploader will use processed_videos/&lt;name&gt;.mp4</div>
+                <input type="text" name="video_path" value="output" required />
+                <div class="hint">Default: "output" → processed_videos/output.mp4</div>
             </div>
+
             <div>
                 <label>YouTube Channel Name</label>
-                <input type="text" name="youtube_channel_name" placeholder="Trend Testers" required />
+                <select name="youtube_channel_name" id="channelSelect" required>
+                    <option value="">-- Select Channel --</option>
+                    <option value="Trend Testers">Trend Testers</option>
+                    <option value="Cash Flow Hacks">Cash Flow Hacks</option>
+                    <option value="The Parent Pod">The Parent Pod</option>
+                    <option value="Indian Stories in English">Indian Stories in English</option>
+                    <option value="हिंदी कहानियां - Hindi Stories">हिंदी कहानियां - Hindi Stories</option>
+                    <option value="English Story World">English Story World</option>
+                </select>
             </div>
         </div>
 
         <div>
-            <label>Playlist (optional)</label>
-            <input type="text" name="youtube_playlist_name" placeholder="My Awesome Playlist" />
-            <div class="hint">Must match exactly an existing playlist name (your script clicks it).</div>
+            <label>Playlist</label>
+            <select name="youtube_playlist_name" id="playlistSelect">
+                <option value="">-- Select Playlist --</option>
+            </select>
+            <div class="hint">Options update automatically based on the selected channel.</div>
         </div>
 
         <div>
@@ -727,7 +738,7 @@
         </div>
 
         <div>
-            <label>Tags (comma-separated, total ≤ 500 chars)</label>
+            <label>Tags (comma-separated)</label>
             <input type="text" name="youtube_tags" placeholder="tag1, tag2, tag3" />
         </div>
 
@@ -742,7 +753,6 @@
             <div>
                 <label>Schedule Date (optional)</label>
                 <input type="date" name="schedule_date" />
-                <div class="hint">If provided, it will be formatted for YouTube (e.g., “October 31, 2025”).</div>
             </div>
         </div>
 
@@ -751,8 +761,6 @@
         </div>
 
         <div id="result"></div>
-
-        <!--  -->
 
     </form>
     <br>
@@ -991,6 +999,19 @@
     </form>
     <br>
 
+    <form id="bgVideoForm">
+        <h3>2️⃣ Select Background Video</h3>
+
+        <label>Video Folder:</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <select id="videoFolder"></select>
+            <div id="videoBreadcrumbs" style="font-size:13px; color:#666;"></div>
+        </div>
+        <div id="videoContainer" class="grid" style="min-height:110px;"></div>
+        <button type="submit">Set Background Video</button>
+    </form>
+
+    <br>
     <form id="thumbForm">
         <h2>Create Thumbnail</h2>
         <h3>1️⃣ Select Thumbnail Image</h3>
@@ -1002,14 +1023,7 @@
         </div>
         <div id="imageContainer" class="grid" style="min-height:110px;"></div>
 
-        <h3>2️⃣ Select Background Video</h3>
 
-        <label>Video Folder:</label>
-        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <select id="videoFolder"></select>
-            <div id="videoBreadcrumbs" style="font-size:13px; color:#666;"></div>
-        </div>
-        <div id="videoContainer" class="grid" style="min-height:110px;"></div>
 
 
         <h3>3️⃣ Thumbnail Text and Styles</h3>
@@ -1051,6 +1065,88 @@
         <input type="hidden" name="video" id="selectedVideo">
 
     </form>
+
+    <script>
+        // 🎯 Playlist mappings for each YouTube channel
+        const playlistMap = {
+            "Trend Testers": [
+                "Top 10 Baby Products",
+                "Tech Product Reviews",
+                "Smart Gadgets 2025"
+            ],
+            "Cash Flow Hacks": [
+                "Side Hustle of the Day",
+                "1-Minute Rich Habits",
+                "Passive Income Ideas",
+                "Make Money Online"
+            ],
+            "The Parent Pod": [
+                "Parenting Tips",
+                "Baby & Toddler Advice",
+                "Parent Stories"
+            ],
+            "Indian Stories in English": [
+                "Shiv Stories",
+                "Mythological Tales",
+                "Moral Stories"
+            ],
+            "हिंदी कहानियां - Hindi Stories": [
+                "शिव कथाएं (Shiv Stories)",
+                "गीता श्लोक (Gita Shlokas)",
+                "हिंदी प्रेरणादायक कहानियां"
+            ],
+            "English Story World": [
+                "Fun Fact Stories",
+                "Historical Mini Stories",
+                "Mysterious Facts"
+            ]
+        };
+
+        const channelSelect = document.getElementById("channelSelect");
+        const playlistSelect = document.getElementById("playlistSelect");
+
+        // 🔄 Populate playlist dropdown dynamically
+        channelSelect.addEventListener("change", () => {
+            const selectedChannel = channelSelect.value;
+            const playlists = playlistMap[selectedChannel] || [];
+
+            playlistSelect.innerHTML = ""; // clear existing
+            const defaultOption = document.createElement("option");
+            defaultOption.value = "";
+            defaultOption.textContent = playlists.length ? "-- Select Playlist --" : "-- No Playlists Available --";
+            playlistSelect.appendChild(defaultOption);
+
+            playlists.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p;
+                opt.textContent = p;
+                playlistSelect.appendChild(opt);
+            });
+        });
+
+        // 🧠 Handle form submission
+        const form = document.getElementById("uploadForm");
+        const result = document.getElementById("result");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            result.textContent = "Uploading… Chrome will open. Please don’t touch it.";
+            result.className = "";
+
+            const data = new FormData(form);
+            try {
+                const res = await fetch("/upload", { method: "POST", body: data });
+                const json = await res.json();
+                if (json.ok) {
+                    result.innerHTML = `✅ <span class="ok">Success!</span> Video URL: <a href="${json.video_url}" target="_blank">${json.video_url}</a>`;
+                } else {
+                    result.innerHTML = `❌ <span class="err">Error:</span> ${json.error || "Unknown error"}`;
+                }
+            } catch (err) {
+                result.innerHTML = `❌ <span class="err">${String(err)}</span>`;
+            }
+        });
+    </script>
 
     <script>
         // const canvas = document.getElementById('previewCanvas');
@@ -1110,7 +1206,7 @@
                     div.classList.add('selected');
                     selectedImage = src;
                     document.getElementById('selectedImage').value = src;
-                    drawPreview();
+                    // drawPreview();
                 };
                 c.appendChild(div);
             });
@@ -1202,11 +1298,11 @@
                     document.querySelectorAll('#videoContainer .item').forEach(d => d.classList.remove('selected'));
                     div.classList.add('selected');
                     document.getElementById('selectedVideo').value = src;
-                    await fetch('/select_background_video', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ video: src })
-                    }).catch(console.error);
+                    // await fetch('/select_background_video', {
+                    //     method: 'POST',
+                    //     headers: { 'Content-Type': 'application/json' },
+                    //     body: JSON.stringify({ video: src })
+                    // }).catch(console.error);
                 };
                 c.appendChild(div);
             });
@@ -1247,6 +1343,15 @@
                 ? `<p>${result.message}</p><img src="${result.thumbnail}?v=${Date.now()}" width="640">`
                 : `<p style="color:red;">${result.error}</p>`;
         };
+        document.getElementById('bgVideoForm').onsubmit = async e => {
+            e.preventDefault();
+            src = document.getElementById('selectedVideo').value
+            const res = await fetch('/select_background_video', { method: 'POST', body: JSON.stringify({ video: src }) }).catch(console.error);;
+
+
+        };
+        
+        
 
         // init
         window.addEventListener('load', () => {
@@ -1555,29 +1660,7 @@
             console.log("Completed upload");
             // alert(result);
         };
-        document.getElementById('uploadForm').onsubmit = async function (e) {
-            const form = document.getElementById("uploadForm");
-            const result = document.getElementById("result");
 
-            form.addEventListener("submit", async (e) => {
-                e.preventDefault();
-                result.textContent = "Uploading… Chrome will open. Please don’t touch it.";
-                result.className = "";
-
-                const data = new FormData(form);
-                try {
-                    const res = await fetch("/upload", { method: "POST", body: data });
-                    const json = await res.json();
-                    if (json.ok) {
-                        result.innerHTML = `✅ <span class="ok">Success!</span> Video URL: <a href="${json.video_url}" target="_blank" rel="noopener">${json.video_url}</a>`;
-                    } else {
-                        result.innerHTML = `❌ <span class="err">Error:</span> ${json.error || "Unknown error"}`;
-                    }
-                } catch (err) {
-                    result.innerHTML = `❌ <span class="err">${String(err)}</span>`;
-                }
-            });
-        };
 
         document.getElementById('runOBSRecorder').onsubmit = async function (e) {
             e.preventDefault();
