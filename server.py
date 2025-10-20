@@ -426,8 +426,8 @@ def generatettsaudio():
         traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
         
-@app.route('/upload', methods=['POST'])
-def upload():
+@app.route('/bulkupload', methods=['POST'])
+def bulkupload():
     try:
         print("Processing request...upload_videos")
         upload_videos()  # Assuming this function is defined in youtube_uploader.py
@@ -952,7 +952,72 @@ def render_captions():
         })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+def bool_from_form(val: str) -> bool:
+    """
+    Accepts 'true'/'false', 'on'/'off', '1'/'0', or truthy string.
+    """
+    if val is None:
+        return False
+    v = str(val).strip().lower()
+    return v in ("true", "on", "1", "yes", "y")
 
+@app.post("/upload")
+def uploadVid():
+    from pathlib import Path
+    from datetime import datetime
+    from flask import Flask, render_template, request, jsonify
+    from playwright.sync_api import sync_playwright
+    import youtube_uploader as yu
+    try:
+        # Collect inputs from form
+        video_path            = (request.form.get("video_path") or "").strip()
+        youtube_channel_name  = (request.form.get("youtube_channel_name") or "").strip()
+        youtube_playlist_name = (request.form.get("youtube_playlist_name") or "").strip()
+        youtube_title         = (request.form.get("youtube_title") or "").strip()
+        youtube_description   = (request.form.get("youtube_description") or "").strip()
+        youtube_tags          = (request.form.get("youtube_tags") or "").strip()
+        made_for_kids         = bool_from_form(request.form.get("made_for_kids"))
+        schedule_date_raw     = (request.form.get("schedule_date") or "").strip()
+
+        # Build the dict in the exact shape your upload_video expects
+        video_info = {
+            "video_path": video_path,                         # uploader will append .mp4 and prepend processed_videos
+            "youtube_channel_name": youtube_channel_name,
+            "youtube_playlist_name": youtube_playlist_name,
+            "youtube_title": youtube_title,
+            "youtube_description": youtube_description,
+            "youtube_tags": youtube_tags,
+            "made_for_kids": made_for_kids,
+            "schedule_date": schedule_date_raw or None,       # keep raw; your code formats it for YouTube
+            # optional: "thumbnail_path": "path/to/thumbnail.png",
+        }
+
+        # Basic validation
+        missing = [k for k in ("video_path","youtube_channel_name","youtube_title") if not video_info[k]]
+        if missing:
+            return jsonify({"ok": False, "error": f"Missing required fields: {', '.join(missing)}"}), 400
+
+        # Launch persistent Chrome with your existing settings
+        with sync_playwright() as p:
+            browser = p.chromium.launch_persistent_context(
+                yu.PROFILE_DIR,
+                headless=False,
+                executable_path=yu.CHROME_EXECUTABLE,
+                args=["--disable-blink-features=AutomationControlled", "--start-maximized"],
+            )
+            page = browser.new_page()
+            page.add_init_script("""Object.defineProperty(navigator, 'webdriver', {get: () => undefined})""")
+
+            # Do the upload (reuses your function)
+            video_url = yu.upload_video(page, video_info)
+
+            browser.close()
+
+        return jsonify({"ok": True, "video_url": video_url})
+
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+    
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)
     app.run(debug=True, host='0.0.0.0', port=5000)  # Use host='

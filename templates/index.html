@@ -681,16 +681,80 @@
     <br>
 
     <form id="uploadToYoutube">
-        <h2>Youtube Upload</h2>
+        <h2>Youtube Bulk Upload</h2>
         <div> To be run after video created in Processed_video folder and record is added in video_records.xlsx
 
 
         </div>
 
+        <p class="hint">
+            <b>Note:</b> Your uploader expects <code>video_path</code> to be the filename (without .mp4),
+            and it will look under <code>processed_videos/&lt;video_path&gt;.mp4</code>.
+        </p>
 
         <button type="submit">Upload Videos to Youtube</button>
     </form>
 
+    <br>
+    <form id="uploadForm">
+        <h2>Youtube Single Video Upload</h2>
+        <div class="row">
+            <div>
+                <label>Video File (basename without .mp4)</label>
+                <input type="text" name="video_path" placeholder="my_video_filename" required />
+                <div class="hint">Uploader will use processed_videos/&lt;name&gt;.mp4</div>
+            </div>
+            <div>
+                <label>YouTube Channel Name</label>
+                <input type="text" name="youtube_channel_name" placeholder="Trend Testers" required />
+            </div>
+        </div>
+
+        <div>
+            <label>Playlist (optional)</label>
+            <input type="text" name="youtube_playlist_name" placeholder="My Awesome Playlist" />
+            <div class="hint">Must match exactly an existing playlist name (your script clicks it).</div>
+        </div>
+
+        <div>
+            <label>Title</label>
+            <input type="text" name="youtube_title" maxlength="100" required />
+        </div>
+
+        <div>
+            <label>Description</label>
+            <textarea name="youtube_description" rows="6" placeholder="Video description..."></textarea>
+        </div>
+
+        <div>
+            <label>Tags (comma-separated, total ≤ 500 chars)</label>
+            <input type="text" name="youtube_tags" placeholder="tag1, tag2, tag3" />
+        </div>
+
+        <div class="row">
+            <div>
+                <label>Made for Kids?</label>
+                <select name="made_for_kids">
+                    <option value="false" selected>No</option>
+                    <option value="true">Yes</option>
+                </select>
+            </div>
+            <div>
+                <label>Schedule Date (optional)</label>
+                <input type="date" name="schedule_date" />
+                <div class="hint">If provided, it will be formatted for YouTube (e.g., “October 31, 2025”).</div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit">Upload</button>
+        </div>
+
+        <div id="result"></div>
+
+        <!--  -->
+
+    </form>
     <br>
     <form id="runOBSRecorder">
         <h2>OBS Recorder</h2>
@@ -973,7 +1037,7 @@
         <input type="text" name="colors" id="colorInput" value="auto">
 
         <button type="submit">Generate Thumbnail</button>
-        
+
         <!-- DND - Working but not good enough yet -->
         <!-- <div id="previewContainer">
             <h3>🖼️ Live Preview</h3>
@@ -1166,23 +1230,23 @@
         });
 
         // -------- Events --------
-document.getElementById('bgColorSelect').onchange = e => {
-    selectedBgColor = e.target.value;
-    // drawPreview();
-};
-// document.getElementById('textInput').oninput = drawPreview;
-// document.getElementById('colorInput').oninput = drawPreview;
+        document.getElementById('bgColorSelect').onchange = e => {
+            selectedBgColor = e.target.value;
+            // drawPreview();
+        };
+        // document.getElementById('textInput').oninput = drawPreview;
+        // document.getElementById('colorInput').oninput = drawPreview;
 
-document.getElementById('thumbForm').onsubmit = async e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const res = await fetch('/generate_thumbnail', {method:'POST', body:fd});
-    const result = await res.json();
-    const r = document.getElementById('result');
-    r.innerHTML = result.thumbnail
-        ? `<p>${result.message}</p><img src="${result.thumbnail}?v=${Date.now()}" width="640">`
-        : `<p style="color:red;">${result.error}</p>`;
-};
+        document.getElementById('thumbForm').onsubmit = async e => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const res = await fetch('/generate_thumbnail', { method: 'POST', body: fd });
+            const result = await res.json();
+            const r = document.getElementById('result');
+            r.innerHTML = result.thumbnail
+                ? `<p>${result.message}</p><img src="${result.thumbnail}?v=${Date.now()}" width="640">`
+                : `<p style="color:red;">${result.error}</p>`;
+        };
 
         // init
         window.addEventListener('load', () => {
@@ -1484,13 +1548,37 @@ document.getElementById('thumbForm').onsubmit = async e => {
         document.getElementById('uploadToYoutube').onsubmit = async function (e) {
             e.preventDefault();
             console.log("Processing request...upload_videos");
-            const response = await fetch('/upload', {
+            const response = await fetch('/bulkupload', {
                 method: 'POST'
             });
             const result = await response.text();
             console.log("Completed upload");
             // alert(result);
         };
+        document.getElementById('uploadForm').onsubmit = async function (e) {
+            const form = document.getElementById("uploadForm");
+            const result = document.getElementById("result");
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                result.textContent = "Uploading… Chrome will open. Please don’t touch it.";
+                result.className = "";
+
+                const data = new FormData(form);
+                try {
+                    const res = await fetch("/upload", { method: "POST", body: data });
+                    const json = await res.json();
+                    if (json.ok) {
+                        result.innerHTML = `✅ <span class="ok">Success!</span> Video URL: <a href="${json.video_url}" target="_blank" rel="noopener">${json.video_url}</a>`;
+                    } else {
+                        result.innerHTML = `❌ <span class="err">Error:</span> ${json.error || "Unknown error"}`;
+                    }
+                } catch (err) {
+                    result.innerHTML = `❌ <span class="err">${String(err)}</span>`;
+                }
+            });
+        };
+
         document.getElementById('runOBSRecorder').onsubmit = async function (e) {
             e.preventDefault();
             console.log("Processing request...run OBS recorder");
