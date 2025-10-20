@@ -211,21 +211,29 @@ def list_background_videos():
 @app.route('/select_background_video', methods=['POST'])
 def select_background_video():
     """Copy chosen video to edit_vid_input folder for use."""
-    data = request.json
-    src = data.get('video')
-    if not src:
-        return jsonify({"error": "Missing video path"}), 400
-    clear_folder("edit_vid_input")
-    filename = "bg_video.mp4"
-    # filename = os.path.basename(src)
-    src_path = os.path.join(BASE_DIR, src.strip("/"))
-    dest_path = os.path.join(BASE_DIR, "edit_vid_input", filename)
-    if not os.path.exists(src_path):
-        return jsonify({"error": f"File not found: {src_path}"}), 404
+    try:
+        # Be tolerant to different content types
+        payload = request.get_json(silent=True) or {}
+        src = (payload or {}).get('video') or request.form.get('video') or request.values.get('video')
 
-    import shutil
-    shutil.copy(src_path, dest_path)
-    return jsonify({"message": "✅ Video selected and ready for editing!", "dest": dest_path})
+        if not src:
+            return jsonify({"error": "Missing video path"}), 400
+
+        clear_folder("edit_vid_input")  # your helper
+
+        filename = "bg_video.mp4"  # fixed name on destination
+        src_path = os.path.join(BASE_DIR, src.strip("/"))
+        dest_path = os.path.join(BASE_DIR, "edit_vid_input", filename)
+
+        if not os.path.exists(src_path):
+            return jsonify({"error": f"File not found: {src_path}"}), 404
+
+        import shutil
+        shutil.copy(src_path, dest_path)
+        return jsonify({"message": "✅ Video selected and ready for editing!", "dest": dest_path})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/sounds/<path:filename>')
 def serve_sound(filename):

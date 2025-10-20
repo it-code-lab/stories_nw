@@ -336,7 +336,292 @@
         </div>
     </div>
 
+    <form id="bgVideoForm">
+        <h2>1.Select Background Video</h2>
 
+        <label>Video Folder:</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <select id="videoFolder"></select>
+            <div id="videoBreadcrumbs" style="font-size:13px; color:#666;"></div>
+        </div>
+        <div id="videoContainer" class="grid" style="min-height:110px;"></div>
+        <button type="submit">Set Background Video</button>
+    </form>
+
+    <br>
+    <form id="generateTTSAudio">
+        <h2 style="background-color:aqua;">2.Generate TTS</h2>
+
+        <label>Enter Text:</label>
+        <textarea name="ttstext" rows="20"></textarea>
+
+        <label>Language:</label>
+        <select name="language">
+            <option>english</option>
+            <option>english-india</option>
+            <option>hindi</option>
+            <option>french</option>
+        </select>
+
+        <label>Select TTS Engine:</label>
+        <select name="tts">
+            {% for key in tts_options.keys() %}
+            <option value="{{ key }}">{{ key }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Select Voice Gender:</label>
+        <select name="gender" id="gender" onchange="updateVoices()">
+            {% for g in voice_genders %}
+            <option value="{{ g }}">{{ g }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Gerenate Audio File</button>
+        <br>
+        <div>Created file will be saved as audio.wav in the root folder and edit_vid_audio.
+        </div>
+    </form>
+    <br>
+    <form id="runCaptionGenerator">
+        <h2 style="background-color:khaki;">3. Generate Captions</h2>
+        <h3>Prestep for Audio->WordTimeStamps-Video</h3>
+        <div>Run caption_generator.py: Prestep for Audio->WordTimeStamps-Video above
+            <ol>
+                <li>Place audio.wav (from notebooklm) and then press below button.</li>
+                <li>This would create WordTimeStamps file and captions (access from index.html).</li>
+                <li>Use captions text on readernook.com and add images.
+                    There must be an image at the end of the text</li>
+                <li>Then execute above program with Audio->WordTimeStamps-Video</li>
+            </ol>
+
+        </div>
+        <label>Audio has music (Vocals would be seperated before creating captions):</label>
+        <select name="music">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+        <label>Language:</label>
+        <select name="language">
+            <option>english</option>
+            <option>english-india</option>
+            <option>hindi</option>
+            <option>french</option>
+        </select>
+
+        <div style="background-color: #cfe0ff; padding: 5px;">Create Hindi captions using <a
+                href="hindi_caption_builder" target="_blank">hindi_caption_builder</a>
+            Export the captions to word_timestamps.json.</div>
+
+        <button type="submit">Create WordTimeStamps and Caption Text</button>
+    </form>
+
+    <br>
+    <form id="thumbForm">
+        <h2>4.Create Thumbnail</h2>
+        <h3>1️⃣ Select Thumbnail Image</h3>
+
+        <label>Image Folder:</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <select id="imageFolder"></select>
+            <div id="imageBreadcrumbs" style="font-size:13px; color:#666;"></div>
+        </div>
+        <div id="imageContainer" class="grid" style="min-height:110px;"></div>
+
+
+
+
+        <h3>3️⃣ Thumbnail Text and Styles</h3>
+
+        <label>Background Color (Left Side):</label>
+        <select id="bgColorSelect" name="bg_color">
+            <option value="#000" data-color="#000">Story</option>
+            <option value="#9f0b1f" data-color="#9f0b1f">Song</option>
+
+            <!-- <option value="#101010" data-color="#101010">Dark Gray</option>
+            <option value="#1E1E2F" data-color="#1E1E2F">Midnight Blue</option>
+            <option value="#0D7377" data-color="#0D7377">Teal</option>
+            <option value="#2E8B57" data-color="#2E8B57">Green</option>
+            <option value="#FF6600" data-color="#FF6600">Orange</option>
+            <option value="#8B0000" data-color="#8B0000">Maroon</option>
+            <option value="#800080" data-color="#800080">Purple</option>
+            <option value="#F5F5F5" data-color="#F5F5F5">Light Gray</option> -->
+        </select>
+
+        <label>Text (use "|" for new lines):</label>
+        <textarea name="text" id="textInput" rows="4"
+            placeholder="Example: Narak Chaturdashi|नरकासुर वध की कथा"></textarea>
+
+        <label>Text Colors (comma-separated or 'auto'):</label>
+        <input type="text" name="colors" id="colorInput" value="auto">
+
+        <button type="submit">Generate Thumbnail</button>
+
+        <!-- DND - Working but not good enough yet -->
+        <!-- <div id="previewContainer">
+            <h3>🖼️ Live Preview</h3>
+            <canvas id="previewCanvas"></canvas>
+        </div> -->
+
+        <div id="result" style="text-align:center;margin-top:25px;"></div>
+        <!-- after #imageContainer -->
+        <input type="hidden" name="image" id="selectedImage">
+        <!-- after #videoContainer -->
+        <input type="hidden" name="video" id="selectedVideo">
+
+    </form>
+    <br>
+
+    <form id="runOBSRecorder">
+        <h2>6.OBS Recorder</h2>
+        <div> To be run if recording as part of whole Process above failed.
+            The output will be created as test.mp4.
+            Move that to under processed_video folder with right name before running the YouTube Upload.
+        </div>
+        <br>
+        <label>Language:</label>
+        <select id="language" name="language">
+            <option>english</option>
+            <option>hindi</option>
+        </select>
+
+        <label>Orientation:</label>
+        <select name="orientation">
+            <option value="landscape">landscape</option>
+            <option value="portrait">portrait</option>
+        </select>
+
+        <label for="captStyle">Caption Style</label>
+        <select id="captStyle" name="captStyle">
+            <option value="style1">Style 1</option>
+            <option value="style2">Style 2</option>
+            <option value="style2-hindi-normal">style2-hindi-normal</option>
+            <option value="style-hindi-rozha">style-hindi-rozha</option>
+            <option value="style3">Style 3</option>
+            <option value="style4">Style 4</option>
+            <option value="style5">Style 5</option>
+            <option value="style6">Style 6</option>
+            <option value="style7">Style 7</option>
+            <option value="style8">Style 8</option>
+            <option value="style9">Style 9</option>
+            <option value="style10">Style 10</option>
+            <option value="style11">Style 11</option>
+            <option value="none">No Caption</option>
+            <option value="block-style">Block Caption</option>
+            <option value="song-block">song-block</option>
+            <option value="story-block">story-block</option>
+        </select>
+
+
+        <label for="captLength">Words per Caption</label>
+        <input type="number" id="captLength" name="captLength" value="5" min="1" max="1000">
+
+        <label>Duration (Seconds):</label>
+        <input type="text" name="duration" id="audioDuration" placeholder="auto-filled from audio.wav">
+        <button type="button" id="getDurationButton">Get Duration</button>
+
+
+        <label for="minLineGapSec">Min gap between lines (sec)</label>
+        <input type="number" id="minLineGapSec" name="minLineGapSec" value="0.40" step="0.05" min="0" />
+
+        <label for="bgMusicSelect">Background Music:</label>
+        <select id="bgMusicSelect" name="bgMusicSelect">
+            <option value="none">None</option>
+            <option value="children-a-baby-story-530.mp3">Children-story</option>
+            <option value="children-close-your-eyes-now-1022.mp3">Children-eyes</option>
+            <option value="children-lullaby-night-531.mp3">Children-lullaby</option>
+            <option value="children-summers-here-91.mp3">Children-summers</option>
+            <option value="horror-fright-night-871.mp3">Horror-fright</option>
+            <option value="horror-piano-671.mp3">Horror-piano</option>
+            <option value="positive-a-very-happy-christmas-897.mp3">Positive-christmas</option>
+            <option value="positive-mixkit-fun-jazz-647.mp3">Positive-fun</option>
+            <option value="positive-wedding-01-657.mp3">Positive-wedding</option>
+            <option value="story-classical-3-710.mp3">Story-1</option>
+            <option value="story-classical-6-713.mp3">Story-6</option>
+            <option value="story-classical-10-717.mp3">story-10</option>
+        </select>
+
+        <label for="disableSubscribe">Disable Subscribe Gif</label>
+        <select id="disableSubscribe" name="disableSubscribe">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+
+        <label>Output file(e.g.):"edit_vid_output/output.mp4", "test.mp4"</label>
+        <input type="text" name="outputfile" value="edit_vid_output/output.mp4">
+
+        <button type="submit">Play video and run OBS Recorder</button>
+    </form>
+
+    <br>
+    <form id="uploadForm">
+        <h2>7.Youtube Single Video Upload</h2>
+        <div class="row">
+            <div>
+                <label>Video File (basename without .mp4)</label>
+                <input type="text" name="video_path" value="output" required />
+                <div class="hint">Default: "output" → processed_videos/output.mp4</div>
+            </div>
+
+            <div>
+                <label>YouTube Channel Name</label>
+                <select name="youtube_channel_name" id="channelSelect" required>
+                    <option value="">-- Select Channel --</option>
+                    <option value="Trend Testers">Trend Testers</option>
+                    <option value="Cash Flow Hacks">Cash Flow Hacks</option>
+                    <option value="The Parent Pod">The Parent Pod</option>
+                    <option value="Indian Stories in English">Indian Stories in English</option>
+                    <option value="हिंदी कहानियां - Hindi Stories">हिंदी कहानियां - Hindi Stories</option>
+                    <option value="English Story World">English Story World</option>
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <label>Playlist</label>
+            <select name="youtube_playlist_name" id="playlistSelect">
+                <option value="">-- Select Playlist --</option>
+            </select>
+            <div class="hint">Options update automatically based on the selected channel.</div>
+        </div>
+
+        <div>
+            <label>Title</label>
+            <input type="text" name="youtube_title" maxlength="100" required />
+        </div>
+
+        <div>
+            <label>Description</label>
+            <textarea name="youtube_description" rows="6" placeholder="Video description..."></textarea>
+        </div>
+
+        <div>
+            <label>Tags (comma-separated)</label>
+            <input type="text" name="youtube_tags" placeholder="tag1, tag2, tag3" />
+        </div>
+
+        <div class="row">
+            <div>
+                <label>Made for Kids?</label>
+                <select name="made_for_kids">
+                    <option value="false" selected>No</option>
+                    <option value="true">Yes</option>
+                </select>
+            </div>
+            <div>
+                <label>Schedule Date (optional)</label>
+                <input type="date" name="schedule_date" />
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit">Upload</button>
+        </div>
+
+        <div id="result"></div>
+
+    </form>
+    <br>
     <form id="contentForm">
         <h2 style="background-color: yellow;">Content Processor</h2>
 
@@ -477,70 +762,7 @@
         <button type="submit">Process</button>
     </form>
     <br>
-    <form id="generateTTSAudio">
-        <h2 style="background-color:aqua;">Generate TTS</h2>
 
-        <label>Enter Text:</label>
-        <textarea name="ttstext" rows="20"></textarea>
-
-        <label>Language:</label>
-        <select name="language">
-            <option>english</option>
-            <option>english-india</option>
-            <option>hindi</option>
-            <option>french</option>
-        </select>
-
-        <label>Select TTS Engine:</label>
-        <select name="tts">
-            {% for key in tts_options.keys() %}
-            <option value="{{ key }}">{{ key }}</option>
-            {% endfor %}
-        </select>
-
-        <label>Select Voice Gender:</label>
-        <select name="gender" id="gender" onchange="updateVoices()">
-            {% for g in voice_genders %}
-            <option value="{{ g }}">{{ g }}</option>
-            {% endfor %}
-        </select>
-
-        <button type="submit">Gerenate Audio File</button>
-        <br>
-        <div>Created file will be saved as audio.wav in the root folder and edit_vid_audio.
-        </div>
-    </form>
-    <br>
-    <form id="runCaptionGenerator">
-        <h2 style="background-color:khaki;">Generate Captions</h2>
-        <h3>Prestep for Audio->WordTimeStamps-Video</h3>
-        <div>Run caption_generator.py: Prestep for Audio->WordTimeStamps-Video above
-            <ol>
-                <li>Place audio.wav (from notebooklm) and then press below button.</li>
-                <li>This would create WordTimeStamps file and captions (access from index.html).</li>
-                <li>Use captions text on readernook.com and add images.
-                    There must be an image at the end of the text</li>
-                <li>Then execute above program with Audio->WordTimeStamps-Video</li>
-            </ol>
-
-        </div>
-        <label>Audio has music (Vocals would be seperated before creating captions):</label>
-        <select name="music">
-            <option value="no">no</option>
-            <option value="yes">yes</option>
-        </select>
-        <label>Language:</label>
-        <select name="language">
-            <option>english</option>
-            <option>english-india</option>
-            <option>hindi</option>
-            <option>french</option>
-        </select>
-
-        <button type="submit">Create WordTimeStamps and Caption Text</button>
-    </form>
-
-    <br>
     <form id="sunoToVideoGenerator">
         <h2 style="background-color:coral">Suno.com song + Video Clip</h2>
         <div>
@@ -695,159 +917,10 @@
         <button type="submit">Upload Videos to Youtube</button>
     </form>
 
-    <br>
-    <form id="uploadForm">
-        <h2>Youtube Single Video Upload</h2>
-        <div class="row">
-            <div>
-                <label>Video File (basename without .mp4)</label>
-                <input type="text" name="video_path" value="output" required />
-                <div class="hint">Default: "output" → processed_videos/output.mp4</div>
-            </div>
-
-            <div>
-                <label>YouTube Channel Name</label>
-                <select name="youtube_channel_name" id="channelSelect" required>
-                    <option value="">-- Select Channel --</option>
-                    <option value="Trend Testers">Trend Testers</option>
-                    <option value="Cash Flow Hacks">Cash Flow Hacks</option>
-                    <option value="The Parent Pod">The Parent Pod</option>
-                    <option value="Indian Stories in English">Indian Stories in English</option>
-                    <option value="हिंदी कहानियां - Hindi Stories">हिंदी कहानियां - Hindi Stories</option>
-                    <option value="English Story World">English Story World</option>
-                </select>
-            </div>
-        </div>
-
-        <div>
-            <label>Playlist</label>
-            <select name="youtube_playlist_name" id="playlistSelect">
-                <option value="">-- Select Playlist --</option>
-            </select>
-            <div class="hint">Options update automatically based on the selected channel.</div>
-        </div>
-
-        <div>
-            <label>Title</label>
-            <input type="text" name="youtube_title" maxlength="100" required />
-        </div>
-
-        <div>
-            <label>Description</label>
-            <textarea name="youtube_description" rows="6" placeholder="Video description..."></textarea>
-        </div>
-
-        <div>
-            <label>Tags (comma-separated)</label>
-            <input type="text" name="youtube_tags" placeholder="tag1, tag2, tag3" />
-        </div>
-
-        <div class="row">
-            <div>
-                <label>Made for Kids?</label>
-                <select name="made_for_kids">
-                    <option value="false" selected>No</option>
-                    <option value="true">Yes</option>
-                </select>
-            </div>
-            <div>
-                <label>Schedule Date (optional)</label>
-                <input type="date" name="schedule_date" />
-            </div>
-        </div>
-
-        <div class="actions">
-            <button type="submit">Upload</button>
-        </div>
-
-        <div id="result"></div>
-
-    </form>
-    <br>
-    <form id="runOBSRecorder">
-        <h2>OBS Recorder</h2>
-        <div> To be run if recording as part of whole Process above failed.
-            The output will be created as test.mp4.
-            Move that to under processed_video folder with right name before running the YouTube Upload.
-        </div>
-        <br>
-        <label>Language:</label>
-        <select id="language" name="language">
-            <option>english</option>
-            <option>hindi</option>
-        </select>
-
-        <label>Orientation:</label>
-        <select name="orientation">
-            <option value="landscape">landscape</option>
-            <option value="portrait">portrait</option>
-        </select>
-
-        <label for="captStyle">Caption Style</label>
-        <select id="captStyle" name="captStyle">
-            <option value="style1">Style 1</option>
-            <option value="style2">Style 2</option>
-            <option value="style2-hindi-normal">style2-hindi-normal</option>
-            <option value="style-hindi-rozha">style-hindi-rozha</option>
-            <option value="style3">Style 3</option>
-            <option value="style4">Style 4</option>
-            <option value="style5">Style 5</option>
-            <option value="style6">Style 6</option>
-            <option value="style7">Style 7</option>
-            <option value="style8">Style 8</option>
-            <option value="style9">Style 9</option>
-            <option value="style10">Style 10</option>
-            <option value="style11">Style 11</option>
-            <option value="none">No Caption</option>
-            <option value="block-style">Block Caption</option>
-            <option value="song-block">song-block</option>
-            <option value="story-block">story-block</option>
-        </select>
-
-
-        <label for="captLength">Words per Caption</label>
-        <input type="number" id="captLength" name="captLength" value="5" min="1" max="1000">
-
-        <label>Duration (Seconds):</label>
-        <input type="text" name="duration" id="audioDuration" placeholder="auto-filled from audio.wav">
-        <button type="button" id="getDurationButton">Get Duration</button>
-
-
-        <label for="minLineGapSec">Min gap between lines (sec)</label>
-        <input type="number" id="minLineGapSec" name="minLineGapSec" value="0.40" step="0.05" min="0" />
-
-        <label for="bgMusicSelect">Background Music:</label>
-        <select id="bgMusicSelect" name="bgMusicSelect">
-            <option value="none">None</option>
-            <option value="children-a-baby-story-530.mp3">Children-story</option>
-            <option value="children-close-your-eyes-now-1022.mp3">Children-eyes</option>
-            <option value="children-lullaby-night-531.mp3">Children-lullaby</option>
-            <option value="children-summers-here-91.mp3">Children-summers</option>
-            <option value="horror-fright-night-871.mp3">Horror-fright</option>
-            <option value="horror-piano-671.mp3">Horror-piano</option>
-            <option value="positive-a-very-happy-christmas-897.mp3">Positive-christmas</option>
-            <option value="positive-mixkit-fun-jazz-647.mp3">Positive-fun</option>
-            <option value="positive-wedding-01-657.mp3">Positive-wedding</option>
-            <option value="story-classical-3-710.mp3">Story-1</option>
-            <option value="story-classical-6-713.mp3">Story-6</option>
-            <option value="story-classical-10-717.mp3">story-10</option>
-        </select>
-
-        <label for="disableSubscribe">Disable Subscribe Gif</label>
-        <select id="disableSubscribe" name="disableSubscribe">
-            <option value="no">no</option>
-            <option value="yes">yes</option>
-        </select>
-
-        <label>Output file(e.g.):"edit_vid_output/output.mp4", "test.mp4"</label>
-        <input type="text" name="outputfile" value="edit_vid_output/output.mp4">
-
-        <button type="submit">Play video and run OBS Recorder</button>
-    </form>
 
     <br>
     <form id="thumbnailMaker">
-        <h2>Thumbnail Maker</h2>
+        <h2>4.Thumbnail Maker</h2>
         <a href="thumbnail" target="_blank">Open Thumbnail Maker</a>
         (Opens in new tab)
     </form>
@@ -999,72 +1072,6 @@
     </form>
     <br>
 
-    <form id="bgVideoForm">
-        <h3>2️⃣ Select Background Video</h3>
-
-        <label>Video Folder:</label>
-        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <select id="videoFolder"></select>
-            <div id="videoBreadcrumbs" style="font-size:13px; color:#666;"></div>
-        </div>
-        <div id="videoContainer" class="grid" style="min-height:110px;"></div>
-        <button type="submit">Set Background Video</button>
-    </form>
-
-    <br>
-    <form id="thumbForm">
-        <h2>Create Thumbnail</h2>
-        <h3>1️⃣ Select Thumbnail Image</h3>
-
-        <label>Image Folder:</label>
-        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <select id="imageFolder"></select>
-            <div id="imageBreadcrumbs" style="font-size:13px; color:#666;"></div>
-        </div>
-        <div id="imageContainer" class="grid" style="min-height:110px;"></div>
-
-
-
-
-        <h3>3️⃣ Thumbnail Text and Styles</h3>
-
-        <label>Background Color (Left Side):</label>
-        <select id="bgColorSelect" name="bg_color">
-            <option value="#000" data-color="#000">Story</option>
-            <option value="#9f0b1f" data-color="#9f0b1f">Song</option>
-
-            <!-- <option value="#101010" data-color="#101010">Dark Gray</option>
-            <option value="#1E1E2F" data-color="#1E1E2F">Midnight Blue</option>
-            <option value="#0D7377" data-color="#0D7377">Teal</option>
-            <option value="#2E8B57" data-color="#2E8B57">Green</option>
-            <option value="#FF6600" data-color="#FF6600">Orange</option>
-            <option value="#8B0000" data-color="#8B0000">Maroon</option>
-            <option value="#800080" data-color="#800080">Purple</option>
-            <option value="#F5F5F5" data-color="#F5F5F5">Light Gray</option> -->
-        </select>
-
-        <label>Text (use "|" for new lines):</label>
-        <textarea name="text" id="textInput" rows="4"
-            placeholder="Example: Narak Chaturdashi|नरकासुर वध की कथा"></textarea>
-
-        <label>Text Colors (comma-separated or 'auto'):</label>
-        <input type="text" name="colors" id="colorInput" value="auto">
-
-        <button type="submit">Generate Thumbnail</button>
-
-        <!-- DND - Working but not good enough yet -->
-        <!-- <div id="previewContainer">
-            <h3>🖼️ Live Preview</h3>
-            <canvas id="previewCanvas"></canvas>
-        </div> -->
-
-        <div id="result" style="text-align:center;margin-top:25px;"></div>
-        <!-- after #imageContainer -->
-        <input type="hidden" name="image" id="selectedImage">
-        <!-- after #videoContainer -->
-        <input type="hidden" name="video" id="selectedVideo">
-
-    </form>
 
     <script>
         // 🎯 Playlist mappings for each YouTube channel
@@ -1346,12 +1353,16 @@
         document.getElementById('bgVideoForm').onsubmit = async e => {
             e.preventDefault();
             src = document.getElementById('selectedVideo').value
-            const res = await fetch('/select_background_video', { method: 'POST', body: JSON.stringify({ video: src }) }).catch(console.error);;
-
+            //const res = await fetch('/select_background_video', { method: 'POST', body: JSON.stringify({ video: src }) }).catch(console.error);;
+            await fetch('/select_background_video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ video: src })
+            }).catch(console.error);
 
         };
-        
-        
+
+
 
         // init
         window.addEventListener('load', () => {
