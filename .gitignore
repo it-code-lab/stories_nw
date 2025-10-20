@@ -33,6 +33,8 @@ video_records.xlsx
 ~$video_records.xlsx
 ~$bulkShorts_input.xlsx
 *.xlsx
+*.ttf
+*.db
 background_videos/*
 
 bulkShorts_input.xlsx

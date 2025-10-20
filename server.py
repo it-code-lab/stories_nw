@@ -13,6 +13,7 @@ from youtube_uploader import upload_videos
 import re
 from pathlib import Path
 import wave
+from urllib.parse import unquote
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
@@ -20,6 +21,24 @@ CORS(app)
 # Always resolve relative to this file (server.py)
 BASE_DIR = Path(__file__).resolve().parent
 AUDIO_PATH = BASE_DIR / "audio.wav"   # your file is beside server.py
+
+def url_to_fs(url_path: str, base_subdir: str) -> Path:
+    """
+    Map a URL like '/thumbnail_images/a/b.png' to a safe filesystem path
+    under BASE_DIR/base_subdir/a/b.png
+    """
+    if not url_path:
+        abort(400, "Missing image path")
+    url_path = unquote(url_path).lstrip("/")              # remove leading '/'
+    # strip the first segment (should match base_subdir)
+    first, _, tail = url_path.partition("/")
+    if first != base_subdir:
+        abort(400, f"Unexpected base folder: {first}")
+    fs_path = (BASE_DIR / base_subdir / tail).resolve()
+    allowed_base = (BASE_DIR / base_subdir).resolve()
+    if not str(fs_path).startswith(str(allowed_base)):
+        abort(400, "Invalid image path")
+    return fs_path
 
 def _duration_via_wave(p: Path):
     """Try Python wave for PCM WAV."""
@@ -74,31 +93,44 @@ def audio_duration():
             "path": str(p)
         }), 500
 
+@app.route('/edit_vid_thumbnail/<path:filename>')
+def serve_generated_thumb(filename):
+    return send_from_directory(BASE_DIR / 'edit_vid_thumbnail', filename)
+
+
 @app.route('/generate_thumbnail', methods=['POST'])
 def generate_thumbnail():
     try:
-        from thumbnail_gen import create_thumbnail  # import the earlier script
-        image_path = request.form.get('image')
+        from thumbnail_gen import create_thumbnail
+
+        image_url = request.form.get('image')  # e.g. "/thumbnail_images/foo/bar.png"
         bg_color = request.form.get('bg_color', '#000000')
         text = request.form.get('text', '')
         colors = request.form.get('colors', 'auto')
-        output_path = os.path.join('edit_vid_thumbnail', 'thumbnail.png')
+        print("Generating thumbnail for image:", image_url)
+        # Map the URL to a filesystem path safely
+        fs_image_path = url_to_fs(image_url, base_subdir='thumbnail_images')
+        print("Filesystem image path:", fs_image_path)
+
+        # Ensure output folder exists; return a served URL
+        out_dir = BASE_DIR / 'edit_vid_thumbnail'
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_file = out_dir / 'thumbnail.png'
+        out_url = f"/edit_vid_thumbnail/{out_file.name}"
 
         create_thumbnail(
-            image_path=image_path,
+            image_path=str(fs_image_path),
             bg_color=bg_color,
             text=text,
             colors=colors,
-            output_path=output_path
+            output_path=str(out_file)
         )
 
-        return jsonify({
-            "message": "✅ Thumbnail created successfully!",
-            "thumbnail": output_path
-        })
+        return jsonify({"message": "✅ Thumbnail created successfully!", "thumbnail": out_url})
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
 
 def _safe_join(base: Path, sub: str) -> Path:
     """Prevent path traversal; always return a child of base."""

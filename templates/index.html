@@ -279,12 +279,36 @@
             border: 1px solid #aaa;
             display: inline-block;
         }
-    .grid { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; justify-content:center; }
-    .item { border:2px solid transparent; border-radius:8px; overflow:hidden; cursor:pointer; transition:.2s; }
-    .item.selected { border-color:#007bff; box-shadow:0 0 8px rgba(0,123,255,.5); }
-    .item img, .item video { width:160px; height:100px; object-fit:cover; display:block; }
 
-</style>
+        .grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .item {
+            border: 2px solid transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .item.selected {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, .5);
+        }
+
+        .item img,
+        .item video {
+            width: 160px;
+            height: 100px;
+            object-fit: cover;
+            display: block;
+        }
+    </style>
 
 </head>
 
@@ -904,12 +928,13 @@
     <br>
 
     <form id="thumbForm">
+        <h2>Create Thumbnail</h2>
         <h3>1️⃣ Select Thumbnail Image</h3>
 
         <label>Image Folder:</label>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <select id="imageFolder"></select>
-        <div id="imageBreadcrumbs" style="font-size:13px; color:#666;"></div>
+            <select id="imageFolder"></select>
+            <div id="imageBreadcrumbs" style="font-size:13px; color:#666;"></div>
         </div>
         <div id="imageContainer" class="grid" style="min-height:110px;"></div>
 
@@ -917,8 +942,8 @@
 
         <label>Video Folder:</label>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <select id="videoFolder"></select>
-        <div id="videoBreadcrumbs" style="font-size:13px; color:#666;"></div>
+            <select id="videoFolder"></select>
+            <div id="videoBreadcrumbs" style="font-size:13px; color:#666;"></div>
         </div>
         <div id="videoContainer" class="grid" style="min-height:110px;"></div>
 
@@ -927,14 +952,17 @@
 
         <label>Background Color (Left Side):</label>
         <select id="bgColorSelect" name="bg_color">
-            <option value="#101010" data-color="#101010">Dark Gray</option>
+            <option value="#000" data-color="#000">Story</option>
+            <option value="#9f0b1f" data-color="#9f0b1f">Song</option>
+
+            <!-- <option value="#101010" data-color="#101010">Dark Gray</option>
             <option value="#1E1E2F" data-color="#1E1E2F">Midnight Blue</option>
             <option value="#0D7377" data-color="#0D7377">Teal</option>
             <option value="#2E8B57" data-color="#2E8B57">Green</option>
             <option value="#FF6600" data-color="#FF6600">Orange</option>
             <option value="#8B0000" data-color="#8B0000">Maroon</option>
             <option value="#800080" data-color="#800080">Purple</option>
-            <option value="#F5F5F5" data-color="#F5F5F5">Light Gray</option>
+            <option value="#F5F5F5" data-color="#F5F5F5">Light Gray</option> -->
         </select>
 
         <label>Text (use "|" for new lines):</label>
@@ -945,155 +973,223 @@
         <input type="text" name="colors" id="colorInput" value="auto">
 
         <button type="submit">Generate Thumbnail</button>
-
-        <div id="previewContainer">
+        
+        <!-- DND - Working but not good enough yet -->
+        <!-- <div id="previewContainer">
             <h3>🖼️ Live Preview</h3>
             <canvas id="previewCanvas"></canvas>
-        </div>
+        </div> -->
 
         <div id="result" style="text-align:center;margin-top:25px;"></div>
+        <!-- after #imageContainer -->
+        <input type="hidden" name="image" id="selectedImage">
+        <!-- after #videoContainer -->
+        <input type="hidden" name="video" id="selectedVideo">
+
     </form>
 
-<script>
-let selectedImage = null;
-let selectedBgColor = '#101010';
-let currentImageFolder = '';
-let currentVideoFolder = '';
+    <script>
+        // const canvas = document.getElementById('previewCanvas');
+        // const ctx = canvas.getContext('2d');
+        // canvas.width = 640;
+        // canvas.height = 360;
+        let selectedImage = null;
+        let selectedBgColor = '#101010';
+        let currentImageFolder = '';
+        let currentVideoFolder = '';
 
-function breadcrumbsHTML(crumbs, rootLabel='root') {
-  if (!crumbs || crumbs.length === 0) return `<span>${rootLabel}</span>`;
-  const parts = [`<a href="#" data-path="">${rootLabel}</a>`];
-  crumbs.forEach(c => {
-    parts.push(`&nbsp;/&nbsp;<a href="#" data-path="${c.path}">${c.name}</a>`);
-  });
-  return parts.join('');
-}
+        function breadcrumbsHTML(crumbs, rootLabel = 'root') {
+            if (!crumbs || crumbs.length === 0) return `<span>${rootLabel}</span>`;
+            const parts = [`<a href="#" data-path="">${rootLabel}</a>`];
+            crumbs.forEach(c => {
+                parts.push(`&nbsp;/&nbsp;<a href="#" data-path="${c.path}">${c.name}</a>`);
+            });
+            return parts.join('');
+        }
 
-async function loadImageFolder(folder = '') {
-  const res = await fetch('/list_thumbnail_images?folder=' + encodeURIComponent(folder));
-  if (!res.ok) { console.error('images list failed'); return; }
-  const data = await res.json();
-  currentImageFolder = data.cwd || '';
+        async function loadImageFolder(folder = '') {
+            const res = await fetch('/list_thumbnail_images?folder=' + encodeURIComponent(folder));
+            if (!res.ok) { console.error('images list failed'); return; }
+            const data = await res.json();
+            currentImageFolder = data.cwd || '';
 
-  // folder dropdown (all folders)
-  const sel = document.getElementById('imageFolder');
-  sel.innerHTML = '';
-  (data.all_folders || ['']).forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f;
-    opt.textContent = f || '(root)';
-    if (f === currentImageFolder) opt.selected = true;
-    sel.appendChild(opt);
-  });
+            // folder dropdown (all folders)
+            const sel = document.getElementById('imageFolder');
+            sel.innerHTML = '';
+            (data.all_folders || ['']).forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.textContent = f || '(root)';
+                if (f === currentImageFolder) opt.selected = true;
+                sel.appendChild(opt);
+            });
 
-  // breadcrumbs
-  const bc = document.getElementById('imageBreadcrumbs');
-  bc.innerHTML = breadcrumbsHTML(data.breadcrumbs);
-  bc.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', (e) => {
-      e.preventDefault();
-      loadImageFolder(a.dataset.path || '');
-    });
-  });
+            // breadcrumbs
+            const bc = document.getElementById('imageBreadcrumbs');
+            bc.innerHTML = breadcrumbsHTML(data.breadcrumbs);
+            bc.querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loadImageFolder(a.dataset.path || '');
+                });
+            });
 
-  // thumbnails
-  const c = document.getElementById('imageContainer');
-  c.innerHTML = '';
-  (data.files || []).forEach(src => {
-    const div = document.createElement('div');
-    div.className = 'item';
-    div.innerHTML = `<img src="${src}" alt="">`;
-    div.onclick = () => {
-      document.querySelectorAll('#imageContainer .item').forEach(d=>d.classList.remove('selected'));
-      div.classList.add('selected');
-      selectedImage = src;
-      document.getElementById('selectedImage').value = src;
-      drawPreview();
-    };
-    c.appendChild(div);
-  });
+            // thumbnails
+            const c = document.getElementById('imageContainer');
+            c.innerHTML = '';
+            (data.files || []).forEach(src => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<img src="${src}" alt="">`;
+                div.onclick = () => {
+                    document.querySelectorAll('#imageContainer .item').forEach(d => d.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedImage = src;
+                    document.getElementById('selectedImage').value = src;
+                    drawPreview();
+                };
+                c.appendChild(div);
+            });
 
-  // subfolder tiles (click to drill down)
-  (data.folders || []).forEach(sub => {
-    const tile = document.createElement('div');
-    tile.className = 'item';
-    tile.style.width = '160px'; tile.style.height = '100px';
-    tile.style.display = 'grid'; tile.style.placeItems = 'center';
-    tile.style.background = '#f1f5f9'; tile.style.border = '1px dashed #cbd5e1';
-    tile.textContent = '📁 ' + sub.split('/').pop();
-    tile.onclick = () => loadImageFolder(sub);
-    document.getElementById('imageContainer').appendChild(tile);
-  });
-}
+            // subfolder tiles (click to drill down)
+            (data.folders || []).forEach(sub => {
+                const tile = document.createElement('div');
+                tile.className = 'item';
+                tile.style.width = '160px'; tile.style.height = '100px';
+                tile.style.display = 'grid'; tile.style.placeItems = 'center';
+                tile.style.background = '#f1f5f9'; tile.style.border = '1px dashed #cbd5e1';
+                tile.textContent = '📁 ' + sub.split('/').pop();
+                tile.onclick = () => loadImageFolder(sub);
+                document.getElementById('imageContainer').appendChild(tile);
+            });
+        }
 
-async function loadVideoFolder(folder = '') {
-  const res = await fetch('/list_background_videos?folder=' + encodeURIComponent(folder));
-  if (!res.ok) { console.error('videos list failed'); return; }
-  const data = await res.json();
-  currentVideoFolder = data.cwd || '';
+        // -------- Live Preview Drawing --------
+        async function drawPreview() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const sel = document.getElementById('videoFolder');
-  sel.innerHTML = '';
-  (data.all_folders || ['']).forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f;
-    opt.textContent = f || '(root)';
-    if (f === currentVideoFolder) opt.selected = true;
-    sel.appendChild(opt);
-  });
+            // Left panel
+            const bg = selectedBgColor || '#101010';
+            const leftWidth = canvas.width / 2;
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, leftWidth, canvas.height);
 
-  const bc = document.getElementById('videoBreadcrumbs');
-  bc.innerHTML = breadcrumbsHTML(data.breadcrumbs);
-  bc.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', (e) => {
-      e.preventDefault();
-      loadVideoFolder(a.dataset.path || '');
-    });
-  });
+            // Right image
+            if (selectedImage) {
+                const img = new Image();
+                img.src = selectedImage;
+                await new Promise(res => { img.onload = res; });
+                const rightWidth = canvas.width - leftWidth;
+                ctx.drawImage(img, leftWidth, 0, rightWidth, canvas.height);
+            }
 
-  const c = document.getElementById('videoContainer');
-  c.innerHTML = '';
-  (data.files || []).forEach(src => {
-    const div = document.createElement('div');
-    div.className = 'item';
-    div.innerHTML = `<video src="${src}" muted></video>`;
-    div.onclick = async () => {
-      document.querySelectorAll('#videoContainer .item').forEach(d=>d.classList.remove('selected'));
-      div.classList.add('selected');
-      document.getElementById('selectedVideo').value = src;
-      await fetch('/select_background_video', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ video: src })
-      }).catch(console.error);
-    };
-    c.appendChild(div);
-  });
+            // Text overlay
+            const text = document.getElementById('textInput').value.trim();
+            if (text) {
+                const lines = text.split('|');
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
 
-  (data.folders || []).forEach(sub => {
-    const tile = document.createElement('div');
-    tile.className = 'item';
-    tile.style.width = '160px'; tile.style.height = '100px';
-    tile.style.display = 'grid'; tile.style.placeItems = 'center';
-    tile.style.background = '#f1f5f9'; tile.style.border = '1px dashed #cbd5e1';
-    tile.textContent = '📁 ' + sub.split('/').pop();
-    tile.onclick = () => loadVideoFolder(sub);
-    c.appendChild(tile);
-  });
-}
+                let y = canvas.height / 2 - ((lines.length - 1) * 40);
+                lines.forEach((line, i) => {
+                    ctx.font = 'bold 30px Arial';
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 3;
+                    ctx.strokeText(line, leftWidth / 2, y);
+                    ctx.fillText(line, leftWidth / 2, y);
+                    y += 60;
+                });
+            }
+        }
 
-// react to folder dropdown changes
-document.addEventListener('change', (e) => {
-  if (e.target.id === 'imageFolder') loadImageFolder(e.target.value);
-  if (e.target.id === 'videoFolder') loadVideoFolder(e.target.value);
-});
+        async function loadVideoFolder(folder = '') {
+            const res = await fetch('/list_background_videos?folder=' + encodeURIComponent(folder));
+            if (!res.ok) { console.error('videos list failed'); return; }
+            const data = await res.json();
+            currentVideoFolder = data.cwd || '';
 
-// init
-window.addEventListener('load', () => {
-  loadImageFolder('').catch(console.error);
-  loadVideoFolder('').catch(console.error);
-});
-</script>
+            const sel = document.getElementById('videoFolder');
+            sel.innerHTML = '';
+            (data.all_folders || ['']).forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.textContent = f || '(root)';
+                if (f === currentVideoFolder) opt.selected = true;
+                sel.appendChild(opt);
+            });
+
+            const bc = document.getElementById('videoBreadcrumbs');
+            bc.innerHTML = breadcrumbsHTML(data.breadcrumbs);
+            bc.querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loadVideoFolder(a.dataset.path || '');
+                });
+            });
+
+            const c = document.getElementById('videoContainer');
+            c.innerHTML = '';
+            (data.files || []).forEach(src => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<video src="${src}" muted></video>`;
+                div.onclick = async () => {
+                    document.querySelectorAll('#videoContainer .item').forEach(d => d.classList.remove('selected'));
+                    div.classList.add('selected');
+                    document.getElementById('selectedVideo').value = src;
+                    await fetch('/select_background_video', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ video: src })
+                    }).catch(console.error);
+                };
+                c.appendChild(div);
+            });
+
+            (data.folders || []).forEach(sub => {
+                const tile = document.createElement('div');
+                tile.className = 'item';
+                tile.style.width = '160px'; tile.style.height = '100px';
+                tile.style.display = 'grid'; tile.style.placeItems = 'center';
+                tile.style.background = '#f1f5f9'; tile.style.border = '1px dashed #cbd5e1';
+                tile.textContent = '📁 ' + sub.split('/').pop();
+                tile.onclick = () => loadVideoFolder(sub);
+                c.appendChild(tile);
+            });
+        }
+
+        // react to folder dropdown changes
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'imageFolder') loadImageFolder(e.target.value);
+            if (e.target.id === 'videoFolder') loadVideoFolder(e.target.value);
+        });
+
+        // -------- Events --------
+document.getElementById('bgColorSelect').onchange = e => {
+    selectedBgColor = e.target.value;
+    // drawPreview();
+};
+// document.getElementById('textInput').oninput = drawPreview;
+// document.getElementById('colorInput').oninput = drawPreview;
+
+document.getElementById('thumbForm').onsubmit = async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const res = await fetch('/generate_thumbnail', {method:'POST', body:fd});
+    const result = await res.json();
+    const r = document.getElementById('result');
+    r.innerHTML = result.thumbnail
+        ? `<p>${result.message}</p><img src="${result.thumbnail}?v=${Date.now()}" width="640">`
+        : `<p style="color:red;">${result.error}</p>`;
+};
+
+        // init
+        window.addEventListener('load', () => {
+            loadImageFolder('').catch(console.error);
+            loadVideoFolder('').catch(console.error);
+        });
+    </script>
 
 
 
