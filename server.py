@@ -809,6 +809,28 @@ def assemble_clips_to_make_video_song():
         )
 
         shutil.copy("edit_vid_output/final_video.mp4", "composed_video.mp4")
+
+        audio_folder = "edit_vid_audio"
+        import shutil
+        from pydub import AudioSegment
+        # get the first file found in that folder
+        audio_file = os.listdir(audio_folder)[0]
+        audio_path = os.path.join(audio_folder, audio_file)
+
+        # output path in root folder
+        output_path = "audio.wav"
+
+        # convert mp3 → wav (if needed), else just copy
+        if audio_file.lower().endswith(".mp3"):
+            # convert using pydub (requires ffmpeg installed)
+            sound = AudioSegment.from_mp3(audio_path)
+            sound.export(output_path, format="wav")
+        else:
+            # already wav → overwrite if exists
+            shutil.copy(audio_path, output_path)
+
+        print(f"✅ Saved audio file as {output_path}")
+        
         return "✅ Video song assembled successfully!", 200
     except Exception as e:
         traceback.print_exc() 
