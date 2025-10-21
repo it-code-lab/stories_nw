@@ -472,6 +472,7 @@ def run_obs_recorder():
         import subprocess
         subprocess.run(cmd)
 
+        shutil.copy(outputfile, "processed_videos/output.mp4")
         # Here you would call the function to run OBS recorder
         # For example: run_obs_recorder_function()
 
