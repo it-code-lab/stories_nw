@@ -811,7 +811,6 @@ def assemble_clips_to_make_video_song():
         shutil.copy("edit_vid_output/final_video.mp4", "composed_video.mp4")
 
         audio_folder = "edit_vid_audio"
-        import shutil
         from pydub import AudioSegment
         # get the first file found in that folder
         audio_file = os.listdir(audio_folder)[0]
