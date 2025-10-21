@@ -308,6 +308,10 @@
             object-fit: cover;
             display: block;
         }
+
+        .infoBox {
+            background-color: #cfe0ff; padding: 5px; margin: 10px; border-radius: 5px;
+        }
     </style>
 
 </head>
@@ -346,6 +350,7 @@
         </div>
         <div id="videoContainer" class="grid" style="min-height:110px;"></div>
         <button type="submit">Set Background Video</button>
+        <div class="infoBox">Places video as bg_video.mp4 in edit_vid_input.</div>        
     </form>
 
     <br>
@@ -379,12 +384,36 @@
 
         <button type="submit">Gerenate Audio File</button>
         <br>
-        <div>Created file will be saved as audio.wav in the root folder and edit_vid_audio.
+        <div class="infoBox">Created file will be saved as audio.wav in the root folder and edit_vid_audio.
         </div>
     </form>
+      <br>
+    <form id="asseleClipsToMakeVideoSong">
+        <h2>3.Assemble small video clips to make large video with audio</h2>
+        <div> To be used to make make song videos/large video using video clips.
+            <br><br>Place the video clips in edit_vid_input folder. Place the audio file in edit_vid_audio. Output
+            will be created in edit_vid_output and will also be copied on root as composed_video.mp4.
+        </div>
+
+        <button type="submit">Make Large Video</button>
+    </form>
     <br>
+    <form id="splitTextForm">
+        <h2 style="background-color:lightgreen;">4.Split Content into Sentences</h2>
+
+        <label>Enter Text (sentences separated by "|" or "?"):</label>
+        <textarea id="splitInput" rows="8" placeholder="Enter your text here..."></textarea>
+
+        <label>Result:</label>
+        <textarea id="splitOutput" rows="8" readonly placeholder="Result will appear here..."></textarea>
+
+        <button type="button" id="splitButton">Split Text</button>
+        <button type="button" id="copyButton" style="margin-top:10px;">Copy Result</button>
+    </form>
+    <br>    
+  
     <form id="runCaptionGenerator">
-        <h2 style="background-color:khaki;">3. Generate Captions</h2>
+        <h2 style="background-color:khaki;">5. Generate Captions</h2>
         <h3>Prestep for Audio->WordTimeStamps-Video</h3>
         <div>Run caption_generator.py: Prestep for Audio->WordTimeStamps-Video above
             <ol>
@@ -418,8 +447,8 @@
 
     <br>
     <form id="thumbForm">
-        <h2>4.Create Thumbnail</h2>
-        <h3>1️⃣ Select Thumbnail Image</h3>
+        <h2>6.Create Thumbnail</h2>
+        <h3>Select Thumbnail Image</h3>
 
         <label>Image Folder:</label>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -431,7 +460,7 @@
 
 
 
-        <h3>3️⃣ Thumbnail Text and Styles</h3>
+        <h3>Thumbnail Text and Styles</h3>
 
         <label>Background Color (Left Side):</label>
         <select id="bgColorSelect" name="bg_color">
@@ -468,12 +497,13 @@
         <input type="hidden" name="image" id="selectedImage">
         <!-- after #videoContainer -->
         <input type="hidden" name="video" id="selectedVideo">
+        <div class="infoBox">Created thumbnail will be saved as thumbnail.png in the folder edit_vid_thumbnail.</div>
 
     </form>
     <br>
 
     <form id="runOBSRecorder">
-        <h2>6.OBS Recorder</h2>
+        <h2>7.OBS Recorder</h2>
         <div> To be run if recording as part of whole Process above failed.
             The output will be created as test.mp4.
             Move that to under processed_video folder with right name before running the YouTube Upload.
@@ -555,7 +585,7 @@
 
     <br>
     <form id="uploadForm">
-        <h2>7.Youtube Single Video Upload</h2>
+        <h2>8.Youtube Single Video Upload</h2>
         <div class="row">
             <div>
                 <label>Video File (basename without .mp4)</label>
@@ -1035,17 +1065,7 @@
     </form>
 
     <br>
-    <form id="asseleClipsToMakeVideoSong">
-        <h2>Assemble small video clips to make large video with audio</h2>
-        <div> To be used to make make song videos/large video using video clips.
-            <br><br>Place the video clips in edit_vid_input folder. Place the audio file in edit_vid_audio. Output
-            will be created in edit_vid_output and will also be copied on root as composed_video.mp4.
-        </div>
 
-        <button type="submit">Make Large Video</button>
-    </form>
-
-    <br>
     <form id="splitVideoToParts">
         <h2>Split long video to parts </h2>
         <div> Can be used for creating shorts for upload.
@@ -1057,19 +1077,7 @@
         <button type="submit">Create Video</button>
     </form>
 
-    <br>
-    <form id="splitTextForm">
-        <h2 style="background-color:lightgreen;">Split Content into Sentences</h2>
 
-        <label>Enter Text (sentences separated by "|" or "?"):</label>
-        <textarea id="splitInput" rows="8" placeholder="Enter your text here..."></textarea>
-
-        <label>Result:</label>
-        <textarea id="splitOutput" rows="8" readonly placeholder="Result will appear here..."></textarea>
-
-        <button type="button" id="splitButton">Split Text</button>
-        <button type="button" id="copyButton" style="margin-top:10px;">Copy Result</button>
-    </form>
     <br>
 
 
@@ -1094,8 +1102,11 @@
             ],
             "Indian Stories in English": [
                 "Shiv Stories",
-                "Mythological Tales",
-                "Moral Stories"
+                "Lakshmi Stories",
+                "Krishna Stories",
+                "Hanumanji Stories",
+                "Ganeshji Stories",
+                "Durgaji Stories"
             ],
             "हिंदी कहानियां - Hindi Stories": [
                 "शिव कथाएं (Shiv Stories)",
@@ -1359,6 +1370,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ video: src })
             }).catch(console.error);
+            console.log("Completed Processing");
 
         };
 
@@ -1385,7 +1397,7 @@
                     return;
                 }
                 const { seconds } = await res.json();
-                durationInput.value = Number(seconds).toFixed(2);
+                durationInput.value = Number(seconds + 2).toFixed(2) ; // Added 2 seconds
             } catch (e) {
                 console.error(e);
                 alert('Error fetching audio duration.');

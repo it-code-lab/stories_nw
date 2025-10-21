@@ -219,9 +219,9 @@ def create_thumbnail(
     output_path: str = "thumbnail.png",
     size: Tuple[int, int] = (1280, 720),
     left_ratio: float = 0.5,
-    max_font: int = 112,
+    max_font: int = 150,
     min_font: int = 32,
-    line_spacing: float = 0.18,
+    line_spacing: float = 0.5,
     stroke: int = 4,
 ) -> None:
     """

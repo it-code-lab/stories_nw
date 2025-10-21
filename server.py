@@ -230,7 +230,8 @@ def select_background_video():
 
         import shutil
         shutil.copy(src_path, dest_path)
-        return jsonify({"message": "✅ Video selected and ready for editing!", "dest": dest_path})
+        # return jsonify({"message": "✅ Video selected and ready for editing!", "dest": dest_path})
+        return "✅ Processing completed successfully!", 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -424,7 +425,7 @@ def generatettsaudio():
         tts_engine = request.form.get('tts', 'google')
         gender = request.form.get('gender', 'Female')
         output_audio_file = "audio.wav"
-
+        clear_folder("edit_vid_audio")
 
         generated_file = get_audio_file(ttstext, output_audio_file, tts_engine, language, gender)
         shutil.copy("audio.wav", "edit_vid_audio/audio.wav")
@@ -998,7 +999,7 @@ def uploadVid():
             "youtube_tags": youtube_tags,
             "made_for_kids": made_for_kids,
             "schedule_date": schedule_date_raw or None,       # keep raw; your code formats it for YouTube
-            # optional: "thumbnail_path": "path/to/thumbnail.png",
+            "thumbnail_path": "edit_vid_thumbnail/thumbnail.png",
         }
 
         # Basic validation
