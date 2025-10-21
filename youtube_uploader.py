@@ -192,13 +192,19 @@ def upload_video(page, video_info):
 
     time.sleep(2)
 
-    # Upload thumbnail image
-    page.locator('button:has-text("Upload File")').click()
-    thumbnail_path = video_info["thumbnail_path"]
-    absolute_thumbnail_path = os.path.abspath(thumbnail_path)
-    file_input = page.locator('input[type="file"]')
-    file_input.set_input_files(absolute_thumbnail_path)
-    time.sleep(2)
+    # --- THUMBNAIL upload: set file directly; do NOT click the button
+    if "thumbnail_path" in video_info and video_info["thumbnail_path"]:
+        absolute_thumbnail_path = os.path.abspath(video_info["thumbnail_path"])
+        page.locator('input#file-loader').set_input_files(absolute_thumbnail_path)
+        time.sleep(1)
+
+    # Upload thumbnail image - DND working but leaving the file selector open
+    # page.locator('button:has-text("Upload File")').click()
+    # thumbnail_path = video_info["thumbnail_path"]
+    # absolute_thumbnail_path = os.path.abspath(thumbnail_path)
+    # file_input = page.locator('input[type="file"]')
+    # file_input.set_input_files(absolute_thumbnail_path)
+    # time.sleep(2)
 
     # Add to Playlist
     if "youtube_playlist_name" in video_info and video_info["youtube_playlist_name"]:
