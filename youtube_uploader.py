@@ -1,6 +1,7 @@
 import json
 import csv
 import os
+import re
 import time
 from pathlib import Path
 from datetime import datetime
@@ -187,16 +188,28 @@ def upload_video(page, video_info):
     page.get_by_label("Add a title that describes your video (type @ to mention a channel)").fill(safe_title)
     print("Title Entered")
 
-    page.get_by_label("Tell viewers about your video (type @ to mention a channel)").fill(video_info["youtube_description"])
+    description = video_info["youtube_description"]
+    # Normalize description: remove leading/trailing blank lines, collapse multiple newlines
+    description = re.sub(r'\n\s*\n+', '\n', description.strip())
+
+    page.get_by_label("Tell viewers about your video (type @ to mention a channel)").fill(description)
     print("Description Entered")
 
     time.sleep(2)
 
-    # --- THUMBNAIL upload: set file directly; do NOT click the button
-    if "thumbnail_path" in video_info and video_info["thumbnail_path"]:
-        absolute_thumbnail_path = os.path.abspath(video_info["thumbnail_path"])
-        page.locator('input#file-loader').set_input_files(absolute_thumbnail_path)
-        time.sleep(1)
+    if video_info.get("size", "").lower() == "landscape":
+        thumb_path = video_info.get("thumbnail_path")
+        if thumb_path:
+            absolute_thumbnail_path = os.path.abspath(thumb_path)
+            try:
+                page.locator('input#file-loader').set_input_files(absolute_thumbnail_path)
+                print("✅ Thumbnail uploaded successfully for landscape video.")
+            except Exception as e:
+                print(f"⚠️ Thumbnail upload skipped (element not found or disabled): {e}")
+    else:
+        print("ℹ️ Skipping thumbnail upload for portrait/Shorts video.")
+    
+    time.sleep(1)
 
     # Upload thumbnail image - DND working but leaving the file selector open
     # page.locator('button:has-text("Upload File")').click()

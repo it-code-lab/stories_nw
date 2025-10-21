@@ -830,7 +830,7 @@ def assemble_clips_to_make_video_song():
             shutil.copy(audio_path, output_path)
 
         print(f"✅ Saved audio file as {output_path}")
-        
+
         return "✅ Video song assembled successfully!", 200
     except Exception as e:
         traceback.print_exc() 
@@ -1011,6 +1011,7 @@ def uploadVid():
         youtube_tags          = (request.form.get("youtube_tags") or "").strip()
         made_for_kids         = bool_from_form(request.form.get("made_for_kids"))
         schedule_date_raw     = (request.form.get("schedule_date") or "").strip()
+        size                  = (request.form.get("size") or "").strip()
 
         # Build the dict in the exact shape your upload_video expects
         video_info = {
@@ -1023,6 +1024,7 @@ def uploadVid():
             "made_for_kids": made_for_kids,
             "schedule_date": schedule_date_raw or None,       # keep raw; your code formats it for YouTube
             "thumbnail_path": "edit_vid_thumbnail/thumbnail.png",
+            "size": size
         }
 
         # Basic validation
