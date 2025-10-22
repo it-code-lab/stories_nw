@@ -460,6 +460,14 @@ def run_obs_recorder():
         minLineGapSec = request.form.get('minLineGapSec', '0.40')
         disableSubscribe = request.form.get('disableSubscribe', 'yes')
         outputfile = request.form.get('outputfile', 'test.mp4')
+        language = request.form.get('language', 'english')
+
+        if language == "english":
+            if captionStyle == "story-block":
+                captionStyle = "story-block-english"
+            elif captionStyle == "song-block":
+                captionStyle = "song-block-english"
+
 
         print("Form payload →", request.form.to_dict(flat=False))
         

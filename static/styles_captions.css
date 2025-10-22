@@ -587,7 +587,6 @@
     bottom: 20% !important;
     /* transform: translate(-50%, -50%); */
     text-align: center;
-    font-family: 'Poppins', sans-serif;
     line-height: 1.6;
     display: flex;
     gap: 8px;
@@ -608,7 +607,6 @@
     bottom: 20% !important;
     /* transform: translate(-50%, -50%); */
     text-align: center;
-    font-family: 'Poppins', sans-serif;
     line-height: 1.6;
     display: flex;
     gap: 8px;
@@ -619,6 +617,51 @@
     font-size: 1em !important;
     background-color: rgba(0, 0, 0, 0.413) !important;
     font-family: 'luckiest guy' !important;
+    width: max-content !important;
+    max-width: 80%;
+}
+.song-block-english  {
+    position: absolute;
+    left: 50%;
+    bottom: 20% !important;
+    /* transform: translate(-50%, -50%); */
+    text-align: center;
+    line-height: 1.6;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    /* transition: opacity 0.5s ease-in-out; */
+    font-size: 1.8em !important;
+    background-color: rgba(0, 0, 0, 0.413) !important;
+    text-transform: uppercase;
+    -webkit-text-stroke: 1px black;
+    font-family: 'Luckiest Guy', cursive !important;
+    width: max-content !important;
+    max-width: 80%;
+}
+
+
+
+.story-block-english {
+    position: absolute;
+    left: 50%;
+    bottom: 20% !important;
+    /* transform: translate(-50%, -50%); */
+    text-align: center;
+    line-height: 1.6;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    /* transition: opacity 0.5s ease-in-out; */
+    font-size: 1.8em !important;
+    background-color: rgba(0, 0, 0, 0.413) !important;
+    text-transform: uppercase;
+    -webkit-text-stroke: 1px black;
+    font-family: 'Luckiest Guy', cursive !important;
     width: max-content !important;
     max-width: 80%;
 }
@@ -674,6 +717,18 @@
     border-radius: 5px;
     font-weight: bold; */
     transition: transform 0.03s ease-in-out !important;
+}
+
+.song-block-english .current-word {
+    background-color: rgb(122, 43, 219);
+    border-radius: 2px;
+    border: 1px solid #969693;
+}
+
+ .story-block-english .current-word {
+    background-color: rgb(122, 43, 219);
+    border-radius: 2px;
+    border: 1px solid #969693;
 }
 /* 🔹 Rotating Words for Visual Appeal */
 .angle1 {
@@ -892,7 +947,15 @@
     font-size: 0.8em !important;
 }
 
+.portrait #captions.song-block-english  {
+    font-size: 0.8em !important;
+}
+
 .portrait #captions.story-block {
+    font-size: 0.8em !important;
+}
+
+.portrait #captions.story-block-english {
     font-size: 0.8em !important;
 }
 
@@ -900,7 +963,15 @@
     font-size: 1.8em !important;
 }
 
+.landscape #captions.song-block-english  {
+    font-size: 1.8em !important;
+}
+
 .landscape #captions.story-block {
+    font-size: 1.8em !important;
+}
+
+.landscape #captions.story-block-english {
     font-size: 1.8em !important;
 }
 .landscape #captions {
