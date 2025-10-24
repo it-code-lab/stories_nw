@@ -957,13 +957,7 @@
 
 
     <br>
-    <form id="thumbnailMaker">
-        <h2>4.Thumbnail Maker</h2>
-        <a href="thumbnail" target="_blank">Open Thumbnail Maker</a>
-        (Opens in new tab)
-    </form>
 
-    <br>
     <form id="aiVideoPromptMaker">
         <h2>AI Video Prompt Maker</h2>
         <a href="aivideoprompt" target="_blank">Open AI Video Prompt Maker</a>
@@ -1073,7 +1067,13 @@
     </form>
 
     <br>
+    <form id="thumbnailMaker">
+        <h2>Old Thumbnail Maker</h2>
+        <a href="thumbnail" target="_blank">Open Thumbnail Maker</a>
+        (Opens in new tab)
+    </form>
 
+    <br>
     <form id="splitVideoToParts">
         <h2>Split long video to parts </h2>
         <div> Can be used for creating shorts for upload.
@@ -1104,6 +1104,7 @@
                 "Make Money Online"
             ],
             "The Parent Pod": [
+                "Songs",
                 "Parenting Tips",
                 "Baby & Toddler Advice",
                 "Parent Stories"
@@ -1114,14 +1115,16 @@
                 "Krishna Stories",
                 "Hanumanji Stories",
                 "Ganeshji Stories",
-                "Durgaji Stories"
+                "Durgaji Stories",
+                "Bhakti Sthal Stories"
             ],
             "BhaktiSagar": [
                 "Krishna Stories",
                 "Lakshmi",
                 "Durga",
                 "Ganesh ji",
-                "Shiv Ji Stories",                
+                "Shiv Ji Stories",  
+                "Bhakti Sthal Stories"              
             ],
             "English Story World": [
                 "Fun Fact Stories",
@@ -1158,6 +1161,7 @@
 
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
+            console.log("Processing request...Upload to YouTube")
             result.textContent = "Uploading… Chrome will open. Please don’t touch it.";
             result.className = "";
 
@@ -1165,6 +1169,7 @@
             try {
                 const res = await fetch("/upload", { method: "POST", body: data });
                 const json = await res.json();
+                console.log("Completed request...Upload to YouTube")
                 if (json.ok) {
                     result.innerHTML = `✅ <span class="ok">Success!</span> Video URL: <a href="${json.video_url}" target="_blank">${json.video_url}</a>`;
                 } else {
@@ -1400,13 +1405,20 @@
 
         async function fetchAudioDuration() {
             const durationInput = document.getElementById('audioDuration');
+            const form = document.getElementById('runOBSRecorder');
+            const orientationSelect = form.querySelector('select[name="orientation"]');
             try {
                 const res = await fetch('/api/audio-duration?v=' + Date.now()); // cache-bust
                 if (!res.ok) {
                     alert('audio.wav not found (server returned ' + res.status + ').');
                     return;
                 }
-                const { seconds } = await res.json();
+                let { seconds } = await res.json();
+                if (orientationSelect.value === 'portrait'){
+                    if  (seconds > 176) {
+                        seconds = 176;
+                    }
+                } 
                 durationInput.value = Number(seconds + 2).toFixed(2) ; // Added 2 seconds
             } catch (e) {
                 console.error(e);
@@ -1898,7 +1910,7 @@
                         minLineGapSecInput.value = 60;
                         bgMusicSelect.value = 'positive-wedding-01-657.mp3';
                     }
-                    vidDuration.value = 176;
+                    fetchAudioDuration();
                 }
             } else if (orientationSelect.value === 'portrait') {
                 if (captionStyleSelect.value == 'song-block') {
@@ -1913,7 +1925,7 @@
                     captionStyleSelect.value = 'style4';
                     captionLengthInput.value = 3;
                 }
-                vidDuration.value = 176;
+                fetchAudioDuration();
             } else if (orientationSelect.value === 'landscape') {
                 if (captionStyleSelect.value == 'song-block') {
                     captionLengthInput.value = 30;

@@ -463,10 +463,10 @@ def run_obs_recorder():
         language = request.form.get('language', 'english')
 
         if language == "english":
-            if captionStyle == "story-block":
-                captionStyle = "story-block-english"
-            elif captionStyle == "song-block":
-                captionStyle = "song-block-english"
+            if selectedStyle == "story-block":
+                selectedStyle = "story-block-english"
+            elif selectedStyle == "song-block":
+                selectedStyle = "song-block-english"
 
 
         print("Form payload →", request.form.to_dict(flat=False))
@@ -802,10 +802,38 @@ def make_kb_video():
         traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
 
+VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"}
+
+def _files_with_ext(folder: str, exts: set[str]) -> list[str]:
+    p = Path(folder)
+    if not p.exists() or not p.is_dir():
+        return []
+    return [
+        f.name for f in p.iterdir()
+        if f.is_file() and f.suffix.lower() in exts
+    ]
+
 @app.route('/assembleclipstomakevideosong', methods=['POST'])
 def assemble_clips_to_make_video_song():    
     try:
         print("Processing request...asseleclipstomakevideosong")
+        #return with error message if edit_vid_input is empty
+
+        video_input_folder = "edit_vid_input"
+
+        # --- Validate inputs up front ---
+        if not os.path.isdir(video_input_folder):
+            print( "❌ Folder 'edit_vid_input' does not exist.")
+            return jsonify({"error": "❌ Folder 'edit_vid_input' does not exist."}), 400
+
+        video_files = _files_with_ext(video_input_folder, VIDEO_EXTS)
+        if not video_files:
+            print("❌ No video files found in 'edit_vid_input'.")
+            return jsonify({                
+                "error": "❌ No video files found in 'edit_vid_input'.",
+                "hint":  "Add at least one of: .mp4, .mov, .mkv, .avi, .webm, .m4v"
+            }), 400
+
         from assemble_from_videos import assemble_videos
         assemble_videos(
             video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips

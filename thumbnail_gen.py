@@ -37,7 +37,49 @@ def hex_to_rgb(h: str) -> Tuple[int, int, int]:
     h = h.strip().lstrip("#")
     if len(h) == 3:
         h = "".join(ch * 2 for ch in h)
+    # tolerate 8-digit hex like AARRGGBB by dropping alpha
+    if len(h) == 8:
+        h = h[2:]  # ignore leading alpha
+    if len(h) != 6:
+        raise ValueError(f"Invalid hex color: #{h}")
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+
+def _pick_unified_text_color_for_dark_and_red() -> Tuple[int, int, int]:
+    """
+    Choose ONE color that has strong contrast against BOTH:
+      - black (#000000) and
+      - dark red (#9F0B1F)
+    from a curated thumbnail-safe palette.
+    """
+    black = (0, 0, 0)
+    dark_red = hex_to_rgb("#9F0B1F")
+
+    # Curated, vibrant, thumbnail-friendly palette
+    palette = [
+        hex_to_rgb("#FFFFFF"),  # white
+        hex_to_rgb("#E0E0E0"),  # light gray
+        hex_to_rgb("#FFF5E1"),  # light beige
+        hex_to_rgb("#DDDDDD"),  # soft gray
+        hex_to_rgb("#F5DEB3"),  # pale gold
+        hex_to_rgb("#ADD8E6"),  # light blue
+        hex_to_rgb("#C3E8D4"),  # mint
+        hex_to_rgb("#4FC3F7"),  # electric blue
+        hex_to_rgb("#00FFFF"),  # cyan
+        hex_to_rgb("#FFFF33"),  # bright yellow
+        hex_to_rgb("#66FFB2"),  # mint green
+        hex_to_rgb("#FF4081"),  # bright pink
+        hex_to_rgb("#FFD700"),  # gold
+    ]
+
+    # Score each color by the *minimum* contrast against both backgrounds.
+    # Prefer higher minimum contrast; break ties by higher average contrast.
+    def score(c):
+        c1 = _contrast_ratio(c, black)
+        c2 = _contrast_ratio(c, dark_red)
+        return (min(c1, c2), (c1 + c2) / 2.0)
+
+    best = max(palette, key=score)
+    return best
 
 
 def _rel_luminance(rgb: Tuple[int, int, int]) -> float:
@@ -95,6 +137,7 @@ def _possible_font_paths() -> List[Path]:
 
     candidates = [
         # Bundled / local
+        fonts_dir / "Poppins-ExtraBold.ttf",
         fonts_dir / "RozhaOne-Regular.ttf",
         fonts_dir / "NotoSansDevanagari-Bold.ttf",
         # fonts_dir / "NotoSansDevanagari-Regular.ttf",
@@ -259,6 +302,11 @@ def create_thumbnail(
     if not color_items:
         color_items = ["auto"]
 
+    # NEW: if user asked for auto, choose ONE unified color that works for both backgrounds
+    unified_fill = None
+    if len(color_items) == 1 and (color_items[0] or "").lower() == "auto":
+        unified_fill = _pick_unified_text_color_for_dark_and_red()
+
     # Compute sizes that fit width
     available_w = left_w - 120  # side padding
     sized: List[Tuple[str, ImageFont.FreeTypeFont, int, Tuple[int, int, int], float, int]] = []
@@ -279,7 +327,10 @@ def create_thumbnail(
 
         # color selection
         col_spec = color_items[i] if i < len(color_items) else color_items[-1]
-        fill = auto_text_color(bg_rgb) if (col_spec or "").lower() == "auto" else hex_to_rgb(col_spec)
+        if unified_fill is not None:
+            fill = unified_fill
+        else:
+            fill = auto_text_color(bg_rgb) if (col_spec or "").lower() == "auto" else hex_to_rgb(col_spec)
 
         print(f"Line {i} color: {fill}")
 
