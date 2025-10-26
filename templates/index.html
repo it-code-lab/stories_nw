@@ -1087,6 +1087,45 @@
         <input type="number" name="duration" min="1" max="1000" value="170">
         <button type="submit">Create Video</button>
     </form>
+    <br>
+
+    <form id="mixVocalMusicForm">
+        <h2 style="background:#d1fae5;">Merge Vocal + Music → Pro Mix</h2>
+
+        <label>Vocal file (optional):</label>
+        <input type="file" name="vocal_file" accept=".wav,.mp3,.m4a,.flac,.aac,.ogg" />
+
+        <label>Music file (optional):</label>
+        <input type="file" name="music_file" accept=".wav,.mp3,.m4a,.flac,.aac,.ogg" />
+
+        <div class="infoBox">
+            If you don’t upload files, the server will try to auto-pick from
+            <code>edit_vid_audio/</code> (e.g. names containing <i>vocal/vox</i> and <i>music/bg/instrumental</i>) or
+            the first two audio files it finds.
+        </div>
+
+        <label>Output format:</label>
+        <select name="format">
+            <option value="wav" selected>WAV</option>
+            <option value="mp3">MP3 (requires ffmpeg)</option>
+        </select>
+
+        <label>Target loudness (LUFS):</label>
+        <input type="number" step="0.1" name="target_lufs" value="-14">
+
+        <label>Music start gain (dB):</label>
+        <input type="number" step="0.5" name="music_gain_db" value="-10">
+
+        <label>Ducking depth under vocal (dB):</label>
+        <input type="number" step="0.5" name="duck_db" value="10">
+
+        <label>Music floor even with quiet vocal (dB):</label>
+        <input type="number" step="0.5" name="duck_floor_db" value="-1">
+
+        <button type="submit">Create Professional Mix</button>
+
+        <div id="mixResult" style="margin-top:10px;text-align:center;"></div>
+    </form>
 
 
     <br>
@@ -1147,6 +1186,41 @@
     </form>
 
     <br>
+
+    <script>
+        (function () {
+            const form = document.getElementById('mixVocalMusicForm');
+            if (!form) return;
+            const result = document.getElementById('mixResult');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                result.innerHTML = '⏳ Mixing…';
+
+                const fd = new FormData(form);
+                try {
+                    const resp = await fetch('/mix_vocal_music', { method: 'POST', body: fd });
+                    const data = await resp.json();
+                    if (!resp.ok || !data.ok) throw new Error(data.error || 'Mix failed');
+
+                    const url = data.download;
+                    const meta = data.meta || {};
+                    result.innerHTML = `
+        <div class="infoBox">✅ Mix created.</div>
+        <audio controls src="${url}" style="width:100%;max-width:520px;"></audio>
+        <div style="margin-top:8px;">
+          <a href="${url}" download>⬇️ Download</a>
+        </div>
+        <pre style="text-align:left;white-space:pre-wrap;background:#f8fafc;padding:8px;border-radius:8px;">
+${JSON.stringify(meta, null, 2)}
+        </pre>
+      `;
+                } catch (err) {
+                    result.innerHTML = `<div class="infoBox" style="background:#ffe0e0;">❌ ${err.message}</div>`;
+                }
+            });
+        })();
+    </script>
 
     <script>
         (() => {

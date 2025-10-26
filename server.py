@@ -15,6 +15,7 @@ from pathlib import Path
 import wave
 from urllib.parse import unquote
 from polish_audio_auto import polish_audio  # NEW
+from auto_mix import mix_files
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
@@ -23,6 +24,97 @@ CORS(app)
 BASE_DIR = Path(__file__).resolve().parent
 AUDIO_PATH = BASE_DIR / "audio.wav"   # your file is beside server.py
 
+@app.post("/mix_vocal_music")
+def mix_vocal_music_endpoint():
+    """
+    Merge vocal + background music into a polished song.
+    Accepts optional file uploads (vocal_file, music_file); otherwise
+    tries to auto-pick from edit_vid_audio/ (vocal*, music*, etc.) or first two audio files.
+    Returns JSON with download link and metadata.
+    """
+    try:
+        base = BASE_DIR
+        eva = base / "edit_vid_audio"
+        eva.mkdir(exist_ok=True)
+
+        uploaded_v = request.files.get("vocal_file")
+        uploaded_m = request.files.get("music_file")
+
+        def _save_upload(upfile, fallback_stem):
+            if not upfile or not upfile.filename:
+                return None
+            ext = os.path.splitext(upfile.filename)[1]
+            p = eva / f"{fallback_stem}{ext}"
+            upfile.save(str(p))
+            return p
+
+        vocal_path = _save_upload(uploaded_v, "vocal_uploaded") if uploaded_v else None
+        music_path = _save_upload(uploaded_m, "music_uploaded") if uploaded_m else None
+
+        # Auto-pick from folder if any missing
+        def _pick_candidates():
+            if not eva.exists():
+                return []
+            return [
+                p for p in sorted(eva.iterdir())
+                if p.suffix.lower() in {".wav", ".mp3", ".m4a", ".flac", ".aac", ".ogg"}
+            ]
+
+        files = _pick_candidates()
+        if not vocal_path:
+            # Prefer names
+            for p in files:
+                if "vocal" in p.name.lower() or "vox" in p.name.lower():
+                    vocal_path = p; break
+        if not music_path:
+            for p in files:
+                if p != vocal_path and any(tag in p.name.lower() for tag in ["music", "bg", "instrumental"]):
+                    music_path = p; break
+        # Fallback to first two
+        if not (vocal_path and music_path) and len(files) >= 2:
+            vocal_path = vocal_path or files[0]
+            music_path = music_path or next(p for p in files if p != vocal_path)
+
+        if not (vocal_path and music_path):
+            return jsonify({"ok": False, "error": "Could not find both vocal and music. Upload them or place in edit_vid_audio/."}), 400
+
+        # Read options
+        sr = int(request.form.get("sr", 44100))
+        music_gain_db = float(request.form.get("music_gain_db", -10.0))
+        duck_db = float(request.form.get("duck_db", 10.0))
+        duck_floor_db = float(request.form.get("duck_floor_db", -1.0))
+        target_lufs = float(request.form.get("target_lufs", -14.0))
+        out_fmt = (request.form.get("format", "wav") or "wav").lower()
+        out_name = f"final_mix.{ 'mp3' if out_fmt=='mp3' else 'wav'}"
+        out_path = base / out_name
+
+        # Run mix
+        final_path, meta = mix_files(
+            str(vocal_path), str(music_path), str(out_path),
+            sr=sr, music_gain_db=music_gain_db, duck_db=duck_db,
+            duck_floor_db=duck_floor_db, target_lufs=target_lufs
+        )
+
+        # Optional: also copy to edit_vid_audio for downstream steps
+        try:
+            import shutil
+            shutil.copy(str(final_path), str(eva / out_name))
+        except Exception:
+            pass
+
+        return jsonify({
+            "ok": True,
+            "download": f"/video/{out_name}",
+            "saved_in_edit_vid_audio": f"/video/edit_vid_audio/{out_name}" if (eva / out_name).exists() else None,
+            "inputs": {
+                "vocal": str(vocal_path.relative_to(base)),
+                "music": str(music_path.relative_to(base)),
+            },
+            "meta": meta
+        })
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.post("/polish_audio")
 def polish_audio_endpoint():
