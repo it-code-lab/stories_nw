@@ -310,7 +310,10 @@
         }
 
         .infoBox {
-            background-color: #cfe0ff; padding: 5px; margin: 10px; border-radius: 5px;
+            background-color: #cfe0ff;
+            padding: 5px;
+            margin: 10px;
+            border-radius: 5px;
         }
     </style>
 
@@ -350,7 +353,7 @@
         </div>
         <div id="videoContainer" class="grid" style="min-height:110px;"></div>
         <button type="submit">Set Background Video</button>
-        <div class="infoBox">Places video as bg_video.mp4 in edit_vid_input.</div>        
+        <div class="infoBox">Places video as bg_video.mp4 in edit_vid_input.</div>
     </form>
 
     <br>
@@ -387,7 +390,7 @@
         <div class="infoBox">Created file will be saved as audio.wav in the root folder and edit_vid_audio.
         </div>
     </form>
-      <br>
+    <br>
     <form id="asseleClipsToMakeVideoSong">
         <h2>3.Assemble small video clips to make large video with audio</h2>
         <div> To be used to make make song videos/large video using video clips.
@@ -410,8 +413,8 @@
         <button type="button" id="splitButton">Split Text</button>
         <button type="button" id="copyButton" style="margin-top:10px;">Copy Result</button>
     </form>
-    <br>    
-  
+    <br>
+
     <form id="runCaptionGenerator">
         <h2 style="background-color:khaki;">5. Generate Captions</h2>
         <h3>Prestep for Audio->WordTimeStamps-Video</h3>
@@ -1087,7 +1090,101 @@
 
 
     <br>
+    <form id="polishAudioForm">
+        <h2 style="background:#ffeaa7;">1a. Polish Phone Audio → Studio (Adaptive)</h2>
 
+        <label>Audio source:</label>
+        <div style="font-size:13px;color:#555;margin:-6px 0 8px;">
+            Upload a file (optional). Otherwise the server uses the first file in <code>edit_vid_audio/</code> or
+            <code>audio.wav</code> in project root.
+        </div>
+        <input type="file" name="audio_file" accept=".wav,.m4a,.mp3,.aac,.flac,.ogg" />
+
+        <label>Noise handling:</label>
+        <select name="denoise">
+            <option value="auto" selected>auto (detect per file)</option>
+            <option value="none">none</option>
+            <option value="light">light</option>
+            <option value="medium">medium</option>
+            <option value="strong">strong</option>
+        </select>
+
+        <label>High-pass (Hz):</label>
+        <input type="number" name="hp" value="80" min="0" />
+
+        <label>Low-pass (Hz, 0=off):</label>
+        <input type="number" name="lp" value="12000" min="0" />
+
+        <label>De-esser intensity (0–10):</label>
+        <input type="number" name="deess" value="5" min="0" max="10" />
+
+        <label>Target loudness (LUFS):</label>
+        <input type="number" name="target_lufs" step="0.1" value="-16" />
+
+        <label>True-peak limit (dBTP):</label>
+        <input type="number" name="tp" step="0.1" value="-1.5" />
+
+        <label>LRA target:</label>
+        <input type="number" name="lra" step="0.1" value="11" />
+
+        <label>Force mono?</label>
+        <select name="mono">
+            <option value="true">true</option>
+            <option value="false" selected>false</option>
+        </select>
+
+        <label>Sample rate (Hz, blank=keep):</label>
+        <input type="number" name="ar" placeholder="48000" />
+
+        <label>Use speechnorm (if FFmpeg supports it)?</label>
+        <select name="speechnorm">
+            <option value="false" selected>false</option>
+            <option value="true">true</option>
+        </select>
+
+        <button type="submit">Polish Audio</button>
+        <div id="polishAudioResult" class="infoBox" style="display:none;"></div>
+    </form>
+
+    <br>
+
+    <script>
+        (() => {
+            const form = document.getElementById('polishAudioForm');
+            const resultBox = document.getElementById('polishAudioResult');
+            if (!form) return;
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                resultBox.style.display = 'block';
+                resultBox.textContent = 'Processing...';
+
+                const fd = new FormData(form);
+                try {
+                    const res = await fetch('/polish_audio', { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (!res.ok || !data.ok) throw new Error(data.error || 'Server error');
+
+                    // Show a download link + summary
+                    const meta = data.meta || {};
+                    const dl = data.download || '';
+                    resultBox.innerHTML = `
+        ✅ Done. <a href="${dl}" target="_blank">Download audio_clean.m4a</a><br>
+        <small>
+          denoise=${meta.denoise_mode} (nr=${meta.denoise_nr}) |
+          HP=${meta.highpass_hz}Hz |
+          LP=${meta.lowpass_hz ?? 'off'} |
+          deess=${meta.deess_intensity} |
+          target=${meta.target_lufs} LUFS / TP=${meta.tp_limit_dbTP} dBTP |
+          mono=${meta.force_mono} | ar=${meta.samplerate || 'keep'}
+        </small>
+      `;
+                } catch (err) {
+                    resultBox.textContent = '❌ ' + err.message;
+                }
+            });
+        })();
+    </script>
 
     <script>
         // 🎯 Playlist mappings for each YouTube channel
@@ -1123,8 +1220,8 @@
                 "Lakshmi",
                 "Durga",
                 "Ganesh ji",
-                "Shiv Ji Stories",  
-                "Bhakti Sthal Stories"              
+                "Shiv Ji Stories",
+                "Bhakti Sthal Stories"
             ],
             "English Story World": [
                 "Fun Fact Stories",
@@ -1414,12 +1511,12 @@
                     return;
                 }
                 let { seconds } = await res.json();
-                if (orientationSelect.value === 'portrait'){
-                    if  (seconds > 176) {
+                if (orientationSelect.value === 'portrait') {
+                    if (seconds > 176) {
                         seconds = 176;
                     }
-                } 
-                durationInput.value = Number(seconds + 2).toFixed(2) ; // Added 2 seconds
+                }
+                durationInput.value = Number(seconds + 2).toFixed(2); // Added 2 seconds
             } catch (e) {
                 console.error(e);
                 alert('Error fetching audio duration.');

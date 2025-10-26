@@ -14,6 +14,7 @@ import re
 from pathlib import Path
 import wave
 from urllib.parse import unquote
+from polish_audio_auto import polish_audio  # NEW
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
@@ -21,6 +22,92 @@ CORS(app)
 # Always resolve relative to this file (server.py)
 BASE_DIR = Path(__file__).resolve().parent
 AUDIO_PATH = BASE_DIR / "audio.wav"   # your file is beside server.py
+
+
+@app.post("/polish_audio")
+def polish_audio_endpoint():
+    """
+    Polishes an audio file and writes result to root as 'audio_clean.m4a'.
+    Source priority:
+      1) uploaded file 'audio_file' (optional)
+      2) first file under edit_vid_audio/
+      3) ./audio.wav (root)
+    Returns JSON with settings + downloadable link: /video/audio_clean.m4a
+    """
+    try:
+        base_dir = Path(__file__).resolve().parent
+
+        # 1) Decide input
+        uploaded = request.files.get("audio_file")
+        tmp_in = None
+        if uploaded and uploaded.filename:
+            tmp_in = base_dir / "tmp_upload_in"
+            tmp_in.mkdir(exist_ok=True)
+            in_path = tmp_in / uploaded.filename
+            uploaded.save(str(in_path))
+        else:
+            # fallbacks: first file in edit_vid_audio, else root audio.wav
+            eva = base_dir / "edit_vid_audio"
+            candidates = []
+            if eva.exists():
+                for f in sorted(eva.iterdir()):
+                    if f.suffix.lower() in {".wav",".m4a",".mp3",".aac",".flac",".ogg"}:
+                        candidates.append(f)
+            if not candidates and (base_dir / "audio.wav").exists():
+                candidates.append(base_dir / "audio.wav")
+            if not candidates:
+                return jsonify({"error": "No input audio found. Upload a file or place one in edit_vid_audio/ or audio.wav."}), 400
+            in_path = candidates[0]
+
+        # 2) Read options from form (with safe defaults)
+        mode = request.form.get("denoise", "auto")
+        target = float(request.form.get("target_lufs", -16.0))
+        tp = float(request.form.get("tp", -1.5))
+        lra = float(request.form.get("lra", 11.0))
+        hp = int(request.form.get("hp", 80))
+        lp_raw = request.form.get("lp", "12000")
+        lp = int(lp_raw) if lp_raw and lp_raw != "0" else None
+        deess = int(request.form.get("deess", 5))
+        if deess < 0: deess = 0
+        if deess > 10: deess = 10
+        mono = request.form.get("mono", "false").lower() == "true"
+        ar_raw = request.form.get("ar", "").strip()
+        ar = int(ar_raw) if ar_raw else None
+        speechnorm = request.form.get("speechnorm", "false").lower() == "true"
+
+        out_path = base_dir / "audio_clean.m4a"  # served by /video/<filename>
+        meta = polish_audio(
+            input_path=str(in_path),
+            output_path=str(out_path),
+            denoise_mode=mode,
+            target_lufs=target,
+            tp_limit=tp,
+            lra_target=lra,
+            highpass_hz=hp,
+            lowpass_hz=lp,
+            deess_intensity=deess,
+            force_mono=mono,
+            samplerate=ar,
+            use_speechnorm=speechnorm,
+        )
+
+        # optional: also copy to edit_vid_audio for downstream steps
+        try:
+            (base_dir / "edit_vid_audio").mkdir(exist_ok=True)
+            shutil.copy(str(out_path), str(base_dir / "edit_vid_audio" / "audio_clean.m4a"))
+        except Exception:
+            pass
+
+        # Download via existing route /video/<filename> that serves from project root
+        # (you already have: send_from_directory(directory='.', path=filename))
+        return jsonify({
+            "ok": True,
+            "download": "/video/audio_clean.m4a",
+            "meta": meta
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 def url_to_fs(url_path: str, base_subdir: str) -> Path:
     """
