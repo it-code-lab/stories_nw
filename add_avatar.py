@@ -1,4 +1,20 @@
 import subprocess
+# --- TorchVision shim for older basicsr expecting functional_tensor ---
+import sys, types
+try:
+    # Old path used by basicsr
+    from torchvision.transforms.functional_tensor import rgb_to_grayscale  # noqa: F401
+except Exception:
+    # Create a compatibility module that basicsr can import
+    import torchvision.transforms.functional as F
+    sys.modules.setdefault(
+        'torchvision.transforms.functional_tensor',
+        types.SimpleNamespace(rgb_to_grayscale=F.rgb_to_grayscale)
+    )
+# ----------------------------------------------------------------------
+
+import gfpgan
+
 import gfpgan
 from moviepy.editor import VideoFileClip
 from concurrent.futures import ThreadPoolExecutor
