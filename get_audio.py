@@ -6,9 +6,43 @@ from google.cloud import texttospeech_v1beta1 as texttospeech
 from pydub import AudioSegment
 import re
 
+
+from google.api_core.timeout import ExponentialTimeout
+# NEW imports near the top of get_audio.py
+import os, random, time
+from functools import lru_cache
+from google.api_core import exceptions as gexceptions
+
+# Try to import Retry + if_exception_type in the modern way; provide fallbacks.
+try:
+    from google.api_core.retry import Retry, if_exception_type
+except Exception:  # older google-api-core
+    from google.api_core import retry as _retry
+    Retry = _retry.Retry
+    def if_exception_type(*exc_types):
+        def _pred(exc):
+            return isinstance(exc, exc_types)
+        return _pred
+
+# Timeout helper is not present in older versions; fall back to a constant.
+try:
+    from google.api_core.timeout import ExponentialTimeout
+    _HAS_EXP_TIMEOUT = True
+except Exception:
+    _HAS_EXP_TIMEOUT = False
+
+
 # Define the maximum character limit for each TTS engine
-GOOGLE_MAX_CHARS = 4800
+GOOGLE_MAX_CHARS = 3800
 AMAZON_MAX_CHARS = 2000  # Approximate limit
+
+# Add near top:
+CHUNK_THROTTLE_SECONDS = (0.20, 0.60)  # 100–300ms random jitter between chunk calls
+
+@lru_cache(maxsize=1)
+def _get_tts_client():
+    from google.cloud import texttospeech_v1beta1 as texttospeech
+    return texttospeech.TextToSpeechClient()
 
 def _utf8_len(s: str) -> int:
     return len(s.encode("utf-8"))
@@ -46,8 +80,54 @@ def _split_sentence_by_words_utf8(s: str, max_bytes: int) -> list[str]:
         chunks.append(buf)
     return chunks
 
+def synthesize_speech_google(text, output_file, language, gender, voice_name,
+                             speaking_rate=1.0, pitch=0.0):
+    from google.cloud import texttospeech_v1beta1 as texttospeech
 
-def synthesize_speech_google(text, output_file, language, gender, voice_name, speaking_rate=1.0, pitch=0.0):
+    # Optional fast auth sanity check so we don't confuse auth with 5xx
+    creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if not creds_path or not os.path.exists(creds_path):
+        raise RuntimeError(f"Google credentials not found at {creds_path or '(unset)'}")
+
+    client = _get_tts_client()
+
+    input_text = texttospeech.SynthesisInput(text=text)
+    voice = texttospeech.VoiceSelectionParams(language_code=language, name=voice_name)
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3,
+        speaking_rate=speaking_rate,
+        **({"pitch": pitch} if pitch else {})
+    )
+
+    # Works across api-core versions
+    retry = Retry(
+        predicate=if_exception_type(
+            gexceptions.ServiceUnavailable,   # 503 / UNAVAILABLE
+            gexceptions.DeadlineExceeded,     # 504
+            gexceptions.InternalServerError,  # 500
+            gexceptions.GoogleAPICallError    # broader net for 5xx mappings
+        ),
+        initial=1.0,
+        maximum=30.0,
+        multiplier=2.0,
+        deadline=120.0,   # overall retry budget for this request
+    )
+
+    timeout = ExponentialTimeout(initial=20.0, maximum=60.0, multiplier=1.5) if _HAS_EXP_TIMEOUT else 60.0
+
+    response = client.synthesize_speech(
+        request={"input": input_text, "voice": voice, "audio_config": audio_config},
+        retry=retry,
+        timeout=timeout,
+    )
+
+    with open(output_file, "wb") as f:
+        f.write(response.audio_content)
+    return output_file
+
+
+# Working except for very long text
+def synthesize_speech_google_DND(text, output_file, language, gender, voice_name, speaking_rate=1.0, pitch=0.0):
     """Synthesizes speech using Google Cloud Text-to-Speech."""
     client = texttospeech.TextToSpeechClient()
     input_text = texttospeech.SynthesisInput(text=text)
@@ -234,6 +314,10 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
             if not current_chunk.strip():
                 return
             temp_audio_file = f"{audio_file_name.rsplit('.', 1)[0]}_part_{chunk_index}.mp3"
+
+            chunk_bytes = _utf8_len(current_chunk)
+            print(f"[TTS] chunk #{chunk_index} → {chunk_bytes} bytes")
+
             if tts_engine == "google":
                 tts_function(
                     text=current_chunk.strip(),
@@ -259,6 +343,9 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
             audio_files.append(temp_audio_file)
             current_chunk = ""
             chunk_index += 1
+            # NEW: tiny throttle between calls to be nice to the API and avoid 502 bursts
+            time.sleep(random.uniform(*CHUNK_THROTTLE_SECONDS))
+
 
         for s in sentences:
             s = s.strip()
