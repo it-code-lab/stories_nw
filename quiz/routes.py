@@ -14,6 +14,24 @@ os.makedirs(QUIZ_DIR, exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_DIR, "images"), exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_DIR, "audio"), exist_ok=True)
 
+@quiz_bp.route("/api/media")
+def list_media():
+    bg_dir = os.path.join(APP_ROOT, "static/backgrounds")
+    music_dir = os.path.join(APP_ROOT, "static/music")
+
+    def list_files(path, ext):
+        try:
+            return [f"/quiz/static/{os.path.basename(path)}/{fn}"
+                    for fn in os.listdir(path)
+                    if fn.lower().endswith(ext)]
+        except FileNotFoundError:
+            return []
+
+    return jsonify({
+        "videos": list_files(bg_dir, ".mp4"),
+        "music": list_files(music_dir, ".mp3")
+    })
+
 @quiz_bp.post("/import/csv")
 def import_csv():
     f = request.files.get('file')

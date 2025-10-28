@@ -1,234 +1,301 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Quiz Builder</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Quiz Builder</title>
 
-  <link rel="stylesheet" href="/quiz/static/css/builder.css" />
+    <link rel="stylesheet" href="/quiz/static/css/builder.css" />
 </head>
+
 <body class="builder">
-  <!-- Background layers for Player-like preview area -->
-  <video id="pvBgVideo" class="bg-layer" autoplay muted loop playsinline></video>
-  <img   id="pvBgImage" class="bg-layer" alt="" />
-  <div   id="pvBgTint"  class="bg-tint"></div>
 
-  <!-- App bar -->
-  <header class="appbar">
-    <div class="brand">Quiz Builder</div>
-    <div class="row">
-      <button id="loadJsonBtn" class="btn ghost">Load JSON</button>
-      <input id="loadJsonInput" type="file" accept="application/json" hidden />
 
-      <button id="saveBtn" class="btn">Save Quiz</button>
-      <button id="playBtn" class="btn accent">Start Playback</button>
+    <!-- App bar -->
+    <header class="appbar">
+        <div class="brand">Quiz Builder</div>
+        <div class="row">
+            <button id="newQuizBtn" class="btn ghost">+ New Quiz</button>
+            <button id="loadJsonBtn" class="btn ghost">Load JSON</button>
+            <input id="loadJsonInput" type="file" accept="application/json" hidden />
+
+            <button id="saveBtn" class="btn">Save Quiz</button>
+            <button id="playBtn" class="btn accent">Start Playback</button>
+        </div>
+    </header>
+
+    <div class="layout">
+        <!-- LEFT: Metadata & Question List -->
+        <aside class="left panel">
+            <h3>Quiz Settings</h3>
+            <label>Title
+                <input id="quizTitle" placeholder="Quiz Title" />
+            </label>
+
+            <div class="row2">
+                <label>Language
+                    <select id="quizLang">
+                        <option value="en">English</option>
+                        <option value="hi">Hindi</option>
+                    </select>
+                </label>
+                <label>Default Timer
+                    <input id="defaultTimer" type="number" min="3" value="12" />
+                </label>
+            </div>
+
+            <h4>Theme</h4>
+            <label>Preset
+                <select id="themePreset">
+                    <option>Neon Quiz</option>
+                    <option>Minimal White</option>
+                    <option>Retro Arcade</option>
+                    <option>Kids Fun</option>
+                    <option>Sci-Fi</option>
+                </select>
+            </label>
+
+            <div class="row2">
+                <label>Overlay Color
+                    <input id="overlayColor" type="color" value="#000000" />
+                </label>
+                <label>Overlay Opacity
+                    <input id="overlayOpacity" type="range" min="0" max="0.9" step="0.05" value="0.45" />
+                </label>
+            </div>
+
+            <div class="row2">
+                <label>Question Animation
+                    <select id="qAnim">
+                        <option value="fade">Fade In</option>
+                        <option value="slide">Slide Up</option>
+                        <option value="zoom">Zoom In</option>
+                        <option value="none">None</option>
+                    </select>
+                </label>
+
+                <label>Option Animation
+                    <select id="optAnim">
+                        <option value="fade">Fade In</option>
+                        <option value="slide">Slide Up</option>
+                        <option value="zoom">Zoom In</option>
+                        <option value="none">None</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="row2">
+                <label>Idle Motion
+                    <select id="idleMotion">
+                        <option value="none">None</option>
+                        <option value="breath">Breathing</option>
+                        <option value="shake">Subtle Shake</option>
+                        <option value="float">Floating</option>
+                    </select>
+                </label>
+
+                <label>Motion Intensity
+                    <input id="idleIntensity" type="range" min="1" max="10" value="3" step="1" />
+                </label>
+            </div>
+
+            <label class="row" style="margin-top:.3rem">
+                <input id="optStagger" type="checkbox" checked />
+                Stagger option animations
+            </label>
+            <label>Stagger Step (seconds)
+                <input id="optStaggerStep" type="number" min="0" step="0.05" value="0.10" />
+            </label>
+
+            <div class="row2">
+                <label>Primary Color <input id="colorPrimary" type="color" value="#00E5FF" /></label>
+                <label>Accent Color <input id="colorAccent" type="color" value="#FF3D7F" /></label>
+            </div>
+
+            <label>Font Family
+                <select id="fontFamily">
+                    <option>Poppins, sans-serif</option>
+                    <option>Inter, sans-serif</option>
+                    <option>Nunito, sans-serif</option>
+                    <option>Rubik, sans-serif</option>
+                </select>
+            </label>
+
+            <div class="row2">
+                <label>Timer Style
+                    <select id="timerStyle">
+                        <option value="ring">Ring</option>
+                        <option value="bar">Bar</option>
+                    </select>
+                </label>
+                <label>Music Volume
+                    <input id="musicVol" type="number" step="0.05" min="0" max="1" value="0.35" />
+                </label>
+            </div>
+
+            <label>Background Video
+                <select id="bgSelect">
+                    <option value="">(Select Video)</option>
+                </select>
+                <input id="bgSrc" type="hidden" placeholder="/quiz/uploads/backgrounds/nebula.mp4" />
+            </label>
+
+            <label>Background Music (URL)
+
+                <select id="musicSelect">
+                    <option value="">(Select Music)</option>
+                </select>
+                <input id="musicSrc" type="hidden" placeholder="/quiz/uploads/music/ambient_loop.mp3" />
+            </label>
+
+            <label class="row"><input id="duckOnReveal" type="checkbox" checked /> Duck Music on Reveal</label>
+
+            <hr class="sep" />
+
+            <section class="row" style="justify-content:space-between; align-items:center;">
+                <div>
+                    <h3 style="margin:.2rem 0">Questions</h3>
+                    <div id="qCount" class="muted">0 items</div>
+                </div>
+                <div class="row">
+                    <button id="addMcq" class="btn small">+ MCQ</button>
+                    <button id="addSingle" class="btn small">+ Single</button>
+                </div>
+            </section>
+
+            <ul id="qList" class="qlist"></ul>
+        </aside>
+
+        <!-- CENTER: Question Editor -->
+        <main class="center panel">
+            <h3>Question Editor</h3>
+
+            <div id="noSel" class="muted">Select a question from the list or add a new one.</div>
+
+            <section id="qEditor" class="hidden">
+                <div class="row2">
+                    <label>Type
+                        <select id="qType">
+                            <option value="mcq">Multiple Choice</option>
+                            <option value="single">Single Answer</option>
+                        </select>
+                    </label>
+                    <label>Difficulty
+                        <select id="qDiff">
+                            <option value="easy">easy</option>
+                            <option value="medium">medium</option>
+                            <option value="hard">hard</option>
+                        </select>
+                    </label>
+                    <label>Timer (sec)
+                        <input id="qTimer" type="number" min="3" />
+                    </label>
+                </div>
+
+                <label>Question Text
+                    <textarea id="qText" rows="3" placeholder="Type the question…"></textarea>
+                </label>
+
+                <!-- Question images -->
+                <div class="imgs">
+                    <div class="row" style="justify-content:space-between; align-items:center;">
+                        <h4 style="margin:0">Question Images</h4>
+                        <div>
+                            <input id="qImgInput" type="file" accept="image/*" hidden />
+                            <button id="qImgBtn" class="btn small">+ Add Image</button>
+                        </div>
+                    </div>
+                    <div id="qImgGrid" class="imggrid"></div>
+                </div>
+
+                <!-- Options (1-4) -->
+                <div id="mcqBlock">
+                    <div class="row" style="justify-content:space-between; align-items:center; margin-top:.6rem;">
+                        <h4 style="margin:0">Options</h4>
+                        <div class="row">
+                            <button id="addOptBtn" class="btn small">+ Add</button>
+                            <button id="remOptBtn" class="btn small ghost">– Remove</button>
+                        </div>
+                    </div>
+
+                    <div id="optWrap" class="optwrap"></div>
+
+                    <label>Correct Option
+                        <select id="correctIdx">
+                            <option value="0">Option 1</option>
+                            <option value="1">Option 2</option>
+                            <option value="2">Option 3</option>
+                            <option value="3">Option 4</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div id="singleBlock" class="hidden">
+                    <label>Answer
+                        <input id="singleAnswer" placeholder="Exact answer to reveal" />
+                    </label>
+                </div>
+
+                <label>Explanation (optional)
+                    <textarea id="qExplain" rows="2" placeholder="Shown after reveal"></textarea>
+                </label>
+
+                <div class="row" style="justify-content:flex-end; gap:.6rem; margin-top:.6rem;">
+                    <button id="dupBtn" class="btn ghost">Duplicate</button>
+                    <button id="delBtn" class="btn ghost danger">Delete</button>
+                    <button id="applyBtn" class="btn">Apply Changes</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- RIGHT: Live Preview -->
+        <aside class="right panel">
+            <div class="row" style="justify-content:space-between; align-items:center;">
+                <h3 style="margin:.2rem 0">Live Preview</h3>
+                <div class="row">
+                    <button id="landBtn" class="btn tiny">16:9</button>
+                    <button id="portBtn" class="btn tiny ghost">9:16</button>
+                </div>
+            </div>
+
+            <div class="pv-toolbar row">
+                <label class="row"><input id="animToggle" type="checkbox" checked /> Animate Preview</label>
+                <label>Theme
+                    <select id="themeMode">
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </label>
+            </div>
+
+            <div id="preview" class="preview landscape">
+                <!-- Background layers for Player-like preview area -->
+                <div class="pv-bg">
+                    <video id="pvBgVideo" class="pv-bg-layer" autoplay muted loop playsinline></video>
+                    <img id="pvBgImage" class="pv-bg-layer" alt="" />
+                    <div id="pvBgTint" class="pv-bg-tint"></div>
+                </div>
+
+                <header class="hud">
+                    <div id="pvTitle" class="title">Title</div>
+                    <div class="right">
+                        <span id="pvCount" class="counter">Q 0/0</span>
+                        <span id="pvDiff" class="pill">EASY</span>
+                    </div>
+                </header>
+
+                <div id="pvCard" class="card">
+                    <div id="pvQ" class="question">Add a question to preview…</div>
+                    <div id="pvImgs" class="images"></div>
+                    <div id="pvOpts" class="options"></div>
+                    <div id="pvExpl" class="explanation hidden"></div>
+                </div>
+            </div>
+        </aside>
     </div>
-  </header>
 
-  <div class="layout">
-    <!-- LEFT: Metadata & Question List -->
-    <aside class="left panel">
-      <h3>Quiz Settings</h3>
-      <label>Title
-        <input id="quizTitle" placeholder="Quiz Title" />
-      </label>
-
-      <div class="row2">
-        <label>Language
-          <select id="quizLang">
-            <option value="en">English</option>
-            <option value="hi">Hindi</option>
-          </select>
-        </label>
-        <label>Default Timer (sec)
-          <input id="defaultTimer" type="number" min="3" value="12" />
-        </label>
-      </div>
-
-      <h4>Theme</h4>
-      <label>Preset
-        <select id="themePreset">
-          <option>Neon Quiz</option>
-          <option>Minimal White</option>
-          <option>Retro Arcade</option>
-          <option>Kids Fun</option>
-          <option>Sci-Fi</option>
-        </select>
-      </label>
-
-      <div class="row2">
-        <label>Primary Color <input id="colorPrimary" type="color" value="#00E5FF" /></label>
-        <label>Accent Color  <input id="colorAccent"  type="color" value="#FF3D7F" /></label>
-      </div>
-
-      <label>Font Family
-        <select id="fontFamily">
-          <option>Poppins, sans-serif</option>
-          <option>Inter, sans-serif</option>
-          <option>Nunito, sans-serif</option>
-          <option>Rubik, sans-serif</option>
-        </select>
-      </label>
-
-      <div class="row2">
-        <label>Timer Style
-          <select id="timerStyle">
-            <option value="ring">Ring</option>
-            <option value="bar">Bar</option>
-          </select>
-        </label>
-        <label>Music Volume
-          <input id="musicVol" type="number" step="0.05" min="0" max="1" value="0.35" />
-        </label>
-      </div>
-
-      <label>Background Video/Image (URL)
-        <input id="bgSrc" placeholder="/quiz/uploads/backgrounds/nebula.mp4" />
-      </label>
-
-      <label>Background Music (URL)
-        <input id="musicSrc" placeholder="/quiz/uploads/music/ambient_loop.mp3" />
-      </label>
-
-      <label class="row"><input id="duckOnReveal" type="checkbox" checked /> Duck Music on Reveal</label>
-
-      <hr class="sep"/>
-
-      <section class="row" style="justify-content:space-between; align-items:center;">
-        <div>
-          <h3 style="margin:.2rem 0">Questions</h3>
-          <div id="qCount" class="muted">0 items</div>
-        </div>
-        <div class="row">
-          <button id="addMcq" class="btn small">+ MCQ</button>
-          <button id="addSingle" class="btn small">+ Single</button>
-        </div>
-      </section>
-
-      <ul id="qList" class="qlist"></ul>
-    </aside>
-
-    <!-- CENTER: Question Editor -->
-    <main class="center panel">
-      <h3>Question Editor</h3>
-
-      <div id="noSel" class="muted">Select a question from the list or add a new one.</div>
-
-      <section id="qEditor" class="hidden">
-        <div class="row2">
-          <label>Type
-            <select id="qType">
-              <option value="mcq">Multiple Choice</option>
-              <option value="single">Single Answer</option>
-            </select>
-          </label>
-          <label>Difficulty
-            <select id="qDiff">
-              <option value="easy">easy</option>
-              <option value="medium">medium</option>
-              <option value="hard">hard</option>
-            </select>
-          </label>
-          <label>Timer (sec)
-            <input id="qTimer" type="number" min="3" />
-          </label>
-        </div>
-
-        <label>Question Text
-          <textarea id="qText" rows="3" placeholder="Type the question…"></textarea>
-        </label>
-
-        <!-- Question images -->
-        <div class="imgs">
-          <div class="row" style="justify-content:space-between; align-items:center;">
-            <h4 style="margin:0">Question Images</h4>
-            <div>
-              <input id="qImgInput" type="file" accept="image/*" hidden />
-              <button id="qImgBtn" class="btn small">+ Add Image</button>
-            </div>
-          </div>
-          <div id="qImgGrid" class="imggrid"></div>
-        </div>
-
-        <!-- Options (1-4) -->
-        <div id="mcqBlock">
-          <div class="row" style="justify-content:space-between; align-items:center; margin-top:.6rem;">
-            <h4 style="margin:0">Options</h4>
-            <div class="row">
-              <button id="addOptBtn" class="btn small">+ Add</button>
-              <button id="remOptBtn" class="btn small ghost">– Remove</button>
-            </div>
-          </div>
-
-          <div id="optWrap" class="optwrap"></div>
-
-          <label>Correct Option
-            <select id="correctIdx">
-              <option value="0">Option 1</option>
-              <option value="1">Option 2</option>
-              <option value="2">Option 3</option>
-              <option value="3">Option 4</option>
-            </select>
-          </label>
-        </div>
-
-        <div id="singleBlock" class="hidden">
-          <label>Answer
-            <input id="singleAnswer" placeholder="Exact answer to reveal" />
-          </label>
-        </div>
-
-        <label>Explanation (optional)
-          <textarea id="qExplain" rows="2" placeholder="Shown after reveal"></textarea>
-        </label>
-
-        <div class="row" style="justify-content:flex-end; gap:.6rem; margin-top:.6rem;">
-          <button id="dupBtn" class="btn ghost">Duplicate</button>
-          <button id="delBtn" class="btn ghost danger">Delete</button>
-          <button id="applyBtn" class="btn">Apply Changes</button>
-        </div>
-      </section>
-    </main>
-
-    <!-- RIGHT: Live Preview -->
-    <aside class="right panel">
-      <div class="row" style="justify-content:space-between; align-items:center;">
-        <h3 style="margin:.2rem 0">Live Preview</h3>
-        <div class="row">
-          <button id="landBtn" class="btn tiny">16:9</button>
-          <button id="portBtn" class="btn tiny ghost">9:16</button>
-        </div>
-      </div>
-
-      <div class="pv-toolbar row">
-        <label class="row"><input id="animToggle" type="checkbox" checked /> Animate Preview</label>
-        <label>Theme
-          <select id="themeMode">
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-          </select>
-        </label>
-      </div>
-
-      <div id="preview" class="preview landscape">
-        <header class="hud">
-          <div id="pvTitle" class="title">Title</div>
-          <div class="right">
-            <span id="pvCount" class="counter">Q 0/0</span>
-            <span id="pvDiff" class="pill">EASY</span>
-          </div>
-        </header>
-
-        <div id="pvCard" class="card">
-          <div id="pvQ" class="question">Add a question to preview…</div>
-          <div id="pvImgs" class="images"></div>
-          <div id="pvOpts" class="options"></div>
-          <div id="pvExpl" class="explanation hidden"></div>
-        </div>
-      </div>
-    </aside>
-  </div>
-
-  <script type="module" src="/quiz/static/js/builder.js"></script>
+    <script type="module" src="/quiz/static/js/builder.js"></script>
 </body>
+
 </html>

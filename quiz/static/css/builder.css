@@ -14,12 +14,42 @@ body.builder{
   margin:0;background:#0d0f12;color:var(--ink);font-family:var(--font);
 }
 
+.left{
+     background-color: cadetblue !important;
+    font-size: small;
+}
+.center{
+     background-color: darkorchid !important;
+    font-size: small;
+}
 /* Background (for preview area only) */
-.bg-layer{
+/* .bg-layer{
   position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; display:none;
 }
 #pvBgVideo.show,#pvBgImage.show{display:block}
-.bg-tint{position:fixed; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.65)); z-index:-2}
+.bg-tint{position:fixed; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.65)); z-index:-2} */
+
+
+/* Preview-scoped background */
+.preview { position: relative; overflow: hidden; }
+.pv-bg { position: absolute; inset: 0; z-index: 0; }
+
+.pv-bg-layer {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; display: none;
+}
+.pv-bg-layer.show { display: block; }
+
+.pv-bg-tint {
+  position: absolute; inset: 0;
+  background: var(--pv-bg-tint, rgba(0,0,0,.45));
+}
+
+/* Make preview content sit above the bg */
+.preview .hud,
+.preview .card { position: relative; z-index: 1; }
+
 
 /* Appbar */
 .appbar{
@@ -105,7 +135,7 @@ textarea{resize:vertical}
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   border-radius:14px; border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.06); color:#fff; padding:.6rem;
-  font-weight:700; animation:popIn .45s ease both;
+  font-weight:700; 
 }
 .opt-img{width:100%; border-radius:10px; overflow:hidden}
 .opt-img img{width:100%; height:100%; object-fit:cover}
@@ -122,3 +152,41 @@ textarea{resize:vertical}
   .layout{grid-template-columns:1fr; }
   .right{order:3}
 }
+
+/* --- Generic animations --- */
+/* --- Generic animations --- */
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+@keyframes slideUp { from { transform:translateY(18px); opacity:0 } to { transform:translateY(0); opacity:1 } }
+@keyframes zoomIn { from { transform:scale(.96); opacity:0 } to { transform:scale(1); opacity:1 } }
+
+.anim-fade  { animation: fadeIn 0.55s ease both; }
+.anim-slide { animation: slideUp 0.55s cubic-bezier(.2,.7,.2,1) both; }
+.anim-zoom  { animation: zoomIn 0.55s cubic-bezier(.2,.7,.2,1) both; }
+
+/* Respect user prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade, .anim-slide, .anim-zoom { animation: none !important; }
+}
+
+/* --- Idle Motion Effects --- */
+@keyframes breath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-1px, 1px); }
+  50% { transform: translate(1px, -1px); }
+  75% { transform: translate(-1px, -1px); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.idle-breath  { animation: breath 6s ease-in-out infinite; }
+.idle-shake   { animation: shake 4s ease-in-out infinite; }
+.idle-float   { animation: float 5s ease-in-out infinite; }
+
+/* Dynamic intensity modifier (JS adds inline style for intensity) */
+
