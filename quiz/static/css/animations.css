@@ -1,0 +1,14 @@
+/* Mild utility animations for background layers and cards */
+.float-slow { animation: floatY 10s ease-in-out infinite; }
+@keyframes floatY { 0%{transform:translateY(0)} 50%{transform:translateY(-8px)} 100%{transform:translateY(0)} }
+
+
+.pulse-soft { animation: pulseSoft 2.6s ease-in-out infinite; }
+@keyframes pulseSoft { 0%{opacity:.9} 50%{opacity:.7} 100%{opacity:.9} }
+
+
+.parallax { background-attachment: fixed; }
+
+
+.slide-up { animation: slideUp .6s ease both; }
+@keyframes slideUp { from{opacity:0; transform: translateY(20px)} to{opacity:1; transform: translateY(0)} }

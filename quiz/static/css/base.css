@@ -1,0 +1,18 @@
+:root {
+--primary:#00E5FF; --accent:#FF3D7F; --bg:#0B0B0B; --font:Poppins, sans-serif;
+--panel:#0f1217; --panel-border:#1b1f27; --ink:#e9eef5;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:#0d0f12;color:var(--ink);font-family:var(--font)}
+.btn{padding:.6rem 1rem;border-radius:12px;border:1px solid #2a303b;background:#1b2130;color:#fff;font-weight:700;cursor:pointer}
+.btn:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent;border-color:#2a303b}
+.btn.accent{background:var(--accent);border-color:transparent;color:#000}
+.btn.small{padding:.45rem .8rem}
+.btn.tiny{padding:.25rem .6rem;font-size:.85rem}
+.btn.danger{color:#ff8a8a;border-color:#ff6b6b}
+.input, input, select, textarea{width:100%;padding:.55rem .6rem;border-radius:10px;border:1px solid #2a303b;background:#0c0f14;color:#fff}
+.card{background:#11151e;border:1px solid var(--panel-border);border-radius:16px;padding:1.4rem}
+.appbar{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;background:var(--panel);border-bottom:1px solid var(--panel-border)}
+.hidden{display:none}

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz Builder</title>
+
+  <!-- Optional shared styles if you have them -->
+  <link rel="stylesheet" href="/quiz/static/css/base.css" />
+  <link rel="stylesheet" href="/quiz/static/css/builder.css" />
+
+  <!-- Minimal inline styles so it still looks ok without CSS files -->
+  <style>
+    :root{--primary:#00E5FF;--accent:#FF3D7F;--bg:#0B0B0B;--font:Poppins,system-ui,Arial}
+    *{box-sizing:border-box} body{margin:0;font-family:var(--font);background:#0d0f12;color:#e9eef5}
+    .appbar{position:sticky;top:0;display:flex;gap:.75rem;justify-content:space-between;align-items:center;padding:.8rem 1rem;background:#0f1217;border-bottom:1px solid #1b1f27}
+    .brand{font-weight:800;color:#00E5FF}
+    .btn{padding:.55rem .9rem;border-radius:12px;border:1px solid #2a303b;background:#1b2130;color:#fff;font-weight:700;cursor:pointer}
+    .btn:hover{filter:brightness(1.05)} .btn.ghost{background:transparent} .btn.accent{background:var(--accent);border-color:transparent;color:#000}
+    .layout{display:grid;grid-template-columns:320px 1fr 440px;gap:1rem;padding:1rem}
+    .panel{background:#0f1217;border:1px solid #1b1f27;border-radius:14px;padding:1rem}
+    label{display:block;margin:.45rem 0;font-size:.92rem}
+    input,select,textarea{width:100%;margin-top:.25rem;padding:.55rem .6rem;border-radius:10px;border:1px solid #2a303b;background:#0c0f14;color:#fff}
+    .row{display:flex;gap:.6rem;align-items:center}.row2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+    .left{grid-column:1; background-color: cadetblue;} .center{grid-column:2} .right{grid-column:3}
+    .qlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem;max-height:40vh;overflow:auto}
+    .qitem{display:grid;grid-template-columns:42px 1fr auto;gap:.6rem;align-items:center;padding:.5rem;border:1px solid #232835;background:#11151e;border-radius:12px;cursor:pointer}
+    .qitem.active{outline:2px solid var(--primary)}
+    .qitem .idx{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;background:#0b0e14;border:1px solid #222838}
+    .qitem .meta .title{font-weight:700}
+    .muted{opacity:.75}
+    .imggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+    .imggrid img{width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid #2a303b}
+    .preview{position:relative;aspect-ratio:16/9;background:#0b0b0b;border:1px solid #1b1f27;border-radius:14px;overflow:hidden;padding:1rem}
+    .preview.portrait{aspect-ratio:9/16}
+    .preview .card{position:absolute;inset:15% 8% 12% 8%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:1rem}
+    .question{font-weight:800}
+    .options{display:grid;gap:.5rem;margin-top:.5rem}
+    .opt{border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;padding:.6rem .8rem}
+    .hidden{display:none}
+    @media (max-width:1200px){.layout{grid-template-columns:1fr;}.right{order:3}}
+  </style>
+</head>
+
+<body class="builder">
+  <!-- Top bar / actions -->
+  <header class="appbar">
+    <div class="brand">Quiz Builder</div>
+    <div class="row">
+      <button id="loadJsonBtn" class="btn ghost">Load JSON</button>
+      <input id="loadJsonInput" type="file" accept="application/json" hidden />
+
+      <button id="importCsvBtn" class="btn ghost">Import CSV</button>
+      <input id="importCsvInput" type="file" accept=".csv" hidden />
+
+      <button id="saveBtn" class="btn">Save Quiz</button>
+      <button id="playBtn" class="btn accent">Start Playback</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT: Quiz metadata / theme -->
+    <aside class="panel left">
+      <h3>Quiz Metadata</h3>
+      <label>Title <input id="quizTitle" placeholder="Quiz Title"></label>
+      <div class="row2">
+        <label>Language
+          <select id="quizLang">
+            <option value="en">English</option>
+            <option value="hi">Hindi</option>
+          </select>
+        </label>
+        <label>Default Timer<input id="defaultTimer" type="number" min="3" value="12"></label>
+      </div>
+
+      <h4>Theme Settings</h4>
+      <label>Preset
+        <select id="themePreset">
+          <option>Neon Quiz</option>
+          <option>Minimal White</option>
+          <option>Retro Arcade</option>
+          <option>Kids Fun</option>
+          <option>Sci-Fi</option>
+        </select>
+      </label>
+
+      <div class="row2">
+        <label>Primary Color <input id="colorPrimary" type="color" value="#00E5FF"></label>
+        <label>Accent Color  <input id="colorAccent"  type="color" value="#FF3D7F"></label>
+      </div>
+
+      <label>Font Family
+        <select id="fontFamily">
+          <option>Poppins, sans-serif</option>
+          <option>Inter, sans-serif</option>
+          <option>Nunito, sans-serif</option>
+          <option>Rubik, sans-serif</option>
+        </select>
+      </label>
+
+      <div class="row2">
+        <label>Timer Style
+          <select id="timerStyle">
+            <option value="ring">Ring</option>
+            <option value="bar">Bar</option>
+          </select>
+        </label>
+        <label>Music Volume <input id="musicVol" type="number" step="0.05" min="0" max="1" value="0.35"></label>
+      </div>
+
+      <label>Background Video/Image <input id="bgSrc" placeholder="/static/backgrounds/nebula.mp4"></label>
+      <label>Music File <input id="musicSrc" placeholder="/static/music/ambient_loop.mp3"></label>
+      <label class="row"><input id="duckOnReveal" type="checkbox" checked> Duck Music on Reveal</label>
+    </aside>
+
+    <!-- CENTER: Questions & editor -->
+    <main class="center">
+      <section class="panel row" style="justify-content:space-between">
+        <div>
+          <h3 style="margin:.2rem 0">Questions</h3>
+          <div class="muted" id="qCount">0 items</div>
+        </div>
+        <div class="row">
+          <button id="addMcq" class="btn">+ MCQ</button>
+          <button id="addSingle" class="btn">+ Single</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <ul id="qList" class="qlist"></ul>
+      </section>
+
+      <section id="qEditor" class="panel hidden">
+        <div class="row2">
+          <label>Type
+            <select id="qType">
+              <option value="mcq">Multiple Choice</option>
+              <option value="single">Single Answer</option>
+            </select>
+          </label>
+          <label>Difficulty
+            <select id="qDiff">
+              <option>easy</option>
+              <option>medium</option>
+              <option>hard</option>
+            </select>
+          </label>
+          <label>Timer (sec) <input id="qTimer" type="number" min="3" /></label>
+        </div>
+
+        <label>Question Text
+          <textarea id="qText" rows="3" placeholder="Type your question…"></textarea>
+        </label>
+
+        <div id="mcqBlock">
+          <div class="row2">
+            <label>Option A <input class="opt" data-idx="0" /></label>
+            <label>Option B <input class="opt" data-idx="1" /></label>
+          </div>
+          <div class="row2">
+            <label>Option C <input class="opt" data-idx="2" /></label>
+            <label>Option D <input class="opt" data-idx="3" /></label>
+          </div>
+          <label>Correct
+            <select id="correctIdx">
+              <option value="0">A</option>
+              <option value="1">B</option>
+              <option value="2">C</option>
+              <option value="3">D</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="singleBlock" class="hidden">
+          <label>Answer <input id="singleAnswer" placeholder="Exact answer to reveal" /></label>
+        </div>
+
+        <label>Explanation (optional)
+          <textarea id="qExplain" rows="2" placeholder="Short fact or explanation to show after reveal"></textarea>
+        </label>
+
+        <div class="imgs" style="margin-top:.6rem">
+          <div class="row" style="justify-content:space-between">
+            <h4 style="margin:0">Images</h4>
+            <div>
+              <input id="imgFile" type="file" accept="image/*" hidden />
+              <button id="addImgBtn" class="btn">+ Add Image</button>
+            </div>
+          </div>
+          <div id="imgGrid" class="imggrid"></div>
+        </div>
+
+        <div class="row" style="justify-content:flex-end;gap:.6rem;margin-top:.6rem">
+          <button id="dupBtn"  class="btn ghost">Duplicate</button>
+          <button id="delBtn"  class="btn ghost" style="color:#ff8a8a;border-color:#ff6b6b">Delete</button>
+          <button id="applyBtn"class="btn">Apply Changes</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- RIGHT: Live Preview -->
+    <aside class="panel right">
+      <div class="row" style="justify-content:space-between">
+        <h3 style="margin:.2rem 0">Live Preview</h3>
+        <div class="row">
+          <button id="portraitBtn"  class="btn">9:16</button>
+          <button id="landscapeBtn" class="btn">16:9</button>
+        </div>
+      </div>
+
+      <div id="preview" class="preview landscape">
+        <div class="topbar" style="display:flex;justify-content:space-between">
+          <div id="pvTitle">Title</div>
+          <div class="row"><span id="pvCount">Q 1/1</span> <span id="pvDiff" class="btn" style="padding:.2rem .6rem">EASY</span></div>
+        </div>
+
+        <div class="card">
+          <div id="pvQ" class="question">Sample question…</div>
+          <div id="pvImgs" class="images" style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0"></div>
+
+          <div id="pvOpts" class="options">
+            <button class="opt">Option A</button>
+            <button class="opt">Option B</button>
+            <button class="opt">Option C</button>
+            <button class="opt">Option D</button>
+          </div>
+
+          <div class="row" style="justify-content:space-between;margin-top:auto">
+            <div class="timer"><span id="pvTimer">12</span></div>
+            <button class="btn">Next</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- IMPORTANT: use the correct path your app serves static from.
+       If your app is rooted at '/', keep /static/... -->
+  <script type="module" src="/quiz/static/js/builder.js"></script>
+</body>
+</html>

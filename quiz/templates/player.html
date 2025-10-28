@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz Player</title>
+
+  <link rel="stylesheet" href="/quiz/static/css/player.css" />
+</head>
+<body class="player">
+  <!-- Background layers -->
+  <video id="bgVideo" class="bg-layer" autoplay muted loop playsinline></video>
+  <img   id="bgImage" class="bg-layer" alt="" />
+  <div   id="bgTint"  class="bg-tint"></div>
+
+  <!-- Top HUD -->
+  <header class="hud">
+    <div id="quizTitle" class="title"></div>
+    <div class="right">
+      <span id="qCounter" class="counter">Q 1/1</span>
+      <span id="diffPill" class="pill">EASY</span>
+      <button id="fsBtn" class="btn ghost" title="Fullscreen (F)">⤢</button>
+    </div>
+  </header>
+
+  <!-- Main card -->
+  <main id="card" class="card">
+    <div id="questionText" class="question">Loading…</div>
+
+    <div id="images" class="images"></div>
+
+    <div id="options" class="options"></div>
+
+    <div class="footer">
+      <!-- RING TIMER -->
+      <div id="timerRing" class="timer ring">
+        <svg viewBox="0 0 36 36" class="ring-svg">
+          <path class="ring-bg"  d="M18 2.0845 A 15.9155 15.9155 0 1 1 17.99 2.0845"/>
+          <path id="ringBar" class="ring-bar" stroke-dasharray="100, 100"
+                d="M18 2.0845 A 15.9155 15.9155 0 1 1 17.99 2.0845"/>
+        </svg>
+        <span id="timeNum" class="time-num">10</span>
+      </div>
+
+      <!-- BAR TIMER -->
+      <div id="timerBarWrap" class="timer bar hidden">
+        <div id="timerBar" class="bar-fill"></div>
+        <span id="timeNumBar" class="time-num">10</span>
+      </div>
+
+      <div class="actions">
+        <button id="prevBtn" class="btn ghost" title="Previous (Backspace)">← Prev</button>
+        <button id="restartBtn" class="btn ghost" title="Restart question (R)">↺</button>
+        <button id="nextBtn" class="btn" title="Next (Space / Enter)">Next →</button>
+      </div>
+    </div>
+
+    <div id="explanation" class="explanation hidden"></div>
+  </main>
+
+  <!-- Audio -->
+  <audio id="bgMusic" preload="auto" loop></audio>
+
+  <!-- Info bar (bottom) -->
+  <footer class="infobar">
+    <span>Hotkeys: <b>Space/Enter</b> Next, <b>Backspace</b> Prev, <b>R</b> Restart, <b>F</b> Fullscreen, <b>T</b> 16:9/9:16</span>
+    <div class="mode">
+      <button id="landBtn" class="btn tiny">16:9</button>
+      <button id="portBtn" class="btn tiny ghost">9:16</button>
+    </div>
+  </footer>
+
+  <script type="module" src="/quiz/static/js/player.js"></script>
+</body>
+</html>

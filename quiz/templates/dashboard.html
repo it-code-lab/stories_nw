@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz Video Studio</title>
+  <link rel="stylesheet" href="/quiz/static/css/base.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Poppins, sans-serif;
+      background: #0d0f12;
+      color: #e9eef5;
+    }
+    header {
+      background: #0f1217;
+      border-bottom: 1px solid #1b1f27;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #00E5FF;
+      margin: 0;
+    }
+    .container {
+      padding: 2rem;
+      display: grid;
+      gap: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .card {
+      background: #11151e;
+      border: 1px solid #1b1f27;
+      border-radius: 16px;
+      padding: 1.4rem;
+      text-align: center;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .card:hover {
+      background: #151b25;
+      transform: translateY(-4px);
+    }
+    .card h2 {
+      margin-top: 0.5rem;
+      color: #fff;
+    }
+    .card p {
+      opacity: 0.8;
+      font-size: 0.95rem;
+      min-height: 3rem;
+    }
+    .btn {
+      margin-top: 1rem;
+      padding: 0.6rem 1rem;
+      border: none;
+      border-radius: 12px;
+      background: #00E5FF;
+      color: #000;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn:hover {
+      filter: brightness(1.05);
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      opacity: 0.5;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎬 Quiz Video Studio</h1>
+    <nav>
+      <a href="/quiz/builder" class="btn">Create Quiz</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <h2>➕ New Quiz</h2>
+      <p>Start creating a brand new quiz video.</p>
+      <button class="btn" onclick="window.location.href='/quiz/builder'">Start</button>
+    </div>
+
+    <div class="card">
+      <h2>📂 Load Existing Quiz</h2>
+      <p>Open a saved quiz JSON file to continue editing or record again.</p>
+      <input id="loadJsonInput" type="file" accept="application/json" hidden />
+      <button class="btn" id="loadJsonBtn">Load JSON</button>
+    </div>
+
+    <div class="card">
+      <h2>🎥 Player Preview</h2>
+      <p>Enter a quiz ID to test playback or prepare for OBS recording.</p>
+      <input id="quizId" placeholder="quiz_1234..." style="width: 80%; padding: 0.5rem; border-radius: 10px; border: 1px solid #1b1f27; background:#0c0f14; color:#fff;">
+      <button class="btn" id="playBtn">Play</button>
+    </div>
+  </main>
+
+  <footer>© 2025 Quiz Video Studio — built with Flask + JS</footer>
+
+  <script>
+    const loadJsonInput = document.getElementById('loadJsonInput');
+    document.getElementById('loadJsonBtn').onclick = () => loadJsonInput.click();
+    loadJsonInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const txt = await file.text();
+      const data = JSON.parse(txt);
+      if (!data.id) {
+        alert('This quiz file has no ID. Please save it first in builder.');
+        return;
+      }
+      location.href = `/quiz/builder?id=${data.id}`;
+    };
+
+    document.getElementById('playBtn').onclick = () => {
+      const id = document.getElementById('quizId').value.trim();
+      if (id) location.href = `/quiz/play?id=${id}`;
+      else alert('Please enter a quiz ID');
+    };
+  </script>
+</body>
+</html>

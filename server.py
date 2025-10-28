@@ -16,8 +16,11 @@ import wave
 from urllib.parse import unquote
 from polish_audio_auto import polish_audio  # NEW
 from auto_mix import mix_files
+from quiz import quiz_bp
+
 
 app = Flask(__name__, template_folder='templates')
+app.register_blueprint(quiz_bp)  # all quiz endpoints live under /api/quiz
 CORS(app)
 
 # Always resolve relative to this file (server.py)
