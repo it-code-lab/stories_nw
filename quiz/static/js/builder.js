@@ -44,6 +44,7 @@ const loadJsonInput = $('loadJsonInput');
 const saveBtn = $('saveBtn');
 const playBtn = $('playBtn');
 
+
 // Meta / Theme
 const quizTitle = $('quizTitle');
 const quizLang = $('quizLang');
@@ -68,6 +69,11 @@ const optStaggerStep = $('optStaggerStep');
 
 const idleMotion = $('idleMotion');
 const idleIntensity = $('idleIntensity');
+
+const pvQuestionHd = $('pvQuestionHd');
+const showQNum = $('showQNum');
+const showDiff = $('showDiff');
+
 
 // Question list
 const qList = $('qList');
@@ -243,7 +249,7 @@ function applyThemeToPreview() {
     document.documentElement.style.setProperty('--primary', t.primary);
     document.documentElement.style.setProperty('--accent', t.accent);
     document.body.style.fontFamily = t.fontFamily || 'Poppins, sans-serif';
-    pv.title.textContent = state.quiz.title || 'Title';
+    // pv.title.textContent = state.quiz.title || 'Title';
 
     // background
     const src = t.background?.src || '';
@@ -553,93 +559,104 @@ function updatePreview() {
     }
 
 
-setTimeout(() => {
-  // content
-  if (!q) {
-    pv.count.textContent = 'Q 0/0';
-    pv.q.textContent = 'Add a question to preview…';
-    pv.imgs.innerHTML = '';
-    pv.opts.innerHTML = '';
-    pv.expl.classList.add('hidden'); pv.expl.textContent = '';
-  } else {
-    pv.count.textContent = `Q ${state.selIndex + 1}/${state.quiz.questions.length}`;
-    pv.q.textContent = q.text || '';
-    pv.imgs.innerHTML = '';
-    (q.images || []).forEach(src => {
-      const im = document.createElement('img'); im.src = src; pv.imgs.appendChild(im);
-    });
-    pv.diff.textContent = (q.difficulty || 'easy').toUpperCase();
+    setTimeout(() => {
+        // content
+        if (!q) {
+            pv.count.textContent = 'Q 0/0';
+            pvQuestionHd.textContent = 'Add a question to preview…';
+            pv.q.textContent = '';               // we don’t show question in card
 
-    // options grid
-    pv.opts.innerHTML = '';
-    if (q.type === 'mcq') {
-      // keep animation/idle classes by not wiping className completely
-      const count = Math.min((q.options || []).length || 1, 4);
-      pv.opts.classList.remove('cols-1','cols-2','cols-3','cols-4');
-      pv.opts.classList.add(`cols-${count}`);
+            pv.imgs.innerHTML = '';
+            pv.opts.innerHTML = '';
+            pv.expl.classList.add('hidden'); pv.expl.textContent = '';
+        } else {
+            pv.count.textContent = `Q ${state.selIndex + 1}/${state.quiz.questions.length}`;
+            pvQuestionHd.textContent = q.text || '(question)';
+            pv.q.textContent = '';
+            pv.imgs.innerHTML = '';
+            (q.images || []).forEach(src => {
+                const im = document.createElement('img'); im.src = src; pv.imgs.appendChild(im);
+            });
+            pv.diff.textContent = (q.difficulty || 'easy').toUpperCase();
 
-      const animType  = state.quiz.theme.animations?.options || 'fade';
-      const doStagger = !!state.quiz.theme.animations?.stagger;
-      const step      = Number(state.quiz.theme.animations?.staggerStep || 0.10);
+            pv.count.style.display = showQNum && !showQNum.checked ? 'none' : '';
+            pv.diff.style.display = showDiff && !showDiff.checked ? 'none' : '';
 
-      // idle settings
-      const idleType  = state.quiz.theme.animations?.idle || 'none';
-      const intensity = state.quiz.theme.animations?.idleIntensity || 3;
-      const idleClass = (idleType !== 'none') ? `idle-${idleType}` : '';
+            // options grid
+            pv.opts.innerHTML = '';
+            if (q.type === 'mcq') {
+                // keep animation/idle classes by not wiping className completely
+                const count = Math.min((q.options || []).length || 1, 4);
+                pv.opts.classList.remove('cols-1', 'cols-2', 'cols-3', 'cols-4');
+                pv.opts.classList.add(`cols-${count}`);
 
-      (q.options || []).forEach((opt, i) => {
-        const b = document.createElement('div');
-        // add both entrance animation and idle class on EACH option
-        b.className = `opt anim-${animType}` + (idleClass ? ` ${idleClass}` : '');
-        if (doStagger) b.style.animationDelay = `${i * step}s`;
-        if (idleClass)  b.style.animationDuration = `${6 / (intensity / 3)}s`;
+                const animType = state.quiz.theme.animations?.options || 'fade';
+                const doStagger = !!state.quiz.theme.animations?.stagger;
+                const step = Number(state.quiz.theme.animations?.staggerStep || 0.10);
 
-        if (opt.image) {
-          const d = document.createElement('div'); d.className = 'opt-img';
-          const im = document.createElement('img'); im.src = (opt.image || '').trim();
-          d.appendChild(im); b.appendChild(d);
+                // idle settings
+                const idleType = state.quiz.theme.animations?.idle || 'none';
+                const intensity = state.quiz.theme.animations?.idleIntensity || 3;
+                const idleClass = (idleType !== 'none') ? `idle-${idleType}` : '';
+
+                (q.options || []).forEach((opt, i) => {
+                    const b = document.createElement('div');
+                    // add both entrance animation and idle class on EACH option
+                    b.className = `opt anim-${animType}` + (idleClass ? ` ${idleClass}` : '');
+                    if (doStagger) b.style.animationDelay = `${i * step}s`;
+                    if (idleClass) b.style.animationDuration = `${6 / (intensity / 3)}s`;
+
+                    if (opt.image) {
+                        const d = document.createElement('div'); d.className = 'opt-img';
+                        const im = document.createElement('img'); im.src = (opt.image || '').trim();
+                        d.appendChild(im); b.appendChild(d);
+                    }
+                    const t = document.createElement('div'); t.className = 'opt-text';
+                    t.textContent = (opt.text || '').trim() || '(option)';
+                    b.appendChild(t);
+                    pv.opts.appendChild(b);
+                });
+
+                // also keep container-level animation class (for a subtle “group” pop)
+                pv.opts.classList.remove('anim-fade', 'anim-slide', 'anim-zoom');
+                pv.opts.classList.add(`anim-${animType}`);
+
+                // and keep container-level idle (optional)
+                pv.opts.classList.remove('idle-breath', 'idle-shake', 'idle-float');
+                if (idleClass) {
+                    pv.opts.classList.add(idleClass);
+                    pv.opts.style.animationDuration = `${6 / (intensity / 3)}s`;
+                } else {
+                    pv.opts.style.animationDuration = '';
+                }
+            } else {
+                const div = document.createElement('div'); div.style.opacity = .85;
+                div.textContent = q.answer ? 'Answer will be revealed: ' + q.answer : 'Answer will be revealed at end of timer';
+                pv.opts.appendChild(div);
+
+                pv.opts.classList.remove('cols-1', 'cols-2', 'cols-3', 'cols-4');
+                pv.opts.classList.add('cols-1');
+                pv.opts.classList.remove('anim-fade', 'anim-slide', 'anim-zoom', 'idle-breath', 'idle-shake', 'idle-float');
+                pv.opts.style.animationDuration = '';
+            }
+
+            // explanation
+            if (q.explanation) { pv.expl.classList.remove('hidden'); pv.expl.textContent = q.explanation; }
+            else { pv.expl.classList.add('hidden'); pv.expl.textContent = ''; }
         }
-        const t = document.createElement('div'); t.className = 'opt-text';
-        t.textContent = (opt.text || '').trim() || '(option)';
-        b.appendChild(t);
-        pv.opts.appendChild(b);
-      });
 
-      // also keep container-level animation class (for a subtle “group” pop)
-      pv.opts.classList.remove('anim-fade','anim-slide','anim-zoom');
-      pv.opts.classList.add(`anim-${animType}`);
-
-      // and keep container-level idle (optional)
-      pv.opts.classList.remove('idle-breath','idle-shake','idle-float');
-      if (idleClass) {
-        pv.opts.classList.add(idleClass);
-        pv.opts.style.animationDuration = `${6 / (intensity / 3)}s`;
-      } else {
-        pv.opts.style.animationDuration = '';
-      }
-    } else {
-      const div = document.createElement('div'); div.style.opacity = .85;
-      div.textContent = q.answer ? 'Answer will be revealed: ' + q.answer : 'Answer will be revealed at end of timer';
-      pv.opts.appendChild(div);
-
-      pv.opts.classList.remove('cols-1','cols-2','cols-3','cols-4');
-      pv.opts.classList.add('cols-1');
-      pv.opts.classList.remove('anim-fade','anim-slide','anim-zoom','idle-breath','idle-shake','idle-float');
-      pv.opts.style.animationDuration = '';
-    }
-
-    // explanation
-    if (q.explanation) { pv.expl.classList.remove('hidden'); pv.expl.textContent = q.explanation; }
-    else { pv.expl.classList.add('hidden'); pv.expl.textContent = ''; }
-  }
-
-  if (state.animatePreview) { pv.card.classList.remove('fade-out'); pv.card.classList.add('fade-in'); }
-}, state.animatePreview ? 180 : 0);
+        if (state.animatePreview) { pv.card.classList.remove('fade-out'); pv.card.classList.add('fade-in'); }
+    }, state.animatePreview ? 180 : 0);
 }
 
 // Preview toolbar
 pv.landBtn.onclick = () => { document.body.classList.remove('portrait'); updatePreview(); };
 pv.portBtn.onclick = () => { document.body.classList.add('portrait'); updatePreview(); };
+
+showQNum && (showQNum.onchange = updatePreview);
+showDiff && (showDiff.onchange = updatePreview);
+
+
 pv.animToggle.onchange = () => { state.animatePreview = pv.animToggle.checked; };
 pv.themeMode.onchange = () => {
     const m = pv.themeMode.value;
