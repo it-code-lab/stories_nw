@@ -31,9 +31,54 @@ const els = {
   portBtn: document.getElementById('portBtn')
 };
 
+const soundGate = document.getElementById('soundGate');
+const enableSoundBtn = document.getElementById('enableSoundBtn');
+
+let audioUnlocked = false;
+let audioCtx = null;
+
+
 let quiz = null, idx = 0, cancelTimer = null, revealed = false, lastVol = null;
 
 init();
+
+function showSoundGate()  { soundGate?.classList.remove('hidden'); }
+function hideSoundGate()  { soundGate?.classList.add('hidden'); }
+
+function enableSound() {
+  if (audioUnlocked) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // create a silent blip to satisfy gesture-required policy
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;            // silence
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.01);
+    audioCtx.resume?.();
+  } catch (e) {
+    console.warn('AudioContext init failed:', e);
+  }
+  audioUnlocked = true;
+  hideSoundGate();
+}
+
+function waitForAudioUnlock() {
+  if (audioUnlocked) return Promise.resolve();
+  showSoundGate();
+  return new Promise(res => {
+    const once = () => { enableSound(); cleanup(); res(); };
+    const cleanup = () => {
+      window.removeEventListener('click', once, true);
+      window.removeEventListener('keydown', once, true);
+    };
+    enableSoundBtn?.addEventListener('click', once, { once: true });
+    // also unlock on any user interaction
+    window.addEventListener('click', once, { once: true, capture: true });
+    window.addEventListener('keydown', once, { once: true, capture: true });
+  });
+}
 
 // Layout fitter: keeps options inside the card even with large question/images
 function layoutOptionsFit() {
@@ -180,7 +225,7 @@ function prev() { if (idx > 0) goTo(idx - 1); }
 function restart() { goTo(idx); }
 
 // ---------- Render ----------
-function renderQuestion(q) {
+async function renderQuestion(q) {
   // Always hide + clear explanation when a new question renders
   els.expl.classList.add('hidden');
   els.expl.classList.remove('show');
@@ -200,6 +245,8 @@ function renderQuestion(q) {
   setCSS('--qimg-pos', q.imgPos || 'center');
   setCSS('--oimg-fit', q.optImgFit || q.imgFit || 'cover');
   setCSS('--oimg-pos', q.optImgPos || q.imgPos || 'center');
+
+  await speakQuestion(q.text);
 
   renderImages(q.images || []);
   renderOptions(q);
@@ -423,6 +470,9 @@ function bindControls() {
     else if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); }
     else if (e.key === 't' || e.key === 'T') { toggleOrientation(); }
   });
+
+  enableSoundBtn?.addEventListener('click', enableSound);
+
 }
 
 function toggleFullscreen() {
@@ -458,6 +508,51 @@ goTo = function (...args) {
   }
   return _goTo.apply(this, args);
 };
+
+async function speakQuestion(text) {
+  if (!text) return;
+
+  // ensure user has interacted at least once
+  await waitForAudioUnlock();
+
+  const lang = quiz.language || 'en'; // fallback to English if missing
+
+  try {
+    const res = await fetch('/get_audio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, language: lang })
+    });
+    if (!res.ok) throw new Error('TTS request failed');
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+
+    // try to play (should be allowed after unlock)
+    try {
+      await audio.play();
+    } catch (e) {
+      // If a race happens and we still get NotAllowedError, prompt again
+      console.warn('TTS play blocked; waiting for user gesture...', e);
+      await waitForAudioUnlock();
+      await audio.play().catch(err => console.error('TTS play failed:', err));
+    }
+
+    return new Promise(resolve => {
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      // safety: resolve after 30s if no end fires
+      setTimeout(()=>{ try{audio.pause();}catch{} resolve(); }, 30000);
+    });
+
+  } catch (err) {
+    console.error('TTS Error:', err);
+  }
+}
+
 
 window.addEventListener('resize', layoutOptionsFit);
 new ResizeObserver(layoutOptionsFit).observe(els.card);

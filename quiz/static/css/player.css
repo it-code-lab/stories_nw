@@ -372,9 +372,7 @@ body.player {
 .bar-fill.notrans { transition: none !important; }  /* first paint */
 
 
-.hidden {
-  display: none
-}
+.hidden { display: none !important; }
 
 .explanation {
   margin-top: .8rem;
@@ -530,3 +528,21 @@ body.portrait .card {
     animation: none !important;
   }
 }
+
+.sound-gate{
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+}
+.sg-card{
+  background: rgba(20,22,28,.9);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px;
+  padding: 1.2rem 1.4rem;
+  width: min(520px, 92vw);
+  text-align: center;
+  color: #fff;
+}
+.sg-title{ font-weight: 800; font-size: 1.25rem; margin-bottom: .35rem; }
+.sg-sub{ opacity: .8; margin-bottom: .9rem; }

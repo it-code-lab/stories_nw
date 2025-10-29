@@ -17,7 +17,8 @@ from urllib.parse import unquote
 from polish_audio_auto import polish_audio  # NEW
 from auto_mix import mix_files
 from quiz import quiz_bp
-
+from flask import send_file
+import tempfile
 
 app = Flask(__name__, template_folder='templates')
 app.register_blueprint(quiz_bp)  # all quiz endpoints live under /api/quiz
@@ -617,7 +618,40 @@ def generatettsaudio():
     except Exception as e:
         traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
-        
+
+@app.route("/get_audio", methods=["POST"])
+def get_audio():
+    """Generate and return TTS audio for question text."""
+    data = request.get_json(force=True)
+    text = data.get("text", "").strip()
+    language = data.get("language", "en").lower()
+    if not text:
+        return jsonify({"error": "Missing text"}), 400
+
+    try:
+        # Temporary file for the output audio
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        tmp_path = tmp_file.name
+        tmp_file.close()
+
+        # Generate audio using the existing TTS pipeline
+        get_audio_file(
+            text=text,
+            audio_file_name=tmp_path,
+            tts_engine="google",   # or "amazon" if you prefer
+            language="hindi" if language.startswith("hi") else "english",
+            gender="Male",
+            type="journey",        # "neural" / "journey" / "generative"
+            age_group="adult"
+        )
+
+        return send_file(tmp_path, mimetype="audio/mpeg")
+
+    except Exception as e:
+        print(f"[TTS ERROR] {e}")
+        traceback.print_exc() 
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/bulkupload', methods=['POST'])
 def bulkupload():
     try:
