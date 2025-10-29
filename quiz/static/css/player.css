@@ -148,12 +148,22 @@ body.player {
 }
 
 /* ---------- Question ---------- */
-.question {
+/* Replace the current .question rule with this */
+.question{
+  font-size: calc(1.65rem * var(--q-scale, 1));
+  font-weight: 800;
+  /* remove transform so idle animation can own transform */
+  /* transform: scale(var(--q-scale)); */
+  /* transform-origin: left top; */
+}
+
+
+/* .question {
   font-size: 1.65rem;
   font-weight: 800;
   transform: scale(var(--q-scale));
   transform-origin: left top;
-}
+} */
 
 /* ---------- Images (within question) ---------- */
 .images {
@@ -257,16 +267,28 @@ body.player {
   display: block
 }
 
-.opt-text {
+/* .opt-text {
   margin-top: .5rem;
   text-align: center;
   font-weight: 800;
   transform: scale(var(--opt-scale));
   transform-origin: center;
   display: -webkit-box;
-  /* -webkit-line-clamp: 2; */
   -webkit-box-orient: vertical;
   overflow: hidden;
+} */
+
+/* Replace .opt-text scaling the same way */
+.opt-text{
+  margin-top:.5rem;
+  text-align:center;
+  font-weight:800;
+  font-size: calc(1rem * var(--opt-scale, 1));
+  /* remove transform so idle animation can own transform */
+  /* transform: scale(var(--opt-scale)); transform-origin:center; */
+  display:-webkit-box;
+  -webkit-box-orient: vertical;
+  overflow:hidden;
 }
 
 /* ---------- Footer ---------- */
@@ -323,7 +345,9 @@ body.player {
 
 .time-num {
   font-weight: 800;
-  font-size: 1.1rem
+  font-size: 1.1rem;
+  position: fixed;
+  left: 40px;
 }
 
 .timer.bar {
@@ -359,7 +383,17 @@ body.player {
   background: rgba(255, 255, 255, .06);
   border: 1px solid rgba(255, 255, 255, .12);
   font-size: .95rem;
+
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .5s ease, transform .5s ease;
 }
+
+.explanation.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 
 /* ---------- Bottom Bar ---------- */
 .infobar {

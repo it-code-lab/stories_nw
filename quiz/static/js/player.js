@@ -183,6 +183,7 @@ function restart() { goTo(idx); }
 function renderQuestion(q) {
   // Always hide + clear explanation when a new question renders
   els.expl.classList.add('hidden');
+  els.expl.classList.remove('show');
   els.expl.textContent = '';
 
   // HUD
@@ -314,7 +315,7 @@ function applyAnimations() {
 }
 
 // ---------- Timer / Reveal ----------
-function startTimer(q){
+function startTimer(q) {
   cancelTimer?.();
 
   const total = Number(q.timerSec || quiz.defaults?.timerSec || 10);
@@ -332,7 +333,7 @@ function startTimer(q){
 
     // ② Force reflow, then re-enable transition for subsequent updates
     void els.barFill.offsetWidth;     // reflow
-    requestAnimationFrame(()=> {
+    requestAnimationFrame(() => {
       els.barFill.classList.remove('notrans');
     });
   } else {
@@ -341,15 +342,15 @@ function startTimer(q){
   }
 
   let t = total;
-  const iv = setInterval(()=>{
+  const iv = setInterval(() => {
     t--;
-    if (t < 0){ clearInterval(iv); reveal(q); return; }
+    if (t < 0) { clearInterval(iv); reveal(q); return; }
 
-    if (useBar){
-      setBar(Math.max(0, t/total));        // transitions now apply
+    if (useBar) {
+      setBar(Math.max(0, t / total));        // transitions now apply
       els.timeNumB.textContent = t;
     } else {
-      setRing((t/total)*100);
+      setRing((t / total) * 100);
       els.timeNum.textContent = t;
     }
   }, 1000);
@@ -385,7 +386,19 @@ function reveal(q) {
       els.opts.appendChild(r);
     }
   }
-  if (q.explanation) { els.expl.textContent = q.explanation; els.expl.classList.remove('hidden'); }
+  if (q.explanation) {
+    els.expl.textContent = q.explanation;
+    els.expl.classList.remove('hidden');
+
+    // Start hidden (ensure no leftover state)
+    els.expl.classList.remove('show');
+    // els.expl.style.opacity = '0';
+
+    // After a short delay (~1 second) fade it in
+    setTimeout(() => {
+      els.expl.classList.add('show');
+    }, 1000);
+  }
 
   // restore music on next question
 }
