@@ -45,6 +45,31 @@ init();
 function showSoundGate()  { soundGate?.classList.remove('hidden'); }
 function hideSoundGate()  { soundGate?.classList.add('hidden'); }
 
+let musicStarted = false;
+
+async function playBgMusic() {
+  if (!quiz?.theme?.music?.src) return;
+  const a = els.bgMusic;
+  if (!a || musicStarted) return;
+  await waitForAudioUnlock(); // ensure user gesture happened
+
+  try {
+    await a.play();
+    musicStarted = true;
+  } catch (e) {
+    console.warn('bgMusic play blocked, will retry after next unlock', e);
+    // Next user gesture will call enableSound() which we hook to retry
+  }
+}
+
+// Call this if you want to pause/resume around TTS instead of ducking
+function pauseBgMusic() { try { els.bgMusic.pause(); } catch {} }
+async function resumeBgMusic() {
+  if (!quiz?.theme?.music?.src) return;
+  await waitForAudioUnlock();
+  try { await els.bgMusic.play(); musicStarted = true; } catch {}
+}
+
 function enableSound() {
   if (audioUnlocked) return;
   try {
@@ -183,7 +208,7 @@ function hydrateTheme() {
   if (t.music?.src) {
     els.bgMusic.src = t.music.src;
     els.bgMusic.volume = clamp01(t.music.volume ?? 0.35);
-    els.bgMusic.play().catch(() => { });
+    playBgMusic();
   }
 
   // Timer style
@@ -473,6 +498,11 @@ function bindControls() {
 
   enableSoundBtn?.addEventListener('click', enableSound);
 
+  enableSoundBtn?.addEventListener('click', () => {
+  // when user enables sound, start (or retry) bg music
+  playBgMusic();
+});
+
 }
 
 function toggleFullscreen() {
@@ -512,11 +542,17 @@ goTo = function (...args) {
 async function speakQuestion(text) {
   if (!text) return;
   if (!quiz?.qsTTS || quiz.qsTTS.toLowerCase() !== 'y') return;
-  
+
   // ensure user has interacted at least once
   await waitForAudioUnlock();
 
   const lang = quiz.language || 'en'; // fallback to English if missing
+
+    let prevVol = null;
+    if (els.bgMusic) {
+      prevVol = els.bgMusic.volume;
+      els.bgMusic.volume = clamp01((prevVol ?? 0.35) * 0.45);
+    }
 
   try {
     const res = await fetch('/get_audio', {
@@ -551,6 +587,10 @@ async function speakQuestion(text) {
 
   } catch (err) {
     console.error('TTS Error:', err);
+  }finally {
+    // restore music after TTS
+    if (prevVol != null) els.bgMusic.volume = prevVol;
+    // if paused instead of ducked: await resumeBgMusic();
   }
 }
 
