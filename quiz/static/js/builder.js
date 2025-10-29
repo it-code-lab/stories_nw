@@ -15,7 +15,7 @@ const state = {
             bg: "#0B0B0B",
             fontFamily: "Poppins, sans-serif",
             timerStyle: "ring",
-            background: { type: "video", src: "/quiz/uploads/backgrounds/nebula.mp4", intensity: 0.6 },
+            background: { type: "video", src: "/quiz/static/backgrounds/A.mp4", intensity: 0.6 },
             music: { src: "/quiz/uploads/music/ambient_loop.mp3", volume: 0.35, duckOnReveal: true },
             animations: { question: 'fade', options: 'fade', stagger: true, staggerStep: 0.10, idle: 'none', idleIntensity: 3 },
         },
@@ -547,15 +547,34 @@ function updatePreview() {
     // Remove previous idle classes
     pv.q.classList.remove('idle-breath', 'idle-shake', 'idle-float');
     pv.opts.classList.remove('idle-breath', 'idle-shake', 'idle-float');
+    // pv.imgs.classList.remove('idle-breath', 'idle-shake', 'idle-float');
+    // pv.imgs.classList.remove('anim-fade', 'anim-slide', 'anim-zoom');
+
+        //     pv.imgs.querySelectorAll('img').forEach(im => {
+        // im.classList.remove('idle-breath', 'idle-shake', 'idle-float');
+        // im.classList.remove('anim-fade', 'anim-slide', 'anim-zoom');
+        // });
 
     if (idleType !== 'none') {
         pv.q.classList.add(`idle-${idleType}`);
         pv.q.style.animationDuration = `${6 / (intensity / 3)}s`;
         pv.opts.classList.add(`idle-${idleType}`);
         pv.opts.style.animationDuration = `${6 / (intensity / 3)}s`;
+
+        pv.imgs.querySelectorAll('img').forEach(im => {
+        im.classList.add('anim-fade', `idle-${idleType}`);
+        im.style.animationDuration = `${6 / (intensity / 3)}s`;
+        });
+        // pv.imgs.style.animationDuration = `${6 / (intensity / 3)}s`;
+
     } else {
         pv.q.style.animationDuration = '';
         pv.opts.style.animationDuration = '';
+        // pv.imgs.style.animationDuration = '';
+                pv.imgs.querySelectorAll('img').forEach(im => {
+
+        im.style.animationDuration = '';
+        });
     }
 
 
@@ -575,7 +594,18 @@ function updatePreview() {
             pv.q.textContent = '';
             pv.imgs.innerHTML = '';
             (q.images || []).forEach(src => {
-                const im = document.createElement('img'); im.src = src; pv.imgs.appendChild(im);
+                const im = document.createElement('img');
+                im.className = 'qImg'; 
+                // entrance + idle motion per image
+                im.classList.add('anim-fade');
+                if (idleType !== 'none') {
+                    im.classList.add(`idle-${idleType}`);
+                    im.style.animationDuration = `${6 / (intensity / 3)}s`;
+                } else {
+                    im.style.animationDuration = '';
+                }                
+                im.src = src; 
+                pv.imgs.appendChild(im);
             });
             pv.diff.textContent = (q.difficulty || 'easy').toUpperCase();
 
@@ -815,7 +845,7 @@ newQuizBtn.onclick = () => {
             bg: "#0B0B0B",
             fontFamily: "Poppins, sans-serif",
             timerStyle: "ring",
-            background: { type: "video", src: "/quiz/uploads/backgrounds/nebula.mp4", intensity: 0.6, overlay: { color: "#000000", opacity: 0.45 } },
+            background: { type: "video", src: "/quiz/static/backgrounds/A.mp4", intensity: 0.6, overlay: { color: "#000000", opacity: 0.45 } },
             music: { src: "/quiz/uploads/music/ambient_loop.mp3", volume: 0.35, duckOnReveal: true },
             animations: { question: 'fade', options: 'fade', stagger: true, staggerStep: 0.10, idle: 'none', idleIntensity: 3 },
         },

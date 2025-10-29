@@ -149,7 +149,7 @@ textarea{resize:vertical}
 
 .images{display:flex; gap:.5rem; flex-wrap:wrap}
 
-.images img{max-height:24vh; border-radius:10px; border:1px solid rgba(255,255,255,.1) ;margin: auto;}
+.images img{max-height:24vh; border-radius:10px; border:1px solid rgba(255,255,255,.1) ;margin: auto; will-change: transform, opacity;}
 
 
 .options{display:grid; gap:.6rem; margin-top:auto}
