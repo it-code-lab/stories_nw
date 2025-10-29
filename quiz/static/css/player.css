@@ -123,7 +123,8 @@ body.player {
 /* ---------- Main Card ---------- */
 .card {
   width: min(1100px, 94vw);
-  height: min(78vh, 800px);
+  /* height: min(78vh, 800px); */
+  height: fit-content;
   margin: 1.2rem auto;
   display: flex;
   flex-direction: column;
@@ -160,12 +161,12 @@ body.player {
   gap: .6rem;
   flex-wrap: wrap;
   justify-content: center;
-  max-height: var(--img-max-h, 28vh);
+  /* max-height: var(--img-max-h, 28vh); */
   overflow: hidden;
 }
 
 .images img {
-  max-height: 28vh;
+  max-height: 45vh;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, .1);
   object-fit: var(--qimg-fit);
@@ -327,7 +328,7 @@ body.player {
 
 .timer.bar {
   position: relative;
-  width: 100%;
+  width: 85%;
   /* max-width: 520px; */
   height: 18px;
   background: rgba(255, 255, 255, .08);
@@ -379,7 +380,8 @@ body.player {
 /* ---------- Portrait (9:16) ---------- */
 body.portrait .card {
   width: min(560px, 94vw);
-  height: min(84vh, 880px);
+  /* height: min(84vh, 880px); */
+  height: fit-content;
 }
 
 /* ---------- Entrance Animations ---------- */

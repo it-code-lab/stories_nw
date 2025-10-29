@@ -18,7 +18,7 @@
     <div id="quizTitle" class="title"></div>
     <div id="questionText" class="question">Loading…</div>
     <div class="right">
-      <span id="qCounter" class="counter">Q 1/1</span>
+      <!-- <span id="qCounter" class="counter">Q 1/1</span> -->
       <span id="diffPill" class="pill">EASY</span>
       <!-- <button id="fsBtn" class="btn ghost" title="Fullscreen (F)">⤢</button> -->
     </div>
@@ -32,9 +32,13 @@
 
     <div id="options" class="options"></div>
 
+
+
+    <div id="explanation" class="explanation hidden"></div>
+  </main>
     <div class="footer">
       <!-- RING TIMER -->
-      <div id="timerRing" class="timer ring">
+      <div id="timerRing" class="timer ring hidden">
         <svg viewBox="0 0 36 36" class="ring-svg">
           <path class="ring-bg"  d="M18 2.0845 A 15.9155 15.9155 0 1 1 17.99 2.0845"/>
           <path id="ringBar" class="ring-bar" stroke-dasharray="100, 100"
@@ -47,6 +51,11 @@
       <div id="timerBarWrap" class="timer bar hidden">
         <div id="timerBar" class="bar-fill"></div>
         <span id="timeNumBar" class="time-num">10</span>
+  
+      </div>
+      
+      <div class="rightX">
+      <span id="qCounter" class="counter">Q 1/1</span>
       </div>
 
       <!-- <div class="actions" >
@@ -55,10 +64,6 @@
         <button id="nextBtn" class="btn" title="Next (Space / Enter)">Next →</button>
       </div> -->
     </div>
-
-    <div id="explanation" class="explanation hidden"></div>
-  </main>
-
   <!-- Audio -->
   <audio id="bgMusic" preload="auto" loop></audio>
 
