@@ -125,6 +125,163 @@ const pv = {
     themeMode: $('themeMode')
 };
 
+const presetSelect = $('presetSelect');
+const applyPresetBtn = $('applyPresetBtn');
+const savePresetBtn  = $('savePresetBtn');
+
+const THEME_PRESETS = {
+  Neon: {
+    primary:'#00E5FF', accent:'#FF3D7F', fontFamily:'Poppins, sans-serif',
+    background:{ src:'/quiz/static/backgrounds/A.mp4', overlay:{color:'#000000',opacity:.45}},
+    music:{ src:'/quiz/static/music/A.mp3', volume:.35, duckOnReveal:true },
+    timerStyle: 'bar',
+    animations:{ question:'fade', options:'fade', idle:'breath', idleIntensity:3, stagger:true, staggerStep:.10 }
+  },
+  Minimal: {
+    primary:'#FFFFFF', accent:'#00B894', fontFamily:'Inter, ui-sans-serif, system-ui',
+    background:{ src:'/quiz/static/backgrounds/B.mp4', overlay:{color:'#000000',opacity:0.35}},
+    music:{ src:'/quiz/static/music/B.mp3', volume:0.25, duckOnReveal:true},
+    timerStyle: 'bar',
+    animations:{ question:'fade', options:'fade', idle:'breath', idleIntensity:3, stagger:true, staggerStep:.10 }
+},
+  Retro: {
+    primary:'#FFD166', accent:'#EF476F', fontFamily:'Montserrat, Poppins, sans-serif',
+    background:{ src:'/quiz/static/backgrounds/C.mp4', overlay:{color:'#1a0b2e',opacity:0.55}},
+    music:{ src:'/quiz/static/music/C.mp3', volume:0.3, duckOnReveal:true},
+    timerStyle: 'ring',
+    animations:{ question:'fade', options:'fade', idle:'breath', idleIntensity:3, stagger:true, staggerStep:.10 }
+},
+  Paper: {
+    primary:'#222222', accent:'#8C6239', fontFamily:'Merriweather, serif',
+    background:{ src:'/quiz/static/backgrounds/D.mp4', overlay:{color:'#ffffff',opacity:0.25}},
+    music:{ src:'/quiz/static/music/D.mp3', volume:0.25, duckOnReveal:true},
+    timerStyle: 'ring',
+    animations:{ question:'fade', options:'fade', idle:'breath', idleIntensity:3, stagger:true, staggerStep:.10 }
+
+  }
+};
+
+const fontPreview = $('fontPreview');
+
+const qImgFit=$('qImgFit'), qImgPos=$('qImgPos');
+
+const pvMusic = $('pvMusic');
+const bgPlayPause=$('bgPlayPause'), bgMute=$('bgMute'), musicPlayPause=$('musicPlayPause');
+
+bgPlayPause.onclick = ()=>{
+  if (pv.bgVideo.paused){ pv.bgVideo.play(); bgPlayPause.textContent='Pause BG'; }
+  else { pv.bgVideo.pause(); bgPlayPause.textContent='Play BG'; }
+};
+bgMute.onclick = ()=>{
+  pv.bgVideo.muted = !pv.bgVideo.muted;
+  bgMute.textContent = pv.bgVideo.muted ? 'Unmute BG' : 'Mute BG';
+};
+musicPlayPause.onclick = ()=>{
+  if (pvMusic.paused){ pvMusic.play(); musicPlayPause.textContent='Pause Music'; }
+  else { pvMusic.pause(); musicPlayPause.textContent='Play Music'; }
+};
+
+
+const qFontScale=$('qFontScale'), optFontScale=$('optFontScale');
+
+[qFontScale, optFontScale].forEach(el=> el && el.addEventListener('input', ()=>{
+  const q = currentQ(); if(!q) return;
+  q.qFontScale = parseFloat(qFontScale.value);
+  q.optFontScale = parseFloat(optFontScale.value);
+  preview.style.setProperty('--q-scale', q.qFontScale || 1);
+  preview.style.setProperty('--opt-scale', q.optFontScale || 1);
+  updatePreview(); autosave();
+}));
+
+const loopIdleOnly = $('loopIdleOnly');
+const replayTransitions = $('replayTransitions');
+
+loopIdleOnly.onchange = ()=> updatePreview();
+
+replayTransitions.onclick = ()=>{
+  // force reflow to replay entrance classes
+  pv.card.classList.remove('fade-in'); void pv.card.offsetWidth; pv.card.classList.add('fade-in');
+};
+
+const pvTimer = $('pvTimer');
+
+function startTimerPreview(sec){
+  pvTimer.classList.remove('timer-anim'); void pvTimer.offsetWidth;
+  pvTimer.style.setProperty('--timer-dur', `${Math.max(1, sec)}s`);
+  pvTimer.style.setProperty('--timer-color', state.quiz.theme.primary || '#00E5FF');
+  pvTimer.classList.add('timer-anim');
+}
+
+function applyImageFitVars(){
+  // Question images
+  preview.style.setProperty('--qimg-fit', state.current?.imgFit || 'cover');
+  preview.style.setProperty('--qimg-pos', state.current?.imgPos || 'center');
+  // Options use same for now (you can split if needed)
+  preview.style.setProperty('--oimg-fit', state.current?.optImgFit || state.current?.imgFit || 'cover');
+  preview.style.setProperty('--oimg-pos', state.current?.optImgPos || state.current?.imgPos || 'center');
+}
+
+[qImgFit, qImgPos].forEach(el=> el && el.addEventListener('change', ()=>{
+  const q = currentQ(); if(!q) return;
+  q.imgFit = qImgFit.value; q.imgPos = qImgPos.value;
+  applyImageFitVars(); updatePreview(); autosave();
+}));
+
+function hydrateQuestionEditor(){
+  const q = currentQ(); if(!q) return;
+  qImgFit.value = q.imgFit || 'cover';
+  qImgPos.value = q.imgPos || 'center';
+  applyImageFitVars();
+    qFontScale.value = q.qFontScale ?? 1;
+  optFontScale.value = q.optFontScale ?? 1;
+  preview.style.setProperty('--q-scale', q.qFontScale ?? 1);
+  preview.style.setProperty('--opt-scale', q.optFontScale ?? 1);
+}
+
+function updateFontPreview(){
+  const ff = state.quiz.theme.fontFamily || 'Poppins, sans-serif';
+  fontPreview.style.fontFamily = ff;
+  fontPreview.textContent = 'Aa Bb Cc';
+}
+
+fontFamily.onchange = ()=>{
+  state.quiz.theme.fontFamily = fontFamily.value;
+  updateFontPreview();
+  applyThemeToPreview(); autosave();
+};
+
+function applyThemePreset(name){
+  const p = THEME_PRESETS[name]; if(!p) return;
+  const t = state.quiz.theme;
+  t.primary=p.primary; t.accent=p.accent; t.fontFamily=p.fontFamily;
+  t.background = {...(t.background||{}), ...p.background};
+  t.music = {...(t.music||{}), ...p.music};
+    t.timerStyle = p.timerStyle;
+    t.animations = {...(t.animations||{}), ...p.animations};
+
+  hydrateMeta(); // update controls
+  applyThemeToPreview();
+  hydrateMeta();
+  autosave();
+}
+
+// applyPresetBtn.onclick = ()=> presetSelect.value && applyThemePreset(presetSelect.value);
+
+applyPresetBtn.onclick = ()=>{
+  const name = presetSelect.value;
+  if (!name) return;
+  applyThemePreset(name);
+  alert(`"${name}" theme applied.`);
+};
+
+
+savePresetBtn.onclick = ()=>{
+  const name = prompt('Preset name?'); if(!name) return;
+  const t = state.quiz.theme;
+  localStorage.setItem('quizPreset:'+name, JSON.stringify(t));
+  alert('Saved! You can load it by choosing the same name from localStorage later (dev feature).');
+};
+
 // --------- Meta handlers ---------
 function refreshMeta() {
     const qz = state.quiz;
@@ -246,6 +403,7 @@ populateMediaLists();
 
 function applyThemeToPreview() {
     const t = state.quiz.theme;
+
     document.documentElement.style.setProperty('--primary', t.primary);
     document.documentElement.style.setProperty('--accent', t.accent);
     document.body.style.fontFamily = t.fontFamily || 'Poppins, sans-serif';
@@ -261,6 +419,7 @@ function applyThemeToPreview() {
     const overlay = (t.background && t.background.overlay) ? t.background.overlay : { color: '#000000', opacity: 0.45 };
     const tintRgba = hexToRgba(overlay.color || '#000000', typeof overlay.opacity === 'number' ? overlay.opacity : 0.45);
     document.documentElement.style.setProperty('--pv-bg-tint', tintRgba);
+    if (t.music?.src){ pvMusic.src = t.music.src; pvMusic.volume = t.music.volume ?? 0.35; }
 }
 
 // --------- Question list & selection ---------
@@ -544,6 +703,12 @@ function updatePreview() {
     const idleType = state.quiz.theme.animations?.idle || 'none';
     const intensity = state.quiz.theme.animations?.idleIntensity || 3;
 
+    const doEntrance = !loopIdleOnly.checked && state.animatePreview;
+    if (doEntrance){ pv.card.classList.remove('fade-out'); pv.card.classList.add('fade-in'); }
+
+    const seconds = Number((q && q.timerSec) || state.quiz.defaults?.timerSec || 12);
+    startTimerPreview(seconds);
+
     // Remove previous idle classes
     pv.q.classList.remove('idle-breath', 'idle-shake', 'idle-float');
     pv.opts.classList.remove('idle-breath', 'idle-shake', 'idle-float');
@@ -751,6 +916,8 @@ function hydrateMeta() {
     duckOnReveal.checked = !!qz.theme?.music?.duckOnReveal;
 
     applyThemeToPreview();
+    updateFontPreview();
+    hydrateQuestionEditor();
 }
 
 function normalizeQuiz(q) {
@@ -846,7 +1013,7 @@ newQuizBtn.onclick = () => {
             fontFamily: "Poppins, sans-serif",
             timerStyle: "ring",
             background: { type: "video", src: "/quiz/static/backgrounds/A.mp4", intensity: 0.6, overlay: { color: "#000000", opacity: 0.45 } },
-            music: { src: "/quiz/uploads/music/ambient_loop.mp3", volume: 0.35, duckOnReveal: true },
+            music: { src: "/quiz/uploads/music/A.mp3", volume: 0.35, duckOnReveal: true },
             animations: { question: 'fade', options: 'fade', stagger: true, staggerStep: 0.10, idle: 'none', idleIntensity: 3 },
         },
         defaults: { timerSec: 12 },

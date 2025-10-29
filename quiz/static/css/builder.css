@@ -149,7 +149,7 @@ textarea{resize:vertical}
 
 .images{display:flex; gap:.5rem; flex-wrap:wrap}
 
-.images img{max-height:24vh; border-radius:10px; border:1px solid rgba(255,255,255,.1) ;margin: auto; will-change: transform, opacity;}
+.images img{  object-fit:var(--qimg-fit, cover); object-position:var(--qimg-pos, center); max-height:24vh; border-radius:10px; border:1px solid rgba(255,255,255,.1) ;margin: auto; will-change: transform, opacity;}
 
 
 .options{display:grid; gap:.6rem; margin-top:auto}
@@ -192,7 +192,7 @@ textarea{resize:vertical}
 }
 
 .opt-img{width:100%; border-radius:10px; overflow:hidden}
-.opt-img img{width:100%; height:100%; object-fit:cover}
+.opt-img img{object-fit:var(--oimg-fit, cover); object-position:var(--oimg-pos, center); width:100%; height:100%; object-fit:cover}
 
 .explanation{
   margin-top:.4rem; padding:.6rem .8rem; border-radius:12px;
@@ -243,4 +243,45 @@ textarea{resize:vertical}
 .idle-float   { animation: float 5s ease-in-out infinite; }
 
 /* Dynamic intensity modifier (JS adds inline style for intensity) */
+
+.font-preview{
+  padding:.5rem .75rem; border-radius:10px;
+  background:rgba(255,255,255,.06); color:#fff; font-weight:700;
+  min-width:120px; text-align:center;
+}
+
+.preview{ --q-scale:1; --opt-scale:1; }
+.preview .title{ transform: scale(var(--q-scale)); transform-origin:left top; }
+.opt-text{ transform: scale(var(--opt-scale)); transform-origin:center; }
+
+.timer-ring{
+  width:32px; height:32px; border-radius:50%;
+  background:
+    radial-gradient(closest-side, rgba(0,0,0,.4) 80%, transparent 81% 100%),
+    conic-gradient(var(--timer-color,#00E5FF) var(--timer-deg, 0deg), rgba(255,255,255,.12) 0);
+}
+.timer-anim { animation: timerSpin var(--timer-dur, 12s) linear forwards; }
+@keyframes timerSpin { from{ --timer-deg:360deg; } to{ --timer-deg:0deg; } }
+
+/* 3 options: two on the first row, one centered on second row */
+/* .options.cols-3{
+  grid-template-columns:1fr 1fr;
+  grid-template-areas:
+    "a b"
+    "c c";
+}
+.options.cols-3 .opt:nth-child(1){ grid-area:a; }
+.options.cols-3 .opt:nth-child(2){ grid-area:b; }
+.options.cols-3 .opt:nth-child(3){ grid-area:c; } */
+
+.themeContainer{
+    margin-top: 1rem;
+    border: 1px solid #1b1f27;
+    border-radius: 14px;
+    padding: 1rem;
+    background-color: blueviolet; 
+    backdrop-filter: blur(8px);
+    max-height: 200px;
+    overflow-y: auto;
+}
 

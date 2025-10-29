@@ -44,113 +44,129 @@
                     <input id="defaultTimer" type="number" min="3" value="12" />
                 </label>
             </div>
-
-            <h4>Theme</h4>
-            <label>Preset
-                <select id="themePreset">
-                    <option>Neon Quiz</option>
-                    <option>Minimal White</option>
-                    <option>Retro Arcade</option>
-                    <option>Kids Fun</option>
-                    <option>Sci-Fi</option>
-                </select>
-            </label>
-
-            <div class="row2">
-                <label>Overlay Color
-                    <input id="overlayColor" type="color" value="#000000" />
-                </label>
-                <label>Overlay Opacity
-                    <input id="overlayOpacity" type="range" min="0" max="0.9" step="0.05" value="0.45" />
-                </label>
-            </div>
-
-            <div class="row2">
-                <label>Question Animation
-                    <select id="qAnim">
-                        <option value="fade">Fade In</option>
-                        <option value="slide">Slide Up</option>
-                        <option value="zoom">Zoom In</option>
-                        <option value="none">None</option>
+            <div class = "themeContainer" >
+                <h4>Theme</h4>
+                <label style="visibility: hidden; height: 1px;">Preset
+                    <select id="themePreset">
+                        <option>Neon Quiz</option>
+                        <option>Minimal White</option>
+                        <option>Retro Arcade</option>
+                        <option>Kids Fun</option>
+                        <option>Sci-Fi</option>
                     </select>
                 </label>
 
-                <label>Option Animation
-                    <select id="optAnim">
-                        <option value="fade">Fade In</option>
-                        <option value="slide">Slide Up</option>
-                        <option value="zoom">Zoom In</option>
-                        <option value="none">None</option>
+                <div class="row3">
+                    <label>Theme Presets
+                        <select id="presetSelect">
+                            <option value="">(choose)</option>
+                            <option value="Neon">Neon</option>
+                            <option value="Minimal">Minimal</option>
+                            <option value="Retro">Retro</option>
+                            <option value="Paper">Paper</option>
+                        </select>
+                    </label>
+                    <button id="applyPresetBtn" class="btn small" type="button">Apply</button>
+                    <button id="savePresetBtn" class="btn ghost" type="button">Save Current…</button>
+                </div>
+                <div class="row2">
+                    <label>Overlay Color
+                        <input id="overlayColor" type="color" value="#000000" />
+                    </label>
+                    <label>Overlay Opacity
+                        <input id="overlayOpacity" type="range" min="0" max="0.9" step="0.05" value="0.45" />
+                    </label>
+                </div>
+
+                <div class="row2">
+                    <label>Question Animation
+                        <select id="qAnim">
+                            <option value="fade">Fade In</option>
+                            <option value="slide">Slide Up</option>
+                            <option value="zoom">Zoom In</option>
+                            <option value="none">None</option>
+                        </select>
+                    </label>
+
+                    <label>Option Animation
+                        <select id="optAnim">
+                            <option value="fade">Fade In</option>
+                            <option value="slide">Slide Up</option>
+                            <option value="zoom">Zoom In</option>
+                            <option value="none">None</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="row2">
+                    <label>Idle Motion
+                        <select id="idleMotion">
+                            <option value="none">None</option>
+                            <option value="breath">Breathing</option>
+                            <option value="shake">Subtle Shake</option>
+                            <option value="float">Floating</option>
+                        </select>
+                    </label>
+
+                    <label>Motion Intensity
+                        <input id="idleIntensity" type="range" min="1" max="10" value="3" step="1" />
+                    </label>
+                </div>
+
+                <label class="row" style="margin-top:.3rem">
+                    <input style="width: 50px;" id="optStagger" type="checkbox" checked />
+                    Stagger option animations
+                </label>
+
+
+                <label class="row">Stagger Step (seconds)
+                    <input style="width: 150px;" id="optStaggerStep" type="number" min="0" step="0.05" value="0.10" />
+                </label>
+                <div class="row2">
+                    <label>Primary Color <input id="colorPrimary" type="color" value="#00E5FF" /></label>
+                    <label>Accent Color <input id="colorAccent" type="color" value="#FF3D7F" /></label>
+                </div>
+
+                <label>Font Family
+                    <select id="fontFamily">
+                        <option>Poppins, sans-serif</option>
+                        <option>Inter, sans-serif</option>
+                        <option>Nunito, sans-serif</option>
+                        <option>Rubik, sans-serif</option>
                     </select>
                 </label>
-            </div>
+                <div id="fontPreview" class="font-preview">Aa Bb Cc</div>
 
-            <div class="row2">
-                <label>Idle Motion
-                    <select id="idleMotion">
-                        <option value="none">None</option>
-                        <option value="breath">Breathing</option>
-                        <option value="shake">Subtle Shake</option>
-                        <option value="float">Floating</option>
+                <div class="row2">
+                    <label>Timer Style
+                        <select id="timerStyle">
+                            <option value="ring">Ring</option>
+                            <option value="bar">Bar</option>
+                        </select>
+                    </label>
+                    <label>Music Volume
+                        <input id="musicVol" type="number" step="0.05" min="0" max="1" value="0.35" />
+                    </label>
+                </div>
+
+                <label>Background Video
+                    <select id="bgSelect">
+                        <option value="">(Select Video)</option>
                     </select>
+                    <input id="bgSrc" type="hidden" placeholder="/quiz/static/backgrounds/A.mp4" />
                 </label>
 
-                <label>Motion Intensity
-                    <input id="idleIntensity" type="range" min="1" max="10" value="3" step="1" />
-                </label>
-            </div>
+                <label>Background Music (URL)
 
-            <label class="row" style="margin-top:.3rem">
-                <input id="optStagger" type="checkbox" checked />
-                Stagger option animations
-            </label>
-            <label>Stagger Step (seconds)
-                <input id="optStaggerStep" type="number" min="0" step="0.05" value="0.10" />
-            </label>
-
-            <div class="row2">
-                <label>Primary Color <input id="colorPrimary" type="color" value="#00E5FF" /></label>
-                <label>Accent Color <input id="colorAccent" type="color" value="#FF3D7F" /></label>
-            </div>
-
-            <label>Font Family
-                <select id="fontFamily">
-                    <option>Poppins, sans-serif</option>
-                    <option>Inter, sans-serif</option>
-                    <option>Nunito, sans-serif</option>
-                    <option>Rubik, sans-serif</option>
-                </select>
-            </label>
-
-            <div class="row2">
-                <label>Timer Style
-                    <select id="timerStyle">
-                        <option value="ring">Ring</option>
-                        <option value="bar">Bar</option>
+                    <select id="musicSelect">
+                        <option value="">(Select Music)</option>
                     </select>
+                    <input id="musicSrc" type="hidden" placeholder="/quiz/uploads/music/ambient_loop.mp3" />
                 </label>
-                <label>Music Volume
-                    <input id="musicVol" type="number" step="0.05" min="0" max="1" value="0.35" />
-                </label>
+
+                <label class="row"><input style="width: 50px;" id="duckOnReveal" type="checkbox" checked /> Duck Music
+                    on Reveal</label>
             </div>
-
-            <label>Background Video
-                <select id="bgSelect">
-                    <option value="">(Select Video)</option>
-                </select>
-                <input id="bgSrc" type="hidden" placeholder="/quiz/static/backgrounds/A.mp4" />
-            </label>
-
-            <label>Background Music (URL)
-
-                <select id="musicSelect">
-                    <option value="">(Select Music)</option>
-                </select>
-                <input id="musicSrc" type="hidden" placeholder="/quiz/uploads/music/ambient_loop.mp3" />
-            </label>
-
-            <label class="row"><input id="duckOnReveal" type="checkbox" checked /> Duck Music on Reveal</label>
-
             <hr class="sep" />
 
             <section class="row" style="justify-content:space-between; align-items:center;">
@@ -197,6 +213,15 @@
                     <textarea id="qText" rows="3" placeholder="Type the question…"></textarea>
                 </label>
 
+                <div class="row2">
+                    <label>Question Font x
+                        <input id="qFontScale" type="range" min="0.8" max="1.4" step="0.05" value="1">
+                    </label>
+                    <label>Options Font x
+                        <input id="optFontScale" type="range" min="0.8" max="1.4" step="0.05" value="1">
+                    </label>
+                </div>
+
                 <!-- Question images -->
                 <div class="imgs">
                     <div class="row" style="justify-content:space-between; align-items:center;">
@@ -207,6 +232,25 @@
                         </div>
                     </div>
                     <div id="qImgGrid" class="imggrid"></div>
+                </div>
+
+                <div class="row2">
+                    <label>Question Image Fit
+                        <select id="qImgFit">
+                            <option value="cover">Cover</option>
+                            <option value="contain">Contain</option>
+                            <option value="fill">Fill</option>
+                        </select>
+                    </label>
+                    <label>Align
+                        <select id="qImgPos">
+                            <option value="center">Center</option>
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </label>
                 </div>
 
                 <!-- Options (1-4) -->
@@ -260,15 +304,30 @@
             </div>
 
             <div class="pv-toolbar row">
-                <label class="row"><input id="animToggle" type="checkbox" checked /> Animate Preview</label>
-                <label>Theme
-                    <select id="themeMode">
+                <label class="row" style="width: 230px;"><input style="width: 20px;" id="animToggle" type="checkbox"
+                        checked /> Animate Preview</label>
+                <label style="width: 190px;">Theme
+                    <select id="themeMode" style="width: 90px;">
                         <option value="dark">Dark</option>
                         <option value="light">Light</option>
                     </select>
                 </label>
-                <label class="row"><input id="showQNum" type="checkbox" checked /> Show Q#</label>
-                <label class="row"><input id="showDiff"  type="checkbox" checked /> Show Difficulty</label>
+                <label class="row" style="width: 150px;"><input style="width: 30px;" id="showQNum" type="checkbox"
+                        checked /> Show Q#</label>
+                <label class="row" style="width: 200px;"><input style="width: 30px;" id="showDiff" type="checkbox"
+                        checked /> Show Difficulty</label>
+            </div>
+            <div class="pv-toolbar row">
+                <div class="row">
+                    <button id="bgPlayPause" class="btn ghost" type="button">Pause BG</button>
+                    <button id="bgMute" class="btn ghost" type="button">Mute BG</button>
+                    <button id="musicPlayPause" class="btn ghost" type="button">Play Music</button>
+                </div>
+
+                <label class="row"><input style="width: 30px;" id="loopIdleOnly" type="checkbox" /> Loop Idle Only (no
+                    entrance)</label>
+                <button id="replayTransitions" class="btn ghost" type="button">Replay</button>
+
 
             </div>
 
@@ -279,6 +338,7 @@
                     <img id="pvBgImage" class="pv-bg-layer" alt="" />
                     <div id="pvBgTint" class="pv-bg-tint"></div>
                 </div>
+                <audio id="pvMusic" loop></audio>
 
                 <header class="hud">
                     <!-- <div id="pvTitle" class="title">Title</div> -->
@@ -287,6 +347,8 @@
                         <span id="pvCount" class="counter">Q 0/0</span>
                         <span id="pvDiff" class="pill">EASY</span>
                     </div>
+                    <div id="pvTimer" class="timer-ring" title="Timer"></div>
+
                 </header>
 
                 <div id="pvCard" class="card">
