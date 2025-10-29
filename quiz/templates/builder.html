@@ -29,7 +29,7 @@
         <!-- LEFT: Metadata & Question List -->
         <aside class="left panel">
             <h3>Quiz Settings</h3>
-            <label>Title
+            <label style="visibility: hidden; height: 1px;">Title
                 <input id="quizTitle" placeholder="Quiz Title" />
             </label>
 
@@ -40,6 +40,12 @@
                         <option value="hi">Hindi</option>
                     </select>
                 </label>
+                <label>Question TTS
+                    <select id="qsTTS">
+                        <option value="y">Yes</option>
+                        <option value="n">No</option>
+                    </select>
+                </label>                
                 <label>Default Timer
                     <input id="defaultTimer" type="number" min="3" value="12" />
                 </label>
@@ -347,7 +353,7 @@
                         <span id="pvCount" class="counter">Q 0/0</span>
                         <span id="pvDiff" class="pill">EASY</span>
                     </div>
-                    <div id="pvTimer" class="timer-ring" title="Timer"></div>
+                    <div id="pvTimer" style="display: none;" class="timer-ring" title="Timer"></div>
 
                 </header>
 

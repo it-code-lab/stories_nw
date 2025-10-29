@@ -511,7 +511,8 @@ goTo = function (...args) {
 
 async function speakQuestion(text) {
   if (!text) return;
-
+  if (!quiz?.qsTTS || quiz.qsTTS.toLowerCase() !== 'y') return;
+  
   // ensure user has interacted at least once
   await waitForAudioUnlock();
 

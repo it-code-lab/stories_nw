@@ -8,6 +8,7 @@ const state = {
         id: null,
         title: "",
         language: "en",
+        qsTTS: "y",
         theme: {
             preset: "Neon Quiz",
             primary: "#00E5FF",
@@ -48,6 +49,7 @@ const playBtn = $('playBtn');
 // Meta / Theme
 const quizTitle = $('quizTitle');
 const quizLang = $('quizLang');
+const qsTTS = $('qsTTS');
 const defaultTimer = $('defaultTimer');
 const themePreset = $('themePreset');
 const colorPrimary = $('colorPrimary');
@@ -287,6 +289,7 @@ function refreshMeta() {
     const qz = state.quiz;
     qz.title = (quizTitle?.value || '').trim();
     qz.language = (quizLang?.value || 'en');
+    qz.qsTTS = (qsTTS?.value || 'y');
     qz.defaults.timerSec = parseInt(defaultTimer?.value || '12', 10);
 
     qz.theme.preset = themePreset?.value || qz.theme.preset;
@@ -322,7 +325,7 @@ function refreshMeta() {
     autosave();
 }
 [
-    quizTitle, quizLang, defaultTimer, themePreset, colorPrimary, colorAccent,
+    quizTitle, quizLang, qsTTS, defaultTimer, themePreset, colorPrimary, colorAccent,
     fontFamily, timerStyle, bgSrc, musicSrc, musicVol, duckOnReveal
 ].forEach(i => i && i.addEventListener('input', refreshMeta));
 
@@ -893,6 +896,7 @@ function hydrateMeta() {
     const qz = state.quiz;
     quizTitle.value = qz.title || '';
     quizLang.value = qz.language || 'en';
+    qsTTS.value = qz.qsTTS || 'y';
     defaultTimer.value = qz.defaults?.timerSec || 12;
 
     themePreset.value = qz.theme?.preset || 'Neon Quiz';
@@ -1005,6 +1009,7 @@ newQuizBtn.onclick = () => {
         id: null,
         title: "",
         language: "en",
+        qsTTS: "y",
         theme: {
             preset: "Neon Quiz",
             primary: "#00E5FF",
