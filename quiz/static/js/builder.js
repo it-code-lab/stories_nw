@@ -108,10 +108,17 @@ const qImgBtn = $('qImgBtn');
 const qImgInput = $('qImgInput');
 const qImgGrid = $('qImgGrid');
 
+qImgGrid.addEventListener('focus', () => { pasteTarget = { type: 'q' }; });
+qImgGrid.addEventListener('click', () => { pasteTarget = { type: 'q' }; });
+
 // options
 const optWrap = $('optWrap');
 const addOptBtn = $('addOptBtn');
 const remOptBtn = $('remOptBtn');
+
+// Where a pasted image should go: { type: 'q' } OR { type:'opt', idx: number }
+let pasteTarget = { type: 'q' };
+
 
 // Preview
 const pv = {
@@ -174,6 +181,73 @@ const qImgFit=$('qImgFit'), qImgPos=$('qImgPos');
 
 const pvMusic = $('pvMusic');
 const bgPlayPause=$('bgPlayPause'), bgMute=$('bgMute'), musicPlayPause=$('musicPlayPause');
+
+document.addEventListener('paste', async (e) => {
+  const q = currentQ();
+  if (!q) return;
+
+  const items = e.clipboardData?.items || [];
+  let handled = false;
+
+  // 1) Look for an image blob in the clipboard
+  for (const it of items) {
+    if (it.kind === 'file' && it.type.startsWith('image/')) {
+      const blob = it.getAsFile();
+      if (!blob) continue;
+
+      // Upload through existing API
+      const url = await uploadImage(blob);
+      if (!url) return;
+
+      if (pasteTarget.type === 'q') {
+        q.images = q.images || [];
+        q.images.push(url);
+        addQImageThumb(url);
+      } else if (pasteTarget.type === 'opt' && Number.isInteger(pasteTarget.idx)) {
+        q.options = q.options || [];
+        q.options[pasteTarget.idx] = { ...(q.options[pasteTarget.idx] || {}), image: url };
+
+        // update that option row’s thumbnail in the editor
+        const row = optWrap.querySelector(`.optrow[data-idx="${pasteTarget.idx}"]`);
+        const thumb = row?.querySelector('.thumb');
+        if (thumb) thumb.src = url;
+      }
+
+      updatePreview(); autosave();
+      handled = true;
+      break;
+    }
+  }
+
+  if (handled) {
+    // prevent image also pasting into a text field
+    e.preventDefault();
+    return;
+  }
+
+  // 2) If no image blob, but a URL was pasted, accept http(s) or data: images
+  const text = e.clipboardData?.getData('text')?.trim();
+  if (text && (/^https?:\/\/.+\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(text) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(text))) {
+    const url = safeUrl(text);
+
+    if (pasteTarget.type === 'q') {
+      q.images = q.images || [];
+      q.images.push(url);
+      addQImageThumb(url);
+    } else if (pasteTarget.type === 'opt' && Number.isInteger(pasteTarget.idx)) {
+      q.options = q.options || [];
+      q.options[pasteTarget.idx] = { ...(q.options[pasteTarget.idx] || {}), image: url };
+
+      const row = optWrap.querySelector(`.optrow[data-idx="${pasteTarget.idx}"]`);
+      const thumb = row?.querySelector('.thumb');
+      if (thumb) thumb.src = url;
+    }
+
+    updatePreview(); autosave();
+    e.preventDefault();
+  }
+});
+
 
 bgPlayPause.onclick = ()=>{
   if (pv.bgVideo.paused){ pv.bgVideo.play(); bgPlayPause.textContent='Pause BG'; }
@@ -569,6 +643,13 @@ function makeOptRow(q, i) {
 
     const row = document.createElement('div');
     row.className = 'optrow';
+    row.setAttribute('tabindex','0');         // focusable for paste
+    row.dataset.pasteScope = 'opt';
+    row.dataset.idx = String(i);
+
+    // when this row is focused or clicked, set paste target
+    row.addEventListener('focus', () => { pasteTarget = { type:'opt', idx: i }; });
+    row.addEventListener('click', () => { pasteTarget = { type:'opt', idx: i }; });
 
     const top = document.createElement('div');
     top.className = 'row2';

@@ -285,3 +285,15 @@ textarea{resize:vertical}
     overflow-y: auto;
 }
 
+/* Focus affordance */
+.optrow:focus, #qImgGrid:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Tiny hint under Question Images grid */
+.paste-hint{
+  margin-top:.35rem;
+  font-size:.85rem;
+  opacity:.7;
+}
