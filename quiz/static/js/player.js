@@ -34,6 +34,21 @@ const els = {
 
 const soundGate = document.getElementById('soundGate');
 const enableSoundBtn = document.getElementById('enableSoundBtn');
+const bgPlayPause=document.getElementById('bgPlayPause'), bgMute=document.getElementById('bgMute'), musicPlayPause=document.getElementById('musicPlayPause');
+
+bgPlayPause.onclick = ()=>{
+  if (bgVideo.paused){ bgVideo.play(); bgPlayPause.textContent='Pause BG'; }
+  else { bgVideo.pause(); bgPlayPause.textContent='Play BG'; }
+};
+bgMute.onclick = ()=>{
+  bgVideo.muted = !bgVideo.muted;
+  bgMute.textContent = bgVideo.muted ? 'Unmute BG' : 'Mute BG';
+};
+musicPlayPause.onclick = ()=>{
+  if (bgMusic.paused){ bgMusic.play(); musicPlayPause.textContent='Pause Music'; }
+  else { bgMusic.pause(); musicPlayPause.textContent='Play Music'; }
+};
+
 
 let audioUnlocked = false;
 let audioCtx = null;

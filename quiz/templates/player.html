@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/quiz/static/css/player.css" />
 </head>
 
-<body class="portrait">
+<body class="landscape">
   <div id="container" class="container">
 
     <div class="player">
@@ -95,13 +95,17 @@
       <button id="prevBtn" class="btn ghost" title="Previous (Backspace)">← Prev</button>
       <button id="restartBtn" class="btn ghost" title="Restart question (R)">↺</button>
       <button id="nextBtn" class="btn" title="Next (Space / Enter)">Next →</button>
-          <button id="landBtn" class="btn ghost">16:9</button>
-          <button id="portBtn" class="btn ghost">9:16</button>
-      <span>Hotkeys: Space/Enter -> Next  <br><br>Backspace-> Prev, <br><br>R -> Restart, <br><br>F -> Fullscreen <br><br>T->
-          16:9/9:16</span>
+      <button id="landBtn" class="btn ghost">16:9</button>
+      <button id="portBtn" class="btn ghost">9:16</button>
+      <button id="bgPlayPause" class="btn ghost" type="button">Pause BG</button>
+      <button id="bgMute" class="btn ghost" type="button">Mute BG</button>
+      <button id="musicPlayPause" class="btn ghost" type="button">Play Music</button>
+      <span>Hotkeys: Space/Enter -> Next <br><br>Backspace-> Prev, <br><br>R -> Restart, <br><br>F -> Fullscreen
+        <br><br>T->
+        16:9/9:16</span>
 
 
-  
+
     </div>
     <script type="module" src="/quiz/static/js/player.js"></script>
 </body>
