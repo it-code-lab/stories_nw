@@ -28,7 +28,8 @@ const els = {
   expl: document.getElementById('explanation'),
   // fsBtn:   document.getElementById('fsBtn'),
   landBtn: document.getElementById('landBtn'),
-  portBtn: document.getElementById('portBtn')
+  portBtn: document.getElementById('portBtn'),
+  sfxDing: document.getElementById('sfxDing')
 };
 
 const soundGate = document.getElementById('soundGate');
@@ -36,7 +37,7 @@ const enableSoundBtn = document.getElementById('enableSoundBtn');
 
 let audioUnlocked = false;
 let audioCtx = null;
-
+let autoAdvanceTO = null;
 
 let quiz = null, idx = 0, cancelTimer = null, revealed = false, lastVol = null;
 
@@ -173,6 +174,11 @@ async function init() {
     quiz = await res.json();
   } catch (e) { console.error(e); setStatus('Load failed'); return; }
 
+  quiz.autoAdvance = quiz.autoAdvance || { enabled:false, delaySec:3, afterExplanation:true };
+  if (typeof quiz.autoAdvance.enabled !== 'boolean') quiz.autoAdvance.enabled = false;
+  if (!Number.isFinite(quiz.autoAdvance.delaySec)) quiz.autoAdvance.delaySec = 3;
+  if (typeof quiz.autoAdvance.afterExplanation !== 'boolean') quiz.autoAdvance.afterExplanation = true;
+
   hydrateTheme();
   bindControls();
   goTo(0);
@@ -221,6 +227,11 @@ function hydrateTheme() {
   showIf(els.counter, hud.showCounter !== false);
   showIf(els.diff, hud.showDifficulty !== false);
 
+  // SFX (ding)
+  const sfx = (t.sfx || {});
+  els.sfxDing.src = sfx.ding?.src || '/quiz/static/sfx/low-bell-ding.wav';   // put your file there
+  // els.sfxDing.volume = clamp01(sfx.ding?.volume ?? 0.9);
+
   els.title.textContent = quiz.title || '';
 }
 
@@ -232,6 +243,9 @@ function showIf(el, ok) { ok ? el.classList.remove('hidden') : el.classList.add(
 
 // ---------- Navigation ----------
 function goTo(n) {
+  // cancel any pending auto-advance
+  if (autoAdvanceTO){ clearTimeout(autoAdvanceTO); autoAdvanceTO = null; }
+
   idx = Math.max(0, Math.min(n, quiz.questions.length - 1));
   revealed = false;
 
@@ -248,6 +262,18 @@ function goTo(n) {
 function next() { if (idx < quiz.questions.length - 1) goTo(idx + 1); }
 function prev() { if (idx > 0) goTo(idx - 1); }
 function restart() { goTo(idx); }
+
+async function playDing() {
+  if (!els.sfxDing?.src) return;
+  await waitForAudioUnlock();                 // respects autoplay policy
+  try {
+    els.sfxDing.currentTime = 0;              // rewind for rapid sequences
+    await els.sfxDing.play();
+  } catch (e) {
+    console.warn('ding play blocked; will retry after unlock', e);
+  }
+}
+
 
 // ---------- Render ----------
 async function renderQuestion(q) {
@@ -444,6 +470,9 @@ function reveal(q) {
     els.bgMusic.volume = clamp01((lastVol ?? 0.35) * 0.45);
   }
 
+  // Play ding when revealing the answer
+  playDing();
+
   if (q.type === 'mcq') {
     [...els.opts.querySelectorAll('.opt')].forEach((b, i) => {
       if (i === (q.correctIndex ?? 0)) b.classList.add('correct');
@@ -472,7 +501,30 @@ function reveal(q) {
     }, 1000);
   }
 
-  // restore music on next question
+
+  // --- Auto-advance logic ---
+  const qa = q.autoAdvance || {};
+  const qaEnabled = (qa.enabled != null) ? qa.enabled : (quiz.autoAdvance?.enabled === true);
+  if (!qaEnabled) return;                     // off globally or for this q
+
+  const afterExp = (qa.afterExplanation != null) ? qa.afterExplanation : (quiz.autoAdvance?.afterExplanation === true);
+  const baseDelay = Number.isFinite(qa.delaySec) ? qa.delaySec : (quiz.autoAdvance?.delaySec ?? 3);
+
+  // If you fade explanation in after ~1s, optionally add a small buffer so the viewer can see it
+  const extraBuffer = afterExp && q.explanation ? 0.8 : 0;  // seconds; tune if needed
+
+  // Don’t queue beyond the last question
+  if (idx >= quiz.questions.length - 1) return;
+
+  // Clear any prior
+  if (autoAdvanceTO){ clearTimeout(autoAdvanceTO); autoAdvanceTO = null; }
+
+  autoAdvanceTO = setTimeout(()=>{
+    autoAdvanceTO = null;
+    next(); // uses your existing navigation
+  }, Math.max(0, (baseDelay + extraBuffer) * 1000));
+
+    // restore music on next question
 }
 
 // ---------- Controls / Hotkeys ----------

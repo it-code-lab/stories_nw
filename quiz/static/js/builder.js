@@ -9,6 +9,7 @@ const state = {
         title: "",
         language: "en",
         qsTTS: "y",
+        autoAdvance: { enabled: false, delaySec: 3, afterExplanation: true }, // ← NEW
         theme: {
             preset: "Neon Quiz",
             primary: "#00E5FF",
@@ -45,6 +46,10 @@ const loadJsonInput = $('loadJsonInput');
 const saveBtn = $('saveBtn');
 const playBtn = $('playBtn');
 
+// Auto-advance controls
+const aaEnabled = $('aaEnabled');
+const aaDelay = $('aaDelay');
+const aaAfterExplanation = $('aaAfterExplanation');
 
 // Meta / Theme
 const quizTitle = $('quizTitle');
@@ -290,6 +295,14 @@ function refreshMeta() {
     qz.title = (quizTitle?.value || '').trim();
     qz.language = (quizLang?.value || 'en');
     qz.qsTTS = (qsTTS?.value || 'y');
+
+    // --- Auto-advance ---
+    qz.autoAdvance = qz.autoAdvance || {};
+    qz.autoAdvance.enabled = (aaEnabled?.value === 'true');
+    qz.autoAdvance.delaySec = parseFloat(aaDelay?.value || '3');
+    if (!Number.isFinite(qz.autoAdvance.delaySec)) qz.autoAdvance.delaySec = 3;
+    qz.autoAdvance.afterExplanation = !!aaAfterExplanation?.checked;
+
     qz.defaults.timerSec = parseInt(defaultTimer?.value || '12', 10);
 
     qz.theme.preset = themePreset?.value || qz.theme.preset;
@@ -326,7 +339,7 @@ function refreshMeta() {
 }
 [
     quizTitle, quizLang, qsTTS, defaultTimer, themePreset, colorPrimary, colorAccent,
-    fontFamily, timerStyle, bgSrc, musicSrc, musicVol, duckOnReveal
+    fontFamily, timerStyle, bgSrc, musicSrc, musicVol, duckOnReveal, aaEnabled, aaDelay, aaAfterExplanation
 ].forEach(i => i && i.addEventListener('input', refreshMeta));
 
 [overlayColor, overlayOpacity].forEach(i => i && i.addEventListener('input', refreshMeta));
@@ -897,6 +910,13 @@ function hydrateMeta() {
     quizTitle.value = qz.title || '';
     quizLang.value = qz.language || 'en';
     qsTTS.value = qz.qsTTS || 'y';
+
+    // --- Auto-advance ---
+    const aa = qz.autoAdvance || { enabled:false, delaySec:3, afterExplanation:true };
+    aaEnabled.value = String(aa.enabled);
+    aaDelay.value = (Number.isFinite(aa.delaySec) ? aa.delaySec : 3);
+    aaAfterExplanation.checked = !!aa.afterExplanation;
+
     defaultTimer.value = qz.defaults?.timerSec || 12;
 
     themePreset.value = qz.theme?.preset || 'Neon Quiz';
@@ -939,6 +959,11 @@ function normalizeQuiz(q) {
     q.theme.animations.idle = q.theme.animations.idle || 'none';
     q.theme.animations.idleIntensity = q.theme.animations.idleIntensity || 3;
 
+    // --- Auto-advance defaults ---
+    q.autoAdvance = q.autoAdvance || {};
+    if (typeof q.autoAdvance.enabled !== 'boolean') q.autoAdvance.enabled = false;
+    if (!Number.isFinite(q.autoAdvance.delaySec)) q.autoAdvance.delaySec = 3;
+    if (typeof q.autoAdvance.afterExplanation !== 'boolean') q.autoAdvance.afterExplanation = true;
 
     q.questions = q.questions || [];
     q.questions.forEach(qq => {
@@ -1010,6 +1035,7 @@ newQuizBtn.onclick = () => {
         title: "",
         language: "en",
         qsTTS: "y",
+        autoAdvance: { enabled:false, delaySec:3, afterExplanation:true }, // ← NEW
         theme: {
             preset: "Neon Quiz",
             primary: "#00E5FF",

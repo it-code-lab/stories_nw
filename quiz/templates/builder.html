@@ -50,6 +50,26 @@
                     <input id="defaultTimer" type="number" min="3" value="12" />
                 </label>
             </div>
+
+            <!-- Auto-Advance (quiz-level) -->
+            <h4 style="margin-top: .6rem;">Auto-Advance</h4>
+            <div class="row2">
+            <label>Enabled
+                <select id="aaEnabled">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+                </select>
+            </label>
+            <label>Delay (sec)
+                <input id="aaDelay" type="number" min="0" step="0.5" value="3" />
+            </label>
+            </div>
+            <label class="row">
+            <input id="aaAfterExplanation" type="checkbox" checked style="width: 20px;" />
+            Wait until explanation is shown
+            </label>
+
+
             <div class = "themeContainer" >
                 <h4>Theme</h4>
                 <label style="visibility: hidden; height: 1px;">Preset
