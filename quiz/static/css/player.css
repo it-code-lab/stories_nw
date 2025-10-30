@@ -373,7 +373,8 @@ body.player {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1rem;
+  padding-left: 1rem ;
+  padding-right: 1rem ;
   font-size: 0.85rem;
   z-index: 10; /* ensures it stays above background/video */
   backdrop-filter: blur(8px);
@@ -392,8 +393,8 @@ body.player {
 
 .timer.ring {
   position: relative;
-  width: 60px;
-  height: 60px
+  width: 40px;
+  height: 40px
 }
 
 .ring-svg {
@@ -416,9 +417,9 @@ body.player {
 
 .time-num {
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: 0.8rem;
   position: fixed;
-  left: 40px;
+  left: 30px;
 }
 
 .timer.bar {
