@@ -21,9 +21,9 @@ const els = {
   timeNumB: document.getElementById('timeNumBar'),
 
   //DND
-  // prevBtn: document.getElementById('prevBtn'),
-  // nextBtn: document.getElementById('nextBtn'),
-  // restartBtn: document.getElementById('restartBtn'),
+  prevBtn: document.getElementById('prevBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+  restartBtn: document.getElementById('restartBtn'),
 
   expl: document.getElementById('explanation'),
   // fsBtn:   document.getElementById('fsBtn'),
@@ -478,9 +478,9 @@ function reveal(q) {
 // ---------- Controls / Hotkeys ----------
 function bindControls() {
   //DND
-  // els.nextBtn.onclick = () => next();
-  // els.prevBtn.onclick = () => prev();
-  // els.restartBtn.onclick = () => restart();
+  els.nextBtn.onclick = () => next();
+  els.prevBtn.onclick = () => prev();
+  els.restartBtn.onclick = () => restart();
 
 
   //DND
@@ -511,10 +511,13 @@ function toggleFullscreen() {
 }
 function setLandscape() {
   document.body.classList.remove('portrait');
+  document.body.classList.add('landscape');
+  
   els.landBtn.classList.remove('ghost');
   els.portBtn.classList.add('ghost');
 }
 function setPortrait() {
+  document.body.classList.remove('landscape');
   document.body.classList.add('portrait');
   els.portBtn.classList.remove('ghost');
   els.landBtn.classList.add('ghost');
