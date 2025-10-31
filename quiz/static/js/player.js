@@ -34,19 +34,19 @@ const els = {
 
 const soundGate = document.getElementById('soundGate');
 const enableSoundBtn = document.getElementById('enableSoundBtn');
-const bgPlayPause=document.getElementById('bgPlayPause'), bgMute=document.getElementById('bgMute'), musicPlayPause=document.getElementById('musicPlayPause');
+const bgPlayPause = document.getElementById('bgPlayPause'), bgMute = document.getElementById('bgMute'), musicPlayPause = document.getElementById('musicPlayPause');
 
-bgPlayPause.onclick = ()=>{
-  if (bgVideo.paused){ bgVideo.play(); bgPlayPause.textContent='Pause BG'; }
-  else { bgVideo.pause(); bgPlayPause.textContent='Play BG'; }
+bgPlayPause.onclick = () => {
+  if (bgVideo.paused) { bgVideo.play(); bgPlayPause.textContent = 'Pause BG'; }
+  else { bgVideo.pause(); bgPlayPause.textContent = 'Play BG'; }
 };
-bgMute.onclick = ()=>{
+bgMute.onclick = () => {
   bgVideo.muted = !bgVideo.muted;
   bgMute.textContent = bgVideo.muted ? 'Unmute BG' : 'Mute BG';
 };
-musicPlayPause.onclick = ()=>{
-  if (bgMusic.paused){ bgMusic.play(); musicPlayPause.textContent='Pause Music'; }
-  else { bgMusic.pause(); musicPlayPause.textContent='Play Music'; }
+musicPlayPause.onclick = () => {
+  if (bgMusic.paused) { bgMusic.play(); musicPlayPause.textContent = 'Pause Music'; }
+  else { bgMusic.pause(); musicPlayPause.textContent = 'Play Music'; }
 };
 
 
@@ -58,8 +58,8 @@ let quiz = null, idx = 0, cancelTimer = null, revealed = false, lastVol = null;
 
 init();
 
-function showSoundGate()  { soundGate?.classList.remove('hidden'); }
-function hideSoundGate()  { soundGate?.classList.add('hidden'); }
+function showSoundGate() { soundGate?.classList.remove('hidden'); }
+function hideSoundGate() { soundGate?.classList.add('hidden'); }
 
 let musicStarted = false;
 
@@ -78,12 +78,32 @@ async function playBgMusic() {
   }
 }
 
+function removeAnimClasses(el) {
+  if (!el) return;
+  ['anim-fade', 'anim-slide', 'anim-zoom', 'idle-breath', 'idle-shake', 'idle-float']
+    .forEach(c => el.classList.remove(c));
+}
+
+function applyIdleTo(el, idle, intensity = 3) {
+  if (!el || idle === 'none') return;
+  removeAnimClasses(el);  // ensure no leftover entrance class
+  el.classList.add(`idle-${idle}`);
+  const speed = Math.max(0.5, 6 / (intensity / 3)); // higher intensity → faster
+  el.style.animationDuration = `${speed}s`;
+}
+
+function clearIdle(el) {
+  if (!el) return;
+  ['idle-breath', 'idle-shake', 'idle-float'].forEach(c => el.classList.remove(c));
+  el.style.animationDuration = '';
+}
+
 // Call this if you want to pause/resume around TTS instead of ducking
-function pauseBgMusic() { try { els.bgMusic.pause(); } catch {} }
+function pauseBgMusic() { try { els.bgMusic.pause(); } catch { } }
 async function resumeBgMusic() {
   if (!quiz?.theme?.music?.src) return;
   await waitForAudioUnlock();
-  try { await els.bgMusic.play(); musicStarted = true; } catch {}
+  try { await els.bgMusic.play(); musicStarted = true; } catch { }
 }
 
 function enableSound() {
@@ -189,14 +209,17 @@ async function init() {
     quiz = await res.json();
   } catch (e) { console.error(e); setStatus('Load failed'); return; }
 
-  quiz.autoAdvance = quiz.autoAdvance || { enabled:false, delaySec:3, afterExplanation:true };
+  quiz.autoAdvance = quiz.autoAdvance || { enabled: false, delaySec: 3, afterExplanation: true };
   if (typeof quiz.autoAdvance.enabled !== 'boolean') quiz.autoAdvance.enabled = false;
   if (!Number.isFinite(quiz.autoAdvance.delaySec)) quiz.autoAdvance.delaySec = 3;
   if (typeof quiz.autoAdvance.afterExplanation !== 'boolean') quiz.autoAdvance.afterExplanation = true;
 
   hydrateTheme();
   bindControls();
+  await waitForAudioUnlock();
   goTo(0);
+
+
 }
 
 function setStatus(msg) { if (els.qText) els.qText.textContent = msg; }
@@ -259,11 +282,12 @@ function showIf(el, ok) { ok ? el.classList.remove('hidden') : el.classList.add(
 // ---------- Navigation ----------
 function goTo(n) {
   // cancel any pending auto-advance
-  if (autoAdvanceTO){ clearTimeout(autoAdvanceTO); autoAdvanceTO = null; }
+  if (autoAdvanceTO) { clearTimeout(autoAdvanceTO); autoAdvanceTO = null; }
 
   idx = Math.max(0, Math.min(n, quiz.questions.length - 1));
   revealed = false;
 
+  // els.card.classList.add('hidden-vis');
   els.card.classList.remove('fade-in');
   els.card.classList.add('fade-out');
 
@@ -313,14 +337,15 @@ async function renderQuestion(q) {
   setCSS('--oimg-pos', q.optImgPos || q.imgPos || 'center');
 
   els.imgs.innerHTML = '';
-
+  if (idx == 0) {
+    //pause for 3 seconds on first question to let user get ready
+    await new Promise(res => setTimeout(res, 3000));
+  }
   await speakQuestion(q.text);
 
   renderImages(q.images || []);
   renderOptions(q);
 
-  // Animations: entrance + idle
-  applyAnimations();
 
   // fit layout now, and again when any question images finish loading
   layoutOptionsFit();
@@ -330,7 +355,8 @@ async function renderQuestion(q) {
   });
 
   // Timer
-  startTimer(q);
+  //startTimer(q);
+  runEntranceSequence(q);
 }
 
 function renderImages(arr) {
@@ -355,7 +381,9 @@ function renderOptions(q) {
 
     opts.forEach((opt, i) => {
       const b = document.createElement('button');
-      b.className = 'opt';
+      b.className = 'opt prehidden';
+      // b.className = 'opt hidden-vis';
+      //b.style.visibility = 'hidden';
 
       // entrance class set later in applyAnimations()
 
@@ -389,57 +417,109 @@ function renderOptions(q) {
   }
 }
 
+//idle-only applicator
 function applyAnimations() {
-  // remove previous
-  ['anim-fade', 'anim-slide', 'anim-zoom', 'idle-breath', 'idle-shake', 'idle-float'].forEach(c => {
-    els.qText.classList.remove(c);
-    els.opts.classList.remove(c);
-  });
-  els.imgs.querySelectorAll('img').forEach(im => {
-    ['anim-fade', 'anim-slide', 'anim-zoom', 'idle-breath', 'idle-shake', 'idle-float'].forEach(c => im.classList.remove(c));
-  });
-
-  els.opts.querySelectorAll('button').forEach(im => {
-    ['anim-fade', 'anim-slide', 'anim-zoom', 'idle-breath', 'idle-shake', 'idle-float'].forEach(c => im.classList.remove(c));
-    });
-
   const a = quiz.theme?.animations || {};
-  const qEnt = a.question || 'fade';
-  const oEnt = a.options || 'fade';
   const idle = a.idle || 'none';
   const intensity = a.idleIntensity || 3;
 
-  // entrance
-  els.qText.classList.add(`anim-${qEnt}`);
-  // add to each .opt
+  // question
+  clearIdle(els.qText);
+  applyIdleTo(els.qText, idle, intensity);
+
+  // each option
   els.opts.querySelectorAll('.opt').forEach(o => {
-    o.classList.add(`anim-${oEnt}`);
+    clearIdle(o);
+    applyIdleTo(o, idle, intensity);
   });
 
-  // idle motion (question, options container, images)
-  if (idle !== 'none') {
-    const speed = Math.max(0.5, 6 / (intensity / 3)); // higher intensity → faster loop
+  // each question image
+  els.imgs.querySelectorAll('img').forEach(im => {
+    clearIdle(im);
+    applyIdleTo(im, idle, intensity);
+  });
+}
 
-    els.qText.classList.add(`idle-${idle}`);
-    els.qText.style.animationDuration = `${speed}s`;
+function runEntranceSequence(q) {
+  const a = quiz.theme?.animations || {};
+  const qEnt   = a.question || 'fade';
+  const imgEnt = a.images || a.question || 'fade';
+  const oEnt   = a.options || 'fade';
+  const idle   = a.idle || 'none';
+  const intensity = a.idleIntensity || 3;
+  const stagger = !!a.stagger;
+  const step    = isFinite(a.staggerStep) ? a.staggerStep : 0.10;
 
-    // els.opts.classList.add(`idle-${idle}`);
-    // els.opts.style.animationDuration = `${speed}s`;
+  // Reset visibility + classes
+  [els.qText, els.imgs, els.opts].forEach(el => {
+    el.style.visibility = 'hidden';
+    removeAnimClasses(el);
+  });
+  els.imgs.querySelectorAll('img').forEach(im => {
+    removeAnimClasses(im);
+    im.classList.add('prehidden');   // ⟵ start hidden
+  });
+  els.opts.querySelectorAll('.opt').forEach(o => {
+    removeAnimClasses(o);
+    o.classList.add('prehidden');    // ⟵ start hidden
+  });
 
-    els.opts.querySelectorAll('button').forEach(im => {
-      im.classList.add(`idle-${idle}`);
-      im.style.animationDuration = `${speed}s`;
+  // 1) Question
+  els.qText.classList.add('prehidden');
+  els.qText.style.visibility = 'visible';
+
+  // apply entrance on next frame to ensure prehidden takes effect first
+  requestAnimationFrame(() => {
+    els.qText.classList.remove('prehidden');
+    els.qText.classList.add(`anim-${qEnt}`);
+    els.qText.addEventListener('animationend', onQDone, { once: true });
+  });
+
+  function onQDone() {
+    applyIdleTo(els.qText, idle, intensity);
+    revealImages();
+  }
+
+  // 2) Images (with stagger)
+  function revealImages() {
+    const images = [...els.imgs.querySelectorAll('img')];
+    if (!images.length) return revealOptions();
+
+    els.imgs.style.visibility = 'visible';
+
+    requestAnimationFrame(() => {
+      images.forEach((im, i) => {
+        im.classList.remove('prehidden');
+        im.classList.add(`anim-${imgEnt}`);
+        if (stagger) im.style.animationDelay = `${i * step}s`;
+        im.addEventListener('animationend', () => applyIdleTo(im, idle, intensity), { once: true });
+      });
+
+      const last = images[images.length - 1];
+      last.addEventListener('animationend', revealOptions, { once: true });
     });
+  }
 
-    
-    
-    els.imgs.querySelectorAll('img').forEach(im => {
-      im.classList.add(`idle-${idle}`);
-      im.style.animationDuration = `${speed}s`;
+  // 3) Options (with stagger)
+  function revealOptions() {
+    const opts = [...els.opts.querySelectorAll('.opt')];
+    els.opts.style.visibility = 'visible';
+
+    if (!opts.length) { startTimer(q); return; }
+
+    let ended = 0;
+    requestAnimationFrame(() => {
+      opts.forEach((o, i) => {
+        o.classList.remove('prehidden');              // ⟵ prevents flash
+        o.classList.add(`anim-${oEnt}`);
+        if (stagger) o.style.animationDelay = `${i * step}s`;
+
+        o.addEventListener('animationend', () => {
+          applyIdleTo(o, idle, intensity);
+          if (++ended === opts.length) startTimer(q);
+        }, { once: true });
+      });
     });
-  } else {
-    els.qText.style.animationDuration = '';
-    els.opts.style.animationDuration = '';
   }
 }
 
@@ -548,14 +628,14 @@ function reveal(q) {
   if (idx >= quiz.questions.length - 1) return;
 
   // Clear any prior
-  if (autoAdvanceTO){ clearTimeout(autoAdvanceTO); autoAdvanceTO = null; }
+  if (autoAdvanceTO) { clearTimeout(autoAdvanceTO); autoAdvanceTO = null; }
 
-  autoAdvanceTO = setTimeout(()=>{
+  autoAdvanceTO = setTimeout(() => {
     autoAdvanceTO = null;
     next(); // uses your existing navigation
   }, Math.max(0, (baseDelay + extraBuffer) * 1000));
 
-    // restore music on next question
+  // restore music on next question
 }
 
 // ---------- Controls / Hotkeys ----------
@@ -582,9 +662,9 @@ function bindControls() {
   enableSoundBtn?.addEventListener('click', enableSound);
 
   enableSoundBtn?.addEventListener('click', () => {
-  // when user enables sound, start (or retry) bg music
-  playBgMusic();
-});
+    // when user enables sound, start (or retry) bg music
+    playBgMusic();
+  });
 
 }
 
@@ -595,7 +675,7 @@ function toggleFullscreen() {
 function setLandscape() {
   document.body.classList.remove('portrait');
   document.body.classList.add('landscape');
-  
+
   els.landBtn.classList.remove('ghost');
   els.portBtn.classList.add('ghost');
 }
@@ -626,6 +706,7 @@ goTo = function (...args) {
 };
 
 async function speakQuestion(text) {
+  //await waitForAudioUnlock();
   if (!text) return;
   if (!quiz?.qsTTS || quiz.qsTTS.toLowerCase() !== 'y') return;
 
@@ -634,11 +715,11 @@ async function speakQuestion(text) {
 
   const lang = quiz.language || 'en'; // fallback to English if missing
 
-    let prevVol = null;
-    if (els.bgMusic) {
-      prevVol = els.bgMusic.volume;
-      els.bgMusic.volume = clamp01((prevVol ?? 0.35) * 0.45);
-    }
+  let prevVol = null;
+  if (els.bgMusic) {
+    prevVol = els.bgMusic.volume;
+    els.bgMusic.volume = clamp01((prevVol ?? 0.35) * 0.45);
+  }
 
   try {
     const res = await fetch('/get_audio', {
@@ -668,12 +749,12 @@ async function speakQuestion(text) {
         resolve();
       };
       // safety: resolve after 30s if no end fires
-      setTimeout(()=>{ try{audio.pause();}catch{} resolve(); }, 30000);
+      setTimeout(() => { try { audio.pause(); } catch { } resolve(); }, 30000);
     });
 
   } catch (err) {
     console.error('TTS Error:', err);
-  }finally {
+  } finally {
     // restore music after TTS
     if (prevVol != null) els.bgMusic.volume = prevVol;
     // if paused instead of ducked: await resumeBgMusic();

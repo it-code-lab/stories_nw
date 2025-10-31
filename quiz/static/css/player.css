@@ -180,7 +180,7 @@ body.player {
 }
 
 .portrait .question{
-  font-size: calc(0.9rem * var(--q-scale, 1));
+  font-size: calc(0.8rem * var(--q-scale, 1));
 }
 
 /* .question {
@@ -358,7 +358,7 @@ body.player {
 }
 
 .portrait .opt-text{
-  font-size: calc(0.6rem * var(--opt-scale, 1));
+  font-size: calc(0.7rem * var(--opt-scale, 1));
 }
 
 /* ---------- Footer ---------- */
@@ -452,7 +452,7 @@ body.player {
 
 
 .hidden { display: none !important; }
-
+.hidden-vis { visibility: hidden !important; }
 .explanation {
   margin-top: .8rem;
   padding: .8rem 1rem;
@@ -651,3 +651,27 @@ body.player {
 }
 .sg-title{ font-weight: 800; font-size: 1.25rem; margin-bottom: .35rem; }
 .sg-sub{ opacity: .8; margin-bottom: .9rem; }
+
+.question,
+.images img,
+.options .opt {
+  will-change: transform, opacity;
+}
+
+/* When we're about to entrance-reveal an element, we'll add this class in JS. */
+.prehidden {
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+}
+
+/* Ensure all entrance anims hold start and end states */
+.anim-fade, .anim-slide, .anim-zoom {
+  animation-fill-mode: both; /* stay at keyframe 0% before start, at 100% after end */
+}
+
+/* (example) keyframes should begin from opacity:0 so prehidden matches */
+@keyframes fadeInUp {
+  0%   { opacity: 0; transform: translateY(6px) scale(.98); }
+  100% { opacity: 1; transform: none; }
+}
+.anim-fade { animation: fadeInUp .45s ease; }

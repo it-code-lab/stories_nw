@@ -527,7 +527,7 @@ function addQuestion(type) {
         difficulty: 'easy',
         text: '',
         images: [],
-        timerSec: state.quiz.defaults.timerSec,
+        timerSec: '',
         explanation: ''
     };
     if (type === 'mcq') {
@@ -735,9 +735,16 @@ singleAnswer.addEventListener('input', () => {
 // Editor Apply / Duplicate / Delete
 applyBtn.onclick = () => {
     const q = currentQ(); if (!q) return;
+
+    if (correctIdx.value === '') {
+        alert('Please select the correct answer index for the MCQ.');
+        return;
+    }
+
     q.type = qType.value;
     q.difficulty = qDiff.value;
-    q.timerSec = parseInt(qTimer.value || state.quiz.defaults.timerSec, 10);
+    // q.timerSec = parseInt(qTimer.value || state.quiz.defaults.timerSec, 10);
+    q.timerSec = qTimer.value ? Math.max(1, q.timerSec) : '';
     q.text = (qText.value || '').trim();
     q.explanation = (qExplain.value || '').trim();
 
