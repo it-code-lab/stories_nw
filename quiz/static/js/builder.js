@@ -172,7 +172,14 @@ const THEME_PRESETS = {
     timerStyle: 'ring',
     animations:{ question:'fade', options:'fade', idle:'breath', idleIntensity:3, stagger:true, staggerStep:.10 }
 
-  }
+  },
+    BhaktiSagar1: {
+    primary:'#00e5ff', accent:'#ff3d7f', fontFamily:'Poppins, sans-serif',
+    background:{ type:'video', src:'/quiz/static/backgrounds/A.mp4', overlay:{color:'#000000',opacity:0.5}},
+    music:{ src:'/quiz/static/music/A.mp3', volume:0.05, duckOnReveal:true},
+    timerStyle: 'bar',
+    animations:{ question:'slide', options:'fade', idle:'float', idleIntensity:10, stagger:true, staggerStep:.5 }
+},
 };
 
 const fontPreview = $('fontPreview');
