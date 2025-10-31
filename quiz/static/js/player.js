@@ -336,7 +336,21 @@ async function renderQuestion(q) {
   setCSS('--oimg-fit', q.optImgFit || q.imgFit || 'cover');
   setCSS('--oimg-pos', q.optImgPos || q.imgPos || 'center');
 
+  // 🔴 IMPORTANT: clear/hide previous UI BEFORE any TTS so nothing from the
+  // previous question lingers while narration plays
   els.imgs.innerHTML = '';
+  els.opts.innerHTML = '';
+
+  // keep containers hidden until entrance sequence runs
+  els.imgs.style.visibility = 'hidden';
+  els.opts.style.visibility = 'hidden';
+
+  // also remove any leftover animation classes
+  removeAnimClasses(els.qText);
+  
+  els.imgs.querySelectorAll('img').forEach(removeAnimClasses);
+  els.opts.querySelectorAll('.opt').forEach(removeAnimClasses);
+
   if (idx == 0) {
     //pause for 3 seconds on first question to let user get ready
     await new Promise(res => setTimeout(res, 3000));
