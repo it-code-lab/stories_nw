@@ -485,8 +485,14 @@ function runEntranceSequence(q) {
   // apply entrance on next frame to ensure prehidden takes effect first
   requestAnimationFrame(() => {
     els.qText.classList.remove('prehidden');
-    els.qText.classList.add(`anim-${qEnt}`);
-    els.qText.addEventListener('animationend', onQDone, { once: true });
+    onQDone();
+
+    // if (qEnt === 'none') {
+    //   onQDone();
+    //   return;
+    // }
+    // els.qText.classList.add(`anim-${qEnt}`);
+    // els.qText.addEventListener('animationend', onQDone, { once: true });
   });
 
   function onQDone() {
