@@ -531,8 +531,8 @@ function addQuestion(type) {
         explanation: ''
     };
     if (type === 'mcq') {
-        base.options = [{ text: '' }, { text: '' }]; // start with 2
-        base.correctIndex = 0;
+        base.options = [{ text: '' }, { text: '' },{ text: '' }, { text: '' }]; // start with 4
+        base.correctIndex = '';
     } else {
         base.answer = '';
     }
@@ -597,7 +597,7 @@ function openEditor(i) {
     if (q.type === 'mcq') {
         show(mcqBlock); hide(singleBlock);
         renderOptionsEditor(q);
-        correctIdx.value = String(q.correctIndex ?? 0);
+        correctIdx.value = String(q.correctIndex ?? '');
     } else {
         hide(mcqBlock); show(singleBlock);
         singleAnswer.value = q.answer || '';
@@ -721,7 +721,7 @@ remOptBtn.onclick = () => {
 
 correctIdx.addEventListener('change', () => {
     const q = currentQ(); if (!q) return;
-    q.correctIndex = parseInt(correctIdx.value, 10) || 0;
+    q.correctIndex = parseInt(correctIdx.value, 10) || '';
     updatePreview(); autosave();
 });
 
