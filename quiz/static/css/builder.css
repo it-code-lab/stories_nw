@@ -297,3 +297,9 @@ textarea{resize:vertical}
   font-size:.85rem;
   opacity:.7;
 }
+
+#qImgGrid{
+    min-height: 50px;
+    min-width: 50px;
+    background-color: #00E5FF;
+}

@@ -312,6 +312,8 @@ async function renderQuestion(q) {
   setCSS('--oimg-fit', q.optImgFit || q.imgFit || 'cover');
   setCSS('--oimg-pos', q.optImgPos || q.imgPos || 'center');
 
+  els.imgs.innerHTML = '';
+
   await speakQuestion(q.text);
 
   renderImages(q.images || []);
@@ -397,6 +399,10 @@ function applyAnimations() {
     ['anim-fade', 'anim-slide', 'anim-zoom', 'idle-breath', 'idle-shake', 'idle-float'].forEach(c => im.classList.remove(c));
   });
 
+  els.opts.querySelectorAll('button').forEach(im => {
+    ['anim-fade', 'anim-slide', 'anim-zoom', 'idle-breath', 'idle-shake', 'idle-float'].forEach(c => im.classList.remove(c));
+    });
+
   const a = quiz.theme?.animations || {};
   const qEnt = a.question || 'fade';
   const oEnt = a.options || 'fade';
@@ -413,10 +419,20 @@ function applyAnimations() {
   // idle motion (question, options container, images)
   if (idle !== 'none') {
     const speed = Math.max(0.5, 6 / (intensity / 3)); // higher intensity → faster loop
+
     els.qText.classList.add(`idle-${idle}`);
-    els.opts.classList.add(`idle-${idle}`);
     els.qText.style.animationDuration = `${speed}s`;
-    els.opts.style.animationDuration = `${speed}s`;
+
+    // els.opts.classList.add(`idle-${idle}`);
+    // els.opts.style.animationDuration = `${speed}s`;
+
+    els.opts.querySelectorAll('button').forEach(im => {
+      im.classList.add(`idle-${idle}`);
+      im.style.animationDuration = `${speed}s`;
+    });
+
+    
+    
     els.imgs.querySelectorAll('img').forEach(im => {
       im.classList.add(`idle-${idle}`);
       im.style.animationDuration = `${speed}s`;
