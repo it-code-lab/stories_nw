@@ -403,7 +403,7 @@
     <br>
     <form id="splitTextForm">
         <h2 style="background-color:lightgreen;">4.Split Content into Sentences</h2>
-        <div class="infoBox" >Used for splitting Hindi paragraph into sentenses to be used in Hindi Caption Builder</div>
+        <div class="infoBox">Used for splitting Hindi paragraph into sentenses to be used in Hindi Caption Builder</div>
         <label>Enter Text (sentences separated by "|" or "?"):</label>
         <textarea id="splitInput" rows="8" placeholder="Enter your text here..."></textarea>
 
@@ -959,7 +959,37 @@
 
         <button type="submit">Upload Videos to Youtube</button>
     </form>
+    <br>
 
+    <form id="extractAudioForm">
+        <h2 style="background-color:#ffe4b5;">9. Extract Audio from Video</h2>
+
+        <label>Upload a video file (or leave empty and provide a path):</label>
+        <input type="file" name="file" accept="video/*">
+
+        <label>…or use existing project path (e.g. /edit_vid_input/bg_video.mp4 or /background_videos/…):</label>
+        <input type="text" name="video" placeholder="/edit_vid_input/bg_video.mp4" value="/edit_vid_input/video.mp4">
+
+        <label>Output format:</label>
+        <select name="format">
+            <option value="wav" selected>wav (44100 Hz, stereo)</option>
+            <option value="mp3">mp3 (192 kbps)</option>
+            <option value="m4a">m4a (AAC 192 kbps)</option>
+        </select>
+
+        <label>Audio track index (0-based):</label>
+        <input type="number" name="track" value="0" min="0">
+
+        <button type="submit">Extract Audio</button>
+
+        <div class="infoBox">
+            If neither a file nor a path is provided, the server will try <code>edit_vid_input/bg_video.mp4</code>.
+            Result is saved as <code>extracted_audio.*</code> at project root and copied to
+            <code>edit_vid_audio/</code>.
+        </div>
+
+        <div id="extractAudioResult" style="margin-top:10px;"></div>
+    </form>
 
     <br>
 
@@ -1043,7 +1073,7 @@
     <form id="multiplyVideo">
         <h2>Multiply Video/Audio</h2>
         <div> To be used to repeat the video/audio by a factor.
-            <br><br>Place the input mp4/mp3 files in edit_vid_input folder. Output files will be created in
+            <br><br>Place the input video/audio files in edit_vid_input folder. Output files will be created in
             edit_vid_output. E.g. enter 10 if the video is to be made 10 times long
         </div>
         <br>
@@ -2128,6 +2158,47 @@ ${JSON.stringify(meta, null, 2)}
                 fetchAudioDuration()
             }
         }    
+    </script>
+
+    <script>
+    document.getElementById('extractAudioForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+
+    const res = await fetch('/extract_audio', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    const box = document.getElementById('extractAudioResult');
+    box.innerHTML = '';
+    if (!data.ok) {
+        box.innerHTML = `<div class="infoBox" style="background:#ffe5e5;border:1px solid #f5bcbc;color:#900;">
+        ❌ ${data.error || 'Failed'}<br>${(data.detail || '')}</div>`;
+        return;
+    }
+
+    const link = document.createElement('a');
+    link.href = data.download;
+    link.textContent = `Download ${data.format.toUpperCase()} (${data.duration_sec ?? '—'}s)`;
+    link.target = '_blank';
+
+    const audio = document.createElement('audio');
+    audio.controls = true;
+    audio.src = data.download;
+    audio.style.display = 'block';
+    audio.style.marginTop = '10px';
+
+    box.appendChild(link);
+    box.appendChild(audio);
+
+    // Optional: show where we also saved it
+    if (data.also_saved_in_edit_vid_audio) {
+        const p = document.createElement('div');
+        p.style.marginTop = '6px';
+        p.textContent = `Also saved to: ${data.also_saved_in_edit_vid_audio}`;
+        box.appendChild(p);
+    }
+    });
     </script>
 </body>
 

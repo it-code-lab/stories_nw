@@ -20,7 +20,15 @@ from auto_mix import mix_files
 from quiz import quiz_bp
 from flask import send_file
 import tempfile
-from gemini_pool import GeminiPool
+
+from google import genai
+from google.genai import types
+import os
+from media_audio import (
+    extract_audio_from_video,
+    resolve_input_video,
+)
+
 
 app = Flask(__name__, template_folder='templates')
 app.register_blueprint(quiz_bp)  # all quiz endpoints live under /api/quiz
@@ -36,15 +44,81 @@ AUDIO_PATH = BASE_DIR / "audio.wav"   # your file is beside server.py
 DEFAULT_TEXT_MODEL  = os.getenv("GEMINI_DEFAULT_TEXT_MODEL",  "gemini-2.0-flash")
 DEFAULT_IMAGE_MODEL = os.getenv("GEMINI_DEFAULT_IMAGE_MODEL", "gemini-2.5-flash-image")
 
+
 # Optional: central place to tweak RPM/paths
 GEM_STATE = str(BASE_DIR / ".gemini_pool_state.json")
 
-gemini_pool = GeminiPool(
-    api_keys=None,          # reads GEMINI_API_KEYS from env
-    per_key_rpm=25,         # tune to your safe RPM per key
-    state_path=GEM_STATE,   # persist key usage across restarts
-    autosave_every=3
-)
+gemini_pool = None
+
+@app.post("/extract_audio")
+def extract_audio_route():
+    """
+    Extract audio from a video.
+    Form fields (multipart/form-data):
+      - file: (optional) uploaded video file
+      - video: (optional) project path like '/edit_vid_input/bg_video.mp4'
+      - format: wav|mp3|m4a (default wav)
+      - track: audio stream index, default 0
+    """
+    try:
+        base_dir = Path(__file__).resolve().parent
+        uploaded = request.files.get("file")
+        video_url = (request.form.get("video") or "").strip()
+        fmt = (request.form.get("format") or "wav").lower()
+        track = request.form.get("track")
+
+        try:
+            in_path = resolve_input_video(
+                base_dir=base_dir,
+                uploaded_temp_dir=base_dir / "tmp_upload_video",
+                uploaded_file=uploaded,
+                urlish_path=video_url if video_url else None,
+                fallback_rel="edit_vid_input/bg_video.mp4",
+            )
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 400
+
+        result = extract_audio_from_video(
+            base_dir=base_dir,
+            input_path=in_path,
+            fmt=fmt,
+            track=track,
+            root_output_name="edit_vid_output"
+        )
+
+        if not result.ok:
+            return jsonify({
+                "ok": False,
+                "error": result.error or "Failed",
+                "detail": result.detail,
+            }), 500
+
+        # Your app already serves downloads via /video/<filename> from project root,
+        # so we only need to return relative web paths for the client.
+        download_rel = f"/video/{result.output_path.name}" if result.output_path else None
+        also_rel = f"/video/edit_vid_audio/{result.output_path.name}" if result.copy_path else None
+
+        return jsonify({
+            "ok": True,
+            "input": result.input_name,
+            "format": result.fmt,
+            "track": result.track,
+            "duration_sec": result.duration_sec,
+            "download": download_rel,
+            "also_saved_in_edit_vid_audio": also_rel,
+        })
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+    
+
+
+# gemini_pool = GeminiPool(
+#     api_keys=None,          # reads GEMINI_API_KEYS from env
+#     per_key_rpm=25,         # tune to your safe RPM per key
+#     state_path=GEM_STATE,   # persist key usage across restarts
+#     autosave_every=3
+# )
 
 # =========================
 # Minimal, defaulted routes
@@ -118,6 +192,16 @@ def ai_image():
 def ai_keys():
     """Quick peek at rotation state (helpful in logs/dashboards)."""
     return jsonify({"ok": True, "stats": gemini_pool.stats()})
+
+@app.get("/ai/models")
+def ai_models():
+    try:
+        models = gemini_pool.list_models(api_version="v1beta")
+        return jsonify({"ok": True, "models": models})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 
 
 @app.post("/mix_vocal_music")
@@ -1407,4 +1491,15 @@ def clear_folder(folder_path, extensions=None):
 
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)
+
+    # DND - Working but not in use
+    # from gemini_pool import GeminiPool
+    # GEM_STATE = str((Path(__file__).resolve().parent / ".gemini_pool_state.json"))
+    # gemini_pool = GeminiPool(
+    #     api_keys=None,
+    #     per_key_rpm=25,
+    #     state_path=GEM_STATE,
+    #     autosave_every=3,
+    # )   
+    #  
     app.run(debug=True, host='0.0.0.0', port=5000)  # Use host='

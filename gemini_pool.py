@@ -1,3 +1,4 @@
+#WORKING BUT NOT IN USE - Free tier does not allow image creation
 # gemini_pool.py
 from __future__ import annotations
 import os, json, time, random, threading
@@ -34,10 +35,18 @@ class KeyState:
     _client: Optional[genai.Client] = field(default=None, repr=False, compare=False)
 
     def to_dict(self) -> Dict[str, Any]:
-        d = asdict(self)
-        d["disabled_until"] = _dt_to_iso(self.disabled_until)
-        d["_client"] = None
-        return d
+        return {
+            "api_key": self.api_key,
+            "max_rpm": self.max_rpm,
+            "window_secs": self.window_secs,
+            "recent_timestamps": list(self.recent_timestamps),
+            "disabled_until": _dt_to_iso(self.disabled_until),
+            "day_key": self.day_key,
+            "requests_today": self.requests_today,
+            "last_error": self.last_error,
+            # NOTE: DO NOT serialize _client
+        }
+
 
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> "KeyState":
@@ -141,6 +150,39 @@ class GeminiPool:
         # initial save (so file exists)
         self._save_state()
 
+    def _state_snapshot(self) -> dict:
+        # Store a dict keyed by api_key for easy merge on load
+        return { ks.api_key: ks.to_dict() for ks in self.keys }
+
+    def _save_state(self):
+        if not self.state_path:
+            return
+        tmp = self.state_path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(self._state_snapshot(), f, ensure_ascii=False)
+        os.replace(tmp, self.state_path)
+
+    def _load_state(self):
+        if not self.state_path or not os.path.exists(self.state_path):
+            return
+        with open(self.state_path, "r", encoding="utf-8") as f:
+            data = json.load(f)  # dict keyed by api_key
+        by_key = { ks.api_key: ks for ks in self.keys }
+        for api_key, rec in data.items():
+            ks = by_key.get(api_key)
+            if not ks:
+                continue
+            restored = KeyState.from_dict(rec)
+            # copy counters/state without replacing the live client/lock
+            ks.max_rpm          = restored.max_rpm
+            ks.window_secs      = restored.window_secs
+            ks.recent_timestamps= restored.recent_timestamps
+            ks.disabled_until   = restored.disabled_until
+            ks.day_key          = restored.day_key
+            ks.requests_today   = restored.requests_today
+            ks.last_error       = restored.last_error
+
+
     # ---------- Public ----------
     def generate_text(self, prompt: str, *, model: Optional[str] = None,
                       system_instruction: Optional[str] = None,
@@ -173,25 +215,113 @@ class GeminiPool:
         return self._with_key_rotation(call)
 
     def generate_image(self, prompt: str, *, model: Optional[str] = None,
-                       extra: Optional[Dict[str, Any]] = None,
-                       out_path: Optional[str] = None) -> bytes:
+                    extra: Optional[Dict[str, Any]] = None,
+                    out_path: Optional[str] = None) -> bytes:
         model = model or self.default_image_model
+
         def call(client: genai.Client):
-            kwargs = {}
-            if extra: kwargs.update(extra)
-            res = client.models.generate_images(model=model, prompt=prompt, **kwargs)
-            img = res.images[0]
-            data = getattr(img, "data", None) or getattr(img, "image_bytes", None)
-            if not data:
-                b64 = getattr(img, "base64_data", None)
-                if b64:
-                    import base64; data = base64.b64decode(b64)
-            if not data:
-                raise RuntimeError("No image bytes returned.")
-            if out_path:
-                with open(out_path, "wb") as f: f.write(data)
-            return data
+            from google.genai import types as gt
+
+            # Try to extract the api key from the rotated client
+            key = getattr(client, "api_key", None)
+            if not key:
+                key = getattr(client, "_api_key", None)
+            if not key:
+                # Fallback: use first configured key in the pool (always present)
+                key = self.keys[0].api_key  # safe because __init__ validates keys
+
+            is_imagen = model.startswith("imagen-")
+            is_gemini_image = ("-image" in model) and not is_imagen  # e.g., gemini-2.5-flash-image*
+
+            if is_gemini_image:
+                # Gemini image gen uses generate_content + response_modalities=["IMAGE"] on v1beta
+                c2 = genai.Client(
+                    api_key=key,
+                    http_options=gt.HttpOptions(api_version="v1beta"),
+                )
+                cfg = gt.GenerateContentConfig(response_modalities=["IMAGE"])
+                req_kwargs = {}
+                if extra and isinstance(extra, dict):
+                    # Reserved for future (size/quality); keep but don't crash
+                    pass
+
+                resp = c2.models.generate_content(
+                    model=model,
+                    contents=[prompt],
+                    config=cfg,
+                    **req_kwargs
+                )
+
+                # Extract first inline image bytes
+                candidates = getattr(resp, "candidates", []) or []
+                for cand in candidates:
+                    content = getattr(cand, "content", None)
+                    parts = getattr(content, "parts", []) if content else []
+                    for p in parts:
+                        if getattr(p, "inline_data", None):
+                            data = p.inline_data.data
+                            if out_path:
+                                with open(out_path, "wb") as f:
+                                    f.write(data)
+                            return data
+                raise RuntimeError("No image bytes returned from Gemini generate_content().")
+
+            # -------- Imagen path --------
+            # models: imagen-4.0-*-generate-*, imagen-3.0-generate-*, etc.
+            if is_imagen:
+                kwargs = {}
+                if extra: kwargs.update(extra)
+                res = client.models.generate_images(model=model, prompt=prompt, **kwargs)
+
+                img = res.images[0]
+                data = getattr(img, "data", None) or getattr(img, "image_bytes", None)
+                if not data:
+                    b64 = getattr(img, "base64_data", None)
+                    if b64:
+                        import base64
+                        data = base64.b64decode(b64)
+                if not data:
+                    raise RuntimeError("No image bytes returned from Imagen generate_images().")
+                if out_path:
+                    with open(out_path, "wb") as f:
+                        f.write(data)
+                return data
+
+            # -------- Fallback: try Imagen then Gemini (defensive) --------
+            try:
+                res = client.models.generate_images(model=model, prompt=prompt, **(extra or {}))
+                img = res.images[0]
+                data = getattr(img, "data", None) or getattr(img, "image_bytes", None)
+                if not data:
+                    b64 = getattr(img, "base64_data", None)
+                    if b64:
+                        import base64
+                        data = base64.b64decode(b64)
+                if not data:
+                    raise RuntimeError("No image bytes returned.")
+                if out_path:
+                    with open(out_path, "wb") as f:
+                        f.write(data)
+                return data
+            except Exception:
+                c2 = genai.Client(api_key=key, http_options=gt.HttpOptions(api_version="v1beta"))
+                cfg = gt.GenerateContentConfig(response_modalities=["IMAGE"])
+                resp = c2.models.generate_content(model=model, contents=[prompt], config=cfg)
+                candidates = getattr(resp, "candidates", []) or []
+                for cand in candidates:
+                    parts = getattr(getattr(cand, "content", None), "parts", []) or []
+                    for p in parts:
+                        if getattr(p, "inline_data", None):
+                            data = p.inline_data.data
+                            if out_path:
+                                with open(out_path, "wb") as f:
+                                    f.write(data)
+                            return data
+                raise RuntimeError("No image bytes returned (fallback).")
+
+        # Use the pool’s rotation + backoff/retry machinery
         return self._with_key_rotation(call)
+
 
     def stats(self) -> List[Dict[str, Any]]:
         out = []
@@ -205,6 +335,7 @@ class GeminiPool:
                     "last_error": k.last_error,
                     "rpm_window_load": len(k.recent_timestamps),
                     "max_rpm": k.max_rpm,
+                    "key": k.api_key,
                 })
         return out
 
@@ -277,3 +408,24 @@ class GeminiPool:
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2)
         os.replace(tmp, self.state_path)
+
+    def list_models(self, api_version: str = "v1beta"):
+        """
+        Returns a list of model names visible to your current API keys.
+        Uses the pool's normal key-rotation (counts as a request).
+        """
+        from google import genai
+        from google.genai import types as gt
+
+        def _call(_client):
+            # choose the same key again via a new client
+            from google import genai
+            from google.genai import types as gt
+            key = _client._api_key if hasattr(_client, "_api_key") else None
+            if not key:
+                # fallback: just use the current client as-is
+                return [m.name for m in _client.models.list()]
+            c2 = genai.Client(api_key=key, http_options=gt.HttpOptions(api_version=api_version))
+            return [m.name for m in c2.models.list()]
+
+        return self._with_key_rotation(_call)
