@@ -1,4 +1,5 @@
 import shutil
+from time import time
 from flask import Flask, request, jsonify, render_template, send_from_directory, abort
 import subprocess, json, math
 from flask_cors import CORS
@@ -19,6 +20,7 @@ from auto_mix import mix_files
 from quiz import quiz_bp
 from flask import send_file
 import tempfile
+from gemini_pool import GeminiPool
 
 app = Flask(__name__, template_folder='templates')
 app.register_blueprint(quiz_bp)  # all quiz endpoints live under /api/quiz
@@ -27,6 +29,96 @@ CORS(app)
 # Always resolve relative to this file (server.py)
 BASE_DIR = Path(__file__).resolve().parent
 AUDIO_PATH = BASE_DIR / "audio.wav"   # your file is beside server.py
+
+# =========================
+# Defaults (env-overridable)
+# =========================
+DEFAULT_TEXT_MODEL  = os.getenv("GEMINI_DEFAULT_TEXT_MODEL",  "gemini-2.0-flash")
+DEFAULT_IMAGE_MODEL = os.getenv("GEMINI_DEFAULT_IMAGE_MODEL", "gemini-2.5-flash-image")
+
+# Optional: central place to tweak RPM/paths
+GEM_STATE = str(BASE_DIR / ".gemini_pool_state.json")
+
+gemini_pool = GeminiPool(
+    api_keys=None,          # reads GEMINI_API_KEYS from env
+    per_key_rpm=25,         # tune to your safe RPM per key
+    state_path=GEM_STATE,   # persist key usage across restarts
+    autosave_every=3
+)
+
+# =========================
+# Minimal, defaulted routes
+# =========================
+
+@app.post("/ai/text")
+def ai_text():
+    """
+    UI only needs: {"prompt": "..."}.
+    Optional overrides: {"model": "...", "temperature": 0.7, "max_output_tokens": 512}
+    """
+    data = request.get_json(force=True) if request.is_json else {}
+    prompt = (data.get("prompt") or "").strip()
+    if not prompt:
+        return jsonify({"ok": False, "error": "Missing 'prompt'"}), 400
+
+    # Use server defaults unless client overrides
+    model = data.get("model") or DEFAULT_TEXT_MODEL
+    temperature = data.get("temperature")
+    max_tokens  = data.get("max_output_tokens")
+
+    try:
+        text = gemini_pool.generate_text(
+            prompt,
+            model=model,
+            temperature=temperature,
+            max_output_tokens=max_tokens
+        )
+        return jsonify({"ok": True, "model": model, "text": text})
+    except Exception as e:
+        return jsonify({"ok": False, "model": model, "error": str(e)}), 500
+
+
+@app.post("/ai/image")
+def ai_image():
+    """
+    UI only needs: {"prompt": "..."}.
+    Optional overrides: {"model": "..."} and any extras you pass through later.
+    Saves the first image to /edit_vid_input/ and returns a web path for your pipeline.
+    """
+    data = request.get_json(force=True) if request.is_json else {}
+    prompt = (data.get("prompt") or "").strip()
+    if not prompt:
+        return jsonify({"ok": False, "error": "Missing 'prompt'"}), 400
+
+    model = data.get("model") or DEFAULT_IMAGE_MODEL
+
+    try:
+        out_dir = BASE_DIR / "edit_vid_input"
+        out_dir.mkdir(exist_ok=True)
+        out_name = f"gen_{int(__import__('time').time())}.png"
+        out_path = out_dir / out_name
+
+        gemini_pool.generate_image(
+            prompt,
+            model=model,
+            out_path=str(out_path),
+            # extra=data.get("extra")  # keep for future size/quality params
+        )
+
+        return jsonify({
+            "ok": True,
+            "model": model,
+            "image_path": f"/edit_vid_input/{out_name}"  # relative path for your pipeline
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "model": model, "error": str(e)}), 500
+
+
+@app.get("/ai/keys")
+def ai_keys():
+    """Quick peek at rotation state (helpful in logs/dashboards)."""
+    return jsonify({"ok": True, "stats": gemini_pool.stats()})
+
 
 @app.post("/mix_vocal_music")
 def mix_vocal_music_endpoint():
