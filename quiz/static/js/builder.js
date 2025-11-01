@@ -141,233 +141,248 @@ const pv = {
 
 const presetSelect = $('presetSelect');
 const applyPresetBtn = $('applyPresetBtn');
-const savePresetBtn  = $('savePresetBtn');
+const savePresetBtn = $('savePresetBtn');
 
 const THEME_PRESETS = {
-  Neon: {
-    primary:'#00E5FF', accent:'#FF3D7F', fontFamily:'Poppins, sans-serif',
-    background:{ src:'/quiz/static/backgrounds/A.mp4', overlay:{color:'#000000',opacity:.45}},
-    music:{ src:'/quiz/static/music/A.mp3', volume:.35, duckOnReveal:true },
-    timerStyle: 'bar',
-    animations:{ question:'fade', options:'fade', idle:'breath', idleIntensity:3, stagger:true, staggerStep:.10 }
-  },
-  Minimal: {
-    primary:'#FFFFFF', accent:'#00B894', fontFamily:'Inter, ui-sans-serif, system-ui',
-    background:{ src:'/quiz/static/backgrounds/B.mp4', overlay:{color:'#000000',opacity:0.35}},
-    music:{ src:'/quiz/static/music/B.mp3', volume:0.25, duckOnReveal:true},
-    timerStyle: 'bar',
-    animations:{ question:'fade', options:'fade', idle:'breath', idleIntensity:3, stagger:true, staggerStep:.10 }
-},
-  Retro: {
-    primary:'#FFD166', accent:'#EF476F', fontFamily:'Montserrat, Poppins, sans-serif',
-    background:{ src:'/quiz/static/backgrounds/C.mp4', overlay:{color:'#1a0b2e',opacity:0.55}},
-    music:{ src:'/quiz/static/music/C.mp3', volume:0.3, duckOnReveal:true},
-    timerStyle: 'ring',
-    animations:{ question:'fade', options:'fade', idle:'breath', idleIntensity:3, stagger:true, staggerStep:.10 }
-},
-  Paper: {
-    primary:'#222222', accent:'#8C6239', fontFamily:'Merriweather, serif',
-    background:{ src:'/quiz/static/backgrounds/D.mp4', overlay:{color:'#ffffff',opacity:0.25}},
-    music:{ src:'/quiz/static/music/D.mp3', volume:0.25, duckOnReveal:true},
-    timerStyle: 'ring',
-    animations:{ question:'fade', options:'fade', idle:'breath', idleIntensity:3, stagger:true, staggerStep:.10 }
+    Neon: {
+        primary: '#00E5FF', accent: '#FF3D7F', fontFamily: 'Poppins, sans-serif',
+        background: { src: '/quiz/static/backgrounds/A.mp4', overlay: { color: '#000000', opacity: .45 } },
+        music: { src: '/quiz/static/music/A.mp3', volume: .35, duckOnReveal: true },
+        timerStyle: 'bar',
+        animations: { question: 'slide', options: 'slide', idle: 'float', idleIntensity: 10, stagger: true, staggerStep: .5 }
+    },
+    Minimal: {
+        primary: '#FFFFFF', accent: '#00B894', fontFamily: 'Inter, ui-sans-serif, system-ui',
+        background: { src: '/quiz/static/backgrounds/B.mp4', overlay: { color: '#000000', opacity: 0.35 } },
+        music: { src: '/quiz/static/music/B.mp3', volume: 0.25, duckOnReveal: true },
+        timerStyle: 'bar',
+        animations: { question: 'slide', options: 'slide', idle: 'float', idleIntensity: 10, stagger: true, staggerStep: .5 }
+    },
+    Retro: {
+        primary: '#FFD166', accent: '#EF476F', fontFamily: 'Montserrat, Poppins, sans-serif',
+        background: { src: '/quiz/static/backgrounds/C.mp4', overlay: { color: '#1a0b2e', opacity: 0.55 } },
+        music: { src: '/quiz/static/music/C.mp3', volume: 0.3, duckOnReveal: true },
+        timerStyle: 'ring',
+        animations: { question: 'slide', options: 'slide', idle: 'float', idleIntensity: 10, stagger: true, staggerStep: .5 }
+    },
+    Paper: {
+        primary: '#222222', accent: '#8C6239', fontFamily: 'Merriweather, serif',
+        background: { src: '/quiz/static/backgrounds/D.mp4', overlay: { color: '#ffffff', opacity: 0.25 } },
+        music: { src: '/quiz/static/music/D.mp3', volume: 0.25, duckOnReveal: true },
+        timerStyle: 'ring',
+        animations: { question: 'slide', options: 'slide', idle: 'float', idleIntensity: 10, stagger: true, staggerStep: .5 }
 
-  },
+    },
     BhaktiSagar1: {
-    primary:'#00e5ff', accent:'#ff3d7f', fontFamily:'Poppins, sans-serif',
-    background:{ type:'video', src:'/quiz/static/backgrounds/A.mp4', overlay:{color:'#000000',opacity:0.5}},
-    music:{ src:'/quiz/static/music/A.mp3', volume:0.02, duckOnReveal:true},
-    timerStyle: 'bar',
-    animations:{ question:'slide', options:'fade', idle:'float', idleIntensity:10, stagger:true, staggerStep:.5 }
-},
+        primary: '#00e5ff', accent: '#00000099', fontFamily: 'Poppins, sans-serif',
+        background: { type: 'video', src: '/quiz/static/backgrounds/A.mp4', overlay: { color: '#000000', opacity: 0.5 } },
+        music: { src: '/quiz/static/music/A.mp3', volume: 0.02, duckOnReveal: true },
+        timerStyle: 'bar',
+        animations: { question: 'slide', options: 'slide', idle: 'float', idleIntensity: 10, stagger: true, staggerStep: .5 }
+    },
+
+    BhaktiSagar2: {
+        primary: '#00e5ff', accent: '#ff3d7f', fontFamily: 'Poppins, sans-serif',
+        background: { type: 'video', src: '/quiz/static/backgrounds/B.mp4', overlay: { color: '#000000', opacity: 0.5 } },
+        music: { src: '/quiz/static/music/B.mp3', volume: 0.02, duckOnReveal: true },
+        timerStyle: 'bar',
+        animations: { question: 'slide', options: 'slide', idle: 'float', idleIntensity: 10, stagger: true, staggerStep: .5 }
+    },
+    BhaktiSagar3: {
+        primary: '#222222', accent: '#8C6239', fontFamily: 'Merriweather, serif',
+        background: { type: 'video', src: '/quiz/static/backgrounds/C.mp4', overlay: { color: '#000000', opacity: 0.5 } },
+        music: { src: '/quiz/static/music/C.mp3', volume: 0.02, duckOnReveal: true },
+        timerStyle: 'bar',
+        animations: { question: 'slide', options: 'slide', idle: 'float', idleIntensity: 10, stagger: true, staggerStep: .5 }
+    },    
 };
 
 const fontPreview = $('fontPreview');
 
-const qImgFit=$('qImgFit'), qImgPos=$('qImgPos');
+const qImgFit = $('qImgFit'), qImgPos = $('qImgPos');
 
 const pvMusic = $('pvMusic');
-const bgPlayPause=$('bgPlayPause'), bgMute=$('bgMute'), musicPlayPause=$('musicPlayPause');
+const bgPlayPause = $('bgPlayPause'), bgMute = $('bgMute'), musicPlayPause = $('musicPlayPause');
 
 document.addEventListener('paste', async (e) => {
-  const q = currentQ();
-  if (!q) return;
+    const q = currentQ();
+    if (!q) return;
 
-  const items = e.clipboardData?.items || [];
-  let handled = false;
+    const items = e.clipboardData?.items || [];
+    let handled = false;
 
-  // 1) Look for an image blob in the clipboard
-  for (const it of items) {
-    if (it.kind === 'file' && it.type.startsWith('image/')) {
-      const blob = it.getAsFile();
-      if (!blob) continue;
+    // 1) Look for an image blob in the clipboard
+    for (const it of items) {
+        if (it.kind === 'file' && it.type.startsWith('image/')) {
+            const blob = it.getAsFile();
+            if (!blob) continue;
 
-      // Upload through existing API
-      const url = await uploadImage(blob);
-      if (!url) return;
+            // Upload through existing API
+            const url = await uploadImage(blob);
+            if (!url) return;
 
-      if (pasteTarget.type === 'q') {
-        q.images = q.images || [];
-        q.images.push(url);
-        addQImageThumb(url);
-      } else if (pasteTarget.type === 'opt' && Number.isInteger(pasteTarget.idx)) {
-        q.options = q.options || [];
-        q.options[pasteTarget.idx] = { ...(q.options[pasteTarget.idx] || {}), image: url };
+            if (pasteTarget.type === 'q') {
+                q.images = q.images || [];
+                q.images.push(url);
+                addQImageThumb(url);
+            } else if (pasteTarget.type === 'opt' && Number.isInteger(pasteTarget.idx)) {
+                q.options = q.options || [];
+                q.options[pasteTarget.idx] = { ...(q.options[pasteTarget.idx] || {}), image: url };
 
-        // update that option row’s thumbnail in the editor
-        const row = optWrap.querySelector(`.optrow[data-idx="${pasteTarget.idx}"]`);
-        const thumb = row?.querySelector('.thumb');
-        if (thumb) thumb.src = url;
-      }
+                // update that option row’s thumbnail in the editor
+                const row = optWrap.querySelector(`.optrow[data-idx="${pasteTarget.idx}"]`);
+                const thumb = row?.querySelector('.thumb');
+                if (thumb) thumb.src = url;
+            }
 
-      updatePreview(); autosave();
-      handled = true;
-      break;
-    }
-  }
-
-  if (handled) {
-    // prevent image also pasting into a text field
-    e.preventDefault();
-    return;
-  }
-
-  // 2) If no image blob, but a URL was pasted, accept http(s) or data: images
-  const text = e.clipboardData?.getData('text')?.trim();
-  if (text && (/^https?:\/\/.+\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(text) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(text))) {
-    const url = safeUrl(text);
-
-    if (pasteTarget.type === 'q') {
-      q.images = q.images || [];
-      q.images.push(url);
-      addQImageThumb(url);
-    } else if (pasteTarget.type === 'opt' && Number.isInteger(pasteTarget.idx)) {
-      q.options = q.options || [];
-      q.options[pasteTarget.idx] = { ...(q.options[pasteTarget.idx] || {}), image: url };
-
-      const row = optWrap.querySelector(`.optrow[data-idx="${pasteTarget.idx}"]`);
-      const thumb = row?.querySelector('.thumb');
-      if (thumb) thumb.src = url;
+            updatePreview(); autosave();
+            handled = true;
+            break;
+        }
     }
 
-    updatePreview(); autosave();
-    e.preventDefault();
-  }
+    if (handled) {
+        // prevent image also pasting into a text field
+        e.preventDefault();
+        return;
+    }
+
+    // 2) If no image blob, but a URL was pasted, accept http(s) or data: images
+    const text = e.clipboardData?.getData('text')?.trim();
+    if (text && (/^https?:\/\/.+\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(text) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(text))) {
+        const url = safeUrl(text);
+
+        if (pasteTarget.type === 'q') {
+            q.images = q.images || [];
+            q.images.push(url);
+            addQImageThumb(url);
+        } else if (pasteTarget.type === 'opt' && Number.isInteger(pasteTarget.idx)) {
+            q.options = q.options || [];
+            q.options[pasteTarget.idx] = { ...(q.options[pasteTarget.idx] || {}), image: url };
+
+            const row = optWrap.querySelector(`.optrow[data-idx="${pasteTarget.idx}"]`);
+            const thumb = row?.querySelector('.thumb');
+            if (thumb) thumb.src = url;
+        }
+
+        updatePreview(); autosave();
+        e.preventDefault();
+    }
 });
 
 
-bgPlayPause.onclick = ()=>{
-  if (pv.bgVideo.paused){ pv.bgVideo.play(); bgPlayPause.textContent='Pause BG'; }
-  else { pv.bgVideo.pause(); bgPlayPause.textContent='Play BG'; }
+bgPlayPause.onclick = () => {
+    if (pv.bgVideo.paused) { pv.bgVideo.play(); bgPlayPause.textContent = 'Pause BG'; }
+    else { pv.bgVideo.pause(); bgPlayPause.textContent = 'Play BG'; }
 };
-bgMute.onclick = ()=>{
-  pv.bgVideo.muted = !pv.bgVideo.muted;
-  bgMute.textContent = pv.bgVideo.muted ? 'Unmute BG' : 'Mute BG';
+bgMute.onclick = () => {
+    pv.bgVideo.muted = !pv.bgVideo.muted;
+    bgMute.textContent = pv.bgVideo.muted ? 'Unmute BG' : 'Mute BG';
 };
-musicPlayPause.onclick = ()=>{
-  if (pvMusic.paused){ pvMusic.play(); musicPlayPause.textContent='Pause Music'; }
-  else { pvMusic.pause(); musicPlayPause.textContent='Play Music'; }
+musicPlayPause.onclick = () => {
+    if (pvMusic.paused) { pvMusic.play(); musicPlayPause.textContent = 'Pause Music'; }
+    else { pvMusic.pause(); musicPlayPause.textContent = 'Play Music'; }
 };
 
 
-const qFontScale=$('qFontScale'), optFontScale=$('optFontScale');
+const qFontScale = $('qFontScale'), optFontScale = $('optFontScale');
 
-[qFontScale, optFontScale].forEach(el=> el && el.addEventListener('input', ()=>{
-  const q = currentQ(); if(!q) return;
-  q.qFontScale = parseFloat(qFontScale.value);
-  q.optFontScale = parseFloat(optFontScale.value);
-  preview.style.setProperty('--q-scale', q.qFontScale || 1);
-  preview.style.setProperty('--opt-scale', q.optFontScale || 1);
-  updatePreview(); autosave();
+[qFontScale, optFontScale].forEach(el => el && el.addEventListener('input', () => {
+    const q = currentQ(); if (!q) return;
+    q.qFontScale = parseFloat(qFontScale.value);
+    q.optFontScale = parseFloat(optFontScale.value);
+    preview.style.setProperty('--q-scale', q.qFontScale || 1);
+    preview.style.setProperty('--opt-scale', q.optFontScale || 1);
+    updatePreview(); autosave();
 }));
 
 const loopIdleOnly = $('loopIdleOnly');
 const replayTransitions = $('replayTransitions');
 
-loopIdleOnly.onchange = ()=> updatePreview();
+loopIdleOnly.onchange = () => updatePreview();
 
-replayTransitions.onclick = ()=>{
-  // force reflow to replay entrance classes
-  pv.card.classList.remove('fade-in'); void pv.card.offsetWidth; pv.card.classList.add('fade-in');
+replayTransitions.onclick = () => {
+    // force reflow to replay entrance classes
+    pv.card.classList.remove('fade-in'); void pv.card.offsetWidth; pv.card.classList.add('fade-in');
 };
 
 const pvTimer = $('pvTimer');
 
-function startTimerPreview(sec){
-  pvTimer.classList.remove('timer-anim'); void pvTimer.offsetWidth;
-  pvTimer.style.setProperty('--timer-dur', `${Math.max(1, sec)}s`);
-  pvTimer.style.setProperty('--timer-color', state.quiz.theme.primary || '#00E5FF');
-  pvTimer.classList.add('timer-anim');
+function startTimerPreview(sec) {
+    pvTimer.classList.remove('timer-anim'); void pvTimer.offsetWidth;
+    pvTimer.style.setProperty('--timer-dur', `${Math.max(1, sec)}s`);
+    pvTimer.style.setProperty('--timer-color', state.quiz.theme.primary || '#00E5FF');
+    pvTimer.classList.add('timer-anim');
 }
 
-function applyImageFitVars(){
-  // Question images
-  preview.style.setProperty('--qimg-fit', state.current?.imgFit || 'cover');
-  preview.style.setProperty('--qimg-pos', state.current?.imgPos || 'center');
-  // Options use same for now (you can split if needed)
-  preview.style.setProperty('--oimg-fit', state.current?.optImgFit || state.current?.imgFit || 'cover');
-  preview.style.setProperty('--oimg-pos', state.current?.optImgPos || state.current?.imgPos || 'center');
+function applyImageFitVars() {
+    // Question images
+    preview.style.setProperty('--qimg-fit', state.current?.imgFit || 'cover');
+    preview.style.setProperty('--qimg-pos', state.current?.imgPos || 'center');
+    // Options use same for now (you can split if needed)
+    preview.style.setProperty('--oimg-fit', state.current?.optImgFit || state.current?.imgFit || 'cover');
+    preview.style.setProperty('--oimg-pos', state.current?.optImgPos || state.current?.imgPos || 'center');
 }
 
-[qImgFit, qImgPos].forEach(el=> el && el.addEventListener('change', ()=>{
-  const q = currentQ(); if(!q) return;
-  q.imgFit = qImgFit.value; q.imgPos = qImgPos.value;
-  applyImageFitVars(); updatePreview(); autosave();
+[qImgFit, qImgPos].forEach(el => el && el.addEventListener('change', () => {
+    const q = currentQ(); if (!q) return;
+    q.imgFit = qImgFit.value; q.imgPos = qImgPos.value;
+    applyImageFitVars(); updatePreview(); autosave();
 }));
 
-function hydrateQuestionEditor(){
-  const q = currentQ(); if(!q) return;
-  qImgFit.value = q.imgFit || 'cover';
-  qImgPos.value = q.imgPos || 'center';
-  applyImageFitVars();
+function hydrateQuestionEditor() {
+    const q = currentQ(); if (!q) return;
+    qImgFit.value = q.imgFit || 'cover';
+    qImgPos.value = q.imgPos || 'center';
+    applyImageFitVars();
     qFontScale.value = q.qFontScale ?? 1;
-  optFontScale.value = q.optFontScale ?? 1;
-  preview.style.setProperty('--q-scale', q.qFontScale ?? 1);
-  preview.style.setProperty('--opt-scale', q.optFontScale ?? 1);
+    optFontScale.value = q.optFontScale ?? 1;
+    preview.style.setProperty('--q-scale', q.qFontScale ?? 1);
+    preview.style.setProperty('--opt-scale', q.optFontScale ?? 1);
 }
 
-function updateFontPreview(){
-  const ff = state.quiz.theme.fontFamily || 'Poppins, sans-serif';
-  fontPreview.style.fontFamily = ff;
-  fontPreview.textContent = 'Aa Bb Cc';
+function updateFontPreview() {
+    const ff = state.quiz.theme.fontFamily || 'Poppins, sans-serif';
+    fontPreview.style.fontFamily = ff;
+    fontPreview.textContent = 'Aa Bb Cc';
 }
 
-fontFamily.onchange = ()=>{
-  state.quiz.theme.fontFamily = fontFamily.value;
-  updateFontPreview();
-  applyThemeToPreview(); autosave();
+fontFamily.onchange = () => {
+    state.quiz.theme.fontFamily = fontFamily.value;
+    updateFontPreview();
+    applyThemeToPreview(); autosave();
 };
 
-function applyThemePreset(name){
-  const p = THEME_PRESETS[name]; if(!p) return;
-  const t = state.quiz.theme;
-  t.primary=p.primary; t.accent=p.accent; t.fontFamily=p.fontFamily;
-  t.background = {...(t.background||{}), ...p.background};
-  t.music = {...(t.music||{}), ...p.music};
+function applyThemePreset(name) {
+    const p = THEME_PRESETS[name]; if (!p) return;
+    const t = state.quiz.theme;
+    t.primary = p.primary; t.accent = p.accent; t.fontFamily = p.fontFamily;
+    t.background = { ...(t.background || {}), ...p.background };
+    t.music = { ...(t.music || {}), ...p.music };
     t.timerStyle = p.timerStyle;
-    t.animations = {...(t.animations||{}), ...p.animations};
+    t.animations = { ...(t.animations || {}), ...p.animations };
 
-  hydrateMeta(); // update controls
-  applyThemeToPreview();
-  hydrateMeta();
-  autosave();
+    hydrateMeta(); // update controls
+    applyThemeToPreview();
+    hydrateMeta();
+    autosave();
 }
 
 // applyPresetBtn.onclick = ()=> presetSelect.value && applyThemePreset(presetSelect.value);
 
-applyPresetBtn.onclick = ()=>{
-  const name = presetSelect.value;
-  if (!name) return;
-  applyThemePreset(name);
-  alert(`"${name}" theme applied.`);
+applyPresetBtn.onclick = () => {
+    const name = presetSelect.value;
+    if (!name) return;
+    applyThemePreset(name);
+    alert(`"${name}" theme applied.`);
 };
 
 
-savePresetBtn.onclick = ()=>{
-  const name = prompt('Preset name?'); if(!name) return;
-  const t = state.quiz.theme;
-  localStorage.setItem('quizPreset:'+name, JSON.stringify(t));
-  alert('Saved! You can load it by choosing the same name from localStorage later (dev feature).');
+savePresetBtn.onclick = () => {
+    const name = prompt('Preset name?'); if (!name) return;
+    const t = state.quiz.theme;
+    localStorage.setItem('quizPreset:' + name, JSON.stringify(t));
+    alert('Saved! You can load it by choosing the same name from localStorage later (dev feature).');
 };
 
 // --------- Meta handlers ---------
@@ -516,7 +531,7 @@ function applyThemeToPreview() {
     const overlay = (t.background && t.background.overlay) ? t.background.overlay : { color: '#000000', opacity: 0.45 };
     const tintRgba = hexToRgba(overlay.color || '#000000', typeof overlay.opacity === 'number' ? overlay.opacity : 0.45);
     document.documentElement.style.setProperty('--pv-bg-tint', tintRgba);
-    if (t.music?.src){ pvMusic.src = t.music.src; pvMusic.volume = t.music.volume ?? 0.35; }
+    if (t.music?.src) { pvMusic.src = t.music.src; pvMusic.volume = t.music.volume ?? 0.35; }
 }
 
 // --------- Question list & selection ---------
@@ -531,7 +546,7 @@ function addQuestion(type) {
         explanation: ''
     };
     if (type === 'mcq') {
-        base.options = [{ text: '' }, { text: '' },{ text: '' }, { text: '' }]; // start with 4
+        base.options = [{ text: '' }, { text: '' }, { text: '' }, { text: '' }]; // start with 4
         base.correctIndex = '';
     } else {
         base.answer = '';
@@ -650,13 +665,13 @@ function makeOptRow(q, i) {
 
     const row = document.createElement('div');
     row.className = 'optrow';
-    row.setAttribute('tabindex','0');         // focusable for paste
+    row.setAttribute('tabindex', '0');         // focusable for paste
     row.dataset.pasteScope = 'opt';
     row.dataset.idx = String(i);
 
     // when this row is focused or clicked, set paste target
-    row.addEventListener('focus', () => { pasteTarget = { type:'opt', idx: i }; });
-    row.addEventListener('click', () => { pasteTarget = { type:'opt', idx: i }; });
+    row.addEventListener('focus', () => { pasteTarget = { type: 'opt', idx: i }; });
+    row.addEventListener('click', () => { pasteTarget = { type: 'opt', idx: i }; });
 
     const top = document.createElement('div');
     top.className = 'row2';
@@ -815,7 +830,7 @@ function updatePreview() {
     const intensity = state.quiz.theme.animations?.idleIntensity || 3;
 
     const doEntrance = !loopIdleOnly.checked && state.animatePreview;
-    if (doEntrance){ pv.card.classList.remove('fade-out'); pv.card.classList.add('fade-in'); }
+    if (doEntrance) { pv.card.classList.remove('fade-out'); pv.card.classList.add('fade-in'); }
 
     const seconds = Number((q && q.timerSec) || state.quiz.defaults?.timerSec || 12);
     startTimerPreview(seconds);
@@ -826,10 +841,10 @@ function updatePreview() {
     // pv.imgs.classList.remove('idle-breath', 'idle-shake', 'idle-float');
     // pv.imgs.classList.remove('anim-fade', 'anim-slide', 'anim-zoom');
 
-        //     pv.imgs.querySelectorAll('img').forEach(im => {
-        // im.classList.remove('idle-breath', 'idle-shake', 'idle-float');
-        // im.classList.remove('anim-fade', 'anim-slide', 'anim-zoom');
-        // });
+    //     pv.imgs.querySelectorAll('img').forEach(im => {
+    // im.classList.remove('idle-breath', 'idle-shake', 'idle-float');
+    // im.classList.remove('anim-fade', 'anim-slide', 'anim-zoom');
+    // });
 
     if (idleType !== 'none') {
         pv.q.classList.add(`idle-${idleType}`);
@@ -838,8 +853,8 @@ function updatePreview() {
         pv.opts.style.animationDuration = `${6 / (intensity / 3)}s`;
 
         pv.imgs.querySelectorAll('img').forEach(im => {
-        im.classList.add('anim-fade', `idle-${idleType}`);
-        im.style.animationDuration = `${6 / (intensity / 3)}s`;
+            im.classList.add('anim-fade', `idle-${idleType}`);
+            im.style.animationDuration = `${6 / (intensity / 3)}s`;
         });
         // pv.imgs.style.animationDuration = `${6 / (intensity / 3)}s`;
 
@@ -847,9 +862,9 @@ function updatePreview() {
         pv.q.style.animationDuration = '';
         pv.opts.style.animationDuration = '';
         // pv.imgs.style.animationDuration = '';
-                pv.imgs.querySelectorAll('img').forEach(im => {
+        pv.imgs.querySelectorAll('img').forEach(im => {
 
-        im.style.animationDuration = '';
+            im.style.animationDuration = '';
         });
     }
 
@@ -871,7 +886,7 @@ function updatePreview() {
             pv.imgs.innerHTML = '';
             (q.images || []).forEach(src => {
                 const im = document.createElement('img');
-                im.className = 'qImg'; 
+                im.className = 'qImg';
                 // entrance + idle motion per image
                 im.classList.add('anim-fade');
                 if (idleType !== 'none') {
@@ -879,8 +894,8 @@ function updatePreview() {
                     im.style.animationDuration = `${6 / (intensity / 3)}s`;
                 } else {
                     im.style.animationDuration = '';
-                }                
-                im.src = src; 
+                }
+                im.src = src;
                 pv.imgs.appendChild(im);
             });
             pv.diff.textContent = (q.difficulty || 'easy').toUpperCase();
@@ -1007,7 +1022,7 @@ function hydrateMeta() {
     qsTTS.value = qz.qsTTS || 'y';
 
     // --- Auto-advance ---
-    const aa = qz.autoAdvance || { enabled:false, delaySec:3, afterExplanation:true };
+    const aa = qz.autoAdvance || { enabled: false, delaySec: 3, afterExplanation: true };
     aaEnabled.value = String(aa.enabled);
     aaDelay.value = (Number.isFinite(aa.delaySec) ? aa.delaySec : 3);
     aaAfterExplanation.checked = !!aa.afterExplanation;
@@ -1130,7 +1145,7 @@ newQuizBtn.onclick = () => {
         title: "",
         language: "en",
         qsTTS: "y",
-        autoAdvance: { enabled:false, delaySec:3, afterExplanation:true }, // ← NEW
+        autoAdvance: { enabled: false, delaySec: 3, afterExplanation: true }, // ← NEW
         theme: {
             preset: "Neon Quiz",
             primary: "#00E5FF",
@@ -1182,133 +1197,133 @@ applyThemeToPreview();
 updatePreview();
 
 // --- Import Excel/CSV wiring ---
-const importExcelBtn   = document.getElementById('importExcelBtn');
+const importExcelBtn = document.getElementById('importExcelBtn');
 const importExcelInput = document.getElementById('importExcelInput');
 const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
 
 downloadTemplateBtn.onclick = () => {
-  window.open('/quiz/api/template.csv', '_blank');
+    window.open('/quiz/api/template.csv', '_blank');
 };
 
 importExcelBtn.onclick = () => importExcelInput.click();
 
 importExcelInput.onchange = async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // Ask how to merge
-  const mode = window.prompt('Type "replace" to replace all questions, or "append" to add to the end:', 'append');
-  const replaceAll = (mode || '').toLowerCase().startsWith('r');
+    // Ask how to merge
+    const mode = window.prompt('Type "replace" to replace all questions, or "append" to add to the end:', 'append');
+    const replaceAll = (mode || '').toLowerCase().startsWith('r');
 
-  try {
-    const form = new FormData();
-    form.append('file', file);
-    // Server auto-detects .csv vs .xlsx
-    const res = await fetch('/quiz/api/import_excel', { method: 'POST', body: form });
-    if (!res.ok) throw new Error('Import failed');
+    try {
+        const form = new FormData();
+        form.append('file', file);
+        // Server auto-detects .csv vs .xlsx
+        const res = await fetch('/quiz/api/import_excel', { method: 'POST', body: form });
+        if (!res.ok) throw new Error('Import failed');
 
-    const data = await res.json();
-    if (!Array.isArray(data.questions)) throw new Error('Invalid import payload');
+        const data = await res.json();
+        if (!Array.isArray(data.questions)) throw new Error('Invalid import payload');
 
-    // Normalize and merge
-    const imported = data.questions.map(q => normalizeImportedQuestion(q));
-    if (replaceAll) {
-      state.quiz.questions = imported;
-      state.selIndex = imported.length ? 0 : -1;
-    } else {
-      state.quiz.questions.push(...imported);
-      if (state.selIndex < 0 && state.quiz.questions.length) state.selIndex = 0;
+        // Normalize and merge
+        const imported = data.questions.map(q => normalizeImportedQuestion(q));
+        if (replaceAll) {
+            state.quiz.questions = imported;
+            state.selIndex = imported.length ? 0 : -1;
+        } else {
+            state.quiz.questions.push(...imported);
+            if (state.selIndex < 0 && state.quiz.questions.length) state.selIndex = 0;
+        }
+
+        renderQList();
+        if (state.selIndex >= 0) openEditor(state.selIndex);
+        updatePreview();
+        autosave();
+        alert(`Imported ${imported.length} question(s).`);
+    } catch (err) {
+        console.error(err);
+        alert('Import failed. Please check your file format.');
+    } finally {
+        importExcelInput.value = '';
     }
-
-    renderQList();
-    if (state.selIndex >= 0) openEditor(state.selIndex);
-    updatePreview();
-    autosave();
-    alert(`Imported ${imported.length} question(s).`);
-  } catch (err) {
-    console.error(err);
-    alert('Import failed. Please check your file format.');
-  } finally {
-    importExcelInput.value = '';
-  }
 };
 
 // Map flexible columns into your internal shape
 function normalizeImportedQuestion(row) {
-  // Accept flexible keys (case/space tolerant)
-  const pick = (keys) => {
-    for (const k of keys) {
-      const hit = Object.keys(row).find(rk => rk.toLowerCase().trim() === k.toLowerCase().trim());
-      if (hit) return row[hit];
-    }
-    return '';
-  };
-
-  // Common columns (case-insensitive):
-  // type, question, opt1..opt4, correct, timer(sec), difficulty, explanation
-  // qImages (comma/semicolon-separated URLs)
-  // opt1_img .. opt4_img (optional)
-  const type = (pick(['type']) || 'mcq').toString().toLowerCase().includes('single') ? 'single' : 'mcq';
-  const text = pick(['question','text','q']);
-  const timerSec = parseFloat(pick(['timer','timer(sec)','seconds','time'])) || '';
-  const difficulty = (pick(['difficulty','level']) || 'easy').toString().toLowerCase();
-  const explanation = pick(['explanation','explain','note']);
-
-  // images for question
-  const qImgsRaw = pick(['qimages','question images','images']);
-  const qImages = (qImgsRaw ? qImgsRaw.split(/[;,|]/).map(s => s.trim()).filter(Boolean) : []);
-
-  if (type === 'single') {
-    const answer = pick(['answer','correct','solution']);
-    return {
-      id: `q${Date.now()}${Math.random().toString(36).slice(2,6)}`,
-      type: 'single',
-      difficulty, text, images: qImages, timerSec, explanation,
-      answer
+    // Accept flexible keys (case/space tolerant)
+    const pick = (keys) => {
+        for (const k of keys) {
+            const hit = Object.keys(row).find(rk => rk.toLowerCase().trim() === k.toLowerCase().trim());
+            if (hit) return row[hit];
+        }
+        return '';
     };
-  }
 
-  // MCQ options
-  const optText = [
-    pick(['opt1','option1','a']),
-    pick(['opt2','option2','b']),
-    pick(['opt3','option3','c']),
-    pick(['opt4','option4','d'])
-  ].map(s => (s || '').toString());
+    // Common columns (case-insensitive):
+    // type, question, opt1..opt4, correct, timer(sec), difficulty, explanation
+    // qImages (comma/semicolon-separated URLs)
+    // opt1_img .. opt4_img (optional)
+    const type = (pick(['type']) || 'mcq').toString().toLowerCase().includes('single') ? 'single' : 'mcq';
+    const text = pick(['question', 'text', 'q']);
+    const timerSec = parseFloat(pick(['timer', 'timer(sec)', 'seconds', 'time'])) || '';
+    const difficulty = (pick(['difficulty', 'level']) || 'easy').toString().toLowerCase();
+    const explanation = pick(['explanation', 'explain', 'note']);
 
-  const optImgs = [
-    pick(['opt1_img','option1_img','a_img']),
-    pick(['opt2_img','option2_img','b_img']),
-    pick(['opt3_img','option3_img','c_img']),
-    pick(['opt4_img','option4_img','d_img'])
-  ];
+    // images for question
+    const qImgsRaw = pick(['qimages', 'question images', 'images']);
+    const qImages = (qImgsRaw ? qImgsRaw.split(/[;,|]/).map(s => s.trim()).filter(Boolean) : []);
 
-  const options = optText
-    .map((txt, i) => {
-      const image = (optImgs[i] || '').toString().trim();
-      return image ? { text: txt, image } : { text: txt };
-    })
-    .filter(o => (o.text || o.image)); // drop totally empty
-
-  // Correct index: allow 1-based (Excel friendly) or text match
-  let correctIdx = pick(['correct','correctindex','answer','key']);
-  let ci = '';
-  if (correctIdx !== '') {
-    const n = parseInt(correctIdx, 10);
-    if (Number.isFinite(n)) {
-      ci = (n >= 1 && n <= 4) ? (n - 1) : (n >= 0 && n < 4 ? n : '');
-    } else {
-      // try to match by text
-      const ix = options.findIndex(o => (o.text || '').trim().toLowerCase() === (correctIdx || '').trim().toLowerCase());
-      ci = ix >= 0 ? ix : '';
+    if (type === 'single') {
+        const answer = pick(['answer', 'correct', 'solution']);
+        return {
+            id: `q${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+            type: 'single',
+            difficulty, text, images: qImages, timerSec, explanation,
+            answer
+        };
     }
-  }
 
-  return {
-    id: `q${Date.now()}${Math.random().toString(36).slice(2,6)}`,
-    type: 'mcq',
-    difficulty, text, images: qImages, timerSec, explanation,
-    options,
-    correctIndex: ci
-  };
+    // MCQ options
+    const optText = [
+        pick(['opt1', 'option1', 'a']),
+        pick(['opt2', 'option2', 'b']),
+        pick(['opt3', 'option3', 'c']),
+        pick(['opt4', 'option4', 'd'])
+    ].map(s => (s || '').toString());
+
+    const optImgs = [
+        pick(['opt1_img', 'option1_img', 'a_img']),
+        pick(['opt2_img', 'option2_img', 'b_img']),
+        pick(['opt3_img', 'option3_img', 'c_img']),
+        pick(['opt4_img', 'option4_img', 'd_img'])
+    ];
+
+    const options = optText
+        .map((txt, i) => {
+            const image = (optImgs[i] || '').toString().trim();
+            return image ? { text: txt, image } : { text: txt };
+        })
+        .filter(o => (o.text || o.image)); // drop totally empty
+
+    // Correct index: allow 1-based (Excel friendly) or text match
+    let correctIdx = pick(['correct', 'correctindex', 'answer', 'key']);
+    let ci = '';
+    if (correctIdx !== '') {
+        const n = parseInt(correctIdx, 10);
+        if (Number.isFinite(n)) {
+            ci = (n >= 1 && n <= 4) ? (n - 1) : (n >= 0 && n < 4 ? n : '');
+        } else {
+            // try to match by text
+            const ix = options.findIndex(o => (o.text || '').trim().toLowerCase() === (correctIdx || '').trim().toLowerCase());
+            ci = ix >= 0 ? ix : '';
+        }
+    }
+
+    return {
+        id: `q${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        type: 'mcq',
+        difficulty, text, images: qImages, timerSec, explanation,
+        options,
+        correctIndex: ci
+    };
 }

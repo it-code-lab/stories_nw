@@ -168,7 +168,8 @@ textarea{resize:vertical}
   padding:clamp(.5rem, 1.4vh, .9rem);
   border-radius:14px;
   border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.06);
+  background: var(--accent);
+  /* background:rgba(255,255,255,.06); */
   color:#fff; font-weight:800;
   will-change:transform,opacity;
 }
