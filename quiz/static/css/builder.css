@@ -87,9 +87,9 @@ textarea{resize:vertical}
 .sep{border:none;border-top:1px solid #1b1f27;margin:.8rem 0}
 
 /* Question list */
-.qlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem;max-height:40vh;overflow:auto}
+.qlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem;max-height:80vh;overflow:auto}
 .qitem{display:grid;grid-template-columns:42px 1fr auto;gap:.6rem;align-items:center;padding:.5rem;border:1px solid #232835;background:#11151e;border-radius:12px;cursor:pointer}
-.qitem.active{outline:2px solid var(--primary)}
+.qitem.active{outline:2px solid red}
 .qitem .idx{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;background:#0b0e14;border:1px solid #222838}
 .qitem .meta .title{font-weight:700}
 

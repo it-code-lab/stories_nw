@@ -138,14 +138,15 @@ body.player {
   width: min(1100px, 94vw);
   /* height: min(78vh, 800px); */
   height: fit-content;
-  margin: 1.2rem auto;
+  /* margin: 1.2rem auto; */
+  margin: 0px;
   display: flex;
   flex-direction: column;
   gap: .9rem;
   background: rgba(10, 12, 16, .55);
   border: 1px solid rgba(255, 255, 255, .08);
   border-radius: 24px;
-  padding: 1.2rem 1.4rem;
+  padding: 1rem 1rem;
   backdrop-filter: blur(8px);
   transition: opacity .35s ease, transform .35s ease;
 }
@@ -215,6 +216,7 @@ body.player {
   gap: .7rem;
   min-height: 0;
   overflow: hidden;
+  padding: 0.5rem;
   /* margin-top: auto */
 }
 
@@ -246,6 +248,7 @@ body.player {
   /* border: 5px solid rgba(255,255,255,.1); */
   border-left: 2px solid rgba(255,255,255,.1);
   border-right: 2px solid rgba(255,255,255,.1);
+  margin: 10px;
 }
 
 .portrait .pill {
@@ -301,7 +304,7 @@ body.player {
   border: 1px solid rgba(255, 255, 255, .12);
   border-radius: 18px;
   color: #fff;
-  padding: .7rem;
+  padding: .5rem;
   font-weight: 600;
   cursor: pointer;
   transition: all .25s ease;
@@ -351,14 +354,14 @@ body.player {
   margin-top:.5rem;
   text-align:center;
   font-weight:800;
-  font-size: calc(1rem * var(--opt-scale, 1));
+  font-size: calc(1.5rem * var(--opt-scale, 1));
   display:-webkit-box;
   -webkit-box-orient: vertical;
   overflow:hidden;
 }
 
 .portrait .opt-text{
-  font-size: calc(0.7rem * var(--opt-scale, 1));
+  font-size: calc(0.8rem * var(--opt-scale, 1));
 }
 
 /* ---------- Footer ---------- */
@@ -480,9 +483,9 @@ body.player {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: .6rem 1rem;
+  /* padding: .6rem 1rem;
   background: rgba(15, 18, 23, .6);
-  border-top: 1px solid rgba(255, 255, 255, .06);
+  border-top: 1px solid rgba(255, 255, 255, .06); */
   font-size: .85rem;
 }
 

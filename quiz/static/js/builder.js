@@ -176,7 +176,7 @@ const THEME_PRESETS = {
     BhaktiSagar1: {
     primary:'#00e5ff', accent:'#ff3d7f', fontFamily:'Poppins, sans-serif',
     background:{ type:'video', src:'/quiz/static/backgrounds/A.mp4', overlay:{color:'#000000',opacity:0.5}},
-    music:{ src:'/quiz/static/music/A.mp3', volume:0.05, duckOnReveal:true},
+    music:{ src:'/quiz/static/music/A.mp3', volume:0.02, duckOnReveal:true},
     timerStyle: 'bar',
     animations:{ question:'slide', options:'fade', idle:'float', idleIntensity:10, stagger:true, staggerStep:.5 }
 },
@@ -1180,3 +1180,135 @@ function hexToRgba(hex, a) {
 // --------- Init theme preview once ---------
 applyThemeToPreview();
 updatePreview();
+
+// --- Import Excel/CSV wiring ---
+const importExcelBtn   = document.getElementById('importExcelBtn');
+const importExcelInput = document.getElementById('importExcelInput');
+const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+
+downloadTemplateBtn.onclick = () => {
+  window.open('/quiz/api/template.csv', '_blank');
+};
+
+importExcelBtn.onclick = () => importExcelInput.click();
+
+importExcelInput.onchange = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  // Ask how to merge
+  const mode = window.prompt('Type "replace" to replace all questions, or "append" to add to the end:', 'append');
+  const replaceAll = (mode || '').toLowerCase().startsWith('r');
+
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    // Server auto-detects .csv vs .xlsx
+    const res = await fetch('/quiz/api/import_excel', { method: 'POST', body: form });
+    if (!res.ok) throw new Error('Import failed');
+
+    const data = await res.json();
+    if (!Array.isArray(data.questions)) throw new Error('Invalid import payload');
+
+    // Normalize and merge
+    const imported = data.questions.map(q => normalizeImportedQuestion(q));
+    if (replaceAll) {
+      state.quiz.questions = imported;
+      state.selIndex = imported.length ? 0 : -1;
+    } else {
+      state.quiz.questions.push(...imported);
+      if (state.selIndex < 0 && state.quiz.questions.length) state.selIndex = 0;
+    }
+
+    renderQList();
+    if (state.selIndex >= 0) openEditor(state.selIndex);
+    updatePreview();
+    autosave();
+    alert(`Imported ${imported.length} question(s).`);
+  } catch (err) {
+    console.error(err);
+    alert('Import failed. Please check your file format.');
+  } finally {
+    importExcelInput.value = '';
+  }
+};
+
+// Map flexible columns into your internal shape
+function normalizeImportedQuestion(row) {
+  // Accept flexible keys (case/space tolerant)
+  const pick = (keys) => {
+    for (const k of keys) {
+      const hit = Object.keys(row).find(rk => rk.toLowerCase().trim() === k.toLowerCase().trim());
+      if (hit) return row[hit];
+    }
+    return '';
+  };
+
+  // Common columns (case-insensitive):
+  // type, question, opt1..opt4, correct, timer(sec), difficulty, explanation
+  // qImages (comma/semicolon-separated URLs)
+  // opt1_img .. opt4_img (optional)
+  const type = (pick(['type']) || 'mcq').toString().toLowerCase().includes('single') ? 'single' : 'mcq';
+  const text = pick(['question','text','q']);
+  const timerSec = parseFloat(pick(['timer','timer(sec)','seconds','time'])) || '';
+  const difficulty = (pick(['difficulty','level']) || 'easy').toString().toLowerCase();
+  const explanation = pick(['explanation','explain','note']);
+
+  // images for question
+  const qImgsRaw = pick(['qimages','question images','images']);
+  const qImages = (qImgsRaw ? qImgsRaw.split(/[;,|]/).map(s => s.trim()).filter(Boolean) : []);
+
+  if (type === 'single') {
+    const answer = pick(['answer','correct','solution']);
+    return {
+      id: `q${Date.now()}${Math.random().toString(36).slice(2,6)}`,
+      type: 'single',
+      difficulty, text, images: qImages, timerSec, explanation,
+      answer
+    };
+  }
+
+  // MCQ options
+  const optText = [
+    pick(['opt1','option1','a']),
+    pick(['opt2','option2','b']),
+    pick(['opt3','option3','c']),
+    pick(['opt4','option4','d'])
+  ].map(s => (s || '').toString());
+
+  const optImgs = [
+    pick(['opt1_img','option1_img','a_img']),
+    pick(['opt2_img','option2_img','b_img']),
+    pick(['opt3_img','option3_img','c_img']),
+    pick(['opt4_img','option4_img','d_img'])
+  ];
+
+  const options = optText
+    .map((txt, i) => {
+      const image = (optImgs[i] || '').toString().trim();
+      return image ? { text: txt, image } : { text: txt };
+    })
+    .filter(o => (o.text || o.image)); // drop totally empty
+
+  // Correct index: allow 1-based (Excel friendly) or text match
+  let correctIdx = pick(['correct','correctindex','answer','key']);
+  let ci = '';
+  if (correctIdx !== '') {
+    const n = parseInt(correctIdx, 10);
+    if (Number.isFinite(n)) {
+      ci = (n >= 1 && n <= 4) ? (n - 1) : (n >= 0 && n < 4 ? n : '');
+    } else {
+      // try to match by text
+      const ix = options.findIndex(o => (o.text || '').trim().toLowerCase() === (correctIdx || '').trim().toLowerCase());
+      ci = ix >= 0 ? ix : '';
+    }
+  }
+
+  return {
+    id: `q${Date.now()}${Math.random().toString(36).slice(2,6)}`,
+    type: 'mcq',
+    difficulty, text, images: qImages, timerSec, explanation,
+    options,
+    correctIndex: ci
+  };
+}

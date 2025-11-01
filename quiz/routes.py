@@ -5,6 +5,17 @@ from flask import request
 import csv, io
 from . import quiz_bp  # use the blueprint you defined
 
+import  tempfile, os
+from flask import Blueprint, jsonify, send_file
+from werkzeug.utils import secure_filename
+
+try:
+    import openpyxl  # pip install openpyxl
+except ImportError:
+    openpyxl = None
+
+
+
 # app = Flask(__name__)
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 QUIZ_DIR = os.path.join(APP_ROOT, "quizzes")
@@ -13,6 +24,92 @@ UPLOAD_DIR = os.path.join(APP_ROOT, "uploads")
 os.makedirs(QUIZ_DIR, exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_DIR, "images"), exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_DIR, "audio"), exist_ok=True)
+
+ALLOWED_IMPORTS = {'.xlsx', '.xls', '.csv'}
+
+def _ext(name): 
+    return os.path.splitext(name or '')[1].lower()
+
+@quiz_bp.route('/api/template.csv', methods=['GET'])
+def quiz_template():
+    """
+    Provide a simple CSV template with headers users can fill.
+    """
+    headers = [
+        'type', 'question', 'opt1', 'opt2', 'opt3', 'opt4',
+        'correct', 'timer(sec)', 'difficulty', 'explanation',
+        'qImages', 'opt1_img', 'opt2_img', 'opt3_img', 'opt4_img'
+    ]
+    sample = [
+        ['mcq','Which planet is known as the Red Planet?','Mercury','Venus','Earth','Mars','4','12','easy','','https://…','','','',''],
+        ['single','Largest mammal on Earth?','','','','','','10','easy','','https://…','','','','','Blue whale'],
+    ]
+    mem = io.StringIO()
+    w = csv.writer(mem)
+    w.writerow(headers)
+    for r in sample:
+        # ensure length matches headers; pad if needed
+        if len(r) < len(headers): r += ['']*(len(headers)-len(r))
+        w.writerow(r)
+    mem.seek(0)
+    return send_file(
+        io.BytesIO(mem.getvalue().encode('utf-8')),
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name='quiz_template.csv'
+    )
+
+@quiz_bp.route('/api/import_excel', methods=['POST'])
+def quiz_import_excel():
+    """
+    Accept .xlsx/.xls/.csv and return parsed rows as `questions: [...]`.
+    Column names handled in frontend mapper; here we produce per-row dicts keyed by header.
+    """
+    f = request.files.get('file')
+    if not f or _ext(f.filename) not in ALLOWED_IMPORTS:
+        return jsonify({'error':'Please upload .xlsx or .csv'}), 400
+
+    ext = _ext(f.filename)
+    rows = []
+
+    if ext == '.csv':
+        text = f.stream.read().decode('utf-8-sig', errors='ignore')
+        reader = csv.DictReader(io.StringIO(text))
+        for row in reader:
+            # Keep raw dict; builder will normalize
+            rows.append({k.strip(): (v or '').strip() for k,v in row.items()})
+        return jsonify({'questions': rows})
+
+    # Excel path
+    if openpyxl is None:
+        return jsonify({'error':'openpyxl not installed on server'}), 500
+
+    with tempfile.NamedTemporaryFile(suffix=ext, delete=True) as tmp:
+        f.save(tmp.name)
+        wb = openpyxl.load_workbook(tmp.name, data_only=True)
+        ws = wb.active
+
+        # header row
+        headers = []
+        for cell in next(ws.iter_rows(min_row=1, max_row=1)):
+            headers.append((cell.value or '').strip() if isinstance(cell.value, str) else str(cell.value or '').strip())
+
+        # subsequent rows
+        for r in ws.iter_rows(min_row=2, values_only=True):
+            row = {}
+            for i, h in enumerate(headers):
+                val = r[i] if i < len(r) else ''
+                if isinstance(val, (int, float)):
+                    row[h] = str(val).strip()
+                elif isinstance(val, str):
+                    row[h] = val.strip()
+                else:
+                    row[h] = ''
+            # ignore totally empty lines
+            if any(v for v in row.values()):
+                rows.append(row)
+
+    return jsonify({'questions': rows})
 
 @quiz_bp.route("/api/media")
 def list_media():
