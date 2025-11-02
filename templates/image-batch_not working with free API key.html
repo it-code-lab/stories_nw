@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AI Image Batch (Paste → Generate → Copy to Excel)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg:#0f172a; --panel:#111827; --muted:#64748b; --text:#e5e7eb; --accent:#38bdf8; --ok:#22c55e; --warn:#fbbf24; --err:#ef4444;
+    --border:#1f2937;
+  }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.35 system-ui,Segoe UI,Arial; }
+  header, footer { padding:12px 16px; border-bottom:1px solid var(--border); }
+  header h1 { margin:0; font-size:16px; }
+  main { padding:12px 16px; display:grid; gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  label { color:var(--muted); font-size:12px; }
+  input[type=text], select, textarea, input[type=number] {
+    background:#0b1020; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 10px; outline:none;
+  }
+  textarea { width:100%; min-height:100px; resize:vertical; }
+  button {
+    background:#0b1328; color:var(--text); border:1px solid var(--border); padding:8px 12px; border-radius:8px; cursor:pointer;
+  }
+  button.primary { border-color:var(--accent); }
+  button.ok { border-color:var(--ok); }
+  button.warn { border-color:var(--warn); }
+  button:disabled { opacity:0.5; cursor:not-allowed; }
+  table { width:100%; border-collapse:collapse; table-layout:fixed; }
+  thead th { position:sticky; top:0; background:var(--panel); z-index:2; }
+  th, td { border:1px solid var(--border); padding:6px; vertical-align:top; }
+  td[contenteditable] { outline:none; }
+  .controls { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--border); }
+  .status-ok { color:var(--ok); }
+  .status-err { color:var(--err); }
+  .status-warn { color:var(--warn); }
+  .img-thumb { max-width:150px; max-height:110px; display:block; }
+  .col-tools { display:flex; gap:6px; justify-content:center; }
+  .small { font-size:12px; color:var(--muted); }
+  .grid { display:grid; gap:10px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .nowrap { white-space:nowrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI Image Batch — paste → generate → copy to Excel</h1>
+</header>
+
+<main>
+  <!-- Service config -->
+  <section class="card grid grid-2">
+    <div>
+      <label>API Base URL</label>
+      <input id="apiBase" type="text" value="http://localhost:5000" />
+      <div class="small">Your Flask sidecar or main server base. We’ll call <code>/ai/image</code>.</div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Concurrency</label><br/>
+        <input id="concurrency" type="number" min="1" max="10" value="3" style="width:80px" />
+      </div>
+      <div>
+        <label>Delay between tasks (ms)</label><br/>
+        <input id="delayMs" type="number" min="0" step="100" value="300" style="width:100px" />
+      </div>
+      <div>
+        <label>Link prefix (optional)</label><br/>
+        <input id="linkPrefix" type="text" value="http://localhost:5000" placeholder="http://localhost:5000" />
+      </div>
+    </div>
+  </section>
+
+  <!-- Paste & build -->
+  <section class="card">
+    <div class="row">
+      <div>
+        <label>Paste data (TSV/CSV)</label>
+        <textarea id="pasteBox" placeholder="Paste rows from Excel or CSV here..."></textarea>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Delimiter</label><br/>
+        <select id="delimSel">
+          <option value="auto">Auto-detect</option>
+          <option value="tab">Tab (TSV)</option>
+          <option value="comma">Comma (CSV)</option>
+          <option value="pipe">Pipe (|)</option>
+        </select>
+      </div>
+      <button id="buildTableBtn" class="primary">Build / Replace Table</button>
+      <button id="addColBtn">Add Column (right)</button>
+      <button id="copyBtn" class="ok">Copy as TSV (for Excel)</button>
+    </div>
+  </section>
+
+  <!-- Table -->
+  <section class="card">
+    <div class="row">
+      <div class="controls">
+        <span class="pill">Set column roles (Prompt / Link / Preview) in the header</span>
+        <span class="pill">Edit any cell inline</span>
+        <span class="pill">Use row checkboxes to limit which rows to generate</span>
+      </div>
+      <div class="nowrap">
+        <button id="genSelectedBtn" class="primary">Generate (Selected rows)</button>
+        <button id="genAllBtn" class="primary">Generate (All rows)</button>
+      </div>
+    </div>
+    <div style="overflow:auto; max-height:60vh; border:1px solid var(--border); border-radius:8px; margin-top:10px;">
+      <table id="dataTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="progress" class="small" style="margin-top:8px;"></div>
+  </section>
+</main>
+
+<footer class="small">
+  Pro tip: if your API returns relative <code>image_path</code> (e.g. <code>/edit_vid_input/xyz.png</code>), set <b>Link prefix</b> to your base URL to see full links.
+</footer>
+
+<script>
+/* ---------- Utilities ---------- */
+const $ = sel => document.querySelector(sel);
+const apiBase = () => $('#apiBase').value.replace(/\/+$/,''); // trim trailing /
+const linkPrefix = () => ($('#linkPrefix').value || '').replace(/\/+$/,''); // optional
+
+function detectDelimiter(text) {
+  const firstLine = text.split(/\r?\n/).find(l => l.trim().length);
+  if (!firstLine) return '\t';
+  const counts = {
+    '\t': (firstLine.match(/\t/g) || []).length,
+    ',': (firstLine.match(/,/g) || []).length,
+    '|': (firstLine.match(/\|/g) || []).length
+  };
+  let best = '\t', score = -1;
+  for (const [d,c] of Object.entries(counts)) if (c > score) { best = d; score = c; }
+  return best;
+}
+
+function parseTable(text, delimMode) {
+  const delim = (delimMode === 'auto') ? detectDelimiter(text)
+               : (delimMode === 'tab' ? '\t' : (delimMode === 'comma' ? ',' : '|'));
+  const rows = text.split(/\r?\n/).filter(r => r.length>0);
+  return rows.map(r => r.split(delim));
+}
+
+function toTSV(rows) {
+  return rows.map(r => r.map(c => {
+    c = (c ?? '').toString();
+    return c.replace(/\t/g,' ').replace(/\r?\n/g,' ');
+  }).join('\t')).join('\n');
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function htmlToText(cell) {
+  // contenteditable may add <div><br>; keep plain text
+  const s = cell.innerText || cell.textContent || '';
+  return s.replace(/\u00A0/g, ' ').trim();
+}
+
+/* ---------- Table model ---------- */
+const table = {
+  head: [], // [{name, role}]
+  body: []  // [[cell strings]]
+};
+
+function ensureCheckboxAndTools() {
+  // Prepend checkbox column; Append tools column
+  if (!table.head.length || table.head[0]?.role !== '__select__') {
+    table.head.unshift({name:'✔', role:'__select__'});
+    for (const row of table.body) row.unshift('');
+  }
+  if (!table.head.length || table.head[table.head.length-1]?.role !== '__tools__') {
+    table.head.push({name:'Tools', role:'__tools__'});
+    for (const row of table.body) row.push('');
+  }
+}
+
+function render() {
+  ensureCheckboxAndTools();
+  const thead = $('#dataTable thead'); thead.innerHTML='';
+  const tbody = $('#dataTable tbody'); tbody.innerHTML='';
+
+  // Header row with role selectors and column tools
+  const tr = document.createElement('tr');
+  table.head.forEach((col, idx) => {
+    const th = document.createElement('th');
+
+    if (col.role === '__select__') {
+      th.innerHTML = `<input id="chkAll" type="checkbox" title="Select/Deselect all rows" />`;
+      tr.appendChild(th);
+      return;
+    }
+
+    if (col.role === '__tools__') {
+      th.textContent = 'Tools';
+      tr.appendChild(th);
+      return;
+    }
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = col.name ?? `Col ${idx}`;
+    nameInput.oninput = () => { col.name = nameInput.value; };
+    nameInput.style.width='140px';
+
+    const roleSel = document.createElement('select');
+    roleSel.innerHTML = `
+      <option value="none">None</option>
+      <option value="prompt">Prompt</option>
+      <option value="link">Link</option>
+      <option value="preview">Preview</option>
+    `;
+    roleSel.value = (col.role || 'none');
+    roleSel.onchange = () => { col.role = roleSel.value; };
+
+    const btnDel = document.createElement('button'); btnDel.textContent='Del';
+    btnDel.onclick = () => deleteColumn(idx);
+
+    const btnLeft = document.createElement('button'); btnLeft.textContent='←';
+    btnLeft.onclick = () => moveColumn(idx, -1);
+
+    const btnRight = document.createElement('button'); btnRight.textContent='→';
+    btnRight.onclick = () => moveColumn(idx, +1);
+
+    const wrap = document.createElement('div');
+    wrap.className='col-tools';
+    wrap.append(btnLeft, btnRight, btnDel);
+
+    th.appendChild(nameInput);
+    th.appendChild(document.createElement('br'));
+    th.appendChild(roleSel);
+    th.appendChild(document.createElement('br'));
+    th.appendChild(wrap);
+    tr.appendChild(th);
+  });
+  thead.appendChild(tr);
+
+  // Body rows
+  table.body.forEach((row, rIdx) => {
+    const trb = document.createElement('tr');
+    row.forEach((cell, cIdx) => {
+      const td = document.createElement('td');
+      const role = table.head[cIdx].role;
+
+      if (role === '__select__') {
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true;
+        cb.dataset.r = rIdx; cb.className='rowSel';
+        td.style.textAlign='center'; td.appendChild(cb);
+        trb.appendChild(td); return;
+      }
+      if (role === '__tools__') {
+        const span = document.createElement('span');
+        span.className='small';
+        span.innerHTML = `<span class="status" id="st-${rIdx}"></span>`;
+        td.style.textAlign='center';
+        td.appendChild(span);
+        trb.appendChild(td); return;
+      }
+      if (role === 'preview') {
+        // show image if URL present
+        if (cell && typeof cell === 'string') {
+          const a = document.createElement('a');
+          a.href = cell; a.target='_blank';
+          const img = document.createElement('img');
+          img.src = cell; img.className='img-thumb';
+          a.appendChild(img);
+          td.appendChild(a);
+        }
+        // also allow editing
+        const ed = document.createElement('div');
+        ed.contentEditable = 'true';
+        ed.innerText = cell || '';
+        ed.oninput = () => table.body[rIdx][cIdx] = htmlToText(ed);
+        td.appendChild(ed);
+        trb.appendChild(td); return;
+      }
+
+      // normal editable cell
+      const ed = document.createElement('div');
+      ed.contentEditable = 'true';
+      ed.innerText = cell || '';
+      ed.oninput = () => table.body[rIdx][cIdx] = htmlToText(ed);
+      td.appendChild(ed);
+      trb.appendChild(td);
+    });
+    tbody.appendChild(trb);
+  });
+
+  const chkAll = $('#chkAll');
+  if (chkAll) {
+    chkAll.addEventListener('change', () => {
+      document.querySelectorAll('.rowSel').forEach(cb => cb.checked = chkAll.checked);
+    });
+  }
+}
+
+function addColumnRight() {
+  // Insert before tools col
+  const insertAt = Math.max(1, table.head.length - 1);
+  table.head.splice(insertAt, 0, {name:`Col ${insertAt}`, role:'none'});
+  table.body.forEach(row => row.splice(insertAt, 0, ''));
+  render();
+}
+function deleteColumn(idx) {
+  if (table.head[idx].role === '__select__' || table.head[idx].role === '__tools__') return;
+  table.head.splice(idx, 1);
+  table.body.forEach(row => row.splice(idx, 1));
+  render();
+}
+function moveColumn(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 1 || newIdx > table.head.length - 2) return; // keep within editable area
+  const [h] = table.head.splice(idx,1);
+  table.head.splice(newIdx,0,h);
+  for (const row of table.body) {
+    const [v] = row.splice(idx,1);
+    row.splice(newIdx,0,v);
+  }
+  render();
+}
+
+/* ---------- Actions ---------- */
+function buildTableFromPaste() {
+  const raw = $('#pasteBox').value.trim();
+  if (!raw) { alert('Paste some rows first.'); return; }
+  const rows = parseTable(raw, $('#delimSel').value);
+  // If first row looks like headers, use it; else generate names
+  let headers = rows[0] || [];
+  const data = rows.slice(1);
+  if (rows.length === 1) { headers = rows[0].map((_,i)=>`Col ${i+1}`); }
+  table.head = headers.map(h => ({name: h || 'Col', role:'none'}));
+  table.body = (data.length ? data : [headers]).map(r => r.slice()); // if single row, treat as data
+  render();
+}
+function copyTableAsTSV() {
+  // Use current visible table model (including edits)
+  const rows = [ table.head.map(h => h.name) ].concat(table.body);
+  const tsv = toTSV(rows);
+  navigator.clipboard.writeText(tsv).then(()=>{
+    flash('Copied table as TSV to clipboard.');
+  });
+}
+function flash(msg) {
+  const p = $('#progress');
+  p.textContent = msg;
+  setTimeout(()=>{ if (p.textContent===msg) p.textContent=''; }, 3000);
+}
+
+/* ---------- Image generation ---------- */
+function getRoleIndex(role) {
+  return table.head.findIndex(h => h.role === role);
+}
+async function generateRows(rowsIdx) {
+  const promptIdx = getRoleIndex('prompt');
+  const linkIdx   = getRoleIndex('link');
+  const prevIdx   = getRoleIndex('preview');
+
+  if (promptIdx < 0) { alert('Please set a "Prompt" column in the header.'); return; }
+  if (linkIdx < 0)   { alert('Please set a "Link" column to write results.'); return; }
+  if (prevIdx < 0)   { alert('Optional: set a "Preview" column to view images.'); }
+
+  const base = apiBase();
+  const url  = base + '/ai/image';
+  const pref = linkPrefix();
+
+  const conc = Math.max(1, parseInt($('#concurrency').value || '1', 10));
+  const delay= Math.max(0, parseInt($('#delayMs').value || '0', 10));
+
+  let inFlight = 0, q = [...rowsIdx], done = 0, errs = 0;
+
+  const next = async () => {
+    if (!q.length) return;
+    const r = q.shift();
+    inFlight++;
+    setStatus(r, 'Queued...', 'status-warn');
+
+    const prompt = (table.body[r][promptIdx] || '').toString().trim();
+    if (!prompt) {
+      setStatus(r, 'Empty prompt', 'status-err'); inFlight--; return;
+    }
+    try {
+      setStatus(r, 'Generating…', 'status-warn');
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ prompt })
+      });
+      const js = await res.json();
+      if (res.ok && js.ok) {
+        let link = js.image_path || '';
+        if (pref && link && link.startsWith('/')) link = pref + link;
+        table.body[r][linkIdx] = link;
+        if (prevIdx >= 0) table.body[r][prevIdx] = link;
+        setStatus(r, 'OK', 'status-ok');
+        updateRowPreview(r, prevIdx);
+      } else {
+        errs++;
+        const msg = (js && js.error) ? js.error : ('HTTP '+res.status);
+        table.body[r][linkIdx] = 'ERROR: ' + msg;
+        setStatus(r, 'Error', 'status-err');
+      }
+    } catch (e) {
+      errs++;
+      table.body[r][linkIdx] = 'ERROR: ' + e.message;
+      setStatus(r, 'Error', 'status-err');
+    } finally {
+      done++;
+      inFlight--;
+      updateProgress(done, rowsIdx.length, errs);
+      // re-render only the cells we touched
+      render(); // simple: full render (fast enough for moderate tables)
+      if (delay) await sleep(delay);
+      if (q.length) next();
+    }
+  };
+
+  updateProgress(0, rowsIdx.length, 0);
+  const starters = Math.min(conc, rowsIdx.length);
+  for (let i=0;i<starters;i++) next();
+}
+
+function selectedRowIndexes() {
+  const idx = [];
+  document.querySelectorAll('.rowSel').forEach((cb, i) => {
+    if (cb.checked) idx.push(parseInt(cb.dataset.r,10));
+  });
+  return idx;
+}
+
+function setStatus(rowIdx, text, cls) {
+  const el = document.querySelector(`#st-${rowIdx}`);
+  if (el) { el.className = 'status ' + (cls || ''); el.textContent = text; }
+}
+function updateProgress(done, total, errs) {
+  $('#progress').textContent = `Progress: ${done}/${total} — errors: ${errs}`;
+}
+function updateRowPreview(rIdx, prevIdx) {
+  if (prevIdx < 0) return;
+  // handled by full render()
+}
+
+/* ---------- Events ---------- */
+$('#buildTableBtn').onclick = buildTableFromPaste;
+$('#addColBtn').onclick = addColumnRight;
+$('#copyBtn').onclick = copyTableAsTSV;
+
+$('#genAllBtn').onclick = () => {
+  const all = table.body.map((_,i)=>i);
+  generateRows(all);
+};
+$('#genSelectedBtn').onclick = () => {
+  const sel = selectedRowIndexes();
+  if (!sel.length) { alert('No rows selected.'); return; }
+  generateRows(sel);
+};
+
+// init with a 3-col skeleton
+(function init(){
+  table.head = [{name:'✔', role:'__select__'}, {name:'Prompt', role:'prompt'}, {name:'Link', role:'link'}, {name:'Preview', role:'preview'}, {name:'Tools', role:'__tools__'}];
+  table.body = [['', 'A serene Himalayan temple at sunrise, photorealistic', '', '',''],
+                ['', 'Cute baby elephant splashing water, 3D render, soft light', '', '','']];
+  render();
+})();
+</script>
+</body>
+</html>
