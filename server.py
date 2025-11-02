@@ -1264,23 +1264,50 @@ def assemble_clips_to_make_video_song():
         return f"❌ Error: {str(e)}", 500
 
 
+# server.py
 @app.route('/splitvideotoparts', methods=['POST'])
-def splitvideotoparts():    
+def splitvideotoparts():
     try:
         print("Processing request...splitvideotoparts")
-        from assemble_from_videos import split_video
+        from assemble_from_videos import split_video, convert_landscape_to_portrait
 
-        max_duration = request.form.get('duration', '178')  # Default to 178 seconds if not provided
+        # existing field
+        max_duration = str(request.form.get('duration', '178')).strip()
 
+        # new fields
+        convert_portrait = (request.form.get('convert_portrait', 'no') == 'yes')
+        portrait_size    = (request.form.get('portrait_size', '1080x1920') or '1080x1920')
+        focus            = (request.form.get('focus', 'center') or 'center')
+        keep_audio       = (request.form.get('keep_audio', 'yes') == 'yes')
+
+        # default source your UI mentions
+        # (you already inform users the input lives here)
+        in_path  = "edit_vid_output/output.mp4"
+        work_src = in_path
+
+        # Optional pre-pass: crop to 9:16 and scale
+        if convert_portrait:
+            out_portrait = "edit_vid_output/output_portrait.mp4"
+            convert_landscape_to_portrait(
+                input_path=in_path,
+                output_path=out_portrait,
+                portrait_size=portrait_size,
+                focus=focus,
+                keep_audio=keep_audio
+            )
+            work_src = out_portrait
+
+        # Now split whichever source we decided on
         split_video(
-            input_path="edit_vid_output/output.mp4",
-            max_duration=max_duration 
+            input_path=work_src,
+            max_duration=max_duration
         )
 
         return "✅ splitvideotoparts completed successfully!", 200
     except Exception as e:
-        traceback.print_exc() 
+        traceback.print_exc()
         return f"❌ Error: {str(e)}", 500
+
 
 @app.route('/save_word_timestamps_file', methods=['POST'])
 def save_word_timestamps_file():

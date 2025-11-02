@@ -1122,6 +1122,33 @@
             <br><br>Picks the input from edit_vid_output/output.mp4. Parts are created in edit_vid_output folder.
 
         </div>
+
+        <div style="background-color:#cfe0ff; padding:10px; margin-bottom:10px;">
+        <label>Convert landscape → portrait 9:16?</label>
+        <select name="convert_portrait">
+        <option value="no" selected>no</option>
+        <option value="yes">yes</option>
+        </select>
+
+        <label>Portrait resolution:</label>
+        <select name="portrait_size">
+        <option value="1080x1920" selected>1080 x 1920</option>
+        <option value="720x1280">720 x 1280</option>
+        </select>
+
+        <label>Horizontal focus (crop anchor):</label>
+        <select name="focus">
+        <option value="center" selected>center</option>
+        <option value="left">left</option>
+        <option value="right">right</option>
+        </select>
+
+        <label>Keep audio in portrait file?</label>
+        <select name="keep_audio">
+        <option value="yes" selected>yes</option>
+        <option value="no">no (mute)</option>
+        </select>
+        </div>
         <label>Max lenth of parts (Seconds):</label>
         <input type="number" name="duration" min="1" max="1000" value="170">
         <button type="submit">Create Video</button>

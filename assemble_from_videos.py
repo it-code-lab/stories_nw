@@ -59,6 +59,60 @@ def split_video(input_path,  max_duration=180):
     subprocess.run(cmd, check=True)
     print(f"✅ Video split into parts saved under: {output_dir}")
 
+
+# assemble_from_videos.py
+def convert_landscape_to_portrait(
+    input_path: str,
+    output_path: str,
+    portrait_size: str = "1080x1920",
+    focus: str = "center",            # "left" | "center" | "right"
+    keep_audio: bool = True
+):
+    """
+    Crop a landscape video to 9:16 portrait by trimming left/right edges,
+    then scale to the requested resolution. Optionally keep audio.
+    """
+    # Parse WxH like "1080x1920"
+    try:
+        tw, th = portrait_size.lower().split("x")
+        tw, th = int(tw), int(th)
+    except Exception:
+        tw, th = 1080, 1920
+
+    # Center/left/right anchor for crop X position
+    # Crop width is ih*9/16 (portrait AR) when source is landscape
+    # - center: x = (iw - ih*9/16)/2
+    # - left:   x = 0
+    # - right:  x = (iw - ih*9/16)
+    if focus == "left":
+        x_expr = "0"
+    elif focus == "right":
+        x_expr = "iw - ih*9/16"
+    else:
+        x_expr = "(iw - ih*9/16)/2"
+
+    # If source is taller-than-wide (unlikely for landscape), this still behaves,
+    # but we primarily target landscape→portrait cropping.
+    crop_filter = f"crop=ih*9/16:ih:{x_expr}:0"
+
+    # Build ffmpeg cmd
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-vf", f"{crop_filter},scale={tw}:{th}",
+    ]
+
+    if keep_audio:
+        cmd += ["-c:v", "libx264", "-crf", "18", "-preset", "veryfast", "-c:a", "aac", "-b:a", "192k"]
+    else:
+        cmd += ["-an", "-c:v", "libx264", "-crf", "18", "-preset", "veryfast"]
+
+    cmd += [output_path]
+
+    subprocess.run(cmd, check=True)
+    print(f"✅ Portrait video created at: {output_path}")
+
+
 def _ffprobe_duration(path: str) -> float:
     """Return duration in seconds using ffprobe (format duration)."""
     try:
