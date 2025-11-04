@@ -397,6 +397,7 @@
             <br><br>Place the video clips in edit_vid_input folder. Place the audio file in edit_vid_audio. Output
             will be created in edit_vid_output and will also be copied on root as composed_video.mp4.
         </div>
+        <div class="infoBox">If audio length is smaller than video then video will be trimmed</div>
 
         <button type="submit">Make Large Video</button>
     </form>
@@ -1080,7 +1081,62 @@
         <label>Repeat Factor:</label>
         <input type="number" name="repeat_factor" min="1" value="1">
 
-        <button type="submit">Process Videos</button>
+        <button type="submit">Process Videos/Audio</button>
+    </form>
+    <br>
+
+    <!-- 10. Upscale SD → HD -->
+    <form id="upscaleVideoForm">
+        <h2 style="background-color:#e8f5e9;">Upscale SD → HD</h2>
+
+        <label>Upload a video (optional):</label>
+        <input type="file" name="file" accept="video/*">
+
+        <label>…or use existing project path:</label>
+        <input type="text" name="video" placeholder="/edit_vid_input/bg_video.mp4 or /edit_vid_output/output.mp4"
+            value="/edit_vid_input/bg_video.mp4">
+
+        <label>Target Width:</label>
+        <select name="width">
+            <option value="1280">1280 (720p)</option>
+            <option value="1920" selected>1920 (1080p)</option>
+        </select>
+
+        <label>Deinterlace?</label>
+        <select name="deinterlace">
+            <option value="true" selected>true</option>
+            <option value="false">false</option>
+        </select>
+
+        <label>Denoise?</label>
+        <select name="denoise">
+            <option value="true" selected>true</option>
+            <option value="false">false</option>
+        </select>
+
+        <label>Encoding CRF (lower=better):</label>
+        <input type="number" name="crf" min="14" max="28" value="18">
+
+        <label>Preset:</label>
+        <select name="preset">
+            <option>ultrafast</option>
+            <option>superfast</option>
+            <option>veryfast</option>
+            <option>faster</option>
+            <option>fast</option>
+            <option selected>slow</option>
+            <option>slower</option>
+            <option>veryslow</option>
+        </select>
+
+        <button type="submit">Upscale Video</button>
+
+        <div class="infoBox">
+            Saves <code>/upscaled_&lt;width&gt;w.mp4</code> at project root (downloadable via
+            <code>/video/…</code>) and copies to <code>edit_vid_output/</code>.
+        </div>
+
+        <div id="upscaleResult" style="margin-top:10px;"></div>
     </form>
 
     <br>
@@ -1124,30 +1180,30 @@
         </div>
 
         <div style="background-color:#cfe0ff; padding:10px; margin-bottom:10px;">
-        <label>Convert landscape → portrait 9:16?</label>
-        <select name="convert_portrait">
-        <option value="no" selected>no</option>
-        <option value="yes">yes</option>
-        </select>
+            <label>Convert landscape → portrait 9:16?</label>
+            <select name="convert_portrait">
+                <option value="no" selected>no</option>
+                <option value="yes">yes</option>
+            </select>
 
-        <label>Portrait resolution:</label>
-        <select name="portrait_size">
-        <option value="1080x1920" selected>1080 x 1920</option>
-        <option value="720x1280">720 x 1280</option>
-        </select>
+            <label>Portrait resolution:</label>
+            <select name="portrait_size">
+                <option value="1080x1920" selected>1080 x 1920</option>
+                <option value="720x1280">720 x 1280</option>
+            </select>
 
-        <label>Horizontal focus (crop anchor):</label>
-        <select name="focus">
-        <option value="center" selected>center</option>
-        <option value="left">left</option>
-        <option value="right">right</option>
-        </select>
+            <label>Horizontal focus (crop anchor):</label>
+            <select name="focus">
+                <option value="center" selected>center</option>
+                <option value="left">left</option>
+                <option value="right">right</option>
+            </select>
 
-        <label>Keep audio in portrait file?</label>
-        <select name="keep_audio">
-        <option value="yes" selected>yes</option>
-        <option value="no">no (mute)</option>
-        </select>
+            <label>Keep audio in portrait file?</label>
+            <select name="keep_audio">
+                <option value="yes" selected>yes</option>
+                <option value="no">no (mute)</option>
+            </select>
         </div>
         <label>Max lenth of parts (Seconds):</label>
         <input type="number" name="duration" min="1" max="1000" value="170">
@@ -2188,45 +2244,65 @@ ${JSON.stringify(meta, null, 2)}
     </script>
 
     <script>
-    document.getElementById('extractAudioForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
+        document.getElementById('extractAudioForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const fd = new FormData(form);
 
-    const res = await fetch('/extract_audio', { method: 'POST', body: fd });
-    const data = await res.json();
+            const res = await fetch('/extract_audio', { method: 'POST', body: fd });
+            const data = await res.json();
 
-    const box = document.getElementById('extractAudioResult');
-    box.innerHTML = '';
-    if (!data.ok) {
-        box.innerHTML = `<div class="infoBox" style="background:#ffe5e5;border:1px solid #f5bcbc;color:#900;">
+            const box = document.getElementById('extractAudioResult');
+            box.innerHTML = '';
+            if (!data.ok) {
+                box.innerHTML = `<div class="infoBox" style="background:#ffe5e5;border:1px solid #f5bcbc;color:#900;">
         ❌ ${data.error || 'Failed'}<br>${(data.detail || '')}</div>`;
-        return;
-    }
+                return;
+            }
 
-    const link = document.createElement('a');
-    link.href = data.download;
-    link.textContent = `Download ${data.format.toUpperCase()} (${data.duration_sec ?? '—'}s)`;
-    link.target = '_blank';
+            const link = document.createElement('a');
+            link.href = data.download;
+            link.textContent = `Download ${data.format.toUpperCase()} (${data.duration_sec ?? '—'}s)`;
+            link.target = '_blank';
 
-    const audio = document.createElement('audio');
-    audio.controls = true;
-    audio.src = data.download;
-    audio.style.display = 'block';
-    audio.style.marginTop = '10px';
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.src = data.download;
+            audio.style.display = 'block';
+            audio.style.marginTop = '10px';
 
-    box.appendChild(link);
-    box.appendChild(audio);
+            box.appendChild(link);
+            box.appendChild(audio);
 
-    // Optional: show where we also saved it
-    if (data.also_saved_in_edit_vid_audio) {
-        const p = document.createElement('div');
-        p.style.marginTop = '6px';
-        p.textContent = `Also saved to: ${data.also_saved_in_edit_vid_audio}`;
-        box.appendChild(p);
-    }
-    });
+            // Optional: show where we also saved it
+            if (data.also_saved_in_edit_vid_audio) {
+                const p = document.createElement('div');
+                p.style.marginTop = '6px';
+                p.textContent = `Also saved to: ${data.also_saved_in_edit_vid_audio}`;
+                box.appendChild(p);
+            }
+        });
     </script>
+
+    <script>
+        document.getElementById('upscaleVideoForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            const res = await fetch('/upscale', { method: 'POST', body: fd });
+            const data = await res.json();
+            const box = document.getElementById('upscaleResult');
+            if (data.ok) {
+                box.innerHTML =
+                    `✅ Upscaled! <a href="${data.download}" target="_blank">Open video</a>` +
+                    (data.also_saved_in_edit_vid_output ? `<div>Also saved: ${data.also_saved_in_edit_vid_output}</div>` : '') +
+                    `<pre style="text-align:left;white-space:pre-wrap;">${JSON.stringify(data.settings, null, 2)}</pre>`;
+            } else {
+                box.innerHTML = `❌ ${data.error || 'Failed'}<pre style="text-align:left;white-space:pre-wrap;">${(data.detail || '')}</pre>`;
+            }
+        });
+    </script>
+
 </body>
 
 </html>

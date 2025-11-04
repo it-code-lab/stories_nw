@@ -28,6 +28,14 @@ from media_audio import (
     extract_audio_from_video,
     resolve_input_video,
 )
+# ---- ADD near the top with imports (server.py) ----
+import shutil
+
+def _ensure_ffmpeg():
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("FFmpeg not found in PATH. Please install FFmpeg and add it to PATH.")
+    if not shutil.which("ffprobe"):
+        raise RuntimeError("ffprobe not found in PATH. Please install FFmpeg tools and add to PATH.")
 
 
 app = Flask(__name__, template_folder='templates')
@@ -49,6 +57,102 @@ DEFAULT_IMAGE_MODEL = os.getenv("GEMINI_DEFAULT_IMAGE_MODEL", "gemini-2.5-flash-
 GEM_STATE = str(BASE_DIR / ".gemini_pool_state.json")
 
 gemini_pool = None
+
+
+# ---- ADD this route (server.py) ----
+@app.post("/upscale")
+def upscale_video():
+    """
+    SD -> HD upscale with FFmpeg (bwdif -> atadenoise -> lanczos scale -> unsharp).
+    Form-data fields:
+      - file: optional uploaded video
+      - video: optional project path like '/edit_vid_input/bg_video.mp4' or '/background_videos/...'
+      - width: target width (e.g., 1280 or 1920). Default 1920
+      - deinterlace: 'true'/'false' (default 'true')
+      - denoise: 'true'/'false' (default 'true')
+      - crf: H.264 CRF (default 18; lower = higher quality)
+      - preset: x264 preset (ultrafast..veryslow) default 'slow'
+    Output:
+      - Saves root '/upscaled_<width>w.mp4' (served by /video/<file>)
+      - Also copies to 'edit_vid_output/upscaled_<width>w.mp4'
+    """
+    try:
+        _ensure_ffmpeg()
+
+        base_dir = BASE_DIR
+        uploaded = request.files.get("file")
+        video_url = (request.form.get("video") or "").strip()
+
+        # Defaults
+        width = int(request.form.get("width", "1920") or 1920)
+        deinterlace_val = (request.form.get("deinterlace", "true") or "true").lower() in ("1","true","yes","on")
+        denoise_val = (request.form.get("denoise", "true") or "true").lower() in ("1","true","yes","on")
+        crf = int(request.form.get("crf", "18") or 18)
+        preset = (request.form.get("preset", "slow") or "slow").strip()
+
+        # Resolve input video path using your existing helper
+        in_path = resolve_input_video(
+            base_dir=base_dir,
+            uploaded_temp_dir=base_dir / "tmp_upload_video",
+            uploaded_file=uploaded,
+            urlish_path=video_url if video_url else None,
+            # Sensible fallback
+            fallback_rel="edit_vid_input/bg_video.mp4",
+        )
+
+        # Build FFmpeg filter chain
+        vf = []
+        if deinterlace_val:
+            vf.append("bwdif=mode=1")
+        if denoise_val:
+            vf.append("atadenoise")
+        vf.append(f"scale={width}:-2:flags=lanczos")     # keep AR; height auto
+        vf.append("unsharp=lx=3:ly=3:la=0.4")
+        vf.append("format=yuv420p")
+        filter_str = ",".join(vf)
+
+        out_name = f"upscaled_{width}w.mp4"
+        out_path = base_dir / out_name
+
+        # Run FFmpeg
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", str(in_path),
+            "-vf", filter_str,
+            "-c:v", "libx264", "-crf", str(crf), "-preset", preset,
+            "-c:a", "aac", "-b:a", "192k",
+            "-movflags", "+faststart",
+            str(out_path)
+        ]
+        print("Upscale cmd:", " ".join(cmd))
+        subprocess.check_call(cmd)
+
+        # Also copy to edit_vid_output for your downstream steps
+        try:
+            (base_dir / "edit_vid_output").mkdir(exist_ok=True)
+            shutil.copy(str(out_path), str(base_dir / "edit_vid_output" / out_name))
+        except Exception:
+            pass
+
+        return jsonify({
+            "ok": True,
+            "input": str(in_path.relative_to(base_dir)),
+            "settings": {
+                "width": width,
+                "deinterlace": deinterlace_val,
+                "denoise": denoise_val,
+                "crf": crf,
+                "preset": preset
+            },
+            "download": f"/video/{out_name}",
+            "also_saved_in_edit_vid_output": f"/video/edit_vid_output/{out_name}",
+        })
+    except subprocess.CalledProcessError as e:
+        return jsonify({"ok": False, "error": "FFmpeg failed", "detail": getattr(e, "output", None)}), 500
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 @app.post("/extract_audio")
 def extract_audio_route():
