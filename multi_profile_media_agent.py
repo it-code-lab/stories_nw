@@ -97,7 +97,7 @@ ACCOUNTS: List[Dict[str, str]] = [
         "id": "mail2kishnm",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 6",
         "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/new_image?model=imagen-4.0-generate-001",
+        "google_url": "https://aistudio.google.com/prompts/1NC_HmDTCGQhQQflVtof2MgN0UUqGGpYO",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },    
     {
@@ -125,7 +125,7 @@ ACCOUNTS: List[Dict[str, str]] = [
         "id": "mummy",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 10",
         "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/new_image?model=imagen-4.0-generate-001",
+        "google_url": "https://aistudio.google.com/prompts/1NvEngwCN7o0ghPVb_x-MNOsi0ESIc_5M",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     }, 
     {
@@ -137,7 +137,29 @@ ACCOUNTS: List[Dict[str, str]] = [
     },
 ]
 
-
+META_ACCOUNTS: List[Dict[str, str]] = [
+    {
+        "id": "numero_uno",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 1",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/1SHiNmxmlkmYTqHH8wseV4evAegV0pRvH",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    },
+    {
+        "id": "mail2sm",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 3",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/18LNm8fsaraxHYYWCB92vGp4BC1-put7S",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    },
+    {
+        "id": "mail2km",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 4",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/1CzRw-7NIzeaIqFCpYc5-vV_vM2kRMDXh",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    },
+]
 # ======== Helpers ========
 
 def ensure_dir(p: str | Path):
