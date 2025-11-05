@@ -39,7 +39,7 @@ POLITE_MIN_WAIT  = 0.8
 POLITE_MAX_WAIT  = 1.8
 
 # Work distribution
-MAX_PROMPTS_PER_ACCOUNT = 5      # how many prompts to run per account
+MAX_PROMPTS_PER_ACCOUNT = 40      # how many prompts to run per account
 SHUFFLE_PROMPTS         = True   # randomize prompt order on each run
 DRY_RUN                 = False  # True = don't click generate/download; placeholders instead
 
@@ -53,18 +53,59 @@ ACCOUNTS: List[Dict[str, str]] = [
     {
         "id": "numero_uno",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 1",
-        "out": r"downloads\numero_uno",
+        "out": r"downloads",
         "google_url": "https://aistudio.google.com/prompts/1SHiNmxmlkmYTqHH8wseV4evAegV0pRvH",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },
-    # # Example second account (edit these paths/URLs before use):
-    # {
-    #     "id": "mail2k",
-    #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 3",
-    #     "out": r"downloads\mail2k",
-    #     "google_url": "https://aistudio.google.com/prompts/1SHiNmxmlkmYTqHH8wseV4evAegV0pRvH",
-    #     "meta_url":   "https://www.meta.ai/media/?nr=1",
-    # },
+    {
+        "id": "mail2km",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 4",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/1CzRw-7NIzeaIqFCpYc5-vV_vM2kRMDXh",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    },
+    {
+        "id": "mail2kishnm",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 6",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/new_image?model=imagen-4.0-generate-001",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    },    
+    {
+        "id": "mail2nishm",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 7",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/18c87m7nuF8ZSkrV6HCv0W5R7WZpmjEWC",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    }, 
+    {
+        "id": "mail2nishm1",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 8",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/14ghA9r3kNxMo0GCgX5mxcfA8i-fk7ee-",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    }, 
+    {
+        "id": "mail2nakshm",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 9",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/1GhH0rXYgQtwTY7h9FtKUfYCWtT0n8oph",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    }, 
+    {
+        "id": "mummy",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 10",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/new_image?model=imagen-4.0-generate-001",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    }, 
+    {
+        "id": "papa",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 11",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/1Dyaf1Zo_EzdUIiZGlJzasLD6k0WvQcnU",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    },
 ]
 
 # ========
@@ -90,7 +131,7 @@ def split_work(prompts: List[str], accounts: List[Dict[str, str]], per_account: 
 def ensure_dir(path: str | Path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
-def safe_basename(s: str, maxlen: int = 60) -> str:
+def safe_basename(s: str, maxlen: int = 30) -> str:
     # Clean prompt string
     s = re.sub(r"[^a-zA-Z0-9._-]+", "_", s).strip("_")
     base = s[:maxlen] or "asset"
@@ -158,38 +199,49 @@ async def ensure_logged_in(page: Page, post_login_selector: str, site_name: str)
         raise RuntimeError(f"[{site_name}] Login check timed out. Log in manually the first time.")
 
 async def generate_image_google_ai(page: Page, url: str, prompt: str, out_dir: Path, dry_run=False) -> Path:
-    await page.goto(url)
+    
     # Post-login marker: the prompt textbox (adjust the name if it changes)
     textbox = page.get_by_role("textbox", name="Enter a prompt to generate an")
+    
     await expect(textbox).to_be_visible(timeout=120_000)
 
     # Count images BEFORE we run (so we can detect the new one)
     gallery_items = page.locator("ms-image-generation-gallery-image")
     before_cnt = await gallery_items.count()
+    print(f"before_cnt = {before_cnt}")
+
 
     # Fill prompt
     await textbox.fill(prompt)
+    print("Entered prompt")
 
     # Optional control (only if present) — your snippet showed a button named ":9"
     try:
         await page.get_by_role("button", name=":9").click(timeout=2_000)
+        print("Ladscape option selected")
     except Exception:
         pass  # ignore if not present
 
     if dry_run:
         # Create a tiny placeholder png so the pipeline continues
+        
         ph = out_dir / f"{safe_basename(prompt)}__DRYRUN.png"
         try:
             from PIL import Image
             Image.new("RGB", (16, 16), (210, 210, 210)).save(ph)
         except Exception:
             ph.write_bytes(b"")
+        print("Returning image from dry run")
         return ph
 
     # Click Run (exact)
     run_btn = page.get_by_role("button", name="Run", exact=True)
     await expect(run_btn).to_be_enabled()
     await run_btn.click()
+    print("Run button clicked")
+
+    await asyncio.sleep(15)
+    print("waited 15 seconds")
 
     # Wait for generation to complete:
     # Strategy: wait until gallery item count increases OR a “generating” spinner disappears.
@@ -209,13 +261,15 @@ async def generate_image_google_ai(page: Page, url: str, prompt: str, out_dir: P
         raise RuntimeError("Timed out waiting for new generated image in gallery.")
 
     after_cnt = await gallery_items.count()
+    print(f"after_cnt = {after_cnt}")
+
 
     # Figure out which *new* item to download.
     # Some UIs prepend newest at index 0; others append to the end.
     # We'll try BOTH orders deterministically:
     candidates = []
     # If prepended, index 0 is new
-    candidates.append(gallery_items.nth(0))
+    #candidates.append(gallery_items.nth(0))
     # If appended, the item at old count index is the first new one
     if after_cnt > before_cnt:
         candidates.append(gallery_items.nth(before_cnt))
@@ -229,36 +283,35 @@ async def generate_image_google_ai(page: Page, url: str, prompt: str, out_dir: P
         try:
             # Make sure the candidate is attached/visible
             await cand.wait_for(state="visible", timeout=10_000)
+            exp_btn = cand.get_by_label("Large view of this image")
+            await exp_btn.click()
+            print("Large view is clicked")
 
-            # Prefer a *real* browser download if the site triggers one:
             async with page.expect_download(timeout=30_000) as dl_info:
-                # The download control is inside the gallery item:
-                dl_btn = cand.get_by_label("Download this image")
-                await dl_btn.click()
+                # The download control is inside the gallery item:             
+                await page.get_by_role("button", name="Download").click()
             dl = await dl_info.value
             await dl.save_as(str(out_path))
             print(f"[Google AI] Saved: {out_path}")
+            await page.get_by_role("button", name="Close").click()
             return out_path
         except Exception as e:
             last_err = e
-            # Fall through to try the next candidate
             continue
 
     # If no real download fired (e.g., it opens a lightbox or uses canvas),
     # fallback to screenshotting the image node:
-    try:
-        target = candidates[0] if candidates else gallery_items.nth(0)
-        # Many custom elements render an <img> inside; try to pierce into it,
-        # otherwise screenshot the whole card.
-        img_inside = target.locator("img").first
-        if await img_inside.count() > 0:
-            await img_inside.screenshot(path=str(out_path))
-        else:
-            await target.screenshot(path=str(out_path))
-        print(f"[Google AI] Captured via screenshot: {out_path}")
-        return out_path
-    except Exception as e:
-        raise RuntimeError(f"Could not download/screenshot latest image. Last error: {last_err or e}") from e
+    # try:
+    #     target = candidates[0] if candidates else gallery_items.nth(0)
+    #     img_inside = target.locator("img").first
+    #     if await img_inside.count() > 0:
+    #         await img_inside.screenshot(path=str(out_path))
+    #     else:
+    #         await target.screenshot(path=str(out_path))
+    #     print(f"[Google AI] Captured via screenshot: {out_path}")
+    #     return out_path
+    # except Exception as e:
+    #     raise RuntimeError(f"Could not download/screenshot latest image. Last error: {last_err or e}") from e
     
 async def make_video_from_image_meta(page: Page, url: str, image_path: Path, out_dir: Path, dry_run=False) -> Path | None:
     """
@@ -328,27 +381,31 @@ async def run_account(pw, account: Dict[str, str], prompts: List[str]):
     page: Page = await ctx.new_page()
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-    for i, prompt in enumerate(prompts, start=1):
+    await page.goto(account["google_url"])
+    for i, prompt in enumerate(prompts, start=1):        
         try:
             # 1) Generate image (Google AI Studio)
+            
             img_path = await generate_image_google_ai(page, account["google_url"], prompt, out_dir, dry_run=DRY_RUN)
             await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
 
             # 2) Create video
-            if VIDEO_FROM.lower() == "meta":
-                vid = await make_video_from_image_meta(page, account["meta_url"], img_path, out_dir, dry_run=DRY_RUN)
-                if vid is None:
-                    # fallback to local ffmpeg
-                    out_mp4 = out_dir / (img_path.stem + ".mp4")
-                    ffmpeg_make_clip(img_path, out_mp4, RESOLUTION, DURATION, FPS, KENBURNS)
-            else:
-                out_mp4 = out_dir / (img_path.stem + ".mp4")
-                ffmpeg_make_clip(img_path, out_mp4, RESOLUTION, DURATION, FPS, KENBURNS)
+            # if VIDEO_FROM.lower() == "meta":
+            #     vid = await make_video_from_image_meta(page, account["meta_url"], img_path, out_dir, dry_run=DRY_RUN)
+            #     if vid is None:
+            #         # fallback to local ffmpeg
+            #         out_mp4 = out_dir / (img_path.stem + ".mp4")
+            #         ffmpeg_make_clip(img_path, out_mp4, RESOLUTION, DURATION, FPS, KENBURNS)
+            # else:
+            #     out_mp4 = out_dir / (img_path.stem + ".mp4")
+            #     ffmpeg_make_clip(img_path, out_mp4, RESOLUTION, DURATION, FPS, KENBURNS)
 
             print(f"[{account['id']}] Completed {i}/{len(prompts)}")
             await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
+            await asyncio.sleep(15)
         except Exception as e:
             print(f"[{account['id']}] ERROR on prompt: {prompt}\n  -> {e}")
+            break
 
     await ctx.close()
     print(f"[{account['id']}] Done.")
