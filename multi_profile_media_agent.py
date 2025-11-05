@@ -1,60 +1,89 @@
-# multi_profile_media_agent_static.py
+# multi_profile_media_agent.py  (Excel-enabled, with account_id_1/account_id_2)
 # ------------------------------------------------------------
-# Multi-profile, no-API, UI-driven image->video pipeline
-# Keeps ALL account/profile/config in this file.
+# Two-pass workflow:
+#   1) RUN_MODE="images" -> read prompts from Excel, generate images, write image_path (+account_id_1)
+#   2) RUN_MODE="videos" -> read image_path + video_cmd, render, write video_path (+account_id_2)
 #
-# First run per profile: headless=False, log in manually.
-# After sessions persist, you can try headless=True.
+# Sheet: Jobs
+# Columns (case-insensitive): prompt, account_id, image_path, video_cmd, video_path, status,
+#                             account_id_1, account_id_2
 # ------------------------------------------------------------
 
 import asyncio
 import os
 import random
 import re
+import shutil
 import subprocess
-from pathlib import Path
-from typing import Dict, List
-from playwright.async_api import async_playwright, BrowserContext, Page, expect
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+from playwright.async_api import async_playwright, BrowserContext, Page, expect
+
+# ===== Excel =====
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 # =========================
 # GLOBAL CONFIG (edit here)
 # =========================
 
-# Prompts source: one prompt per line
-PROMPTS_FILE = "prompts.txt"
+RUN_MODE = "images"   # "images" or "videos"
 
-# Video rendering (local ffmpeg) defaults
-RESOLUTION = "1080x1920"   # "1920x1080" for landscape, "1080x1920" for portrait
-DURATION   = 8             # seconds per clip
+EXCEL_FILE  = r"media_jobs.xlsx"
+SHEET_NAME  = "Jobs"
+
+# default video rendering if video_cmd is blank
+DEFAULT_VIDEO_CMD = (
+    'ffmpeg -y -loop 1 -i "{image}" -t 8 -r 30 -pix_fmt yuv420p "{out}"'
+)
+
+# "Video account" label when videos are created locally (not by a browser account)
+VIDEO_ACCOUNT_ID = "local_ffmpeg"
+
+# Video rendering defaults for the local helper (not used by DEFAULT_VIDEO_CMD directly)
+RESOLUTION = "1080x1920"
+DURATION   = 8
 FPS        = 30
-KENBURNS   = True          # gentle zoom-in effect with ffmpeg
-VIDEO_FROM = "ffmpeg"      # "ffmpeg" (default) or "meta" to attempt Meta UI
+KENBURNS   = True
 
 # Playwright / Browser
-BROWSER_NAME     = "chromium"   # "chromium" | "firefox" | "webkit"
+BROWSER_NAME      = "chromium"
 CHROME_EXECUTABLE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-HEADLESS         = False        # first run: False to log in; later you may try True
-POLITE_MIN_WAIT  = 0.8
-POLITE_MAX_WAIT  = 1.8
+HEADLESS          = False
+POLITE_MIN_WAIT   = 0.8
+POLITE_MAX_WAIT   = 1.8
+
+# Make screenshots crisper (also helps UI fallbacks)
+DEVICE_SCALE_FACTOR = 2
+
+# Downloads isolation (prevents Chrome saving into OS default Downloads)
+ISOLATE_DOWNLOADS = True
 
 # Work distribution
-MAX_PROMPTS_PER_ACCOUNT = 40      # how many prompts to run per account
-SHUFFLE_PROMPTS         = True   # randomize prompt order on each run
-DRY_RUN                 = False  # True = don't click generate/download; placeholders instead
+MAX_PROMPTS_PER_ACCOUNT = 40
+SHUFFLE_PROMPTS         = False
+DRY_RUN                 = False
 
-# ============
-# ACCOUNTS
-# ============
-# Add as many as you want. Each account has:
-# id, profile (Chrome user-data-dir), out (downloads/output folder),
-# and per-account URLs if you want (or use global).
+# ---- Account audit columns (do not rename unless you also update ensure_columns) ----
+ACCOUNT_ID1_COL = "account_id_1"   # who generated the image
+ACCOUNT_ID2_COL = "account_id_2"   # who generated the video
+
+# ============ ACCOUNTS ============
 ACCOUNTS: List[Dict[str, str]] = [
     {
         "id": "numero_uno",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 1",
         "out": r"downloads",
         "google_url": "https://aistudio.google.com/prompts/1SHiNmxmlkmYTqHH8wseV4evAegV0pRvH",
+        "meta_url":   "https://www.meta.ai/media/?nr=1",
+    },
+    {
+        "id": "mail2sm",
+        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 3",
+        "out": r"downloads",
+        "google_url": "https://aistudio.google.com/prompts/18LNm8fsaraxHYYWCB92vGp4BC1-put7S",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },
     {
@@ -108,268 +137,287 @@ ACCOUNTS: List[Dict[str, str]] = [
     },
 ]
 
-# ========
-# Helpers
-# ========
 
-def load_prompts(path: str) -> List[str]:
-    p = Path(path)
-    if not p.exists():
-        raise FileNotFoundError(f"Prompts file not found: {p.resolve()}")
-    lines = [ln.strip() for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
-    return lines
+# ======== Helpers ========
 
-def split_work(prompts: List[str], accounts: List[Dict[str, str]], per_account: int) -> None:
-    """
-    Mutates accounts: injects "_prompts" list in each account dict.
-    """
-    idx = 0
-    for acc in accounts:
-        acc["_prompts"] = prompts[idx: idx + per_account]
-        idx += per_account
-
-def ensure_dir(path: str | Path):
-    Path(path).mkdir(parents=True, exist_ok=True)
+def ensure_dir(p: str | Path):
+    Path(p).mkdir(parents=True, exist_ok=True)
 
 def safe_basename(s: str, maxlen: int = 30) -> str:
-    # Clean prompt string
     s = re.sub(r"[^a-zA-Z0-9._-]+", "_", s).strip("_")
     base = s[:maxlen] or "asset"
-
-    # Timestamp prefix
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-
     return f"{ts}_{base}"
 
-def ffmpeg_make_clip(image_path: Path, out_path: Path, resolution: str, duration: int, fps: int, kenburns: bool):
-    """
-    Create a short video from a still image using local FFmpeg (no API cost).
-    """
-    w, h = resolution.split("x")
-    if kenburns:
-        vf = (
-            f"[0:v]scale=w=min(iw*{int(w)}/ih*{h},{w}):"
-            f"h=min(ih*{int(h)}/iw*{w},{h}):force_original_aspect_ratio=decrease,"
-            f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,"
-            f"zoompan=z='min(1.05,zoom+0.0008)':d={duration*fps}:s={w}x{h}[v]"
-        )
-        cmd = [
-            "ffmpeg", "-y",
-            "-loop", "1",
-            "-i", str(image_path),
-            "-filter_complex", vf,
-            "-map", "[v]",
-            "-t", str(duration),
-            "-r", str(fps),
-            "-pix_fmt", "yuv420p",
-            str(out_path)
-        ]
-    else:
-        vf = (
-            f"scale=w=min(iw*{int(w)}/ih*{h},{w}):"
-            f"h=min(ih*{int(h)}/iw*{w},{h}):force_original_aspect_ratio=decrease,"
-            f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2"
-        )
-        cmd = [
-            "ffmpeg", "-y",
-            "-loop", "1",
-            "-i", str(image_path),
-            "-vf", vf,
-            "-t", str(duration),
-            "-r", str(fps),
-            "-pix_fmt", "yuv420p",
-            str(out_path)
-        ]
-    print("FFmpeg:", " ".join(cmd))
-    subprocess.run(cmd, check=True)
+def open_wb_with_retry(path: str, attempts: int = 5, delay: float = 0.5):
+    for i in range(attempts):
+        try:
+            return load_workbook(path)
+        except PermissionError:
+            if i == attempts - 1:
+                raise
+            import time; time.sleep(delay)
+
+def save_wb_with_retry(wb, path: str, attempts: int = 5, delay: float = 0.5):
+    for i in range(attempts):
+        try:
+            wb.save(path)
+            return
+        except PermissionError:
+            if i == attempts - 1:
+                raise
+            import time; time.sleep(delay)
+
+def ensure_columns(ws, required_headers: List[str]) -> None:
+    """Create any missing headers at the end of row 1."""
+    existing = { (str(c.value).strip().lower() if c.value else ""): j
+                 for j, c in enumerate(ws[1], start=1) }
+    max_col = ws.max_column
+    for name in required_headers:
+        key = name.lower()
+        if key not in existing or existing.get(key) is None:
+            max_col += 1
+            ws.cell(1, max_col).value = name
+            existing[key] = max_col
+
+def colmap_from_headers(ws) -> Dict[str, int]:
+    """Map header name (lower) -> column index (1-based)."""
+    header = {}
+    for j, cell in enumerate(ws[1], start=1):
+        if cell.value:
+            header[str(cell.value).strip().lower()] = j
+    return header
+
+def read_jobs_from_excel_for_images() -> List[Dict]:
+    """Rows needing image generation: prompt set AND image_path empty."""
+    wb = open_wb_with_retry(EXCEL_FILE)
+    ws = wb[SHEET_NAME]
+
+    # Ensure columns exist (adds audit columns if missing)
+    ensure_columns(ws, [
+        "prompt", "account_id", "image_path", "video_cmd", "video_path", "status",
+        ACCOUNT_ID1_COL, ACCOUNT_ID2_COL
+    ])
+    h = colmap_from_headers(ws)
+
+    rows = []
+    for i in range(2, ws.max_row + 1):
+        prompt = (ws.cell(i, h["prompt"]).value or "").strip()
+        img    = (ws.cell(i, h["image_path"]).value or "").strip()
+        acct   = (ws.cell(i, h["account_id"]).value or "").strip()
+        if prompt and not img:
+            rows.append({"row": i, "prompt": prompt, "account_id": acct})
+    save_wb_with_retry(wb, EXCEL_FILE)  # in case we added headers
+    wb.close()
+    return rows
+
+def read_jobs_from_excel_for_videos() -> List[Dict]:
+    """Rows needing video generation: image_path set AND video_path empty."""
+    wb = open_wb_with_retry(EXCEL_FILE)
+    ws = wb[SHEET_NAME]
+
+    # Ensure columns exist
+    ensure_columns(ws, [
+        "prompt", "account_id", "image_path", "video_cmd", "video_path", "status",
+        ACCOUNT_ID1_COL, ACCOUNT_ID2_COL
+    ])
+    h = colmap_from_headers(ws)
+
+    rows = []
+    for i in range(2, ws.max_row + 1):
+        image = (ws.cell(i, h["image_path"]).value or "").strip()
+        vout  = (ws.cell(i, h["video_path"]).value or "").strip()
+        vcmd  = (ws.cell(i, h["video_cmd"]).value or "").strip()
+        if image and not vout:
+            rows.append({"row": i, "image": image, "video_cmd": vcmd})
+    save_wb_with_retry(wb, EXCEL_FILE)
+    wb.close()
+    return rows
+
+def write_image_result(row_idx: int, image_path: str, account_id_used: str, status: str = "ok"):
+    wb = open_wb_with_retry(EXCEL_FILE)
+    ws = wb[SHEET_NAME]
+
+    ensure_columns(ws, [
+        "prompt", "account_id", "image_path", "video_cmd", "video_path", "status",
+        ACCOUNT_ID1_COL, ACCOUNT_ID2_COL
+    ])
+    h = colmap_from_headers(ws)
+
+    # Write image path + status
+    ws.cell(row_idx, h["image_path"]).value = image_path
+    ws.cell(row_idx, h["status"]).value = status
+
+    # If account_id_1 is empty, record who actually generated the image
+    if ws.cell(row_idx, h[ACCOUNT_ID1_COL]).value in (None, ""):
+        ws.cell(row_idx, h[ACCOUNT_ID1_COL]).value = account_id_used
+
+    # Optional: if assignment account_id is blank, backfill with the one we used
+    if ws.cell(row_idx, h["account_id"]).value in (None, ""):
+        ws.cell(row_idx, h["account_id"]).value = account_id_used
+
+    save_wb_with_retry(wb, EXCEL_FILE)
+    wb.close()
+
+def write_video_result(row_idx: int, video_path: str, account_id_used: str, status: str = "ok"):
+    wb = open_wb_with_retry(EXCEL_FILE)
+    ws = wb[SHEET_NAME]
+
+    ensure_columns(ws, [
+        "prompt", "account_id", "image_path", "video_cmd", "video_path", "status",
+        ACCOUNT_ID1_COL, ACCOUNT_ID2_COL
+    ])
+    h = colmap_from_headers(ws)
+
+    # Write video path + status
+    ws.cell(row_idx, h["video_path"]).value = video_path
+    ws.cell(row_idx, h["status"]).value = status
+
+    # If account_id_2 is empty, record who actually generated the video
+    if ws.cell(row_idx, h[ACCOUNT_ID2_COL]).value in (None, ""):
+        ws.cell(row_idx, h[ACCOUNT_ID2_COL]).value = account_id_used
+
+    save_wb_with_retry(wb, EXCEL_FILE)
+    wb.close()
 
 # =========================
 # Site-specific automation
 # =========================
 
 async def ensure_logged_in(page: Page, post_login_selector: str, site_name: str):
-    """
-    Wait for a selector that only appears after login.
-    Do manual login in the visible window the first time.
-    """
     print(f"[{site_name}] Waiting for post-login marker: {post_login_selector}")
-    try:
-        await page.wait_for_selector(post_login_selector, timeout=120_000)
-    except Exception:
-        raise RuntimeError(f"[{site_name}] Login check timed out. Log in manually the first time.")
+    await page.wait_for_selector(post_login_selector, timeout=120_000)
 
-async def generate_image_google_ai(page: Page, url: str, prompt: str, out_dir: Path, dry_run=False) -> Path:
-    
-    # Post-login marker: the prompt textbox (adjust the name if it changes)
+async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path) -> Path:
+    """
+    Uses selectors:
+    - Prompt textbox role name: 'Enter a prompt to generate an'
+    - Run button: role 'button' with exact name 'Run'
+    - Newest gallery item: assumes append; grabs item at old_count index
+    - Large view button label: 'Large view of this image'
+    - Modal download button role name: 'Download'
+    """
+    # Post-login marker: the prompt textbox (adjust if the UI changes)
     textbox = page.get_by_role("textbox", name="Enter a prompt to generate an")
-    
     await expect(textbox).to_be_visible(timeout=120_000)
 
-    # Count images BEFORE we run (so we can detect the new one)
     gallery_items = page.locator("ms-image-generation-gallery-image")
     before_cnt = await gallery_items.count()
-    print(f"before_cnt = {before_cnt}")
-
-
-    # Fill prompt
+    print("before_cnt = {before_cnt}")
     await textbox.fill(prompt)
-    print("Entered prompt")
 
-    # Optional control (only if present) — your snippet showed a button named ":9"
-    try:
-        await page.get_by_role("button", name=":9").click(timeout=2_000)
-        print("Ladscape option selected")
-    except Exception:
-        pass  # ignore if not present
-
-    if dry_run:
-        # Create a tiny placeholder png so the pipeline continues
-        
+    if DRY_RUN:
         ph = out_dir / f"{safe_basename(prompt)}__DRYRUN.png"
         try:
-            from PIL import Image
-            Image.new("RGB", (16, 16), (210, 210, 210)).save(ph)
+            from PIL import Image; Image.new("RGB", (16, 16), (210, 210, 210)).save(ph)
         except Exception:
             ph.write_bytes(b"")
-        print("Returning image from dry run")
         return ph
 
-    # Click Run (exact)
     run_btn = page.get_by_role("button", name="Run", exact=True)
     await expect(run_btn).to_be_enabled()
     await run_btn.click()
-    print("Run button clicked")
 
     await asyncio.sleep(15)
     print("waited 15 seconds")
 
-    # Wait for generation to complete:
-    # Strategy: wait until gallery item count increases OR a “generating” spinner disappears.
-    # Primary: count increases
+    # Wait for a new gallery item
     async def gallery_increased():
         return await gallery_items.count() > before_cnt
 
-    # Give the UI a moment to start work
-    await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
-
-    # Poll up to ~90s for new image(s)
     for _ in range(90):
         if await gallery_increased():
             break
         await asyncio.sleep(1.0)
-    else:
-        raise RuntimeError("Timed out waiting for new generated image in gallery.")
 
     after_cnt = await gallery_items.count()
-    print(f"after_cnt = {after_cnt}")
+    if after_cnt <= before_cnt:
+        raise RuntimeError("No new image appeared.")
 
-
-    # Figure out which *new* item to download.
-    # Some UIs prepend newest at index 0; others append to the end.
-    # We'll try BOTH orders deterministically:
-    candidates = []
-    # If prepended, index 0 is new
-    #candidates.append(gallery_items.nth(0))
-    # If appended, the item at old count index is the first new one
-    if after_cnt > before_cnt:
-        candidates.append(gallery_items.nth(before_cnt))
-
-    # Prepare output path
+    print("after_cnt = {after_cnt}")
+    # Candidate: first new item (append behavior)
+    candidate = gallery_items.nth(before_cnt)
     out_path = out_dir / f"{safe_basename(prompt)}.png"
 
-    # Try to click the "Download this image" button within a candidate item
-    last_err = None
-    for cand in candidates:
-        try:
-            # Make sure the candidate is attached/visible
-            await cand.wait_for(state="visible", timeout=10_000)
-            exp_btn = cand.get_by_label("Large view of this image")
-            await exp_btn.click()
-            print("Large view is clicked")
-
-            async with page.expect_download(timeout=30_000) as dl_info:
-                # The download control is inside the gallery item:             
-                await page.get_by_role("button", name="Download").click()
-            dl = await dl_info.value
-            await dl.save_as(str(out_path))
-            print(f"[Google AI] Saved: {out_path}")
-            await page.get_by_role("button", name="Close").click()
-            return out_path
-        except Exception as e:
-            last_err = e
-            continue
-
-    # If no real download fired (e.g., it opens a lightbox or uses canvas),
-    # fallback to screenshotting the image node:
-    # try:
-    #     target = candidates[0] if candidates else gallery_items.nth(0)
-    #     img_inside = target.locator("img").first
-    #     if await img_inside.count() > 0:
-    #         await img_inside.screenshot(path=str(out_path))
-    #     else:
-    #         await target.screenshot(path=str(out_path))
-    #     print(f"[Google AI] Captured via screenshot: {out_path}")
-    #     return out_path
-    # except Exception as e:
-    #     raise RuntimeError(f"Could not download/screenshot latest image. Last error: {last_err or e}") from e
-    
-async def make_video_from_image_meta(page: Page, url: str, image_path: Path, out_dir: Path, dry_run=False) -> Path | None:
-    """
-    Drive Meta AI UI to create a short video from an image and download it.
-    TODO: Replace selectors with real ones from your UI.
-    """
-    await page.goto(url)
-    await ensure_logged_in(page, "text=Create", "Meta AI")
-
-    if dry_run:
-        # Generate a local placeholder video
-        out_video = out_dir / (image_path.stem + "__DRYRUN.mp4")
-        ffmpeg_make_clip(image_path, out_video, "1080x1920", 4, 24, False)
-        return out_video
-
-    # TODO: navigate if needed
-    # await page.click("text=Image to Video")
-
-    # Upload
-    # TODO: replace with actual file input selector
-    # file_input = await page.query_selector("input[type='file']")
-    # await file_input.set_input_files(str(image_path))
-
-    await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
-
-    # TODO: click Generate
-    # await page.click("button:has-text('Generate')")
-    await asyncio.sleep(random.uniform(3.0, 5.0))
-
-    out_video = out_dir / (image_path.stem + ".mp4")
-
+    # Try large-view modal and proper download
     try:
-        async with page.expect_download(timeout=180_000) as dl_info:
-            # TODO: click the actual Download UI
-            # await page.click("button:has-text('Download')")
-            pass
+        await candidate.get_by_label("Large view of this image").click()
+        print("Large view button clicked")
+
+        async with page.expect_download(timeout=30_000) as dl_info:
+            await page.get_by_role("button", name="Download").click()
         dl = await dl_info.value
-        await dl.save_as(str(out_video))
-        print(f"[Meta AI] Saved: {out_video}")
-        return out_video
+
+        # move to final path (avoid duplicate in default download dir)
+        # suggested = dl.suggested_filename or out_path.name
+        # dest = out_path.with_name(suggested)
+
+        dest = out_path.with_name(out_path.name)
+        src = await dl.path()
+        shutil.move(src, dest)
+
+        # close modal if present
+        try:
+            await page.get_by_role("button", name="Close").click()
+        except Exception:
+            pass
+
+        # Optional: quick dimension log (requires Pillow)
+        try:
+            from PIL import Image
+            w, h = Image.open(dest).size
+            print(f"[Google AI] Saved full-size {w}x{h}: {dest}")
+        except Exception:
+            print(f"[Google AI] Saved: {dest}")
+
+        return dest
+
     except Exception:
-        print("[Meta AI] Download not detected. You can fall back to local FFmpeg.")
-        return None
+        # Full-size fallback via modal image element (or thumb if needed)
+        try:
+            modal_img = page.get_by_role("img", name="Generated image").first
+            await modal_img.wait_for(state="visible", timeout=30_000)
+
+            # Try reading raw bytes from <img src>
+            src_attr = await modal_img.get_attribute("src")
+            if src_attr and src_attr.startswith("data:"):
+                import base64
+                m = re.match(r"data:(.*?);base64,(.*)", src_attr, re.DOTALL)
+                if m:
+                    raw = base64.b64decode(m.group(2))
+                    out_path.write_bytes(raw)
+                    await page.keyboard.press("Escape")
+                    return out_path
+
+            # Else screenshot as last resort
+            await modal_img.screenshot(path=str(out_path))
+            await page.keyboard.press("Escape")
+            return out_path
+
+        except Exception:
+            # last resort: thumbnail screenshot
+            img_inside = candidate.locator("img").first
+            if await img_inside.count() > 0:
+                await img_inside.screenshot(path=str(out_path))
+                return out_path
+            await candidate.screenshot(path=str(out_path))
+            return out_path
 
 # =========================
-# Per-account worker
+# Per-account worker (images pass)
 # =========================
 
-async def run_account(pw, account: Dict[str, str], prompts: List[str]):
+async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
     out_dir = Path(account["out"])
     ensure_dir(out_dir)
 
     browser_type = getattr(pw, BROWSER_NAME)
     print(f"[{account['id']}] Launching with profile: {account['profile']}")
-    ctx: BrowserContext = await browser_type.launch_persistent_context(
+    ctx_kwargs = dict(
         user_data_dir=account["profile"],
         headless=HEADLESS,
         executable_path=CHROME_EXECUTABLE,
+        device_scale_factor=DEVICE_SCALE_FACTOR,
         args=[
             "--disable-blink-features=AutomationControlled",
             "--start-maximized",
@@ -378,75 +426,129 @@ async def run_account(pw, account: Dict[str, str], prompts: List[str]):
         ],
         accept_downloads=True,
     )
+    if ISOLATE_DOWNLOADS:
+        ensure_dir(out_dir / "__tmp_downloads")
+        ctx_kwargs["downloads_path"] = str(out_dir / "__tmp_downloads")
+
+    ctx: BrowserContext = await browser_type.launch_persistent_context(**ctx_kwargs)
     page: Page = await ctx.new_page()
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
+    # open Google AI Studio once per account
     await page.goto(account["google_url"])
-    for i, prompt in enumerate(prompts, start=1):        
+
+    for job in jobs:
+        row_idx = job["row"]
+        prompt  = job["prompt"]
         try:
-            # 1) Generate image (Google AI Studio)
-            
-            img_path = await generate_image_google_ai(page, account["google_url"], prompt, out_dir, dry_run=DRY_RUN)
+            img_path = await generate_image_google_ai(page, prompt, out_dir)
+            write_image_result(row_idx, str(Path(img_path).resolve()), account_id_used=account["id"], status="ok")
+            print(f"[{account['id']}] Row {row_idx} -> {img_path}")
             await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
-
-            # 2) Create video
-            # if VIDEO_FROM.lower() == "meta":
-            #     vid = await make_video_from_image_meta(page, account["meta_url"], img_path, out_dir, dry_run=DRY_RUN)
-            #     if vid is None:
-            #         # fallback to local ffmpeg
-            #         out_mp4 = out_dir / (img_path.stem + ".mp4")
-            #         ffmpeg_make_clip(img_path, out_mp4, RESOLUTION, DURATION, FPS, KENBURNS)
-            # else:
-            #     out_mp4 = out_dir / (img_path.stem + ".mp4")
-            #     ffmpeg_make_clip(img_path, out_mp4, RESOLUTION, DURATION, FPS, KENBURNS)
-
-            print(f"[{account['id']}] Completed {i}/{len(prompts)}")
-            await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
-            await asyncio.sleep(15)
+            await asyncio.sleep(10)
+            print("Waited 10 seconds before generating next image")
         except Exception as e:
-            print(f"[{account['id']}] ERROR on prompt: {prompt}\n  -> {e}")
-            break
+            write_image_result(row_idx, "", account_id_used=account["id"], status=f"error: {e}")
+            print(f"[{account['id']}] Row {row_idx} ERROR: {e}")
 
     await ctx.close()
-    print(f"[{account['id']}] Done.")
+    print(f"[{account['id']}] Images pass done.")
+
+# =========================
+# Videos pass (shell command or default)
+# =========================
+
+def run_shell(cmd: str):
+    print("RUN:", cmd)
+    completed = subprocess.run(cmd, shell=True)
+    if completed.returncode != 0:
+        raise RuntimeError(f"Command failed with code {completed.returncode}")
+
+def build_default_cmd(image: str, out: str) -> str:
+    return DEFAULT_VIDEO_CMD.format(image=image, out=out)
+
+def derive_video_out(image_path: str) -> str:
+    p = Path(image_path)
+    return str(p.with_suffix(".mp4"))
+
+def process_videos_from_excel():
+    rows = read_jobs_from_excel_for_videos()
+    for job in rows:
+        row_idx  = job["row"]
+        image    = job["image"]
+        video_out = derive_video_out(image)
+        cmd_tpl  = job["video_cmd"] or ""
+        cmd      = (cmd_tpl if cmd_tpl.strip() else build_default_cmd(image, video_out))
+        # Replace common placeholders
+        cmd = (cmd
+               .replace("{image}", image)
+               .replace("{out}", video_out))
+
+        try:
+            run_shell(cmd)
+            write_video_result(row_idx, str(Path(video_out).resolve()), account_id_used=VIDEO_ACCOUNT_ID, status="ok")
+            print(f"[videos] Row {row_idx} -> {video_out}")
+        except Exception as e:
+            write_video_result(row_idx, "", account_id_used=VIDEO_ACCOUNT_ID, status=f"error: {e}")
+            print(f"[videos] Row {row_idx} ERROR: {e}")
 
 # =========================
 # Coordinator
 # =========================
 
-async def main_async():
-
-    # refuse duplicates
+async def main_async_images():
+    # refuse duplicate profiles
     profiles = [acc["profile"] for acc in ACCOUNTS]
     dupes = {p for p in profiles if profiles.count(p) > 1}
     if dupes:
-        raise RuntimeError(f"Duplicate Chrome profiles in ACCOUNTS: {dupes}. "
-                        "Each account must use a different user-data-dir.")
+        raise RuntimeError(f"Duplicate Chrome profiles in ACCOUNTS: {dupes}")
 
-    prompts = load_prompts(PROMPTS_FILE)
-    if SHUFFLE_PROMPTS:
-        random.shuffle(prompts)
-
-    # allocate prompts evenly across accounts
-    split_work(prompts, ACCOUNTS, MAX_PROMPTS_PER_ACCOUNT)
-    jobs = [(acc, acc.get("_prompts", [])) for acc in ACCOUNTS if acc.get("_prompts")]
-
-    if not jobs:
-        print("No prompts assigned. Check PROMPTS_FILE and MAX_PROMPTS_PER_ACCOUNT.")
+    # read Excel rows (prompt + empty image_path)
+    all_rows = read_jobs_from_excel_for_images()
+    if not all_rows:
+        print("No rows need images.")
         return
 
-    # Make sure account output folders exist
-    for acc, _ in jobs:
-        ensure_dir(acc["out"])
+    # optional shuffle
+    if SHUFFLE_PROMPTS:
+        random.shuffle(all_rows)
+
+    # partition rows per account:
+    # if account_id present in Excel, bind to that account; else round-robin
+    rows_per_account: Dict[str, List[Dict]] = {a["id"]: [] for a in ACCOUNTS}
+    free_rows = []
+    for r in all_rows:
+        acct = r.get("account_id", "")
+        if acct and acct in rows_per_account:
+            rows_per_account[acct].append(r)
+        else:
+            free_rows.append(r)
+    # round-robin free rows
+    acc_ids = list(rows_per_account.keys())
+    k = 0
+    for r in free_rows:
+        rows_per_account[acc_ids[k % len(acc_ids)]].append(r)
+        k += 1
+
+    # prune empties and limit per account if desired
+    jobs = []
+    for acc in ACCOUNTS:
+        bucket = rows_per_account[acc["id"]]
+        if MAX_PROMPTS_PER_ACCOUNT:
+            bucket = bucket[:MAX_PROMPTS_PER_ACCOUNT]
+        if bucket:
+            jobs.append((acc, bucket))
 
     async with async_playwright() as pw:
-        await asyncio.gather(*[run_account(pw, acc, batch) for acc, batch in jobs])
+        await asyncio.gather(*[run_account_images(pw, acc, bucket) for acc, bucket in jobs])
 
 def main():
-    try:
-        asyncio.run(main_async())
-    except KeyboardInterrupt:
-        print("Interrupted by user.")
+    if RUN_MODE.lower() == "images":
+        asyncio.run(main_async_images())
+    elif RUN_MODE.lower() == "videos":
+        process_videos_from_excel()
+    else:
+        raise SystemExit("RUN_MODE must be 'images' or 'videos'.")
 
 if __name__ == "__main__":
     main()
