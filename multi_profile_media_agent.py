@@ -831,6 +831,12 @@ async def main_async_images():
     async with async_playwright() as pw:
         await asyncio.gather(*[run_account_images(pw, acc, bucket) for acc, bucket in jobs])
 
+def createImages():
+    asyncio.run(main_async_images())
+
+def createVideos():
+    asyncio.run(main_async_videos())
+
 def main():
     if RUN_MODE.lower() == "images":
         asyncio.run(main_async_images())

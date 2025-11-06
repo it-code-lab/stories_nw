@@ -1307,7 +1307,18 @@
     </form>
 
     <br>
-
+    <form id="createImagesForm">
+    <h2 style="background:#ffe4b5;">Create Images from Excel</h2>
+    <button type="submit">Run Image Jobs</button>
+    <pre id="createImagesResult"></pre>
+    </form>
+    <br>
+    <form id="createVideosForm">
+    <h2 style="background:#ffe4b5;">Create Videos from Excel</h2>
+    <button type="submit">Run Video Jobs</button>
+    <pre id="createVideosResult"></pre>
+    </form>
+    <br>
     <script>
         (function () {
             const form = document.getElementById('mixVocalMusicForm');
@@ -2357,7 +2368,20 @@ ${JSON.stringify(meta, null, 2)}
         });
     </script>
 
-
+<script>
+async function runTask(formId, endpoint, resultId) {
+  document.getElementById(formId).addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const res = await fetch(endpoint, { method: "POST" });
+    const data = await res.json();
+    document.getElementById(resultId).textContent = data.ok
+      ? "✅ " + data.message
+      : "❌ " + data.error;
+  });
+}
+runTask("createImagesForm", "/create_images", "createImagesResult");
+runTask("createVideosForm", "/create_videos", "createVideosResult");
+</script>
 </body>
 
 </html>
