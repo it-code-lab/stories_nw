@@ -855,7 +855,7 @@ async def run_account_videos(pw, account: Dict[str, str], jobs: List[Dict]):
             write_video_result(row_idx, str(Path(vid_path).resolve()), account_id_used=account["id"], status="ok")
             print(f"[{account['id']}] Row {row_idx} -> {vid_path}")
             await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
-            await asyncio.sleep(10)
+            #await asyncio.sleep(10)
             #print("Waited 10 seconds before generating next image")
         except Exception as e:
             write_video_result(row_idx, "", account_id_used=account["id"], status=f"error: {e}")
