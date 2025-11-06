@@ -1089,12 +1089,18 @@
     <form id="upscaleVideoForm">
         <h2 style="background-color:#e8f5e9;">Upscale SD → HD</h2>
 
-        <label>Upload a video (optional):</label>
+        <div class="infoBox">Picks the files from edit_vid_input folder</div>
+        <!-- <label>Upload a video (optional):</label>
         <input type="file" name="file" accept="video/*">
 
         <label>…or use existing project path:</label>
         <input type="text" name="video" placeholder="/edit_vid_input/bg_video.mp4 or /edit_vid_output/output.mp4"
-            value="/edit_vid_input/bg_video.mp4">
+            value="/edit_vid_input/bg_video.mp4"> -->
+        <label>Keep audio?</label>
+        <select name="keep_audio">
+            <option value="yes" selected>yes</option>
+            <option value="no">no (mute)</option>
+        </select>
 
         <label>Target Width:</label>
         <select name="width">
@@ -2289,19 +2295,38 @@ ${JSON.stringify(meta, null, 2)}
             e.preventDefault();
             const form = e.target;
             const fd = new FormData(form);
-            const res = await fetch('/upscale', { method: 'POST', body: fd });
-            const data = await res.json();
             const box = document.getElementById('upscaleResult');
-            if (data.ok) {
-                box.innerHTML =
-                    `✅ Upscaled! <a href="${data.download}" target="_blank">Open video</a>` +
-                    (data.also_saved_in_edit_vid_output ? `<div>Also saved: ${data.also_saved_in_edit_vid_output}</div>` : '') +
-                    `<pre style="text-align:left;white-space:pre-wrap;">${JSON.stringify(data.settings, null, 2)}</pre>`;
-            } else {
-                box.innerHTML = `❌ ${data.error || 'Failed'}<pre style="text-align:left;white-space:pre-wrap;">${(data.detail || '')}</pre>`;
+            box.innerHTML = '⏳ Upscaling…';
+
+            try {
+                const res = await fetch('/upscale', { method: 'POST', body: fd });
+                const data = await res.json();
+
+                if (!res.ok || !data.ok) {
+                    box.innerHTML = `❌ ${data.error || 'Failed'}<pre style="text-align:left;white-space:pre-wrap;">${(data.detail || '')}</pre>`;
+                    return;
+                }
+
+                // Batch summary
+                const rows = (data.outputs || []).map(o =>
+                    `<li>✅ <code>${o.input}</code> → <a href="${o.output}" target="_blank">${o.output}</a></li>`
+                ).join('') || '<li>(no outputs)</li>';
+
+                box.innerHTML = `
+      <div class="infoBox">Done: ${data.count_processed} • Errors: ${data.count_errors}</div>
+      <ul style="text-align:left">${rows}</ul>
+      <details style="margin-top:6px;">
+        <summary>Settings</summary>
+        <pre style="text-align:left;white-space:pre-wrap;">${JSON.stringify(data.settings, null, 2)}</pre>
+      </details>
+      ${data.errors?.length ? `<details style="margin-top:6px;"><summary>Errors</summary><pre style="text-align:left;white-space:pre-wrap;">${JSON.stringify(data.errors, null, 2)}</pre></details>` : ''}
+    `;
+            } catch (err) {
+                box.innerHTML = `❌ ${String(err)}`;
             }
         });
     </script>
+
 
 </body>
 
