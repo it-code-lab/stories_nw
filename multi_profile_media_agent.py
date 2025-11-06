@@ -29,7 +29,7 @@ from openpyxl.utils import get_column_letter
 # GLOBAL CONFIG (edit here)
 # =========================
 
-RUN_MODE = "images"   # "images" or "videos"
+RUN_MODE = "videos"   # "images" or "videos"
 
 EXCEL_FILE  = r"media_jobs.xlsx"
 SHEET_NAME  = "Jobs"
@@ -62,7 +62,8 @@ DEVICE_SCALE_FACTOR = 2
 ISOLATE_DOWNLOADS = True
 
 # Work distribution
-MAX_PROMPTS_PER_ACCOUNT = 40
+MAX_GGL_IMG_PROMPTS_PER_ACCOUNT = 40
+MAX_META_VID_PROMPTS_PER_ACCOUNT = 60
 SHUFFLE_PROMPTS         = False
 DRY_RUN                 = False
 
@@ -139,14 +140,14 @@ ACCOUNTS: List[Dict[str, str]] = [
 
 META_ACCOUNTS: List[Dict[str, str]] = [
     {
-        "id": "numero_uno",
+        "id": "mail2sm",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 1",
         "out": r"downloads",
         "google_url": "https://aistudio.google.com/prompts/1SHiNmxmlkmYTqHH8wseV4evAegV0pRvH",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },
     {
-        "id": "mail2sm",
+        "id": "numero_uno",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 3",
         "out": r"downloads",
         "google_url": "https://aistudio.google.com/prompts/18LNm8fsaraxHYYWCB92vGp4BC1-put7S",
@@ -247,11 +248,17 @@ def read_jobs_from_excel_for_videos() -> List[Dict]:
 
     rows = []
     for i in range(2, ws.max_row + 1):
-        image = (ws.cell(i, h["image_path"]).value or "").strip()
+        image_path = (ws.cell(i, h["image_path"]).value or "").strip()
         vout  = (ws.cell(i, h["video_path"]).value or "").strip()
         vcmd  = (ws.cell(i, h["video_cmd"]).value or "").strip()
-        if image and not vout:
-            rows.append({"row": i, "image": image, "video_cmd": vcmd})
+        acct       = (ws.cell(i, h["account_id"]).value or "").strip()
+        if image_path and not vout:
+            rows.append({
+                "row": i,
+                "account_id": acct,
+                "image_path": image_path,
+                "video_cmd": vcmd,  # we'll treat this as the Meta animation prompt
+            })
     save_wb_with_retry(wb, EXCEL_FILE)
     wb.close()
     return rows
@@ -325,7 +332,7 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path) -> Pa
 
     gallery_items = page.locator("ms-image-generation-gallery-image")
     before_cnt = await gallery_items.count()
-    print("before_cnt = {before_cnt}")
+    print(f"before_cnt = {before_cnt}")
     await textbox.fill(prompt)
 
     if DRY_RUN:
@@ -356,7 +363,7 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path) -> Pa
     if after_cnt <= before_cnt:
         raise RuntimeError("No new image appeared.")
 
-    print("after_cnt = {after_cnt}")
+    print(f"after_cnt = {after_cnt}")
     # Candidate: first new item (append behavior)
     candidate = gallery_items.nth(before_cnt)
     out_path = out_dir / f"{safe_basename(prompt)}.png"
@@ -425,6 +432,206 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path) -> Pa
             await candidate.screenshot(path=str(out_path))
             return out_path
 
+async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_dir: Path) -> Path:
+    """
+    Automates Meta AI 'Media' -> Video-from-Image flow.
+
+    It will:
+      - Switch to 'Video' tab (from Image)
+      - Click 'Upload image' and attach the file
+      - Fill 'Describe your animation...' with `prompt`
+      - Click 'Animate'
+      - Wait for rendering to finish
+      - Click 'Download media' and MOVE the .mp4 into out_dir (no OS Downloads duplicate)
+
+    Returns: Path to the saved .mp4 in out_dir
+    """
+    # Ensure absolute paths
+    image_path = str(Path(imagePath).resolve())
+    ensure_dir(out_dir)
+
+    # 0) Be sure the meta media page is loaded (your caller already navigates here)
+    # Try to land on the media composer area by clicking the "Media" (image/video) entry if present
+    try:
+        # Some UIs have an icon cluster first; clicking first item opens the composer
+        await page.locator(".x78zum5.xdt5ytf.x1qughib").first.click(timeout=3000)
+    except Exception:
+        pass  # optional, UI-dependent
+
+    # 1) Switch to "Video" mode (recorded flows showed two variants)
+    switched = False
+    try:
+        # Variant A: a toggle button then literal "Video" text
+        await page.get_by_role("button", name="Image").click(timeout=3000)
+        await page.get_by_text("Video", exact=True).click(timeout=3000)
+        switched = True
+    except Exception:
+        try:
+            # Variant B: direct "Video" tab
+            await page.get_by_text("Video", exact=True).click(timeout=3000)
+            switched = True
+        except Exception:
+            pass
+
+    # if not switched:
+    #     # Some shells show a small tab container; try again by clicking the tab region
+    #     try:
+    #         await page.locator(".xt9c220").click(timeout=3000)
+    #         await page.get_by_text("Video", exact=True).click(timeout=3000)
+    #     except Exception:
+    #         # If we still can’t switch, proceed—the upload button usually scopes the correct panel
+    #         pass
+
+    # 2) Click "Upload image" and feed the file chooser (prefer file chooser to avoid targeting wrong input)
+    try:
+        async with page.expect_file_chooser(timeout=10_000) as fc_info:
+            await page.get_by_role("button", name="Upload image").click()
+        fc = await fc_info.value
+        await fc.set_files(image_path)
+    except Exception:
+        # Fallback: set first visible file input directly
+        try:
+            await page.set_input_files("input[type='file']", image_path)
+        except Exception as e:
+            raise RuntimeError(f"Could not upload image: {e}")
+
+    # 3) Fill the animation prompt (textbox labeled "Describe your animation...")
+    try:
+        # Focus (some UIs require a paragraph/canvas click first)
+        try:
+            await page.get_by_role("paragraph").click(timeout=1500)
+        except Exception:
+            pass
+        box = page.get_by_role("textbox", name="Describe your animation...")
+        await expect(box).to_be_visible(timeout=20_000)
+        await box.fill(prompt or "Animate this image smoothly with parallax camera move.")
+    except Exception as e:
+        raise RuntimeError(f"Could not set the animation description: {e}")
+
+    # Count how many "Video generated by Meta AI" links exist BEFORE starting
+    gen_links = page.get_by_role("link", name="Video generated by Meta AI")
+    try:
+        before_cnt = await gen_links.count()
+    except Exception:
+        before_cnt = 0
+
+    print(f"before_cnt = {before_cnt}")
+    # 4) Click Animate
+    try:
+        animate_btn = page.get_by_role("button", name="Animate")
+        await expect(animate_btn).to_be_enabled(timeout=10_000)
+        await animate_btn.click()
+    except Exception as e:
+        raise RuntimeError(f"Could not click Animate: {e}")
+
+    # Wait until *a new* generated-video link appears
+    for _ in range(240):  # up to ~240s
+        try:
+            if await gen_links.count() > before_cnt:
+                break
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+    else:
+        raise RuntimeError("Timeout waiting for new generated video link to appear.")
+
+    after_cnt = await gen_links.count()
+    print(f"after_cnt = {after_cnt}")
+    print("Waiting 40 seconds")
+    await asyncio.sleep(40)
+
+    # Figure out the newest item.
+    # If UI appends, the first new item is at index 'before_cnt'.
+    # If UI prepends, the newest item is at index 0.
+    candidates = []
+    if after_cnt > before_cnt:
+        candidates.append(gen_links.nth(before_cnt))  # appended case
+    candidates.append(gen_links.nth(0))              # prepended case (or fallback)
+
+    # Name output using image base + timestamp
+    base = Path(imagePath).resolve().stem
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = out_dir / f"{ts}_{base}_meta.mp4"
+    last_err = None
+
+    # Try each candidate: open it, then click Download and MOVE the file (avoid duplicates)
+    for link in candidates:
+        try:
+            # await link.scroll_into_view_if_needed()
+            #await link.click()  # open preview/sheet
+
+            # Prefer a modal dialog if one appears
+            dialog = page.get_by_role("dialog").last
+            has_dialog = False
+            try:
+                await expect(dialog).to_be_visible(timeout=5_000)
+                has_dialog = True
+            except Exception:
+                has_dialog = False
+
+            # Scope the download button:
+            if has_dialog:
+                print("with dialog")
+                dl_btn = dialog.get_by_role("button", name="Download media")
+                # If label varies, fallback to case-insensitive 'download'
+                if not await dl_btn.count():
+                    dl_btn = dialog.get_by_role("button", name=re.compile(r"download", re.I))
+            else:
+                print("without dialog")
+                # No dialog; scope to a nearby container of the link
+                # Use the first ancestor list item/card, then find download inside it
+                container = link.locator("xpath=ancestor-or-self::li[1]")
+                if await container.count() == 0:
+                    container = link.locator("xpath=ancestor-or-self::div[1]")
+                dl_btn = container.get_by_role("button", name="Download media")
+                if not await dl_btn.count():
+                    dl_btn = container.get_by_role("button", name=re.compile(r"download", re.I))
+
+            # Narrow to a single, visible button
+            visible_buttons = dl_btn.filter(has_not=page.locator("[hidden]"))
+            # Some UIs render multiple; pick the first visible & enabled
+            btn = visible_buttons.first
+            await expect(btn).to_be_visible(timeout=10_000)
+            await expect(btn).to_be_enabled(timeout=10_000)
+
+            async with page.expect_download(timeout=60_000) as dl_info:
+                await btn.click()
+            dl = await dl_info.value
+
+            src_path = await dl.path()
+            final = out_path.with_name(out_path.name)
+            shutil.move(src_path, final)
+
+            # Close the preview if present
+            if has_dialog:
+                try:
+                    await dialog.get_by_role("button", name="Close").click(timeout=1500)
+                except Exception:
+                    # Try ESC as a fallback
+                    try: await page.keyboard.press("Escape")
+                    except Exception: pass
+            else:
+                try:
+                    await page.get_by_role("button", name="Close").click(timeout=1500)
+                except Exception:
+                    try: await page.keyboard.press("Escape")
+                    except Exception: pass
+
+            return final
+
+        except Exception as e:
+            last_err = e
+            # Make sure overlays are closed before trying next candidate
+            try:
+                await page.keyboard.press("Escape")
+            except Exception:
+                pass
+            continue
+
+    raise RuntimeError(f"Could not open/download newest generated video. Last error: {last_err}")
+
+
+        
 # =========================
 # Per-account worker (images pass)
 # =========================
@@ -476,6 +683,59 @@ async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
     await ctx.close()
     print(f"[{account['id']}] Images pass done.")
 
+
+# =========================
+# Per-account worker (videos pass)
+# =========================
+
+async def run_account_videos(pw, account: Dict[str, str], jobs: List[Dict]):
+    out_dir = Path(account["out"])
+    ensure_dir(out_dir)
+
+    browser_type = getattr(pw, BROWSER_NAME)
+    print(f"[{account['id']}] Launching with profile: {account['profile']}")
+    ctx_kwargs = dict(
+        user_data_dir=account["profile"],
+        headless=HEADLESS,
+        executable_path=CHROME_EXECUTABLE,
+        device_scale_factor=DEVICE_SCALE_FACTOR,
+        args=[
+            "--disable-blink-features=AutomationControlled",
+            "--start-maximized",
+            "--no-default-browser-check",
+            "--no-first-run",
+        ],
+        accept_downloads=True,
+    )
+    if ISOLATE_DOWNLOADS:
+        ensure_dir(out_dir / "__tmp_downloads")
+        ctx_kwargs["downloads_path"] = str(out_dir / "__tmp_downloads")
+
+    ctx: BrowserContext = await browser_type.launch_persistent_context(**ctx_kwargs)
+    page: Page = await ctx.new_page()
+    await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
+    # open Meta AI once per account
+    await page.goto(account["meta_url"])
+
+    for job in jobs:
+        row_idx = job["row"]
+        prompt  = job["video_cmd"]
+        imagePath = job["image_path"]
+        try:
+            vid_path = await generate_video_meta_ai(page, imagePath, prompt, out_dir)
+            write_video_result(row_idx, str(Path(vid_path).resolve()), account_id_used=account["id"], status="ok")
+            print(f"[{account['id']}] Row {row_idx} -> {vid_path}")
+            await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
+            await asyncio.sleep(10)
+            print("Waited 10 seconds before generating next image")
+        except Exception as e:
+            write_video_result(row_idx, "", account_id_used=account["id"], status=f"error: {e}")
+            print(f"[{account['id']}] Row {row_idx} ERROR: {e}")
+
+    await ctx.close()
+    print(f"[{account['id']}] Images pass done.")
+
 # =========================
 # Videos pass (shell command or default)
 # =========================
@@ -518,6 +778,54 @@ def process_videos_from_excel():
 # Coordinator
 # =========================
 
+async def main_async_videos():
+    # refuse duplicate profiles
+    profiles = [acc["profile"] for acc in META_ACCOUNTS]
+    dupes = {p for p in profiles if profiles.count(p) > 1}
+    if dupes:
+        raise RuntimeError(f"Duplicate Chrome profiles in ACCOUNTS: {dupes}")
+
+    # read Excel rows (prompt + empty image_path)
+    all_rows = read_jobs_from_excel_for_videos()
+    if not all_rows:
+        print("No rows need videos.")
+        return
+
+    # optional shuffle
+    if SHUFFLE_PROMPTS:
+        random.shuffle(all_rows)
+
+    # partition rows per account:
+    # if account_id present in Excel, bind to that account; else round-robin
+    rows_per_account: Dict[str, List[Dict]] = {a["id"]: [] for a in META_ACCOUNTS}
+    free_rows = []
+    for r in all_rows:
+        acct = r.get("account_id", "")
+        if acct and acct in rows_per_account:
+            rows_per_account[acct].append(r)
+        else:
+            free_rows.append(r)
+    # round-robin free rows
+    acc_ids = list(rows_per_account.keys())
+    k = 0
+    for r in free_rows:
+        rows_per_account[acc_ids[k % len(acc_ids)]].append(r)
+        k += 1
+
+    # prune empties and limit per account if desired
+    jobs = []
+    for acc in META_ACCOUNTS:
+        bucket = rows_per_account[acc["id"]]
+        if MAX_META_VID_PROMPTS_PER_ACCOUNT:
+            bucket = bucket[:MAX_META_VID_PROMPTS_PER_ACCOUNT]
+        if bucket:
+            jobs.append((acc, bucket))
+
+    async with async_playwright() as pw:
+        await asyncio.gather(*[run_account_videos(pw, acc, bucket) for acc, bucket in jobs])
+
+
+
 async def main_async_images():
     # refuse duplicate profiles
     profiles = [acc["profile"] for acc in ACCOUNTS]
@@ -556,8 +864,8 @@ async def main_async_images():
     jobs = []
     for acc in ACCOUNTS:
         bucket = rows_per_account[acc["id"]]
-        if MAX_PROMPTS_PER_ACCOUNT:
-            bucket = bucket[:MAX_PROMPTS_PER_ACCOUNT]
+        if MAX_GGL_IMG_PROMPTS_PER_ACCOUNT:
+            bucket = bucket[:MAX_GGL_IMG_PROMPTS_PER_ACCOUNT]
         if bucket:
             jobs.append((acc, bucket))
 
@@ -568,7 +876,9 @@ def main():
     if RUN_MODE.lower() == "images":
         asyncio.run(main_async_images())
     elif RUN_MODE.lower() == "videos":
-        process_videos_from_excel()
+        asyncio.run(main_async_videos())
+        
+        # process_videos_from_excel()
     else:
         raise SystemExit("RUN_MODE must be 'images' or 'videos'.")
 
