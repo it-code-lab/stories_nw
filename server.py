@@ -31,6 +31,8 @@ from media_audio import (
 # ---- ADD near the top with imports (server.py) ----
 import shutil
 
+VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"}
+
 def _ensure_ffmpeg():
     if not shutil.which("ffmpeg"):
         raise RuntimeError("FFmpeg not found in PATH. Please install FFmpeg and add it to PATH.")
@@ -190,60 +192,125 @@ def upscale_all_videos():
 @app.post("/extract_audio")
 def extract_audio_route():
     """
-    Extract audio from a video.
-    Form fields (multipart/form-data):
-      - file: (optional) uploaded video file
-      - video: (optional) project path like '/edit_vid_input/bg_video.mp4'
+    Batch-extract audio for all videos in edit_vid_input/ when no file/path is provided.
+    Otherwise (if you ever send "file" or "video"), it behaves like single-file mode.
+    Form-data:
       - format: wav|mp3|m4a (default wav)
       - track: audio stream index, default 0
     """
     try:
         base_dir = Path(__file__).resolve().parent
+        fmt = (request.form.get("format") or "wav").lower()
+        track_raw = request.form.get("track", "0")
+        try:
+            track = int(track_raw)
+        except Exception:
+            track = 0
+
         uploaded = request.files.get("file")
         video_url = (request.form.get("video") or "").strip()
-        fmt = (request.form.get("format") or "wav").lower()
-        track = request.form.get("track")
 
-        try:
-            in_path = resolve_input_video(
+        # If either upload or explicit path is provided, fall back to single-file behavior
+        if uploaded or video_url:
+            try:
+                in_path = resolve_input_video(
+                    base_dir=base_dir,
+                    uploaded_temp_dir=base_dir / "tmp_upload_video",
+                    uploaded_file=uploaded,
+                    urlish_path=video_url if video_url else None,
+                    fallback_rel="edit_vid_input/bg_video.mp4",
+                )
+            except Exception as e:
+                return jsonify({"ok": False, "error": str(e)}), 400
+
+            result = extract_audio_from_video(
                 base_dir=base_dir,
-                uploaded_temp_dir=base_dir / "tmp_upload_video",
-                uploaded_file=uploaded,
-                urlish_path=video_url if video_url else None,
-                fallback_rel="edit_vid_input/bg_video.mp4",
+                input_path=in_path,
+                fmt=fmt,
+                track=track,
+                root_output_name="edit_vid_output"
             )
-        except Exception as e:
-            return jsonify({"ok": False, "error": str(e)}), 400
 
-        result = extract_audio_from_video(
-            base_dir=base_dir,
-            input_path=in_path,
-            fmt=fmt,
-            track=track,
-            root_output_name="edit_vid_output"
-        )
+            if not getattr(result, "ok", False):
+                return jsonify({
+                    "ok": False,
+                    "error": result.error or "Failed",
+                    "detail": result.detail,
+                }), 500
 
-        if not result.ok:
+            download_rel = f"/video/{result.output_path.name}" if result.output_path else None
+            also_rel = f"/video/edit_vid_audio/{result.output_path.name}" if getattr(result, "copy_path", None) else None
+
             return jsonify({
-                "ok": False,
-                "error": result.error or "Failed",
-                "detail": result.detail,
-            }), 500
+                "ok": True,
+                "mode": "single",
+                "input": result.input_name,
+                "format": result.fmt,
+                "track": result.track,
+                "duration_sec": result.duration_sec,
+                "download": download_rel,
+                "also_saved_in_edit_vid_audio": also_rel,
+            })
 
-        # Your app already serves downloads via /video/<filename> from project root,
-        # so we only need to return relative web paths for the client.
-        download_rel = f"/video/{result.output_path.name}" if result.output_path else None
-        also_rel = f"/video/edit_vid_audio/{result.output_path.name}" if result.copy_path else None
+        # === Batch mode: scan edit_vid_input/ ===
+        in_dir = base_dir / "edit_vid_input"
+        out_dir = base_dir / "edit_vid_output"
+        out_dir.mkdir(parents=True, exist_ok=True)
 
+        if not in_dir.exists():
+            return jsonify({"ok": False, "error": f"Input folder not found: {in_dir}"}), 400
+
+        candidates = sorted([p for p in in_dir.iterdir() if p.is_file() and p.suffix.lower() in VIDEO_EXTS])
+
+        if not candidates:
+            return jsonify({"ok": True, "mode": "batch", "items": []})
+
+        items = []
+        for vid in candidates:
+            try:
+                res = extract_audio_from_video(
+                    base_dir=base_dir,
+                    input_path=vid,
+                    fmt=fmt,
+                    track=track,
+                    root_output_name="edit_vid_output"
+                )
+                if getattr(res, "ok", False) and getattr(res, "output_path", None):
+                    items.append({
+                        "ok": True,
+                        "input": vid.name,
+                        "fmt": res.fmt,
+                        "track": res.track,
+                        "duration_sec": res.duration_sec,
+                        "output_name": res.output_path.name,
+                        "download": f"/video/{res.output_path.name}"
+                    })
+                else:
+                    items.append({
+                        "ok": False,
+                        "input": vid.name,
+                        "error": getattr(res, "error", "Failed"),
+                        "detail": getattr(res, "detail", None)
+                    })
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                items.append({
+                    "ok": False,
+                    "input": vid.name,
+                    "error": str(e)
+                })
+
+        # Always return a compact summary for the UI to render
         return jsonify({
             "ok": True,
-            "input": result.input_name,
-            "format": result.fmt,
-            "track": result.track,
-            "duration_sec": result.duration_sec,
-            "download": download_rel,
-            "also_saved_in_edit_vid_audio": also_rel,
+            "mode": "batch",
+            "format": fmt,
+            "track": track,
+            "count": len(items),
+            "items": items
         })
+
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500

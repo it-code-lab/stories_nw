@@ -963,13 +963,7 @@
     <br>
 
     <form id="extractAudioForm">
-        <h2 style="background-color:#ffe4b5;">9. Extract Audio from Video</h2>
-
-        <label>Upload a video file (or leave empty and provide a path):</label>
-        <input type="file" name="file" accept="video/*">
-
-        <label>…or use existing project path (e.g. /edit_vid_input/bg_video.mp4 or /background_videos/…):</label>
-        <input type="text" name="video" placeholder="/edit_vid_input/bg_video.mp4" value="/edit_vid_input/video.mp4">
+        <h2 style="background-color:#ffe4b5;">Extract Audio from Videos</h2>
 
         <label>Output format:</label>
         <select name="format">
@@ -981,12 +975,11 @@
         <label>Audio track index (0-based):</label>
         <input type="number" name="track" value="0" min="0">
 
-        <button type="submit">Extract Audio</button>
+        <button type="submit">Extract Audio for All in edit_vid_input</button>
 
-        <div class="infoBox">
-            If neither a file nor a path is provided, the server will try <code>edit_vid_input/bg_video.mp4</code>.
-            Result is saved as <code>extracted_audio.*</code> at project root and copied to
-            <code>edit_vid_audio/</code>.
+        <div class="infoBox" style="margin-top:8px;">
+            Scans <code>edit_vid_input/</code> for video files and writes each extracted audio to
+            <code>edit_vid_output/</code>. No upload or path needed.
         </div>
 
         <div id="extractAudioResult" style="margin-top:10px;"></div>
@@ -2255,38 +2248,75 @@ ${JSON.stringify(meta, null, 2)}
             const form = e.currentTarget;
             const fd = new FormData(form);
 
+            // IMPORTANT: we do NOT send "file" or "video" fields at all
             const res = await fetch('/extract_audio', { method: 'POST', body: fd });
             const data = await res.json();
 
             const box = document.getElementById('extractAudioResult');
             box.innerHTML = '';
+
             if (!data.ok) {
                 box.innerHTML = `<div class="infoBox" style="background:#ffe5e5;border:1px solid #f5bcbc;color:#900;">
         ❌ ${data.error || 'Failed'}<br>${(data.detail || '')}</div>`;
                 return;
             }
 
-            const link = document.createElement('a');
-            link.href = data.download;
-            link.textContent = `Download ${data.format.toUpperCase()} (${data.duration_sec ?? '—'}s)`;
-            link.target = '_blank';
-
-            const audio = document.createElement('audio');
-            audio.controls = true;
-            audio.src = data.download;
-            audio.style.display = 'block';
-            audio.style.marginTop = '10px';
-
-            box.appendChild(link);
-            box.appendChild(audio);
-
-            // Optional: show where we also saved it
-            if (data.also_saved_in_edit_vid_audio) {
-                const p = document.createElement('div');
-                p.style.marginTop = '6px';
-                p.textContent = `Also saved to: ${data.also_saved_in_edit_vid_audio}`;
-                box.appendChild(p);
+            if (!Array.isArray(data.items) || data.items.length === 0) {
+                box.innerHTML = `<div class="infoBox">No videos found in <code>edit_vid_input/</code>.</div>`;
+                return;
             }
+
+            const list = document.createElement('div');
+            data.items.forEach((it) => {
+                const card = document.createElement('div');
+                card.style.padding = '10px';
+                card.style.marginBottom = '10px';
+                card.style.border = '1px solid #eee';
+                card.style.borderRadius = '8px';
+                card.style.background = it.ok ? '#f8fff6' : '#fff6f6';
+
+                const title = document.createElement('div');
+                title.style.fontWeight = '600';
+                title.textContent = it.ok
+                    ? `✅ ${it.input} → ${it.output_name} (${(it.duration_sec ?? '—')}s)`
+                    : `❌ ${it.input}`;
+                card.appendChild(title);
+
+                if (it.ok && it.download) {
+                    const link = document.createElement('a');
+                    link.href = it.download;
+                    link.textContent = `Download ${data.format?.toUpperCase?.() || it.fmt?.toUpperCase?.() || 'AUDIO'}`;
+                    link.target = '_blank';
+                    link.style.display = 'inline-block';
+                    link.style.marginTop = '6px';
+                    card.appendChild(link);
+
+                    const audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = it.download;
+                    audio.style.display = 'block';
+                    audio.style.marginTop = '8px';
+                    card.appendChild(audio);
+                } else if (!it.ok) {
+                    const err = document.createElement('div');
+                    err.style.marginTop = '6px';
+                    err.style.color = '#900';
+                    err.textContent = it.error || 'Failed';
+                    card.appendChild(err);
+                    if (it.detail) {
+                        const det = document.createElement('div');
+                        det.style.fontSize = '12px';
+                        det.style.color = '#a33';
+                        det.style.marginTop = '4px';
+                        det.textContent = it.detail;
+                        card.appendChild(det);
+                    }
+                }
+
+                list.appendChild(card);
+            });
+
+            box.appendChild(list);
         });
     </script>
 
