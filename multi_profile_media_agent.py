@@ -433,7 +433,7 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path) -> Pa
             return out_path
 
 
-async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_dir: Path) -> Path:
+async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_dir: Path, url) -> Path:
     """
     Automates Meta AI 'Media' -> Video-from-Image flow.
 
@@ -447,6 +447,9 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
 
     Returns: Path to the saved .mp4 in out_dir
     """
+
+    await page.goto(url)
+
     # Ensure absolute paths
     image_path = str(Path(imagePath).resolve())
     ensure_dir(out_dir)
@@ -587,178 +590,6 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
 
     return out_path
 
-async def generate_video_meta_ai_DND(page: Page, imagePath: str, prompt: str, out_dir: Path) -> Path:
-    """
-    Automates Meta AI 'Media' -> Video-from-Image flow.
-
-    It will:
-      - Switch to 'Video' tab (from Image)
-      - Click 'Upload image' and attach the file
-      - Fill 'Describe your animation...' with `prompt`
-      - Click 'Animate'
-      - Wait for rendering to finish
-      - Click 'Download media' and MOVE the .mp4 into out_dir (no OS Downloads duplicate)
-
-    Returns: Path to the saved .mp4 in out_dir
-    """
-    # Ensure absolute paths
-    image_path = str(Path(imagePath).resolve())
-    ensure_dir(out_dir)
-
-    # 0) Be sure the meta media page is loaded (your caller already navigates here)
-    # Try to land on the media composer area by clicking the "Media" (image/video) entry if present
-    # try:
-    #     # Some UIs have an icon cluster first; clicking first item opens the composer
-    #     await page.locator(".x78zum5.xdt5ytf.x1qughib").first.click(timeout=3000)
-    # except Exception:
-    #     pass  # optional, UI-dependent
-
-    # 1) Switch to "Video" mode (recorded flows showed two variants)
-    switched = False
-    try:
-        # Variant A: a toggle button then literal "Video" text
-        await page.get_by_role("button", name="Image").click(timeout=3000)
-        await page.get_by_text("Video", exact=True).click(timeout=3000)
-        switched = True
-    except Exception:
-        try:
-            # Variant B: direct "Video" tab
-            await page.get_by_text("Video", exact=True).click(timeout=3000)
-            switched = True
-        except Exception:
-            pass
-
-    # if not switched:
-    #     # Some shells show a small tab container; try again by clicking the tab region
-    #     try:
-    #         await page.locator(".xt9c220").click(timeout=3000)
-    #         await page.get_by_text("Video", exact=True).click(timeout=3000)
-    #     except Exception:
-    #         # If we still can’t switch, proceed—the upload button usually scopes the correct panel
-    #         pass
-
-    # 2) Click "Upload image" and feed the file chooser (prefer file chooser to avoid targeting wrong input)
-    try:
-        async with page.expect_file_chooser(timeout=10_000) as fc_info:
-            await page.get_by_role("button", name="Upload image").click()
-        fc = await fc_info.value
-        await fc.set_files(image_path)
-    except Exception:
-        # Fallback: set first visible file input directly
-        try:
-            await page.set_input_files("input[type='file']", image_path)
-        except Exception as e:
-            raise RuntimeError(f"Could not upload image: {e}")
-
-    # 3) Fill the animation prompt (textbox labeled "Describe your animation...")
-    try:
-        # Focus (some UIs require a paragraph/canvas click first)
-        try:
-            await page.get_by_role("paragraph").click(timeout=1500)
-        except Exception:
-            pass
-        box = page.get_by_role("textbox", name="Describe your animation...")
-        await expect(box).to_be_visible(timeout=20_000)
-        await box.fill(prompt or "Animate this image smoothly with parallax camera move.")
-    except Exception as e:
-        raise RuntimeError(f"Could not set the animation description: {e}")
-
-    # 0) Create a unique stamp for THIS render
-    stamp = f"seen-{uuid.uuid4().hex}"
-
-
-    # ---------- COUNT-BASED COMPLETION VIA "Download media" BUTTONS ----------
-    dl_buttons = page.get_by_role("button", name="Download media")
-    try:
-        before_cnt = await dl_buttons.count()
-    except Exception:
-        before_cnt = 0
-
-    print(f"before_cnt = {before_cnt}")
-    # Click Animate (keep your existing animate click above if already done)
-    try:
-        animate_btn = page.get_by_role("button", name="Animate")
-        await expect(animate_btn).to_be_enabled(timeout=10_000)
-        await animate_btn.click()
-    except Exception as e:
-        raise RuntimeError(f"Could not click Animate: {e}")
-
-    # Wait for count to increase (render finished and a new Download appears)
-    for _ in range(240):  # up to ~240s
-        try:
-            after_cnt = await dl_buttons.count()
-            if after_cnt > before_cnt:
-                break
-        except Exception:
-            pass
-        await asyncio.sleep(1.0)
-    else:
-        raise RuntimeError("Timeout waiting for a new 'Download media' button after Animate.")
-
-    after_cnt = await dl_buttons.count()
-    print(f"after_cnt = {after_cnt}")
-    # Figure out candidates for the *new* button:
-    # - If UI APPENDS new items: the first "new" is at index == before_cnt
-    # - If UI PREPENDS new items: the newest is at index 0
-    # - As a fallback, also try the very last in DOM order (after_cnt - 1)
-    idx_candidates = []
-    if after_cnt > before_cnt:
-        idx_candidates.append(before_cnt)          # appended case
-    idx_candidates.append(0)                       # prepended case
-    idx_candidates.append(after_cnt - 1)           # last in DOM order (fallback)
-
-    # Prepare output path
-    base = Path(imagePath).resolve().stem
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_path = out_dir / f"{ts}_{base}_meta.mp4"
-
-    last_err = None
-    tried = set()
-    for idx in idx_candidates:
-        if idx < 0 or idx >= after_cnt or idx in tried:
-            continue
-        tried.add(idx)
-
-        btn = dl_buttons.nth(idx)
-
-        try:
-            # Make sure it's interactable
-            await btn.scroll_into_view_if_needed()
-            await expect(btn).to_be_visible(timeout=15_000)
-            await expect(btn).to_be_enabled(timeout=15_000)
-
-            # Bind expect_download to THIS specific button
-            async with page.expect_download(timeout=90_000) as dl_info:
-                await btn.click()
-
-            dl = await dl_info.value
-            src_path = await dl.path()
-            final = out_path.with_name(out_path.name)
-            shutil.move(src_path, final)
-
-            # Try to close any overlay/dialog with a generic Close; ignore failures
-            try:
-                await page.get_by_role("button", name="Close").click(timeout=1000)
-            except Exception:
-                try:
-                    await page.keyboard.press("Escape")
-                except Exception:
-                    pass
-
-            return final
-
-        except Exception as e:
-            last_err = e
-            # If a dialog opened but failed, try to dismiss before next candidate
-            try:
-                await page.keyboard.press("Escape")
-            except Exception:
-                pass
-            continue
-
-    raise RuntimeError(f"Could not click/download the new 'Download media' button. Last error: {last_err}")
-
-
         
 # =========================
 # Per-account worker (images pass)
@@ -844,14 +675,14 @@ async def run_account_videos(pw, account: Dict[str, str], jobs: List[Dict]):
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
     # open Meta AI once per account
-    await page.goto(account["meta_url"])
+    # await page.goto(account["meta_url"])
 
     for job in jobs:
         row_idx = job["row"]
         prompt  = job["video_cmd"]
         imagePath = job["image_path"]
         try:
-            vid_path = await generate_video_meta_ai(page, imagePath, prompt, out_dir)
+            vid_path = await generate_video_meta_ai(page, imagePath, prompt, out_dir,account["meta_url"])
             write_video_result(row_idx, str(Path(vid_path).resolve()), account_id_used=account["id"], status="ok")
             print(f"[{account['id']}] Row {row_idx} -> {vid_path}")
             await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))

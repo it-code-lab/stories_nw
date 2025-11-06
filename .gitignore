@@ -46,3 +46,4 @@ edit_vid_output/*
 convert_to_alpha-del.py
 add_overlays-del.py
 overlays/*
+downloads/*
