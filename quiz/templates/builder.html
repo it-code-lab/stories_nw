@@ -26,6 +26,8 @@
 
             <button id="saveBtn" class="btn">Save Quiz</button>
             <button id="playBtn" class="btn accent">Start Playback</button>
+            <button id="copyQuizCmdBtn" class="btn ghost">Copy Quiz Command</button>
+
         </div>
     </header>
 
@@ -398,6 +400,44 @@
     </div>
 
     <script type="module" src="/quiz/static/js/builder.js"></script>
+    <script>
+  (function () {
+    const QUIZ_CMD = `Please create a multiple-choice question quiz on [TOPIC]
+Format it in Excel with the following columns:
+question, opt1, opt2, opt3, opt4, correct option number, difficulty(easy/medium/hard), explanation (any interesting info to show to viewers after answer is displayed), opt1_img(command to generate image for option1), opt2_img(command to generate image for option2), opt3_img(command to generate image for option3), opt4_img(command to generate image for option4).
+
+✅ Requirements:
+- Include about [NUMBER] questions.
+- Sort the questions by difficulty (easy → medium → hard).
+- Make explanations fun and educational.
+- Use realistic, detailed image prompts (AI generation style).
+- Export the final output as an Excel file ready for download.`;
+
+    const btn = document.getElementById('copyQuizCmdBtn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(QUIZ_CMD);
+        const old = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => (btn.textContent = old), 1200);
+      } catch (err) {
+        // Fallback if clipboard API not available
+        const ta = document.createElement('textarea');
+        ta.value = QUIZ_CMD;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const old = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => (btn.textContent = old), 1200);
+      }
+    });
+  })();
+</script>
+
 </body>
 
 </html>

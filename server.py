@@ -60,6 +60,30 @@ GEM_STATE = str(BASE_DIR / ".gemini_pool_state.json")
 
 gemini_pool = None
 
+@app.post("/create_images")
+def create_images():
+    """Run only the image creation job."""
+    try:
+        from multi_profile_media_agent import createImages
+        result = createImages()
+        return jsonify({"ok": True, "message": "Images created successfully", "result": str(result)})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.post("/create_videos")
+def create_videos():
+    """Run only the video creation job."""
+    try:
+        from multi_profile_media_agent import createVideos
+        result = createVideos()
+        return jsonify({"ok": True, "message": "Videos created successfully", "result": str(result)})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 # ---- ADD this route (server.py) ----
 @app.post("/upscale")

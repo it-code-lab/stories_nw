@@ -102,10 +102,10 @@ ACCOUNTS: List[Dict[str, str]] = [
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },    
     {
-        "id": "mail2nishm",
+        "id": "saurabh.173",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 7",
         "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/18c87m7nuF8ZSkrV6HCv0W5R7WZpmjEWC",
+        "google_url": "https://aistudio.google.com/prompts/1Tyv17HS3-w0sVP6oPNQ8ULMDBzAMvIMF",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     }, 
     {
