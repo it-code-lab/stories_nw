@@ -778,6 +778,10 @@ def serve_thumb_image(filename):
 def serve_bg_video(filename):
     return send_from_directory(BASE_DIR / 'background_videos', filename)
 
+@app.route('/quiz/downloads/<path:filename>')
+def serve_quiz_downloads(filename):
+    return send_from_directory(BASE_DIR / 'downloads', filename)
+
 # --- BROWSING APIs ---
 @app.get('/list_thumbnail_images')
 def list_thumbnail_images():
