@@ -170,6 +170,7 @@
             border: 1px solid #c7d2fe;
             border-radius: 999px;
             cursor: pointer;
+            color: black;
         }
 
         .nav-toggle:hover {
@@ -398,6 +399,12 @@
             will be created in edit_vid_output and will also be copied on root as composed_video.mp4.
         </div>
         <div class="infoBox">If audio length is smaller than video then video will be trimmed</div>
+
+        <label>Copy video and audio files for captions generations</label>
+        <select name="copyforcaption" id="copyforcaption">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
 
         <button type="submit">Make Large Video</button>
     </form>

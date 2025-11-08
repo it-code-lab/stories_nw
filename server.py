@@ -1444,7 +1444,7 @@ def assemble_clips_to_make_video_song():
         #return with error message if edit_vid_input is empty
 
         video_input_folder = "edit_vid_input"
-
+        copyforcaption = request.form.get('copyforcaption','no')
         # --- Validate inputs up front ---
         if not os.path.isdir(video_input_folder):
             print( "❌ Folder 'edit_vid_input' does not exist.")
@@ -1467,7 +1467,9 @@ def assemble_clips_to_make_video_song():
             shuffle=True,                                   # different order each run
             prefer_ffmpeg_concat=True                       # auto-uses concat if safe; else MoviePy
         )
-
+        if copyforcaption == 'no':
+            return "✅ Video song assembled successfully!", 200
+        
         shutil.copy("edit_vid_output/final_video.mp4", "composed_video.mp4")
 
         audio_folder = "edit_vid_audio"
