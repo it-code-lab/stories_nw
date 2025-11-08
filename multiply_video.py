@@ -54,6 +54,37 @@ def audio_codec_flags_for(ext: str):
     # default fallback
     return ["-c:a", "aac", "-b:a", "192k"]
 
+def repeat_single_source_fast(input_path: str, output_path: str, repeat_factor: int):
+    """
+    Repeat one clip N times using stream copy (no re-encode).
+    Works perfectly for your 'one file at a time' scenario.
+    """
+    if repeat_factor < 1:
+        raise ValueError("repeat_factor must be >= 1")
+
+    if repeat_factor == 1:
+        # Just copy
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-i", input_path,
+            "-c", "copy",
+            output_path
+        ], check=True)
+        return
+
+    loop_count = repeat_factor - 1  # total = 1 + loop_count
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-stream_loop", str(loop_count),
+        "-i", input_path,
+        "-c", "copy",
+        "-movflags", "+faststart",
+        output_path,
+    ]
+    print("▶", " ".join(cmd))
+    subprocess.run(cmd, check=True)
+
 # DND-Working 
 def multiply_videos(
     input_folder="edit_vid_input",
@@ -73,31 +104,36 @@ def multiply_videos(
 
         # VIDEO
         if is_video_file(filename):
+
+            # Working - DDND
             # Build concat list
-            concat_list = make_concat_list_file(input_path, repeat_factor)
+            # concat_list = make_concat_list_file(input_path, repeat_factor)
             try:
-                ffmpeg_cmd = [
-                    "ffmpeg", "-y",
-                    "-f", "concat",
-                    "-safe", "0",
-                    "-i", concat_list,
-                    # Re-encode to ensure clean concat regardless of original codecs
-                    "-c:v", "libx264",
-                    "-preset", "ultrafast",
-                    "-crf", "23",
-                    "-c:a", "aac",
-                    "-shortest",
-                    output_path,
-                ]
-                print(f"🎬 Processing video: {filename}")
-                subprocess.run(ffmpeg_cmd, check=True)
+                # ffmpeg_cmd = [
+                #     "ffmpeg", "-y",
+                #     "-f", "concat",
+                #     "-safe", "0",
+                #     "-i", concat_list,
+                #     "-c:v", "libx264",
+                #     "-preset", "ultrafast",
+                #     "-crf", "23",
+                #     "-c:a", "aac",
+                #     "-shortest",
+                #     output_path,
+                # ]
+                # print(f"🎬 Processing video: {filename}")
+                # subprocess.run(ffmpeg_cmd, check=True)
+                repeat_single_source_fast(input_path, output_path, repeat_factor)
                 print(f"✅ Done: {filename}")
-            finally:
+            except OSError:
+                pass
+            # finally:
+                #DND - Working
                 # Clean temp concat list
-                try:
-                    os.remove(concat_list)
-                except OSError:
-                    pass
+                # try:
+                #     os.remove(concat_list)
+                # except OSError:
+                #     pass
 
             # Remove original input (existing behavior)
             try:
@@ -108,25 +144,28 @@ def multiply_videos(
 
         # AUDIO
         if is_audio_file(filename):
-            concat_list = make_concat_list_file(input_path, repeat_factor)
+            # concat_list = make_concat_list_file(input_path, repeat_factor)
             try:
-                audio_flags = audio_codec_flags_for(ext)
-                ffmpeg_cmd = [
-                    "ffmpeg", "-y",
-                    "-f", "concat",
-                    "-safe", "0",
-                    "-i", concat_list,
-                    *audio_flags,
-                    output_path,
-                ]
+                # audio_flags = audio_codec_flags_for(ext)
+                # ffmpeg_cmd = [
+                #     "ffmpeg", "-y",
+                #     "-f", "concat",
+                #     "-safe", "0",
+                #     "-i", concat_list,
+                #     *audio_flags,
+                #     output_path,
+                # ]
                 print(f"🎧 Processing audio: {filename}")
-                subprocess.run(ffmpeg_cmd, check=True)
+                # subprocess.run(ffmpeg_cmd, check=True)
+                repeat_single_source_fast(input_path, output_path, repeat_factor)
                 print(f"✅ Done: {filename}")
-            finally:
-                try:
-                    os.remove(concat_list)
-                except OSError:
-                    pass
+            except OSError:
+                pass
+            # finally:
+            #     try:
+            #         os.remove(concat_list)
+            #     except OSError:
+            #         pass
 
             # Remove original input (to match your current flow)
             try:
