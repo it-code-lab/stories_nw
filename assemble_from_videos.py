@@ -2,7 +2,7 @@
 import os, random, math, subprocess, tempfile, json
 from glob import glob
 from typing import List, Dict, Tuple
-from moviepy.editor import AudioFileClip, VideoFileClip, concatenate_videoclips
+from moviepy.editor import AudioFileClip, VideoFileClip, concatenate_videoclips, CompositeAudioClip
 
 # --------------------------
 # FFmpeg / FFprobe utilities
@@ -130,6 +130,20 @@ def _ffprobe_duration(path: str) -> float:
         except Exception:
             return 0.0
 
+def _has_audio_stream(path: str) -> bool:
+    try:
+        out = subprocess.check_output([
+            "ffprobe", "-v", "error",
+            "-select_streams", "a:0",
+            "-show_entries", "stream=codec_type",
+            "-of", "json",
+            path
+        ], universal_newlines=True)
+        data = json.loads(out)
+        return bool(data.get("streams"))
+    except Exception:
+        return False
+    
 def _can_safe_concat(video_paths: List[str]) -> Tuple[bool, str]:
     """
     Check if all videos share the same codec/resolution/fps/pix_fmt,
@@ -203,10 +217,246 @@ def _find_videos(video_folder: str) -> List[str]:
         raise RuntimeError(f"No video files found in {video_folder}")
     return [os.path.abspath(p) for p in sorted(files)]
 
+# ---------- Single-video fast path ----------
+
+def _assemble_single_video_fast(
+    video_path: str,
+    audio_path: str,
+    output_path: str,
+    keep_video_audio: bool,
+    video_volume: float,
+    bg_volume: float,
+):
+    """
+    Best-case: 1 video + 1 bg audio.
+    - Loops video with -stream_loop to cover bg audio duration.
+    - If keep_video_audio=False → use bg audio only.
+    - If keep_video_audio=True → mix original audio + bg audio with volumes.
+    - Uses -c:v copy → max quality, very fast.
+    """
+    audio_duration = _ffprobe_duration(audio_path)
+    video_duration = _ffprobe_duration(video_path)
+    if audio_duration <= 0 or video_duration <= 0:
+        raise RuntimeError("Invalid durations for fast path")
+
+    loop_count = max(int(math.ceil(audio_duration / video_duration) - 1), 0)
+    has_v_audio = _has_audio_stream(video_path)
+
+    # Only background audio (default behavior)
+    if not keep_video_audio or not has_v_audio:
+        cmd = [
+            "ffmpeg", "-y",
+            "-stream_loop", str(loop_count), "-i", video_path,
+            "-i", audio_path,
+            "-map", "0:v:0", "-map", "1:a:0",
+            "-c:v", "copy",
+            "-c:a", "aac", "-b:a", "192k",
+            "-shortest",
+            output_path,
+        ]
+    else:
+        # Mix original audio + bg audio
+        fc = (
+            f"[0:a]volume={video_volume}[v0];"
+            f"[1:a]volume={bg_volume}[a1];"
+            f"[v0][a1]amix=inputs=2:normalize=1[aout]"
+        )
+        cmd = [
+            "ffmpeg", "-y",
+            "-stream_loop", str(loop_count), "-i", video_path,
+            "-i", audio_path,
+            "-filter_complex", fc,
+            "-map", "0:v:0", "-map", "[aout]",
+            "-c:v", "copy",
+            "-c:a", "aac", "-b:a", "192k",
+            "-shortest",
+            output_path,
+        ]
+
+    print("▶ Single-video fast path:", " ".join(cmd))
+    subprocess.run(cmd, check=True)
+
 # --------------------------
 # Main assembly
 # --------------------------
 def assemble_videos(
+    video_folder: str,
+    audio_folder: str,
+    output_path: str,
+    fps: int = 30,
+    shuffle: bool = True,
+    prefer_ffmpeg_concat: bool = True,
+    keep_video_audio: bool = False,
+    video_volume: float = 0.4,
+    bg_volume: float = 1.0,
+):
+    """
+    Build a final video matching the audio duration.
+
+    Optimizations:
+    - If only 1 video -> fast ffmpeg path with -stream_loop & optional audio mix.
+    - If multiple videos & uniform -> ffmpeg concat + optional audio mix, -c:v copy.
+    - Else -> MoviePy fallback with proper trimming & optional audio mix.
+    """
+
+    print("Received assemble_videos Arguments:", locals())
+    clear_folder("edit_vid_output")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    # Load bg audio (for duration reference)
+    audio_path = _find_audio(audio_folder)
+    audio = AudioFileClip(audio_path)
+    audio_duration = float(audio.duration)
+
+    # Collect videos
+    video_paths = _find_videos(video_folder)
+    if shuffle and len(video_paths) > 1:
+        random.shuffle(video_paths)
+
+    # Fast path: exactly one video file
+    if prefer_ffmpeg_concat and len(video_paths) == 1 and _bin_exists("ffmpeg"):
+        audio.close()
+        _assemble_single_video_fast(
+            video_paths[0],
+            audio_path,
+            output_path,
+            keep_video_audio=keep_video_audio,
+            video_volume=video_volume,
+            bg_volume=bg_volume,
+        )
+        return
+
+    # Multi-clip plan
+    tiny = 0.02
+    durations, valid_paths = [], []
+    for p in video_paths:
+        d = _ffprobe_duration(p)
+        if d > tiny:
+            valid_paths.append(p)
+            durations.append(d)
+
+    if not valid_paths:
+        audio.close()
+        raise RuntimeError("All candidate videos are zero-length or unreadable.")
+
+    remaining = audio_duration
+    plan = []
+    idx = 0
+    while remaining > tiny:
+        p = valid_paths[idx % len(valid_paths)]
+        d = durations[idx % len(durations)]
+        use_d = min(d, remaining)
+        plan.append((p, d, use_d))
+        remaining -= use_d
+        idx += 1
+
+    # Try high-performance ffmpeg concat path
+    if prefer_ffmpeg_concat:
+        can_concat, reason = _can_safe_concat(valid_paths)
+        if can_concat:
+            audio.close()
+            with tempfile.TemporaryDirectory() as td:
+                list_txt = os.path.join(td, "list.txt")
+                with open(list_txt, "w", encoding="utf-8") as f:
+                    for (p, _, _) in plan:
+                        safe_p = p.replace("'", r"'\''")
+                        f.write(f"file '{safe_p}'\n")
+
+                temp_concat = os.path.join(td, "concat.mp4")
+
+                # Concat with both video+audio (if present), stream copy
+                cmd_concat = [
+                    "ffmpeg", "-y",
+                    "-f", "concat", "-safe", "0",
+                    "-i", list_txt,
+                    "-c", "copy",
+                    temp_concat,
+                ]
+                subprocess.run(cmd_concat, check=True)
+
+                has_v_audio = _has_audio_stream(temp_concat)
+
+                if not keep_video_audio or not has_v_audio:
+                    # Only bg audio
+                    cmd_mux = [
+                        "ffmpeg", "-y",
+                        "-i", temp_concat,
+                        "-i", audio_path,
+                        "-map", "0:v:0", "-map", "1:a:0",
+                        "-c:v", "copy",
+                        "-c:a", "aac", "-b:a", "192k",
+                        "-shortest",
+                        output_path,
+                    ]
+                else:
+                    # Mix concat audio + bg
+                    fc = (
+                        f"[0:a]volume={video_volume}[v0];"
+                        f"[1:a]volume={bg_volume}[a1];"
+                        f"[v0][a1]amix=inputs=2:normalize=1[aout]"
+                    )
+                    cmd_mux = [
+                        "ffmpeg", "-y",
+                        "-i", temp_concat,
+                        "-i", audio_path,
+                        "-filter_complex", fc,
+                        "-map", "0:v:0", "-map", "[aout]",
+                        "-c:v", "copy",
+                        "-c:a", "aac", "-b:a", "192k",
+                        "-shortest",
+                        output_path,
+                    ]
+
+                print("▶ Concat+Mux:", " ".join(cmd_mux))
+                subprocess.run(cmd_mux, check=True)
+            return
+        else:
+            print(f"[Info] Falling back to MoviePy (concat not safe): {reason}")
+
+    # MoviePy fallback (non-uniform inputs)
+    clips = []
+    try:
+        for (p, full_d, use_d) in plan:
+            c = VideoFileClip(p)
+            if use_d < (c.duration - tiny):
+                c = c.subclip(0, use_d)
+            if not keep_video_audio:
+                c = c.without_audio()
+            clips.append(c)
+
+        video = concatenate_videoclips(clips, method="compose")
+
+        bg_clip = audio.volumex(bg_volume)
+        if keep_video_audio and video.audio is not None:
+            v_clip = video.audio.volumex(video_volume)
+            final_audio = CompositeAudioClip([v_clip, bg_clip])
+        else:
+            final_audio = bg_clip
+
+        video = video.set_audio(final_audio).set_duration(audio_duration)
+
+        video.write_videofile(
+            output_path,
+            fps=fps,
+            codec="libx264",
+            audio_codec="aac",
+            threads=4,
+            temp_audiofile="__temp_audio.m4a",
+            remove_temp=True
+        )
+    finally:
+        for c in clips:
+            try:
+                c.close()
+            except:
+                pass
+        try:
+            audio.close()
+        except:
+            pass
+
+# DND - Working
+def assemble_videos_OLD(
     video_folder: str,
     audio_folder: str,
     output_path: str,

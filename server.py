@@ -1458,6 +1458,10 @@ def assemble_clips_to_make_video_song():
                 "hint":  "Add at least one of: .mp4, .mov, .mkv, .avi, .webm, .m4v"
             }), 400
 
+        keep_video_audio = request.form.get('keep_video_audio','no')
+        video_volume = float(request.form.get('video_volume',0.3))
+        bg_volume = float(request.form.get('bg_volume',1.0))
+
         from assemble_from_videos import assemble_videos
         assemble_videos(
             video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
@@ -1465,7 +1469,10 @@ def assemble_clips_to_make_video_song():
             output_path="edit_vid_output/final_video.mp4",
             fps=30,
             shuffle=True,                                   # different order each run
-            prefer_ffmpeg_concat=True                       # auto-uses concat if safe; else MoviePy
+            prefer_ffmpeg_concat=True,                       # auto-uses concat if safe; else MoviePy
+            keep_video_audio = keep_video_audio == 'yes',
+            video_volume = video_volume,
+            bg_volume = bg_volume
         )
         if copyforcaption == 'no':
             return "✅ Video song assembled successfully!", 200

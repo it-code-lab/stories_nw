@@ -406,6 +406,21 @@
             <option value="yes">yes</option>
         </select>
 
+        <div style="background-color: #cfe0ff; padding: 10px; border-radius: 10px;">
+            <label>Keep audio from original video </label>
+            <select name="keep_video_audio" id="keep_video_audio">
+                <option value="no">no</option>
+                <option value="yes">yes</option>
+            </select>
+            <div id="audioVideoOptions" style="display: none;">
+            <label>Original video volume:</label>
+            <input type="number" name="video_volume" id="video_volume" value="0.30" step="0.1" min="0" max="1">
+
+            <label>Audio volume:</label>
+            <input type="number" name="bg_volume" id="bg_volume" value="1" step="0.1" min="0" max="1">
+        </div>
+        </div>
+
         <button type="submit">Make Large Video</button>
     </form>
     <br>
@@ -1326,6 +1341,8 @@
     <pre id="createVideosResult"></pre>
     </form>
     <br>
+
+
     <script>
         (function () {
             const form = document.getElementById('mixVocalMusicForm');
@@ -1968,6 +1985,19 @@ ${JSON.stringify(meta, null, 2)}
 
     <script>
         const voices = {{ voice_map | tojson }};
+        const keep_video_audio = document.getElementById("keep_video_audio");
+        keep_video_audio.addEventListener('change', toggleAudioVideoOptions);
+
+        function toggleAudioVideoOptions(){
+            const audioVideoOptions = document.getElementById("audioVideoOptions");
+            //Toggle audioVideoOptions display between block and none
+            if (audioVideoOptions.style.display == "block"){
+                audioVideoOptions.style.display = "none";
+            } else {
+                audioVideoOptions.style.display = "block";
+            }
+        }
+
         function updateVoices() {
             const gender = document.getElementById("gender").value;
             const voiceDropdown = document.getElementById("voice");
@@ -2098,6 +2128,8 @@ ${JSON.stringify(meta, null, 2)}
             const result = await response.text();
             // alert(result);
         };
+
+
 
         document.getElementById('splitVideoToParts').onsubmit = async function (e) {
             e.preventDefault();
