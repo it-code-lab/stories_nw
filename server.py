@@ -20,7 +20,7 @@ from auto_mix import mix_files
 from quiz import quiz_bp
 from flask import send_file
 import tempfile
-
+from coloring_upscale import process_coloring_folder
 from google import genai
 from google.genai import types
 import os
@@ -48,6 +48,9 @@ CORS(app)
 BASE_DIR = Path(__file__).resolve().parent
 AUDIO_PATH = BASE_DIR / "audio.wav"   # your file is beside server.py
 
+COLORING_BASE = BASE_DIR / "downloads"
+COLORING_BASE.mkdir(exist_ok=True)
+
 # =========================
 # Defaults (env-overridable)
 # =========================
@@ -59,6 +62,80 @@ DEFAULT_IMAGE_MODEL = os.getenv("GEMINI_DEFAULT_IMAGE_MODEL", "gemini-2.5-flash-
 GEM_STATE = str(BASE_DIR / ".gemini_pool_state.json")
 
 gemini_pool = None
+
+
+
+
+
+@app.post("/api/upscale_coloring")
+def api_upscale_coloring():
+    """
+    Trigger upscaling for a given folder under /coloring.
+
+    Expects JSON or form-data:
+      - folder: subfolder under /coloring (e.g., "farm_animals")
+      - page_size: "LETTER" or "EIGHTX10" (optional, default LETTER)
+      - threshold: 0-255 (optional, default 200)
+
+    Response:
+      {
+        ok: true,
+        folder: "farm_animals",
+        count: 24,
+        processed: [
+          { file: "page1_upscaled.png", rel_path: "farm_animals/processed_images/page1_upscaled.png", url: "/downloads/farm_animals/processed_images/page1_upscaled.png" },
+          ...
+        ]
+      }
+    """
+    data = request.get_json(silent=True) or request.form
+    folder = (data.get("folder") or "").strip()
+    page_size = (data.get("page_size") or "LETTER").strip()
+    threshold = int(data.get("threshold") or 200)
+
+    if not folder:
+        return jsonify({"ok": False, "error": "Missing 'folder'"}), 400
+
+    try:
+        output_files = process_coloring_folder(COLORING_BASE, folder, page_size, threshold)
+    except FileNotFoundError as e:
+        return jsonify({"ok": False, "error": str(e)}), 404
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": f"Internal error: {e}"}), 500
+
+    processed = []
+    for out_path in output_files:
+        # path relative to COLORING_BASE for URL mapping
+        rel = out_path.relative_to(COLORING_BASE).as_posix()
+        processed.append({
+            "file": out_path.name,
+            "rel_path": rel,
+            "url": f"/downloads/{rel}",
+        })
+
+    return jsonify({
+        "ok": True,
+        "folder": folder,
+        "count": len(processed),
+        "processed": processed,
+    })
+
+@app.get("/downloads/<path:subpath>")
+def coloring_files(subpath: str):
+    """
+    Serve files from COLORING_BASE safely.
+    Used by the Coloring Book Builder to load processed_images.
+    """
+    full = (COLORING_BASE / subpath).resolve()
+    base = COLORING_BASE.resolve()
+    if not str(full).startswith(str(base)) or not full.is_file():
+        abort(404)
+    return send_from_directory(full.parent, full.name)
+
 
 @app.post("/create_images")
 def create_images():
@@ -892,6 +969,10 @@ def index():
 @app.route('/thumbnail')
 def thumbnail():
     return render_template('thu_index.html')
+
+@app.route('/coloring_book_builder')
+def coloringbook():
+    return render_template('coloring-book-builder.html')
 
 @app.route('/hindi_caption_builder')
 def hindicaptions():

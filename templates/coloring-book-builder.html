@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Coloring Book Builder</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .panel {
+      background: #ffffff;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    label {
+      display: inline-block;
+      margin: 6px 0 2px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+      max-width: 260px;
+      font-size: 14px;
+    }
+
+    input[type="checkbox"] {
+      transform: scale(1.1);
+      margin-right: 4px;
+    }
+
+    .pages-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 420px;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+
+    .page-row {
+      display: grid;
+      grid-template-columns: 60px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      background: #fafafa;
+      border-radius: 8px;
+      padding: 6px 8px;
+      border: 1px solid #e3e3e3;
+    }
+
+    .page-row img {
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      background: #fff;
+    }
+
+    .page-meta {
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .page-meta .name {
+      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 9px;
+      border-radius: 999px;
+      background: #eef;
+      margin-right: 4px;
+    }
+
+    .warning {
+      color: #b06500;
+      font-size: 9px;
+    }
+
+    .page-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+      font-size: 10px;
+    }
+
+    .page-controls button {
+      padding: 2px 6px;
+      font-size: 9px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .page-controls button:hover {
+      background: #f0f0f0;
+    }
+
+    .btn-primary {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-right: 12px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Coloring Book Builder</h1>
+  <div class="panel">
+    <div>
+      <label>1. Load coloring pages</label><br>
+      <input type="file" id="fileInput" multiple webkitdirectory>
+      <div class="hint">
+        Select your folder or multiple files. Only image files are used.
+        They’ll be sorted by file name by default.
+      </div>
+
+      <div style="margin-top:10px;">
+        <label>Or load from server folder (under /downloads)</label>
+        <div class="inline">
+          <input type="text" id="folderInput" placeholder="e.g. farm_animals">
+          <button type="button" class="btn-primary" id="runUpscaleBtn">
+            Upscale & Load
+          </button>
+        </div>
+        <div class="hint">
+          This will:
+          1) Run upscaling on /downloads/&lt;folder&gt;/,
+          2) Write pages into /downloads/&lt;folder&gt;/processed_images/,
+          3) Load those processed pages into the builder.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="panel">
+    <label>2. Page & branding settings</label>
+    <div class="inline">
+      <span>Page size:</span>
+      <select id="pageSize">
+        <option value="LETTER">8.5 x 11 in (recommended)</option>
+        <option value="EIGHTX10">8 x 10 in</option>
+      </select>
+    </div>
+    <div class="inline">
+      <span>Margin (inches):</span>
+      <input type="number" id="margin" value="0.5" step="0.1" min="0.25" max="1.0">
+    </div>
+    <div style="margin-top:6px;">
+      <label>Footer text (copyright / brand)</label>
+      <input type="text" id="footnote" value="© Custom Prints | Personal use only | All rights reserved.">
+    </div>
+    <div style="margin-top:4px;">
+      <label class="inline">
+        <input type="checkbox" id="showPageNumbers" checked>
+        Show page numbers (skip cover/back)
+      </label>
+      <label class="inline">
+        Start from:
+        <input type="number" id="pageNumberStart" value="1" min="1" style="width:60px;">
+      </label>
+    </div>
+    <div class="hint">
+      Tip: Use clean black outlines, no backgrounds, for best professional print.
+    </div>
+  </div>
+
+  <div class="panel">
+    <label>3. Pages (reorder, mark Cover/Back, review quality)</label>
+    <div id="pagesList" class="pages-list"></div>
+    <div class="hint">
+      Use Cover/Back buttons and ⬆⬇ to reorder.
+      Warnings help you spot low-res or non-B&W images.
+    </div>
+  </div>
+
+  <div class="panel">
+    <label>4. Export</label><br>
+    <button class="btn-primary" id="generatePdfBtn">Generate PDF</button>
+    <div class="hint">
+      Generated PDF will use your chosen page size, margins, centered images,
+      footer text, and page numbers.
+    </div>
+  </div>
+
+  <!-- jsPDF (browser PDF generation) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const { jsPDF } = window.jspdf;
+
+    const fileInput = document.getElementById('fileInput');
+    const pagesList = document.getElementById('pagesList');
+    const generatePdfBtn = document.getElementById('generatePdfBtn');
+
+    const pages = []; // {id, file, url, img, warnings, isCover, isBack, enabled}
+
+    const folderInput = document.getElementById('folderInput');
+    const runUpscaleBtn = document.getElementById('runUpscaleBtn');
+
+    function inferFolderNameFromFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return "";
+
+      // Prefer using webkitRelativePath if available (folder selection)
+      const paths = files
+        .map(f => f.webkitRelativePath || f.name)
+        .filter(Boolean);
+
+      // If none have a path, we can't infer a folder
+      if (!paths.length) return "";
+
+      // Take the first segment before '/'
+      const first = paths[0].split("/")[0];
+
+      // Basic sanity check: ensure most files share this root
+      const sameRootCount = paths.filter(p => p.startsWith(first + "/")).length;
+      if (sameRootCount < paths.length * 0.7) {
+        return "";
+      }
+
+      return first;
+    }
+
+    if (runUpscaleBtn) {
+      runUpscaleBtn.addEventListener('click', async () => {
+        const folder = folderInput.value.trim();
+        const size = document.getElementById('pageSize').value;
+
+        const res = await fetch('/api/upscale_coloring', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder, page_size: size, threshold: 200 })
+        });
+
+        const data = await res.json();
+        if (!data.ok) {
+          alert('Upscale error: ' + (data.error || 'Unknown error'));
+          return;
+        }
+
+        pages.length = 0;
+        pagesList.innerHTML = '';
+
+        for (const item of data.processed) {
+          const url = item.url;
+          const img = new Image();
+          img.src = url;
+          await img.decode();
+
+          const warnings = analyzeImage(img); // Should be clear now
+          const page = {
+            id: crypto.randomUUID(),
+            file: { name: item.file },
+            url,
+            img,
+            warnings,
+            isCover: false,
+            isBack: false,
+            enabled: true
+          };
+          pages.push(page);
+          addPageRow(page);
+        }
+      });
+
+    }
+
+    fileInput.addEventListener('change', async (e) => {
+      pages.length = 0;
+      pagesList.innerHTML = '';
+
+      const files = Array.from(e.target.files)
+        .filter(f => f.type.startsWith('image/'))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      // 🔹 NEW: auto-fill folderInput if we can infer it
+      if (typeof folderInput !== 'undefined' && folderInput) {
+        const inferred = inferFolderNameFromFiles(e.target.files);
+        if (inferred) {
+          folderInput.value = inferred;
+        }
+      }
+
+      for (const file of files) {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.src = url;
+        await img.decode();
+
+        const warnings = analyzeImage(img);
+        const page = {
+          id: crypto.randomUUID(),
+          file,
+          url,
+          img,
+          warnings,
+          isCover: false,
+          isBack: false,
+          enabled: true
+        };
+        pages.push(page);
+        addPageRow(page);
+      }
+    });
+
+
+    function analyzeImage(img) {
+      const warnings = [];
+
+      // 1. Resolution check (simple heuristic for ~300 DPI)
+      if (img.width < 2000 || img.height < 2000) {
+        warnings.push('Low resolution: may look soft when printed large.');
+      }
+
+      // 2. Simple "is mostly black & white" check by sampling
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const s = 80;
+      canvas.width = s;
+      canvas.height = s;
+      ctx.drawImage(img, 0, 0, s, s);
+      const data = ctx.getImageData(0, 0, s, s).data;
+
+      let colored = 0;
+      let total = s * s;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        // check how "chromatic" it is
+        if (!(r > 240 && g > 240 && b > 240) && // not white
+          !(r < 35 && g < 35 && b < 35)) {    // not black
+          if (max - min > 15) colored++;
+        }
+      }
+      if (colored / total > 0.02) {
+        warnings.push('Not pure B&W: consider cleaning colors/gray areas.');
+      }
+
+      return warnings;
+    }
+
+    function addPageRow(page) {
+      const row = document.createElement('div');
+      row.className = 'page-row';
+      row.dataset.id = page.id;
+
+      const thumb = document.createElement('img');
+      thumb.src = page.url;
+
+      const meta = document.createElement('div');
+      meta.className = 'page-meta';
+
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = page.file.name;
+      meta.appendChild(name);
+
+      const tags = document.createElement('div');
+      tags.innerHTML = '<span class="tag">Page</span>';
+      meta.appendChild(tags);
+
+      if (page.warnings.length) {
+        const w = document.createElement('div');
+        w.className = 'warning';
+        w.textContent = page.warnings.join(' | ');
+        meta.appendChild(w);
+      }
+
+      const controls = document.createElement('div');
+      controls.className = 'page-controls';
+
+      const includeLabel = document.createElement('label');
+      includeLabel.innerHTML = `<input type="checkbox" checked> Include`;
+      const includeCheckbox = includeLabel.querySelector('input');
+      includeCheckbox.addEventListener('change', () => {
+        page.enabled = includeCheckbox.checked;
+        row.style.opacity = page.enabled ? '1' : '0.4';
+      });
+      controls.appendChild(includeLabel);
+
+      const coverBtn = document.createElement('button');
+      coverBtn.textContent = 'Set as Cover';
+      coverBtn.addEventListener('click', () => {
+        pages.forEach(p => p.isCover = false);
+        page.isCover = true;
+        refreshTags();
+      });
+      controls.appendChild(coverBtn);
+
+      const backBtn = document.createElement('button');
+      backBtn.textContent = 'Set as Back';
+      backBtn.addEventListener('click', () => {
+        pages.forEach(p => p.isBack = false);
+        page.isBack = true;
+        refreshTags();
+      });
+      controls.appendChild(backBtn);
+
+      const upBtn = document.createElement('button');
+      upBtn.textContent = '⬆';
+      upBtn.title = 'Move up';
+      upBtn.addEventListener('click', () => movePage(page.id, -1));
+      controls.appendChild(upBtn);
+
+      const downBtn = document.createElement('button');
+      downBtn.textContent = '⬇';
+      downBtn.title = 'Move down';
+      downBtn.addEventListener('click', () => movePage(page.id, 1));
+      controls.appendChild(downBtn);
+
+      row.appendChild(thumb);
+      row.appendChild(meta);
+      row.appendChild(controls);
+
+      pagesList.appendChild(row);
+      refreshTags();
+    }
+
+    function movePage(id, delta) {
+      const index = pages.findIndex(p => p.id === id);
+      if (index < 0) return;
+      const newIndex = index + delta;
+      if (newIndex < 0 || newIndex >= pages.length) return;
+      const [p] = pages.splice(index, 1);
+      pages.splice(newIndex, 0, p);
+      renderAllRows();
+    }
+
+    function refreshTags() {
+      // Update tags (Cover / Back) visuals
+      document.querySelectorAll('.page-row').forEach(row => {
+        const id = row.dataset.id;
+        const page = pages.find(p => p.id === id);
+        const meta = row.querySelector('.page-meta');
+        const tagsDiv = meta.querySelector('div');
+        tagsDiv.innerHTML = '';
+
+        if (page.isCover) {
+          tagsDiv.innerHTML += `<span class="tag" style="background:#dcfce7;">Cover</span>`;
+        } else if (page.isBack) {
+          tagsDiv.innerHTML += `<span class="tag" style="background:#fee2e2;">Back</span>`;
+        } else {
+          tagsDiv.innerHTML += `<span class="tag">Page</span>`;
+        }
+      });
+    }
+
+    function renderAllRows() {
+      pagesList.innerHTML = '';
+      pages.forEach(p => addPageRow(p));
+    }
+
+    function getOrderedPages() {
+      const enabled = pages.filter(p => p.enabled);
+      const cover = enabled.find(p => p.isCover);
+      const back = enabled.find(p => p.isBack);
+
+      const middle = enabled.filter(p => !p.isCover && !p.isBack);
+
+      const ordered = [];
+      if (cover) ordered.push(cover);
+      ordered.push(...middle);
+      if (back) ordered.push(back);
+      return ordered;
+    }
+
+    generatePdfBtn.addEventListener('click', () => {
+      if (!pages.length) {
+        alert('Please load images first.');
+        return;
+      }
+
+      const size = document.getElementById('pageSize').value;
+      const marginInches = parseFloat(document.getElementById('margin').value) || 0.5;
+      const showPageNumbers = document.getElementById('showPageNumbers').checked;
+      const pageNumberStart = parseInt(document.getElementById('pageNumberStart').value || '1', 10);
+      const footnote = (document.getElementById('footnote').value || '').trim();
+
+      const ptPerInch = 72;
+      let pageWidthPt, pageHeightPt;
+      if (size === 'LETTER') {
+        pageWidthPt = 8.5 * ptPerInch;
+        pageHeightPt = 11 * ptPerInch;
+      } else { // 8x10
+        pageWidthPt = 8 * ptPerInch;
+        pageHeightPt = 10 * ptPerInch;
+      }
+
+      const marginPt = marginInches * ptPerInch;
+      const footerHeight = (footnote || showPageNumbers) ? 16 : 0;
+
+      const doc = new jsPDF({
+        unit: 'pt',
+        format: [pageWidthPt, pageHeightPt],
+        orientation: 'portrait'
+      });
+
+      const ordered = getOrderedPages();
+      if (!ordered.length) {
+        alert('No pages selected.');
+        return;
+      }
+
+      let pageNumber = pageNumberStart - 1;
+
+      ordered.forEach((page, idx) => {
+        if (idx > 0) doc.addPage();
+
+        const img = page.img;
+
+        const maxWidth = pageWidthPt - 2 * marginPt;
+        const maxHeight = pageHeightPt - 2 * marginPt - footerHeight;
+
+        const imgRatio = img.width / img.height;
+        const boxRatio = maxWidth / maxHeight;
+
+        let drawWidth, drawHeight;
+        if (imgRatio > boxRatio) {
+          drawWidth = maxWidth;
+          drawHeight = maxWidth / imgRatio;
+        } else {
+          drawHeight = maxHeight;
+          drawWidth = maxHeight * imgRatio;
+        }
+
+        const x = (pageWidthPt - drawWidth) / 2;
+        const y = marginPt + (maxHeight - drawHeight) / 2;
+
+        doc.addImage(page.url, 'PNG', x, y, drawWidth, drawHeight, undefined, 'FAST');
+
+        const isNumbered = !page.isCover && !page.isBack;
+
+        if (footnote && isNumbered) {
+          doc.setFontSize(8);
+          doc.text(footnote, marginPt, pageHeightPt - marginPt);
+        }
+
+        if (showPageNumbers && isNumbered) {
+          pageNumber++;
+          doc.setFontSize(8);
+          doc.text(
+            String(pageNumber),
+            pageWidthPt - marginPt,
+            pageHeightPt - marginPt,
+            { align: 'right' }
+          );
+        }
+      });
+
+      doc.save('coloring-book.pdf');
+    });
+  </script>
+</body>
+
+</html>

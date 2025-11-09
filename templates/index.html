@@ -413,12 +413,12 @@
                 <option value="yes">yes</option>
             </select>
             <div id="audioVideoOptions" style="display: none;">
-            <label>Original video volume:</label>
-            <input type="number" name="video_volume" id="video_volume" value="0.30" step="0.1" min="0" max="1">
+                <label>Original video volume:</label>
+                <input type="number" name="video_volume" id="video_volume" value="0.30" step="0.1" min="0" max="1">
 
-            <label>Audio volume:</label>
-            <input type="number" name="bg_volume" id="bg_volume" value="1" step="0.1" min="0" max="1">
-        </div>
+                <label>Audio volume:</label>
+                <input type="number" name="bg_volume" id="bg_volume" value="1" step="0.1" min="0" max="1">
+            </div>
         </div>
 
         <button type="submit">Make Large Video</button>
@@ -1330,19 +1330,25 @@
 
     <br>
     <form id="createImagesForm">
-    <h2 style="background:#ffe4b5;">Create Images from Excel</h2>
-    <button type="submit">Run Image Jobs</button>
-    <pre id="createImagesResult"></pre>
+        <h2 style="background:#ffe4b5;">Create Images from Excel</h2>
+        <button type="submit">Run Image Jobs</button>
+        <pre id="createImagesResult"></pre>
     </form>
     <br>
     <form id="createVideosForm">
-    <h2 style="background:#ffe4b5;">Create Videos from Excel</h2>
-    <button type="submit">Run Video Jobs</button>
-    <pre id="createVideosResult"></pre>
+        <h2 style="background:#ffe4b5;">Create Videos from Excel</h2>
+        <button type="submit">Run Video Jobs</button>
+        <pre id="createVideosResult"></pre>
     </form>
     <br>
 
+    <form>
+        <h2 style="background:#ffe4b5;">Coloring Book Builder</h2>
+        <a href="coloring_book_builder" target="_blank">Open Coloring Book Builder</a>
 
+    </form>
+
+    <br>
     <script>
         (function () {
             const form = document.getElementById('mixVocalMusicForm');
@@ -1988,10 +1994,10 @@ ${JSON.stringify(meta, null, 2)}
         const keep_video_audio = document.getElementById("keep_video_audio");
         keep_video_audio.addEventListener('change', toggleAudioVideoOptions);
 
-        function toggleAudioVideoOptions(){
+        function toggleAudioVideoOptions() {
             const audioVideoOptions = document.getElementById("audioVideoOptions");
             //Toggle audioVideoOptions display between block and none
-            if (audioVideoOptions.style.display == "block"){
+            if (audioVideoOptions.style.display == "block") {
                 audioVideoOptions.style.display = "none";
             } else {
                 audioVideoOptions.style.display = "block";
@@ -2407,20 +2413,20 @@ ${JSON.stringify(meta, null, 2)}
         });
     </script>
 
-<script>
-async function runTask(formId, endpoint, resultId) {
-  document.getElementById(formId).addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const res = await fetch(endpoint, { method: "POST" });
-    const data = await res.json();
-    document.getElementById(resultId).textContent = data.ok
-      ? "✅ " + data.message
-      : "❌ " + data.error;
-  });
-}
-runTask("createImagesForm", "/create_images", "createImagesResult");
-runTask("createVideosForm", "/create_videos", "createVideosResult");
-</script>
+    <script>
+        async function runTask(formId, endpoint, resultId) {
+            document.getElementById(formId).addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const res = await fetch(endpoint, { method: "POST" });
+                const data = await res.json();
+                document.getElementById(resultId).textContent = data.ok
+                    ? "✅ " + data.message
+                    : "❌ " + data.error;
+            });
+        }
+        runTask("createImagesForm", "/create_images", "createImagesResult");
+        runTask("createVideosForm", "/create_videos", "createVideosResult");
+    </script>
 </body>
 
 </html>

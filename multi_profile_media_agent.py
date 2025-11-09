@@ -81,10 +81,10 @@ ACCOUNTS: List[Dict[str, str]] = [
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },
     {
-        "id": "mail2sm",
+        "id": "s173m",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 3",
         "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/18LNm8fsaraxHYYWCB92vGp4BC1-put7S",
+        "google_url": "https://aistudio.google.com/prompts/1Tyv17HS3-w0sVP6oPNQ8ULMDBzAMvIMF",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },
     {
@@ -102,10 +102,10 @@ ACCOUNTS: List[Dict[str, str]] = [
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },    
     {
-        "id": "saurabh.173",
+        "id": "mail2sm",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 7",
         "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/1Tyv17HS3-w0sVP6oPNQ8ULMDBzAMvIMF",
+        "google_url": "https://aistudio.google.com/prompts/1812Pe1f0s06ygMIfn_IT8hNfP-aqSnmS",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     }, 
     {
