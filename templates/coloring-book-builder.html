@@ -269,7 +269,7 @@
     <div class="inline">
       <label class="inline">
         <input type="checkbox" id="landscapeToggle">
-        Landscape layout (rotate page)
+        Rotate images 90° (for landscape artwork)
       </label>
     </div>
 
@@ -868,10 +868,10 @@
       // Adjust for orientation
       let pageWidthIn = baseWIn;
       let pageHeightIn = baseHIn;
-      if (landscape) {
-        pageWidthIn = baseHIn;
-        pageHeightIn = baseWIn;
-      }
+      // if (landscape) {
+      //   pageWidthIn = baseHIn;
+      //   pageHeightIn = baseWIn;
+      // }
 
       const pageWidthPt = pageWidthIn * ptPerInch;
       const pageHeightPt = pageHeightIn * ptPerInch;
@@ -882,26 +882,41 @@
       const doc = new jsPDF({
         unit: 'pt',
         format: [pageWidthPt, pageHeightPt],
-        orientation: landscape ? 'landscape' : 'portrait'
+        orientation: 'portrait'
       });
-
-      const ordered = getOrderedPages();
-      if (!ordered.length) {
-        alert('No pages selected.');
-        return;
-      }
 
       let pageNumber = pageNumberStart - 1;
 
-      ordered.forEach((page, idx) => {
-        if (idx > 0) doc.addPage();
+      const ordered = getOrderedPages().filter(p => p.enabled);
+      const rotateImages = document.getElementById('landscapeToggle')?.checked;
 
-        const img = page.img;
+      ordered.forEach((page, index) => {
+        if (index > 0) {
+          doc.addPage();
+        }
 
+        // 1) Choose image source: original or rotated-on-canvas
+        let srcImg = page.img;
+
+        if (rotateImages) {
+          const c = document.createElement('canvas');
+          // swap width/height for 90deg rotation
+          c.width = srcImg.height;
+          c.height = srcImg.width;
+
+          const ctx = c.getContext('2d');
+          ctx.translate(c.width / 2, c.height / 2);
+          ctx.rotate(Math.PI / 2); // 90 degrees clockwise
+          ctx.drawImage(srcImg, -srcImg.width / 2, -srcImg.height / 2);
+
+          srcImg = c; // use the rotated canvas as the image source
+        }
+
+        // 2) Fit srcImg into page box (portrait page)
         const maxWidth = pageWidthPt - 2 * marginPt;
         const maxHeight = pageHeightPt - 2 * marginPt - footerHeight;
 
-        const imgRatio = img.width / img.height;
+        const imgRatio = srcImg.width / srcImg.height;
         const boxRatio = maxWidth / maxHeight;
 
         let drawWidth, drawHeight;
@@ -916,26 +931,40 @@
         const x = (pageWidthPt - drawWidth) / 2;
         const y = marginPt + (maxHeight - drawHeight) / 2;
 
-        doc.addImage(page.url, 'PNG', x, y, drawWidth, drawHeight, undefined, 'FAST');
+        // 3) Add image to PDF with NO extra rotation
+        doc.addImage(
+          srcImg,
+          'PNG',
+          x,
+          y,
+          drawWidth,
+          drawHeight,
+          undefined,
+          'FAST'
+        );
 
-        const isNumbered = !page.isCover && !page.isBack;
+        // 4) Footer + page numbers (unchanged)
+        const isCover = page.isCover;
+        const isBack = page.isBack;
+        const isNumbered = !isCover && !isBack;
 
         if (footnote && isNumbered) {
-          doc.setFontSize(8);
-          doc.text(footnote, marginPt, pageHeightPt - marginPt);
+          doc.setFontSize(9);
+          doc.text(footnote, marginPt, pageHeightPt - marginPt - 4, { baseline: 'bottom' });
         }
 
         if (showPageNumbers && isNumbered) {
           pageNumber++;
-          doc.setFontSize(8);
+          doc.setFontSize(9);
           doc.text(
             String(pageNumber),
             pageWidthPt - marginPt,
-            pageHeightPt - marginPt,
-            { align: 'right' }
+            pageHeightPt - marginPt - 4,
+            { align: 'right', baseline: 'bottom' }
           );
         }
       });
+
 
       doc.save('coloring-book.pdf');
     });
