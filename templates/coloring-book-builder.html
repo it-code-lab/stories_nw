@@ -448,7 +448,14 @@
       });
     }
 
-
+    function loadImage(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = (err) => reject(err || new Error('Image load error'));
+        img.src = url;
+      });
+    }
     function inferFolderNameFromFiles(fileList) {
       const files = Array.from(fileList || []);
       if (!files.length) return "";
@@ -524,7 +531,7 @@
       runUpscaleBtn.addEventListener('click', async () => {
         const folder = folderInput.value.trim();
         const size = document.getElementById('pageSize').value;
-
+        console.log("Calling upscale")
         const res = await fetch('/api/upscale_coloring', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -542,11 +549,16 @@
 
         for (const item of data.processed) {
           const url = item.url;
-          const img = new Image();
-          img.src = url;
-          await img.decode();
 
-          const warnings = analyzeImage(img); // Should be clear now
+          let img;
+          try {
+            img = await loadImage(url);
+          } catch (err) {
+            console.error('Failed to load processed image:', item.file, url, err);
+            continue;
+          }
+
+          const warnings = analyzeImage(img, item.file || "");
           const page = {
             id: crypto.randomUUID(),
             file: { name: item.file },
@@ -561,6 +573,8 @@
           addPageRow(page);
         }
         renderPreview();
+
+        console.log("Upscaling completed")
       });
 
     }
@@ -583,11 +597,16 @@
 
       for (const file of files) {
         const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.src = url;
-        await img.decode();
 
-        const warnings = analyzeImage(img);
+        let img;
+        try {
+          img = await loadImage(url);
+        } catch (err) {
+          console.error('Failed to load local image:', file.name, err);
+          continue;
+        }
+
+        const warnings = analyzeImage(img, file.name);
         const page = {
           id: crypto.randomUUID(),
           file,
@@ -601,12 +620,62 @@
         pages.push(page);
         addPageRow(page);
       }
-
       renderPreview();
+
+
     });
 
+    function analyzeImage(img, fileName = "") {
+      const warnings = [];
 
-    function analyzeImage(img) {
+      // If it's one of our processed files, be more lenient
+      const isUpscaled = fileName.includes("_upscaled");
+
+      const w = img.width;
+      const h = img.height;
+      const longSide = Math.max(w, h);
+      const shortSide = Math.min(w, h);
+
+      // For your flow (8.5x11 / 8x10 @ ~300dpi, line art):
+      // - longSide >= 2000px is plenty
+      // - shortSide >= 1100px is fine for landscape band-style art
+      if (!isUpscaled) {
+        if (longSide < 1600 || shortSide < 900) {
+          warnings.push("Low resolution: may look soft when printed large.");
+        }
+      } else {
+        if (longSide < 2000 || shortSide < 1100) {
+          warnings.push("Potentially low resolution even after upscaling. Check this page.");
+        }
+      }
+
+      // Simple B/W cleanliness check (unchanged)
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const s = 80;
+      canvas.width = s;
+      canvas.height = s;
+      ctx.drawImage(img, 0, 0, s, s);
+      const data = ctx.getImageData(0, 0, s, s).data;
+
+      let colored = 0;
+      const total = s * s;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        if (!(r > 240 && g > 240 && b > 240) &&  // not white
+          !(r < 35 && g < 35 && b < 35)) {     // not black
+          if (max - min > 15) colored++;
+        }
+      }
+      if (colored / total > 0.02) {
+        warnings.push("Not pure B&W: consider cleaning colors/gray areas.");
+      }
+
+      return warnings;
+    }
+
+    function analyzeImage_old(img) {
       const warnings = [];
 
       // 1. Resolution check (simple heuristic for ~300 DPI)

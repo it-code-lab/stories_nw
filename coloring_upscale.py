@@ -18,8 +18,52 @@ def get_page_size(page_size: str) -> tuple[int, int]:
     # Default: 8.5 x 11 inches @ 300 DPI
     return 2550, 3300
 
-
 def upscale_coloring_page(
+    input_path: Path,
+    output_path: Path,
+    target_width: int,
+    target_height: int,
+    threshold: int = 200,
+) -> None:
+    """
+    Upscale + hard B/W threshold a coloring page WITHOUT forcing it
+    into a full page canvas.
+
+    We:
+    - keep the original orientation (landscape stays landscape),
+    - scale up so it fits within (target_width x target_height) * 0.9,
+    - never shrink images below their original size,
+    - output just the artwork; layout is handled later in the builder/PDF.
+    """
+    img = Image.open(input_path).convert("L")  # grayscale
+    src_w, src_h = img.size
+
+    # Allow up to 90% of the target page box (for flexibility)
+    max_w = int(target_width * 0.9)
+    max_h = int(target_height * 0.9)
+
+    # Scale to fit inside max_w x max_h (respect aspect ratio)
+    scale = min(max_w / src_w, max_h / src_h)
+
+    # Do not shrink below original; only upscale if needed
+    if scale < 1.0:
+        scale = 1.0
+
+    new_w = int(src_w * scale)
+    new_h = int(src_h * scale)
+
+    # High-quality resize
+    upscaled = img.resize((new_w, new_h), Image.LANCZOS)
+
+    # Hard black/white threshold for crisp lines
+    bw = upscaled.point(lambda x: 0 if x < threshold else 255, mode="1")
+
+    # Save just the upscaled art (no page padding)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    bw.save(output_path, format="PNG", optimize=True)
+
+
+def upscale_coloring_page_old(
     input_path: Path,
     output_path: Path,
     target_width: int,
@@ -113,7 +157,7 @@ def process_coloring_folder(
     outputs: list[Path] = []
 
     for img_path in files:
-        out_path = out_dir / f"{img_path.stem}_upscaled.png"
+        out_path = out_dir / f"{img_path.stem}.png"
         upscale_coloring_page(img_path, out_path, target_w, target_h, threshold)
         outputs.append(out_path)
 
