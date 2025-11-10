@@ -253,7 +253,7 @@
     </div>
     <div style="margin-top:6px;">
       <label>Footer text (copyright / brand)</label>
-      <input type="text" id="footnote" value="© Custom Prints | Personal use only | All rights reserved.">
+      <input type="text" id="footnote" value="© Creative Cubs | Personal use only | All rights reserved.">
     </div>
     <div style="margin-top:4px;">
       <label class="inline">
@@ -303,6 +303,18 @@
       Generated PDF will use your chosen page size, margins, centered images,
       footer text, and page numbers.
     </div>
+    <hr style="margin:10px 0; border:none; border-top:1px solid #eee;">
+
+    <label>5. Flip-through video preview</label><br>
+    <div class="hint">
+      Generates a short flip-through video using the processed images for the current folder.
+      Perfect for Etsy / your website / social media listing previews.
+    </div>
+    <button class="btn-primary" id="generateFlipBtn" type="button">
+      Generate Flip-Through Video
+    </button>
+    <div id="flipResult" class="hint" style="margin-top:8px;"></div>
+
   </div>
 
   <!-- jsPDF (browser PDF generation) -->
@@ -319,6 +331,10 @@
     const folderInput = document.getElementById('folderInput');
     const runUpscaleBtn = document.getElementById('runUpscaleBtn');
     const pagePreview = document.getElementById('pagePreview');
+
+    const generateFlipBtn = document.getElementById('generateFlipBtn');
+    const flipResult = document.getElementById('flipResult');
+
 
     function renderPreview() {
       if (!pagePreview) return;
@@ -455,6 +471,53 @@
       }
 
       return first;
+    }
+
+    if (generateFlipBtn) {
+      generateFlipBtn.addEventListener('click', async () => {
+        const folder = (folderInput.value || '').trim().replace(/^\/+|\/+$/g, '');
+        if (!folder) {
+          alert('Please enter or load a folder name (under /downloads) first.');
+          return;
+        }
+
+        flipResult.textContent = 'Creating flip-through video...';
+
+        try {
+          const res = await fetch('/api/generate_flipthrough', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              folder,
+              seconds_per_image: 0.5,  // adjust if you want slower/faster
+              width: 1920,
+              height: 1080
+            })
+          });
+
+          const data = await res.json();
+          if (!data.ok) {
+            flipResult.textContent = 'Error: ' + (data.error || 'Could not generate video.');
+            return;
+          }
+
+          const url = data.url;
+
+          // Show playable video + link
+          flipResult.innerHTML = `
+        <div style="margin-top:6px;">
+          <video src="${url}" controls style="max-width:320px; width:100%; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.15);"></video>
+          <div class="hint" style="margin-top:4px;">
+            Flip-through video generated:
+            <a href="${url}" target="_blank" download>Download MP4</a>
+          </div>
+        </div>
+      `;
+        } catch (err) {
+          console.error(err);
+          flipResult.textContent = 'Error: Request failed. See console/server logs.';
+        }
+      });
     }
 
     if (runUpscaleBtn) {

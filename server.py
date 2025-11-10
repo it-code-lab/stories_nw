@@ -24,6 +24,8 @@ from coloring_upscale import process_coloring_folder
 from google import genai
 from google.genai import types
 import os
+from flipthrough_video import generate_flipthrough_video, FlipThroughError
+
 from media_audio import (
     extract_audio_from_video,
     resolve_input_video,
@@ -65,6 +67,55 @@ gemini_pool = None
 
 
 
+@app.post("/api/generate_flipthrough")
+def api_generate_flipthrough():
+    """
+    Generate a flip-through preview video for a given folder under /downloads.
+    Expects:
+      - folder: subfolder name (e.g. "farm_animals")
+      - seconds_per_image (optional, default 0.5)
+      - width, height (optional, default 1920x1080)
+
+    Returns:
+      { ok: true, url: "/downloads/<folder>/flip_preview.mp4" }
+    """
+    data = request.get_json(silent=True) or request.form
+    folder = (data.get("folder") or "").strip()
+    if not folder:
+        return jsonify({"ok": False, "error": "Missing 'folder'"}), 400
+
+    try:
+        seconds = float(data.get("seconds_per_image") or 0.5)
+        width = int(data.get("width") or 1920)
+        height = int(data.get("height") or 1080)
+    except ValueError:
+        return jsonify({"ok": False, "error": "Invalid numeric parameter"}), 400
+
+    try:
+        out_path = generate_flipthrough_video(
+            COLORING_BASE,
+            folder,
+            out_name="flip_preview.mp4",
+            seconds_per_image=seconds,
+            width=width,
+            height=height,
+        )
+    except FlipThroughError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": f"Internal error: {e}"}), 500
+
+    # Build public URL
+    rel = out_path.resolve().relative_to(COLORING_BASE).as_posix()
+    url = f"/downloads/{rel}"
+
+    return jsonify({
+        "ok": True,
+        "folder": folder,
+        "url": url,
+    })
 
 
 @app.post("/api/upscale_coloring")
