@@ -88,6 +88,7 @@ def api_generate_flipthrough():
         seconds = float(data.get("seconds_per_image") or 0.5)
         width = int(data.get("width") or 1920)
         height = int(data.get("height") or 1080)
+        watermark_text = data.get("watermark_text") or "PREVIEW ONLY"
     except ValueError:
         return jsonify({"ok": False, "error": "Invalid numeric parameter"}), 400
 
@@ -99,6 +100,7 @@ def api_generate_flipthrough():
             seconds_per_image=seconds,
             width=width,
             height=height,
+            watermark_text=watermark_text,
         )
     except FlipThroughError as e:
         return jsonify({"ok": False, "error": str(e)}), 400
