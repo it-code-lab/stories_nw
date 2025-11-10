@@ -87,27 +87,27 @@ ACCOUNTS: List[Dict[str, str]] = [
         "google_url": "https://aistudio.google.com/prompts/1Tyv17HS3-w0sVP6oPNQ8ULMDBzAMvIMF",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },
-    {
-        "id": "mail2km",
-        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 4",
-        "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/1CzRw-7NIzeaIqFCpYc5-vV_vM2kRMDXh",
-        "meta_url":   "https://www.meta.ai/media/?nr=1",
-    },
-    {
-        "id": "mail2kishnm",
-        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 6",
-        "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/1NC_HmDTCGQhQQflVtof2MgN0UUqGGpYO",
-        "meta_url":   "https://www.meta.ai/media/?nr=1",
-    },    
-    {
-        "id": "mail2sm",
-        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 7",
-        "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/1812Pe1f0s06ygMIfn_IT8hNfP-aqSnmS",
-        "meta_url":   "https://www.meta.ai/media/?nr=1",
-    }, 
+    # {
+    #     "id": "mail2km",
+    #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 4",
+    #     "out": r"downloads",
+    #     "google_url": "https://aistudio.google.com/prompts/1CzRw-7NIzeaIqFCpYc5-vV_vM2kRMDXh",
+    #     "meta_url":   "https://www.meta.ai/media/?nr=1",
+    # },
+    # {
+    #     "id": "mail2kishnm",
+    #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 6",
+    #     "out": r"downloads",
+    #     "google_url": "https://aistudio.google.com/prompts/1NC_HmDTCGQhQQflVtof2MgN0UUqGGpYO",
+    #     "meta_url":   "https://www.meta.ai/media/?nr=1",
+    # },    
+    # {
+    #     "id": "mail2sm",
+    #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 7",
+    #     "out": r"downloads",
+    #     "google_url": "https://aistudio.google.com/prompts/1812Pe1f0s06ygMIfn_IT8hNfP-aqSnmS",
+    #     "meta_url":   "https://www.meta.ai/media/?nr=1",
+    # }, 
     {
         "id": "mail2nishm1",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 8",
@@ -129,13 +129,13 @@ ACCOUNTS: List[Dict[str, str]] = [
         "google_url": "https://aistudio.google.com/prompts/1NvEngwCN7o0ghPVb_x-MNOsi0ESIc_5M",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     }, 
-    {
-        "id": "papa",
-        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 11",
-        "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/1Dyaf1Zo_EzdUIiZGlJzasLD6k0WvQcnU",
-        "meta_url":   "https://www.meta.ai/media/?nr=1",
-    },
+    # {
+    #     "id": "papa",
+    #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 11",
+    #     "out": r"downloads",
+    #     "google_url": "https://aistudio.google.com/prompts/1Dyaf1Zo_EzdUIiZGlJzasLD6k0WvQcnU",
+    #     "meta_url":   "https://www.meta.ai/media/?nr=1",
+    # },
 ]
 
 META_ACCOUNTS: List[Dict[str, str]] = [
