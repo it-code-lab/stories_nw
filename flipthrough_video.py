@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import List
@@ -51,28 +52,55 @@ def _pick_windows_font() -> str | None:
 
 def _resolve_transition_type(base_type: str, step_index: int, alternate_direction: bool) -> str:
     """
-    Resolve the actual xfade transition name.
+    Resolve xfade transition name.
 
-    - If base_type is 'slide' or 'wipe' and alternate_direction is True:
-        alternate left/right per step for a book-like flip.
-    - If base_type is already a valid specific xfade transition name:
-        return as-is (no alternation unless you customize here).
+    - If base_type is 'slide' and alternate_direction=True:
+        alternate slideleft/slideright.
+    - If base_type is 'wipe' and alternate_direction=True:
+        alternate wipeleft/wiperight.
+    - Otherwise, return base_type as-is.
     """
     base = base_type.lower().strip()
 
     if not alternate_direction:
         return base
 
-    # Generic slide: alternate between slideleft / slideright
     if base == "slide":
+        # step_index: 1,2,3,... -> alternate directions
         return "slideleft" if (step_index % 2) else "slideright"
 
-    # Generic wipe: alternate between wipeleft / wiperight
     if base == "wipe":
         return "wipeleft" if (step_index % 2) else "wiperight"
 
-    # If caller passed a specific name (slideleft, smoothleft, etc.), keep it.
     return base
+
+
+def _prepare_temp_sequence(images: List[Path], out_dir: Path) -> tuple[List[Path], Path]:
+    """
+    Copy images into a temp folder with short names to avoid
+    Windows command-line length issues (WinError 206).
+    """
+    tmp_dir = out_dir / "_flip_tmp"
+
+    # Clean existing temp dir if present
+    if tmp_dir.exists():
+        for f in tmp_dir.iterdir():
+            try:
+                f.unlink()
+            except Exception:
+                pass
+    else:
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    short_paths: List[Path] = []
+    for idx, img in enumerate(images):
+        ext = img.suffix.lower() or ".png"
+        name = f"i{idx:04d}{ext}"
+        dest = tmp_dir / name
+        shutil.copy2(img, dest)
+        short_paths.append(dest)
+
+    return short_paths, tmp_dir
 
 
 def generate_flipthrough_video(
@@ -84,18 +112,25 @@ def generate_flipthrough_video(
     width: int = 1920,
     height: int = 1080,
     watermark_text: str = "PREVIEW ONLY - DO NOT PRINT",
-    transition_duration: float = 0.3,       # overlap duration between pages
-    transition_type: str = "smoothleft",        # "slide", "wipe", or any xfade type (e.g. "fade", "smoothleft")
-    alternate_direction: bool = False,      # make it feel like pages turning L/R/L/R
+    transition_duration: float = 0.3,        # overlap between pages
+    transition_type: str = "slideleft",      # e.g. "slideleft", "slide", "wipe", "fade"
+    alternate_direction: bool = False,       # True -> L/R/L/R "book" feel for generic 'slide'/'wipe'
 ) -> Path:
     """
-    Create a flip-through video with professional page-style transitions using ffmpeg xfade.
+    Create a flip-through video with professional transitions using ffmpeg xfade.
 
     - Loads images from <base_dir>/<folder>/processed_images or <base_dir>/<folder>.
-    - Centers each image on a white WxH canvas.
-    - Optional semi-transparent watermark across center.
-    - Applies crossfade/slide/wipe transitions between ALL pages.
-    - Supports alternating left/right style for a "book flip" feel.
+    - Copies them into a temp folder with short names to avoid WinError 206.
+    - Scales and centers on white WxH canvas.
+    - Optional semi-transparent watermark.
+    - Applies transitions between ALL pages:
+        * slideleft / slideright / wipe* / fade / etc.
+        * Optional alternating directions for "book" look (when using 'slide' or 'wipe').
+
+    Uses -filter_complex_script to avoid Windows command-line length limits.
+
+    Returns:
+        Path to generated MP4.
     """
     images = collect_images_for_flip(base_dir, folder)
     base = base_dir.resolve()
@@ -115,8 +150,11 @@ def generate_flipthrough_video(
             f"transition_duration ({transition_duration})."
         )
 
+    # Prepare temp short-path images to keep paths small
+    short_images, tmp_dir = _prepare_temp_sequence(images, out_dir)
+
     # ------------------------------------------------------------------
-    # 1) Common video filter: scale + pad + format
+    # 1) Common video filter: scale + pad + format (+ watermark)
     # ------------------------------------------------------------------
     base_vf = (
         f"scale=w={width}:h={height}:force_original_aspect_ratio=decrease,"
@@ -130,9 +168,9 @@ def generate_flipthrough_video(
     if watermark_text:
         safe_text = (
             watermark_text
-            .replace("\\", "\\\\")
-            .replace(":", r"\:")
-            .replace("'", r"\'")
+                .replace("\\", "\\\\")
+                .replace(":", r"\:")
+                .replace("'", r"\'")
         )
 
         fontsize = int(height * 0.09)
@@ -150,67 +188,44 @@ def generate_flipthrough_video(
         if os.name == "nt":
             win_font = _pick_windows_font()
             if win_font:
-                # escape ':' for ffmpeg syntax
                 win_font_escaped = win_font.replace("\\", "/").replace(":", r"\:")
                 draw_args.append(f"fontfile='{win_font_escaped}'")
 
         draw = "drawtext=" + ":".join(draw_args)
         final_vf = base_vf + "," + draw
 
-    # We'll also lock fps per stream to keep timing consistent
     processed_vf = f"{final_vf},fps={fps}"
 
     # ------------------------------------------------------------------
-    # 2) Build ffmpeg input args
-    # ------------------------------------------------------------------
-    cmd: list[str] = ["ffmpeg", "-y"]
-
-    # Each image is looped for full seconds_per_image
-    img_duration_str = f"{seconds_per_image:.6f}"
-    for img_path in images:
-        cmd.extend(["-loop", "1", "-t", img_duration_str, "-i", str(img_path)])
-
-    # ------------------------------------------------------------------
-    # 3) Build filter_complex: process each input -> [s0], [s1], ...
+    # 2) Build filter graph text (to be written to a script file)
     # ------------------------------------------------------------------
     filter_parts: list[str] = []
 
-    for i in range(len(images)):
+    for i in range(len(short_images)):
         # [{i}:v] -> scale/pad/watermark/fps -> [s{i}]
         filter_parts.append(f"[{i}:v]{processed_vf}[s{i}]")
 
-    # If only one image: no transitions, just map s0.
-    if len(images) == 1:
+    if len(short_images) == 1:
+        # No transitions, just single stream
         all_filters = ";".join(filter_parts)
         final_stream = "s0"
     else:
-        # ------------------------------------------------------------------
-        # 4) Chain xfade transitions across all processed streams
-        #     s0 + s1 -> v1
-        #     v1 + s2 -> v2
-        #     v2 + s3 -> v3
-        #   each offset is relative to the first input of that xfade,
-        #   so we use (current_duration - transition_duration)
-        #   and track current_duration cumulatively.
-        # ------------------------------------------------------------------
         xfade_parts: list[str] = []
-
         current_stream = "s0"
-        # duration after first still
-        current_duration = seconds_per_image
+        current_duration = seconds_per_image  # after first still
 
-        for step_index in range(1, len(images)):
+        for step_index in range(1, len(short_images)):
             next_stream = f"s{step_index}"
             out_stream = f"v{step_index}"
 
-            # Resolve transition name (handles alternating slide/wipe)
             tr_name = _resolve_transition_type(
                 transition_type,
                 step_index,
                 alternate_direction,
             )
 
-            # offset = (duration of accumulated stream) - transition_duration
+            # offset is relative to the current_stream timeline:
+            # start transition at (current_duration - transition_duration)
             offset = max(current_duration - transition_duration, 0.0)
 
             xfade_parts.append(
@@ -219,19 +234,28 @@ def generate_flipthrough_video(
                 f"[{out_stream}]"
             )
 
-            # Update for next iteration: each new image extends by
-            # (seconds_per_image - transition_duration) due to overlap.
+            # Each new image adds (seconds_per_image - transition_duration) effective duration
             current_duration += seconds_per_image - transition_duration
             current_stream = out_stream
 
         all_filters = ";".join(filter_parts + xfade_parts)
         final_stream = current_stream
 
+    # Write filter graph to script file to avoid super long command line
+    script_path = tmp_dir / "filters.ffscript"
+    script_path.write_text(all_filters, encoding="utf-8")
+
     # ------------------------------------------------------------------
-    # 5) Finish command: map final stream, encode
+    # 3) Build ffmpeg command (small, safe for Windows)
     # ------------------------------------------------------------------
+    cmd: list[str] = ["ffmpeg", "-y"]
+
+    img_duration_str = f"{seconds_per_image:.6f}"
+    for img_path in short_images:
+        cmd.extend(["-loop", "1", "-t", img_duration_str, "-i", str(img_path)])
+
     cmd.extend([
-        "-filter_complex", all_filters,
+        "-filter_complex_script", str(script_path),
         "-map", f"[{final_stream}]",
         "-r", str(fps),
         "-pix_fmt", "yuv420p",
@@ -239,28 +263,50 @@ def generate_flipthrough_video(
     ])
 
     # ------------------------------------------------------------------
-    # 6) Run ffmpeg and handle errors
+    # 4) Run ffmpeg
     # ------------------------------------------------------------------
-    proc = subprocess.run(
-        cmd,
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
+    try:
+        proc = subprocess.run(
+            cmd,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
 
-    if proc.returncode != 0:
-        err_txt = (proc.stderr or b"").decode(errors="ignore")
-        tail = err_txt[-800:] if err_txt else "Unknown error"
+        if proc.returncode != 0:
+            err_txt = (proc.stderr or b"").decode(errors="ignore")
+            tail = err_txt[-800:] if err_txt else "Unknown error"
 
-        if "drawtext" in err_txt.lower():
+            if "drawtext" in err_txt.lower():
+                raise FlipThroughError(
+                    "ffmpeg drawtext/watermark failed. Details (tail): " + tail
+                )
+            if "xfade" in err_txt.lower():
+                raise FlipThroughError(
+                    "ffmpeg xfade (transition) failed. Details (tail): " + tail
+                )
             raise FlipThroughError(
-                "ffmpeg drawtext/watermark failed. Details (tail): " + tail
+                "ffmpeg failed. Details (tail): " + tail
             )
-        if "xfade" in err_txt.lower():
-            raise FlipThroughError(
-                "ffmpeg xfade (transition) failed. Details (tail): " + tail
-            )
-        raise FlipThroughError("ffmpeg failed. Details (tail): " + tail)
+
+    finally:
+        # Best-effort cleanup of temp files and script
+        try:
+            if script_path.exists():
+                script_path.unlink()
+        except Exception:
+            pass
+
+        try:
+            if tmp_dir.exists():
+                for f in tmp_dir.iterdir():
+                    try:
+                        f.unlink()
+                    except Exception:
+                        pass
+                tmp_dir.rmdir()
+        except Exception:
+            pass
 
     if not out_path.is_file():
         raise FlipThroughError("Flip-through video was not created.")
