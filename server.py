@@ -25,6 +25,8 @@ from google import genai
 from google.genai import types
 import os
 from flipthrough_video import generate_flipthrough_video, FlipThroughError
+from bg_music_video import merge_video_with_bg_music, BgMusicError
+
 
 from media_audio import (
     extract_audio_from_video,
@@ -66,6 +68,54 @@ GEM_STATE = str(BASE_DIR / ".gemini_pool_state.json")
 gemini_pool = None
 
 
+@app.post("/merge_bg_music")
+def merge_bg_music_route():
+    """
+    Mix background music (from edit_vid_audio/) into the first video in edit_vid_input/.
+    Expects form fields:
+      - bg_volume: float, 0.0–2.0 (default 0.3)
+      - video_volume: float, 0.0–2.0 (default 1.0) – optional
+      - out_name: optional output filename (default 'video_with_music.mp4')
+
+    Output is written to edit_vid_output/<out_name>.
+    Returns JSON with a web path you can use in the UI.
+    """
+    try:
+        bg_volume = float(request.form.get("bg_volume", "0.3") or "0.3")
+    except ValueError:
+        bg_volume = 0.3
+
+    try:
+        video_volume = float(request.form.get("video_volume", "1.0") or "1.0")
+    except ValueError:
+        video_volume = 1.0
+
+    out_name = (request.form.get("out_name") or "video_with_music.mp4").strip()
+
+    try:
+        out_path = merge_video_with_bg_music(
+            base_dir=BASE_DIR,
+            out_name=out_name,
+            bg_volume=bg_volume,
+            video_volume=video_volume,
+        )
+    except BgMusicError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+    # Assuming you have /video/<filename> serving from BASE_DIR
+    web_path = f"/video/edit_vid_output/{out_path.name}"
+
+    return jsonify({
+        "ok": True,
+        "output_file": str(out_path),
+        "web_path": web_path,
+        "bg_volume": bg_volume,
+        "video_volume": video_volume,
+    })
 
 @app.post("/api/generate_flipthrough")
 def api_generate_flipthrough():
