@@ -47,3 +47,4 @@ convert_to_alpha-del.py
 add_overlays-del.py
 overlays/*
 downloads/*
+vector_images/*

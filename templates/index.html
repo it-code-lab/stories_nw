@@ -1341,7 +1341,12 @@
         <pre id="createVideosResult"></pre>
     </form>
     <br>
-
+    <form id="createVectorImagesForm">
+        <h2 style="background:#ffe4b5;">Create Vector Images from Images in downloads folder</h2>
+        <button type="submit">Run Vector Image Jobs</button>
+        <pre id="createVectorImagesResult"></pre>
+    </form>
+    <br>
     <form>
         <h2 style="background:#ffe4b5;">Coloring Book Builder</h2>
         <a href="coloring_book_builder" target="_blank">Open Coloring Book Builder</a>
@@ -2426,6 +2431,7 @@ ${JSON.stringify(meta, null, 2)}
         }
         runTask("createImagesForm", "/create_images", "createImagesResult");
         runTask("createVideosForm", "/create_videos", "createVideosResult");
+        runTask("createVectorImagesForm", "/create_vector_images", "createVectorImagesResult");
     </script>
 </body>
 

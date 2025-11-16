@@ -202,7 +202,18 @@ def create_images():
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
 
-
+@app.post("/create_vector_images")
+def create_vector_images():
+    """Run only the image creation job."""
+    try:
+        from vectorize_images import main
+        result = main()
+        return jsonify({"ok": True, "message": "Vector images created successfully"})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+    
 @app.post("/create_videos")
 def create_videos():
     """Run only the video creation job."""
