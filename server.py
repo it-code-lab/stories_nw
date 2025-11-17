@@ -1100,6 +1100,10 @@ def aivideoprompt():
 def prep_caption():
     return render_template('index_captions.html')
 
+@app.route('/portrait_website_loader')
+def portrait_website_loader():
+    return render_template('portrait_website_loader.html')
+
 @app.route('/video/<filename>')
 def serve_video(filename):
     return send_from_directory(directory='.', path=filename)

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OBS Website Frame</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --frame-width: 1080px;
+      --frame-height: 1920px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #050816;
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    .controls {
+      padding: 10px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.96);
+      border-bottom: 1px solid #1f2937;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+    }
+
+    .controls label {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .controls input[type="text"] {
+      min-width: 260px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+
+    .controls input[type="text"]:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px #38bdf8;
+    }
+
+    .controls select {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 13px;
+      cursor: pointer;
+      background: #22c55e;
+      color: #020617;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn.secondary {
+      background: transparent;
+      color: #e5e7eb;
+      border-color: #6b7280;
+    }
+
+    .btn:hover {
+      filter: brightness(1.08);
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow: hidden;
+    }
+
+    .frame-wrapper {
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px #111827, 0 20px 40px rgba(0, 0, 0, 0.75);
+      position: relative;
+      width: var(--frame-width);
+      height: var(--frame-height);
+      max-width: 100%;
+      max-height: calc(100vh - 80px);
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #000;
+    }
+
+    .orientation-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #e5e7eb;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+
+    /* Hide controls for clean OBS capture */
+    .controls-hidden .controls {
+      display: none;
+    }
+
+    .controls-hidden .main {
+      padding-top: 0;
+    }
+
+    @media (max-width: 768px) {
+      .controls {
+        align-items: flex-start;
+      }
+      .controls label {
+        font-size: 12px;
+      }
+      .controls input[type="text"] {
+        min-width: 210px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <label>
+      URL:
+      <input
+        type="text"
+        id="urlInput"
+        placeholder="https://example.com"
+        value="https://example.com"
+      />
+    </label>
+
+    <label>
+      Orientation:
+      <select id="orientationSelect">
+        <option value="portrait" selected>Portrait (9:16)</option>
+        <option value="landscape">Landscape (16:9)</option>
+      </select>
+    </label>
+
+    <label>
+      Resolution:
+      <select id="resolutionSelect">
+        <!-- Portrait defaults -->
+        <option value="1080x1920" selected>1080 × 1920</option>
+        <option value="720x1280">720 × 1280</option>
+        <option value="540x960">540 × 960</option>
+        <option value="custom">Custom…</option>
+      </select>
+    </label>
+
+    <label id="customSizeLabel" style="display: none;">
+      W×H:
+      <input
+        type="text"
+        id="customSizeInput"
+        placeholder="widthxheight e.g. 1080x1920"
+      />
+    </label>
+
+    <button class="btn" id="loadBtn">Load Website</button>
+
+    <div class="spacer"></div>
+
+    <button class="btn secondary" id="toggleControlsBtn">
+      Hide Controls
+    </button>
+    <span class="hint">(Press “h” to toggle)</span>
+  </div>
+
+  <div class="main">
+    <div class="frame-wrapper" id="frameWrapper" data-orientation="portrait">
+      <div style="display:none;" class="orientation-badge" id="orientationBadge">Portrait 9:16</div>
+      <iframe id="siteFrame" src="about:blank" loading="lazy"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const urlInput = document.getElementById("urlInput");
+    const orientationSelect = document.getElementById("orientationSelect");
+    const resolutionSelect = document.getElementById("resolutionSelect");
+    const customSizeLabel = document.getElementById("customSizeLabel");
+    const customSizeInput = document.getElementById("customSizeInput");
+    const loadBtn = document.getElementById("loadBtn");
+    const frameWrapper = document.getElementById("frameWrapper");
+    const siteFrame = document.getElementById("siteFrame");
+    const orientationBadge = document.getElementById("orientationBadge");
+    const toggleControlsBtn = document.getElementById("toggleControlsBtn");
+
+    function ensureHttp(url) {
+      if (!url) return "";
+      url = url.trim();
+      if (!/^https?:\/\//i.test(url)) {
+        return "https://" + url;
+      }
+      return url;
+    }
+
+    function applyOrientation(orientation) {
+      const root = document.documentElement;
+
+      let width = 1080;
+      let height = 1920;
+
+      // Adjust default resolution set when switching orientation
+      if (orientation === "portrait") {
+        width = 360;
+        height = 1920;
+        orientationBadge.textContent = "Portrait 9:16";
+        // Update portrait presets
+        resolutionSelect.innerHTML = `
+          <option value="1080x1920" selected>1080 × 1920</option>
+          <option value="720x1280">720 × 1280</option>
+          <option value="540x960">540 × 960</option>
+          <option value="custom">Custom…</option>
+        `;
+      } else {
+        width = 1920;
+        height = 1080;
+        orientationBadge.textContent = "Landscape 16:9";
+        // Update landscape presets
+        resolutionSelect.innerHTML = `
+          <option value="1920x1080" selected>1920 × 1080</option>
+          <option value="1280x720">1280 × 720</option>
+          <option value="854x480">854 × 480</option>
+          <option value="custom">Custom…</option>
+        `;
+      }
+
+      root.style.setProperty("--frame-width", width + "px");
+      root.style.setProperty("--frame-height", height + "px");
+      frameWrapper.dataset.orientation = orientation;
+      customSizeLabel.style.display = "none";
+    }
+
+    function applyResolution(value) {
+      const root = document.documentElement;
+
+      if (value === "custom") {
+        customSizeLabel.style.display = "inline-flex";
+        customSizeInput.focus();
+        return;
+      } else {
+        customSizeLabel.style.display = "none";
+      }
+
+      const [w, h] = value.split("x").map((v) => parseInt(v, 10));
+      if (!isNaN(w) && !isNaN(h)) {
+        root.style.setProperty("--frame-width", w + "px");
+        root.style.setProperty("--frame-height", h + "px");
+      }
+    }
+
+    function applyCustomSize() {
+      const value = customSizeInput.value.trim();
+      const match = value.match(/(\d+)\s*[x×]\s*(\d+)/i);
+      if (!match) return;
+
+      const w = parseInt(match[1], 10);
+      const h = parseInt(match[2], 10);
+      if (isNaN(w) || isNaN(h)) return;
+
+      document.documentElement.style.setProperty("--frame-width", w + "px");
+      document.documentElement.style.setProperty("--frame-height", h + "px");
+    }
+
+    function loadWebsite() {
+      const url = ensureHttp(urlInput.value);
+      if (!url) return;
+      siteFrame.src = url;
+    }
+
+    // Event listeners
+    orientationSelect.addEventListener("change", () => {
+      applyOrientation(orientationSelect.value);
+    });
+
+    resolutionSelect.addEventListener("change", () => {
+      applyResolution(resolutionSelect.value);
+    });
+
+    customSizeInput.addEventListener("change", applyCustomSize);
+    customSizeInput.addEventListener("blur", applyCustomSize);
+
+    loadBtn.addEventListener("click", loadWebsite);
+
+    urlInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        loadWebsite();
+      }
+    });
+
+    toggleControlsBtn.addEventListener("click", () => {
+      document.body.classList.toggle("controls-hidden");
+      const hidden = document.body.classList.contains("controls-hidden");
+
+      if (hidden) {
+        toggleControlsBtn.textContent = "Show Controls";
+
+        // 🔥 Enter Fullscreen (same as pressing F11)
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen();
+        }
+      } else {
+        toggleControlsBtn.textContent = "Hide Controls";
+
+        // 🔥 Exit Fullscreen
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    });
+
+
+    // Keyboard shortcut: H to toggle controls
+    document.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() === "h") {
+        toggleControlsBtn.click();
+      }
+    });
+
+    // --- Optional: read URL/orientation from query params ---
+    (function initFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      const url = params.get("url");
+      const orientation = params.get("orientation");
+      const resolution = params.get("res");
+
+      if (url) {
+        urlInput.value = url;
+        loadWebsite();
+      }
+      if (orientation === "portrait" || orientation === "landscape") {
+        orientationSelect.value = orientation;
+        applyOrientation(orientation);
+      } else {
+        applyOrientation("portrait");
+      }
+      if (resolution) {
+        if (resolution === "custom") {
+          resolutionSelect.value = "custom";
+          customSizeLabel.style.display = "inline-flex";
+        } else {
+          resolutionSelect.value = resolution;
+          applyResolution(resolution);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
