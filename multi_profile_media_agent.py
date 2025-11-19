@@ -73,29 +73,31 @@ ACCOUNT_ID2_COL = "account_id_2"   # who generated the video
 
 # ============ ACCOUNTS ============
 ACCOUNTS: List[Dict[str, str]] = [
+    # {
+    #     "id": "numero_uno", #not worked
+    #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 1",
+    #     "out": r"downloads",
+    #     "google_url": "https://aistudio.google.com/prompts/1SHiNmxmlkmYTqHH8wseV4evAegV0pRvH",
+    #     "meta_url":   "https://www.meta.ai/media/?nr=1",
+    # },
+
+
     {
-        "id": "numero_uno",
-        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 1",
-        "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/1SHiNmxmlkmYTqHH8wseV4evAegV0pRvH",
-        "meta_url":   "https://www.meta.ai/media/?nr=1",
-    },
-    {
-        "id": "s173m",
+        "id": "s173m", # worked
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 3",
         "out": r"downloads",
         "google_url": "https://aistudio.google.com/prompts/1Tyv17HS3-w0sVP6oPNQ8ULMDBzAMvIMF",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },
     {
-        "id": "mail2km",
+        "id": "mail2km", # worked
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 4",
         "out": r"downloads",
         "google_url": "https://aistudio.google.com/prompts/1CzRw-7NIzeaIqFCpYc5-vV_vM2kRMDXh",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },
     {
-        "id": "mail2kishnm",
+        "id": "mail2kishnm", # worked - numero uno
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 6",
         "out": r"downloads",
         "google_url": "https://aistudio.google.com/prompts/1uV0ZBl9JX_kBB-iBk_2alI0Bco72Ck0n",
@@ -108,27 +110,27 @@ ACCOUNTS: List[Dict[str, str]] = [
         "google_url": "https://aistudio.google.com/prompts/18LNm8fsaraxHYYWCB92vGp4BC1-put7S",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     }, 
-    {
-        "id": "mail2nishm1",
-        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 8",
-        "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/14ghA9r3kNxMo0GCgX5mxcfA8i-fk7ee-",
-        "meta_url":   "https://www.meta.ai/media/?nr=1",
-    }, 
-    {
-        "id": "mail2nakshm",
-        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 9",
-        "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/1GhH0rXYgQtwTY7h9FtKUfYCWtT0n8oph",
-        "meta_url":   "https://www.meta.ai/media/?nr=1",
-    }, 
-    {
-        "id": "mummy",
-        "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 10",
-        "out": r"downloads",
-        "google_url": "https://aistudio.google.com/prompts/1NvEngwCN7o0ghPVb_x-MNOsi0ESIc_5M",
-        "meta_url":   "https://www.meta.ai/media/?nr=1",
-    }, 
+    # {
+    #     "id": "mail2nishm1",
+    #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 8",
+    #     "out": r"downloads",
+    #     "google_url": "https://aistudio.google.com/prompts/14ghA9r3kNxMo0GCgX5mxcfA8i-fk7ee-",
+    #     "meta_url":   "https://www.meta.ai/media/?nr=1",
+    # }, 
+    # {
+    #     "id": "mail2nakshm",
+    #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 9",
+    #     "out": r"downloads",
+    #     "google_url": "https://aistudio.google.com/prompts/1GhH0rXYgQtwTY7h9FtKUfYCWtT0n8oph",
+    #     "meta_url":   "https://www.meta.ai/media/?nr=1",
+    # }, 
+    # {
+    #     "id": "mummy",
+    #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 10",
+    #     "out": r"downloads",
+    #     "google_url": "https://aistudio.google.com/prompts/1NvEngwCN7o0ghPVb_x-MNOsi0ESIc_5M",
+    #     "meta_url":   "https://www.meta.ai/media/?nr=1",
+    # }, 
     # {
     #     "id": "papa",
     #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 11",
@@ -537,8 +539,11 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
     """, stamp)
 
     # 2) Now click Animate (as you already do)
-    animate_btn = page.get_by_role("button", name="Animate")
-    await expect(animate_btn).to_be_enabled(timeout=10_000)
+    #animate_btn = page.get_by_role("button", name="Animate")
+    animate_btn = page.get_by_role("button", name="Animate", exact=True)
+    #animate_btn = page.get_by_role("button", name="Animate").locator(":enabled")
+
+    await expect(animate_btn).to_be_enabled(timeout=20_000)
     await animate_btn.click()
 
     # 3) Wait for a *new* download button that does NOT have our stamp
@@ -623,7 +628,10 @@ async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
     # open Google AI Studio once per account
-    await page.goto(account["google_url"])
+
+    #DND - Temporary change
+    # await page.goto(account["google_url"])
+    await page.goto("https://aistudio.google.com/prompts/new_image?model=imagen-4.0-generate-001")
 
     for job in jobs:
         row_idx = job["row"]
