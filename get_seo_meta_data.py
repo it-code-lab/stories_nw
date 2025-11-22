@@ -35,7 +35,11 @@ DEFAULT_MAX_TOKENS   = 512
 SEO_SYSTEM_INSTRUCTION = """
 You are an SEO assistant for a children's story / reading website (readernook.com).
 
-Your job: given page content, generate SEO metadata.
+Your job: given page content, generate SEO metadata AND a short introductory paragraph that can be shown on a category page above or beside the link.
+
+Audience:
+- Kids (roughly 5–12 years) and their parents/teachers.
+- Tone: warm, simple, inviting, but not babyish.
 
 Rules:
 - meta_title: max 60 characters; include the main topic; engaging but not clickbait.
@@ -43,6 +47,12 @@ Rules:
 - meta_keywords: 5–10 short phrases, no duplicates, no keyword stuffing.
 - og_title: similar to meta_title but can be slightly more emotional or curiosity-driven.
 - og_description: similar to meta_description, but can be a bit warmer and more conversational.
+- intro_paragraph:
+  - 40–200 words.
+  - Written as a normal paragraph (no bullet points, no headings).
+  - Speak to the reader directly (“In this quiz…”, “In this story…”).
+  - Explain what the page offers and why it’s fun or useful.
+  - Must be different from the meta_description (not just a copy).
 
 Return STRICTLY valid JSON with this schema:
 
@@ -51,11 +61,13 @@ Return STRICTLY valid JSON with this schema:
   "meta_description": "string",
   "meta_keywords": ["kw1", "kw2", "kw3"],
   "og_title": "string",
-  "og_description": "string"
+  "og_description": "string",
+  "intro_paragraph": "string"
 }
 
 Do not include any explanations, comments, or text outside the JSON.
 """
+
 
 # ==============================
 # HELPERS
@@ -102,12 +114,11 @@ PAGE CONTENT (truncated):
 
 def call_gemini_for_meta(url: str, title: str, content: str) -> dict | None:
     """
-    Use your GeminiPool.generate_text to get SEO meta.
+    Use your GeminiPool.generate_text to get SEO meta + intro paragraph.
     Returns dict or None if failed.
     """
     snippet = (content or "")[:4000]
 
-    # Put SEO instructions inside the prompt instead of system_instruction
     prompt = f"""{SEO_SYSTEM_INSTRUCTION}
 
 PAGE URL: {url}
@@ -123,7 +134,6 @@ PAGE CONTENT (truncated):
             model=DEFAULT_MODEL,
             temperature=DEFAULT_TEMPERATURE,
             max_output_tokens=DEFAULT_MAX_TOKENS,
-            # extra={}  # you can add config here if needed, but no system_instruction
         )
     except Exception as e:
         print(f"[ERROR] Gemini call failed for {url}: {e}")
@@ -135,7 +145,7 @@ PAGE CONTENT (truncated):
 
     raw = raw.strip()
 
-    # Defensive parsing: grab first {...} block, in case anything else sneaks in
+    # Defensive parsing: grab first {...} block
     if not raw.startswith("{"):
         first = raw.find("{")
         last = raw.rfind("}")
@@ -149,6 +159,7 @@ PAGE CONTENT (truncated):
         print(f"[ERROR] JSON parse failed for {url}: {e}")
         print("Raw response was:\n", raw[:500], "...\n")
         return None
+
 
 
 
@@ -170,8 +181,10 @@ def main():
         "meta_keywords",
         "og_title",
         "og_description",
-        "meta_error",  # to log errors per row
+        "intro_paragraph",   # ✅ new field
+        "meta_error",        # to log errors per row
     ]
+
     for col in meta_cols:
         if col not in df.columns:
             df[col] = ""
@@ -215,6 +228,8 @@ def main():
 
         df.at[idx, "og_title"]         = meta.get("og_title", "")
         df.at[idx, "og_description"]   = meta.get("og_description", "")
+        # ✅ new field
+        df.at[idx, "intro_paragraph"]  = meta.get("intro_paragraph", "").strip()
         df.at[idx, "meta_error"]       = ""
 
         print(f"[OK] {url}")
