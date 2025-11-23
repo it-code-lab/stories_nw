@@ -254,15 +254,35 @@ def create_images():
 
 @app.post("/create_vector_images")
 def create_vector_images():
-    """Run only the image creation job."""
+    """
+    Run the vector image creation job.
+
+    Expects (optional) form field:
+      - source_folder: relative folder under downloads/
+        e.g. "1.Cute Farm Animals/pages"
+
+    The vectorize_images.main() function should then create output under
+    vector_images/<source_folder>/...
+    """
     try:
         from vectorize_images import main
-        result = main()
-        return jsonify({"ok": True, "message": "Vector images created successfully"})
+        data = request.get_json(silent=True) or request.form
+        source_folder = (data.get("source_folder") or "").strip()
+
+        # Call your script. Adjust if main() has a different signature.
+        if source_folder:
+            result = main(source_folder)
+            msg = f"Vector images created successfully for '{source_folder}'"
+        else:
+            result = main()
+            msg = "Vector images created successfully (default folder)"
+
+        return jsonify({"ok": True, "message": msg})
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
+
     
 @app.post("/create_videos")
 def create_videos():

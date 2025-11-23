@@ -10,7 +10,11 @@ OUTPUT_ROOT = Path("vector_images") # where SVGs will go
 # Command for ImageMagick
 # On most systems it's just "magick". If it doesn't work,
 # you can put the full path to magick.exe here.
+
 IMAGEMAGICK_CMD = "magick"
+
+#IMAGEMAGICK_CMD = r"C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe"
+POTRACE_CMD      = r"C:\potrace\potrace.exe"
 
 # File types to process
 VALID_EXTENSIONS = (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff")
@@ -49,7 +53,7 @@ def raster_to_svg(input_path: Path, output_path: Path, threshold: str = "60%"):
     # 2) Convert PBM -> SVG via Potrace
     subprocess.run(
         [
-            "potrace",
+            POTRACE_CMD,
             str(pbm_path),
             "-s",                # output SVG
             "-o", str(output_path),
@@ -66,16 +70,30 @@ def raster_to_svg(input_path: Path, output_path: Path, threshold: str = "60%"):
     print(f"[OK]   Done: {output_path}")
 
 
-def main():
-    if not INPUT_ROOT.exists():
-        print(f"ERROR: INPUT_ROOT does not exist: {INPUT_ROOT}")
-        return
+def main(source_subfolder: str | None = None):
+    """
+    Convert images inside downloads/<source_subfolder>
+    into vector_images/<source_subfolder>.
 
-    print(f"Input root:  {INPUT_ROOT}")
-    print(f"Output root: {OUTPUT_ROOT}")
+    If source_subfolder is None → process entire downloads folder (old behavior).
+    """
 
-    # Walk through all subfolders
-    for dirpath, dirnames, filenames in os.walk(INPUT_ROOT):
+    input_root = INPUT_ROOT
+    output_root = OUTPUT_ROOT
+
+    if source_subfolder:
+        source_subfolder = source_subfolder.strip().replace("\\", "/")
+        input_root = INPUT_ROOT / source_subfolder
+        output_root = OUTPUT_ROOT / source_subfolder
+
+    if not input_root.exists():
+        print(f"ERROR: Input folder does not exist: {input_root}")
+        return {"ok": False, "error": f"Input folder does not exist: {input_root}"}
+
+    print(f"Input root:  {input_root}")
+    print(f"Output root: {output_root}")
+
+    for dirpath, dirnames, filenames in os.walk(input_root):
         dirpath = Path(dirpath)
         for filename in filenames:
             if not filename.lower().endswith(VALID_EXTENSIONS):
@@ -83,17 +101,20 @@ def main():
 
             src_path = dirpath / filename
 
-            # Relative path from INPUT_ROOT (e.g. "Animals/cat.png")
-            rel_path = src_path.relative_to(INPUT_ROOT)
+            # Compute relative path from this input_root
+            rel_path = src_path.relative_to(input_root)
 
-            # Build output SVG path under OUTPUT_ROOT, keeping same folders
-            out_svg_path = OUTPUT_ROOT / rel_path
+            # Output: vector_images/<source_subfolder>/<same structure>
+            out_svg_path = output_root / rel_path
             out_svg_path = out_svg_path.with_suffix(".svg")
 
             try:
                 raster_to_svg(src_path, out_svg_path, threshold="60%")
             except subprocess.CalledProcessError as e:
                 print(f"[ERROR] Failed on {src_path}: {e}")
+
+    return {"ok": True, "message": f"Vector images created under {output_root}"}
+
 
 
 if __name__ == "__main__":

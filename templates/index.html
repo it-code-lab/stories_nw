@@ -1387,11 +1387,29 @@
         <pre id="createVideosResult"></pre>
     </form>
     <br>
+    
+    <br>
     <form id="createVectorImagesForm">
         <h2 style="background:#ffe4b5;">Create Vector Images from Images in downloads folder</h2>
+
+        <label for="vectorSourceFolder">Source folder under <code>downloads/</code>:</label>
+        <input
+            type="text"
+            id="vectorSourceFolder"
+            name="source_folder"
+            placeholder="e.g. 1.Cute Farm Animals/pages"
+            style="width:100%;max-width:420px;margin-bottom:6px;"
+        >
+
+        <div class="infoBox" style="margin-bottom:8px;">
+            All images from <code>downloads/&lt;source_folder&gt;</code> will be converted.
+            Output will be created in <code>vector_images/&lt;source_folder&gt;</code> with the same folder name.
+        </div>
+
         <button type="submit">Run Vector Image Jobs</button>
         <pre id="createVectorImagesResult"></pre>
     </form>
+
     <br>
     <form>
         <h2 style="background:#ffe4b5;">Coloring Book Builder</h2>
@@ -2544,19 +2562,44 @@ ${JSON.stringify(meta, null, 2)}
 
     <script>
         async function runTask(formId, endpoint, resultId) {
-            document.getElementById(formId).addEventListener("submit", async (e) => {
+            const form = document.getElementById(formId);
+            if (!form) return;
+
+            form.addEventListener("submit", async (e) => {
                 e.preventDefault();
-                const res = await fetch(endpoint, { method: "POST" });
-                const data = await res.json();
-                document.getElementById(resultId).textContent = data.ok
-                    ? "✅ " + data.message
-                    : "❌ " + data.error;
+
+                const resultBox = document.getElementById(resultId);
+                if (resultBox) {
+                    resultBox.textContent = "⏳ Running…";
+                }
+
+                const fd = new FormData(form);
+
+                try {
+                    const res = await fetch(endpoint, {
+                        method: "POST",
+                        body: fd
+                    });
+                    const data = await res.json();
+
+                    if (resultBox) {
+                        resultBox.textContent = data.ok
+                            ? "✅ " + (data.message || "Done")
+                            : "❌ " + (data.error || "Failed");
+                    }
+                } catch (err) {
+                    if (resultBox) {
+                        resultBox.textContent = "❌ " + String(err);
+                    }
+                }
             });
         }
+
         runTask("createImagesForm", "/create_images", "createImagesResult");
         runTask("createVideosForm", "/create_videos", "createVideosResult");
         runTask("createVectorImagesForm", "/create_vector_images", "createVectorImagesResult");
     </script>
+
 </body>
 
 </html>
