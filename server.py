@@ -252,6 +252,35 @@ def create_images():
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
 
+@app.post("/remove_borders")
+def remove_borders():
+    try:
+        from remove_borders import main as remove_borders_main
+
+        data = request.form
+        source_folder = (data.get("source_folder") or "").strip()
+        border_px_str = (data.get("border_px") or "10").strip()
+
+        try:
+            border_px = int(border_px_str)
+        except:
+            border_px = 10
+
+        result = remove_borders_main(
+            source_subfolder=source_folder or None,
+            border_px=border_px,
+            fill="white"   # or "rgba(255,255,255,0)" for transparent
+        )
+
+        status = 200 if result.get("ok") else 500
+        return jsonify(result), status
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.post("/create_vector_images")
 def create_vector_images():
     """

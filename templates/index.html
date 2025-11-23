@@ -1387,7 +1387,35 @@
         <pre id="createVideosResult"></pre>
     </form>
     <br>
-    
+    <form id="removeBordersForm">
+        <h2 style="background:#e0f2fe;">Blank Out Border (Keep Original Size)</h2>
+
+        <label>Source folder under <code>downloads/</code>:</label>
+        <input
+            type="text"
+            name="source_folder"
+            placeholder="e.g. 7b. Dinosaurs"
+            style="width:100%;max-width:420px;margin-bottom:6px;"
+        >
+
+        <label>Border size (px to blank out):</label>
+        <input
+            type="number"
+            name="border_px"
+            min="0"
+            value="5"
+            style="width:120px;margin-bottom:6px;"
+        >
+
+        <div class="infoBox">
+            This will NOT crop or resize the image.<br>
+            It will only blank out border pixels while keeping canvas size unchanged.
+        </div>
+
+        <button type="submit">Run Border Cleaner</button>
+        <pre id="removeBordersResult"></pre>
+    </form>
+
     <br>
     <form id="createVectorImagesForm">
         <h2 style="background:#ffe4b5;">Create Vector Images from Images in downloads folder</h2>
@@ -2598,6 +2626,8 @@ ${JSON.stringify(meta, null, 2)}
         runTask("createImagesForm", "/create_images", "createImagesResult");
         runTask("createVideosForm", "/create_videos", "createVideosResult");
         runTask("createVectorImagesForm", "/create_vector_images", "createVectorImagesResult");
+        runTask("removeBordersForm", "/remove_borders", "removeBordersResult");
+
     </script>
 
 </body>
