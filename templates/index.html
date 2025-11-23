@@ -1458,8 +1458,73 @@
         <a href="portrait_website_loader" target="_blank">Open Portrait Website Loader</a>
 
     </form>
+    <br>
+    <br>
+    <form id="seoMetaForm">
+        <h2 style="background-color: #ffe4b5;">SEO Metadata Generator</h2>
+        <p>
+            Uses <code>pages_input.xlsx</code> in the application folder and creates/updates
+            <code>pages_with_meta.xlsx</code> with meta_title, meta_description, keywords,
+            og_title, og_description, and intro_paragraph for each URL.
+        </p>
+        <button type="submit">Run SEO Metadata Generator</button>
+        <div class="infoBox">
+            Make sure <strong>pages_input.xlsx</strong> is present beside <strong>server.py</strong>
+            before running. The updated file will be <strong>pages_with_meta.xlsx</strong>.
+        </div>
+    </form>
+
+    <div id="seoMetaResult" style="margin-top: 10px; font-size: 14px;"></div>
 
     <br>    
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const seoForm = document.getElementById("seoMetaForm");
+            const seoResult = document.getElementById("seoMetaResult");
+
+            if (seoForm) {
+                seoForm.addEventListener("submit", async function (e) {
+                    e.preventDefault();
+                    seoResult.style.whiteSpace = "pre-wrap";
+                    seoResult.textContent = "Running SEO metadata generator... This may take a while for 400+ pages.\n";
+
+                    try {
+                        const resp = await fetch("/generate_meta", {
+                            method: "POST"
+                        });
+
+                        const data = await resp.json();
+
+                        if (!data.ok) {
+                            seoResult.textContent += "\n❌ Failed to generate SEO metadata.\n";
+                            if (data.error) {
+                                seoResult.textContent += "Error: " + data.error + "\n";
+                            }
+                            if (data.stderr) {
+                                seoResult.textContent += "\nStderr:\n" + data.stderr;
+                            }
+                        } else {
+                            seoResult.textContent += "✅ SEO metadata generation completed.\n";
+                            seoResult.textContent += "Return code: " + data.returncode + "\n\n";
+
+                            if (data.stdout) {
+                                seoResult.textContent += "Logs (stdout tail):\n" + data.stdout + "\n";
+                            }
+                            if (data.stderr) {
+                                seoResult.textContent += "\nWarnings / errors (stderr tail):\n" + data.stderr + "\n";
+                            }
+
+                            seoResult.textContent += "\nYou can now open pages_with_meta.xlsx to review meta data and intro paragraphs.";
+                        }
+                    } catch (err) {
+                        seoResult.textContent += "\n❌ Unexpected error: " + err;
+                    }
+                });
+            }
+        });
+        </script>
+
         <script>
         (function () {
             const form = document.getElementById('mergeBgMusicForm');

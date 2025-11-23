@@ -26,7 +26,7 @@ from google.genai import types
 import os
 from flipthrough_video import generate_flipthrough_video, FlipThroughError
 from bg_music_video import merge_video_with_bg_music, BgMusicError
-
+import sys
 
 from media_audio import (
     extract_audio_from_video,
@@ -238,6 +238,51 @@ def coloring_files(subpath: str):
     if not str(full).startswith(str(base)) or not full.is_file():
         abort(404)
     return send_from_directory(full.parent, full.name)
+
+@app.post("/generate_meta")
+def seo_generate_meta():
+    """
+    Run get_seo_meta_data.py to generate SEO metadata into pages_with_meta.xlsx.
+    Uses pages_input.xlsx as input in the same folder as server.py.
+    """
+    try:
+        base_dir = BASE_DIR  # already defined above
+        script_path = base_dir / "get_seo_meta_data.py"
+
+        if not script_path.exists():
+            return jsonify({
+                "ok": False,
+                "error": f"Script not found: {script_path}"
+            }), 500
+
+        # Run using the same Python interpreter/venv as the server
+        proc = subprocess.run(
+            [sys.executable, str(script_path)],
+            cwd=str(base_dir),
+            capture_output=True,
+            text=True,
+            timeout=60 * 60,   # up to 1 hour for 400+ pages
+        )
+
+        ok = (proc.returncode == 0)
+
+        # Keep logs short-ish for UI
+        stdout_tail = (proc.stdout or "")[-4000:]
+        stderr_tail = (proc.stderr or "")[-4000:]
+
+        return jsonify({
+            "ok": ok,
+            "returncode": proc.returncode,
+            "stdout": stdout_tail,
+            "stderr": stderr_tail,
+        }), (200 if ok else 500)
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            "ok": False,
+            "error": str(e),
+        }), 500
 
 
 @app.post("/create_images")
