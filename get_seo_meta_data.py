@@ -16,6 +16,8 @@ OUTPUT_EXCEL = "pages_with_meta.xlsx"      # output with meta columns
 URL_COLUMN   = "url"                       # column name in Excel
 TITLE_COLUMN = "title"                     # column name in Excel (optional but recommended)
 
+AUTOSAVE_EVERY = 5   # save after every 5 processed rows; tweak as you like
+
 # Model & generation settings
 DEFAULT_MODEL        = "gemini-2.0-flash"    # or whatever you use
 DEFAULT_TEMPERATURE  = 0.2
@@ -168,8 +170,22 @@ PAGE CONTENT (truncated):
 # ==============================
 
 def main():
-    print(f"Reading input Excel: {INPUT_EXCEL}")
-    df = pd.read_excel(INPUT_EXCEL)
+    # If we already have an output file, continue from it
+    if os.path.exists(OUTPUT_EXCEL):
+        df_out = pd.read_excel(OUTPUT_EXCEL)
+
+        # Resume only if output file actually contains rows
+        if len(df_out) > 0:
+            print(f"Resuming from existing output file: {OUTPUT_EXCEL}")
+            df = df_out
+        else:
+            print(f"Output file exists but is empty — starting fresh from input Excel.")
+            df = pd.read_excel(INPUT_EXCEL)
+    else:
+        print(f"Reading input Excel: {INPUT_EXCEL}")
+        df = pd.read_excel(INPUT_EXCEL)
+
+
 
     if URL_COLUMN not in df.columns:
         raise ValueError(f"Expected URL column '{URL_COLUMN}' not found in Excel.")
@@ -188,59 +204,89 @@ def main():
     for col in meta_cols:
         if col not in df.columns:
             df[col] = ""
+    
+    processed_since_save = 0
 
     for idx, row in df.iterrows():
-        url = str(row[URL_COLUMN]).strip()
-        if not url or url.lower().startswith("nan"):
-            print(f"[SKIP] Row {idx}: empty URL")
+        try:
+            url = str(row[URL_COLUMN]).strip()
+            if not url or url.lower().startswith("nan"):
+                print(f"[SKIP] Row {idx}: empty URL")
+                continue
+
+            # Skip if meta already exists (so you can re-run safely)
+            if (
+                isinstance(row.get("meta_title"), str)
+                and row["meta_title"].strip()
+            ):
+                print(f"[SKIP] Row {idx}: meta already present for {url}")
+                continue
+
+            print(f"\n[PROCESS] Row {idx}: {url}")
+
+            # Title from Excel or fallback later
+            if TITLE_COLUMN in df.columns and pd.notna(row.get(TITLE_COLUMN)):
+                excel_title = str(row[TITLE_COLUMN]).strip()
+            else:
+                excel_title = None
+
+            html_title, page_text = fetch_page_text(url)
+
+            final_title = excel_title or html_title or url
+            if not page_text:
+                print(f"[WARN] No body text extracted for {url}; still sending title only.")
+                page_text = final_title
+
+            meta = call_gemini_for_meta(url, final_title, page_text)
+            if not meta:
+                df.at[idx, "meta_error"] = "Failed to generate meta"
+            else:
+                df.at[idx, "meta_title"]       = meta.get("meta_title", "")
+                df.at[idx, "meta_description"] = meta.get("meta_description", "")
+
+                # store keywords as comma-separated string
+                kws = meta.get("meta_keywords", [])
+                if isinstance(kws, list):
+                    df.at[idx, "meta_keywords"] = ", ".join([str(k).strip() for k in kws])
+                else:
+                    df.at[idx, "meta_keywords"] = str(kws)
+
+                df.at[idx, "og_title"]        = meta.get("og_title", "")
+                df.at[idx, "og_description"]  = meta.get("og_description", "")
+                df.at[idx, "intro_paragraph"] = meta.get("intro_paragraph", "").strip()
+                df.at[idx, "meta_error"]      = ""
+
+                print(f"[OK] {url}")
+                print("      →", df.at[idx, "meta_title"])
+
+            processed_since_save += 1
+
+            # 🔁 Autosave every N processed rows
+            if processed_since_save >= AUTOSAVE_EVERY:
+                print(f"[AUTOSAVE] Writing progress to {OUTPUT_EXCEL}")
+                df.to_excel(OUTPUT_EXCEL, index=False)
+                processed_since_save = 0
+
+            # Optional: tiny sleep to be gentle
+            time.sleep(0.2)
+
+        except Exception as e:
+            # Catch *any* unexpected error for this row and continue
+            print(f"[FATAL-ROW] Unexpected error on row {idx} ({url}): {e}")
+            df.at[idx, "meta_error"] = f"Unexpected error: {e}"
+            # still autosave on error
+            processed_since_save += 1
+            if processed_since_save >= AUTOSAVE_EVERY:
+                print(f"[AUTOSAVE] Writing progress to {OUTPUT_EXCEL}")
+                df.to_excel(OUTPUT_EXCEL, index=False)
+                processed_since_save = 0
             continue
 
-        # Skip if meta already exists (so you can re-run safely)
-        if row.get("meta_title") and isinstance(row["meta_title"], str) and row["meta_title"].strip():
-            print(f"[SKIP] Row {idx}: meta already present for {url}")
-            continue
 
-        print(f"\n[PROCESS] Row {idx}: {url}")
-
-        # Title from Excel or fallback later
-        excel_title = str(row[TITLE_COLUMN]).strip() if TITLE_COLUMN in df.columns and pd.notna(row[TITLE_COLUMN]) else None
-
-        html_title, page_text = fetch_page_text(url)
-
-        final_title = excel_title or html_title or url
-        if not page_text:
-            print(f"[WARN] No body text extracted for {url}; still sending title only.")
-            page_text = final_title
-
-        meta = call_gemini_for_meta(url, final_title, page_text)
-        if not meta:
-            df.at[idx, "meta_error"] = "Failed to generate meta"
-            continue
-
-        df.at[idx, "meta_title"]       = meta.get("meta_title", "")
-        df.at[idx, "meta_description"] = meta.get("meta_description", "")
-        # store keywords as comma-separated string
-        kws = meta.get("meta_keywords", [])
-        if isinstance(kws, list):
-            df.at[idx, "meta_keywords"] = ", ".join([str(k).strip() for k in kws])
-        else:
-            df.at[idx, "meta_keywords"] = str(kws)
-
-        df.at[idx, "og_title"]         = meta.get("og_title", "")
-        df.at[idx, "og_description"]   = meta.get("og_description", "")
-        # ✅ new field
-        df.at[idx, "intro_paragraph"]  = meta.get("intro_paragraph", "").strip()
-        df.at[idx, "meta_error"]       = ""
-
-        print(f"[OK] {url}")
-        print("      →", df.at[idx, "meta_title"])
-
-        # Optional: tiny sleep to be gentle, GeminiPool already rate-limits
-        time.sleep(0.2)
-
-    print(f"\nWriting output Excel: {OUTPUT_EXCEL}")
+    print(f"\nFinal save to: {OUTPUT_EXCEL}")
     df.to_excel(OUTPUT_EXCEL, index=False)
     print("Done.")
+
 
 
 if __name__ == "__main__":
