@@ -5,6 +5,7 @@ import subprocess, json, math
 from flask_cors import CORS
 import os
 import traceback  # to print detailed error info
+from build_coloring_app_manifest import build_coloring_manifest
 from caption_generator import prepare_captions_file_for_notebooklm_audio
 from get_audio import get_audio_file
 from scraper import scrape_and_process  # Ensure this exists
@@ -67,6 +68,35 @@ GEM_STATE = str(BASE_DIR / ".gemini_pool_state.json")
 
 gemini_pool = None
 
+@app.post("/build_coloring_manifest")
+def build_coloring_manifest_route():
+    """
+    Build coloring manifest + thumbnails under downloads/.
+
+    Expects form-data or JSON:
+      - source_folder: relative folder under downloads/
+          e.g. "" (for BASE_DIR/downloads),
+               "coloring/v2",
+               "1.Cute Farm Animals"
+      - force: "0" or "1" (optional, default 0)
+    """
+    try:
+        data = request.get_json(silent=True) or request.form
+        source_folder = (data.get("source_folder") or "").strip()
+        force_raw = (data.get("force") or "0").strip().lower()
+        force = force_raw in ("1", "true", "yes", "y", "on")
+
+        result = build_coloring_manifest(
+            source_subfolder=source_folder,
+            thumb_edge=640,
+            force=force,
+        )
+        result["ok"] = True
+        result["source_folder"] = source_folder
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.post("/merge_bg_music")
 def merge_bg_music_route():
