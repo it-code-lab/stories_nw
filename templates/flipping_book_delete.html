@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coloring Book Flip Viewer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #fdfcfb, #e2d1f9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      color: #111827;
+      padding: 20px 10px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin: 0 0 10px;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      color: white;
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
+      user-select: none;
+    }
+
+    .btn.secondary {
+      background: #e5e7eb;
+      color: #111827;
+      box-shadow: 0 4px 10px rgba(156, 163, 175, 0.5);
+    }
+
+    .btn.toggled {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.2);
+    }
+
+    .status-text {
+      font-size: 0.85rem;
+      color: #4b5563;
+      min-width: 160px;
+      text-align: center;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: #374151;
+    }
+
+    select {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      font-size: 0.85rem;
+    }
+
+    /* Book Scene */
+
+    .book-scene {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 2600px;
+      perspective-origin: 50% 40%;
+    }
+
+    .book-wrapper {
+      position: relative;
+      width: min(1100px, 95vw);
+      height: min(750px, 80vh);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .book-shadow {
+      position: absolute;
+      width: 90%;
+      height: 30px;
+      bottom: 10px;
+      border-radius: 999px;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(15, 23, 42, 0.4),
+        transparent 70%
+      );
+      filter: blur(3px);
+      z-index: 0;
+    }
+
+    .book {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #f9fafb;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.5);
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transform: rotateX(6deg) rotateY(-6deg);
+      transition: transform 0.4s ease;
+    }
+
+    .book:hover {
+      transform: rotateX(4deg) rotateY(-4deg);
+    }
+
+    .book::before {
+      /* spine */
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 48%;
+      width: 4%;
+      height: 100%;
+      background: linear-gradient(
+        to right,
+        rgba(15, 23, 42, 0.2),
+        rgba(249, 250, 251, 0.3),
+        rgba(15, 23, 42, 0.15)
+      );
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .book::after {
+      /* subtle paper edge */
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(209, 213, 219, 0.8);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Static Background / Left "stack" */
+    .page-stack-left,
+    .page-stack-right {
+      position: absolute;
+      inset: 18px;
+      border-radius: 10px;
+      background: repeating-linear-gradient(
+        to bottom,
+        #f9fafb,
+        #f9fafb 3px,
+        #f3f4f6 3px,
+        #f3f4f6 4px
+      );
+      box-shadow: inset 0 0 5px rgba(148, 163, 184, 0.5);
+      z-index: 1;
+    }
+
+    .page-stack-left {
+      right: 52%;
+      border-right: none;
+    }
+    .page-stack-right {
+      left: 52%;
+      border-left: none;
+    }
+
+    /* Page */
+
+    .page {
+      position: absolute;
+      top: 18px;
+      bottom: 18px;
+      width: 50%;
+      transform-origin: left center;
+      transform-style: preserve-3d;
+      transition: transform 0.9s ease, box-shadow 0.9s ease;
+      border-radius: 10px 0 0 10px;
+      overflow: hidden;
+      z-index: 3;
+    }
+
+    .page-inner {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+    }
+
+    .page-front,
+    .page-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .page-front {
+      box-shadow: 8px 0 18px rgba(15, 23, 42, 0.25);
+    }
+
+    .page-back {
+      transform: rotateY(180deg);
+      box-shadow: -8px 0 18px rgba(15, 23, 42, 0.3);
+    }
+
+    .page-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: transform 0.35s ease;
+    }
+
+    /* Page Shadows */
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at left center,
+        rgba(17, 24, 39, 0.22),
+        transparent 65%
+      );
+      opacity: 0.0;
+      pointer-events: none;
+      transition: opacity 0.9s ease;
+    }
+
+    .page.flipping-forward::before {
+      opacity: 0.9;
+    }
+
+    .page.flipped::before {
+      opacity: 0.0;
+    }
+
+    /* Positioning pages on right side by default */
+    .page {
+      left: 50%;
+    }
+
+    .page.flipped {
+      transform: rotateY(-180deg);
+      box-shadow: -3px 0 12px rgba(15, 23, 42, 0.35);
+    }
+
+    /* Page number display */
+
+    .page-number {
+      position: absolute;
+      bottom: 10px;
+      right: 20px;
+      font-size: 0.7rem;
+      color: #9ca3af;
+      letter-spacing: 0.04em;
+    }
+
+    /* Rotate mode */
+
+    .rotate-mode .page-image {
+      transform: rotate(90deg) scale(0.9);
+    }
+
+    /* Info banner */
+
+    .info-banner {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .info-banner kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      font-size: 0.75rem;
+      margin: 0 2px;
+    }
+
+    @media (max-width: 768px) {
+      .book-wrapper {
+        height: min(550px, 70vh);
+      }
+      .page-front,
+      .page-back {
+        padding: 12px;
+      }
+      .btn {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+      }
+      h1 {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+    <audio id="flipSound" src="static/sounds/page-flip.mp3" preload="auto"></audio>
+  <h1>Coloring Book – Flip Preview</h1>
+
+  <div class="controls">
+    <button id="prevBtn" class="btn secondary">⬅ Prev Page</button>
+    <button id="nextBtn" class="btn">Next Page ➡</button>
+    <button id="autoBtn" class="btn secondary">▶ Auto Flip</button>
+
+    <label>
+      Speed
+      <select id="speedSelect">
+        <option value="3000">Slow (3s)</option>
+        <option value="2000" selected>Normal (2s)</option>
+        <option value="1200">Fast (1.2s)</option>
+      </select>
+    </label>
+
+    <button id="rotateBtn" class="btn secondary">↻ Rotate Pages</button>
+
+    <div id="status" class="status-text">Page 1 of 1</div>
+  </div>
+
+  <div class="book-scene">
+    <div class="book-wrapper">
+      <div class="book-shadow"></div>
+      <div id="book" class="book">
+        <div class="page-stack-left"></div>
+        <div class="page-stack-right"></div>
+        <!-- Pages injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <div class="info-banner">
+    Tip: Use <kbd>←</kbd> <kbd>→</kbd> to flip pages. Press <kbd>Space</kbd> for next.
+    For OBS, set this page to fullscreen (F11) and record the window.
+  </div>
+
+  <script>
+    // ======== CONFIGURE YOUR PAGES HERE =========
+    // Replace these paths with your actual page images
+    // (e.g., pages converted from your PDF).
+    const pageImages = [
+      "pages/page_001.png",
+      "pages/page_002.png",
+      "pages/page_003.png",
+      "pages/page_004.png",
+      // ...
+    ];
+    // ============================================
+
+    const bookEl = document.getElementById("book");
+    const statusEl = document.getElementById("status");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const autoBtn = document.getElementById("autoBtn");
+    const rotateBtn = document.getElementById("rotateBtn");
+    const speedSelect = document.getElementById("speedSelect");
+
+    let pageEls = [];
+    let currentPageIndex = 0; // index of next page to flip forward
+    let autoIntervalId = null;
+    let isAuto = false;
+    let isAnimating = false;
+
+        const flipSoundEl = document.getElementById("flipSound");
+    let audioUnlocked = false;
+
+    function unlockAudio() {
+      if (!flipSoundEl) return;
+      // Some browsers require a user gesture before audio playback
+      flipSoundEl.muted = true;
+      flipSoundEl.play().then(() => {
+        flipSoundEl.pause();
+        flipSoundEl.currentTime = 0;
+        flipSoundEl.muted = false;
+        audioUnlocked = true;
+      }).catch(() => {
+        // ignore – will retry on next gesture
+      });
+    }
+
+    function playFlipSound() {
+      if (!flipSoundEl) return;
+      if (!audioUnlocked) return;
+      // Clone so rapid flips can overlap slightly
+      const clone = flipSoundEl.cloneNode();
+      clone.play().catch(() => {});
+    }
+
+    // Unlock audio on first user interaction
+    window.addEventListener("click", unlockAudio, { once: true });
+    window.addEventListener("keydown", unlockAudio, { once: true });
+
+    function createPages() {
+      // Clear old pages (if any)
+      pageEls.forEach((p) => p.remove());
+      pageEls = [];
+
+      // Highest zIndex for top page
+      const total = pageImages.length;
+      for (let i = 0; i < total; i++) {
+        const page = document.createElement("div");
+        page.className = "page";
+        page.style.zIndex = 10 + (total - i); // topmost first page
+
+        const inner = document.createElement("div");
+        inner.className = "page-inner";
+
+        const front = document.createElement("div");
+        front.className = "page-front";
+
+        const imgFront = document.createElement("img");
+        imgFront.className = "page-image";
+        imgFront.src = pageImages[i];
+        imgFront.alt = `Page ${i + 1}`;
+        front.appendChild(imgFront);
+
+        const pageNum = document.createElement("div");
+        pageNum.className = "page-number";
+        pageNum.textContent = `Page ${i + 1}`;
+        front.appendChild(pageNum);
+
+        const back = document.createElement("div");
+        back.className = "page-back";
+        const backLabel = document.createElement("div");
+        backLabel.style.fontSize = "0.8rem";
+        backLabel.style.color = "#9ca3af";
+        backLabel.textContent = "Back side";
+        back.appendChild(backLabel);
+
+        inner.appendChild(front);
+        inner.appendChild(back);
+        page.appendChild(inner);
+
+        bookEl.appendChild(page);
+        pageEls.push(page);
+      }
+
+      updateStatus();
+    }
+
+    function updateStatus() {
+      const total = pageImages.length;
+      const visiblePage = Math.min(currentPageIndex + 1, total);
+      statusEl.textContent = `Page ${visiblePage} of ${total}`;
+    }
+
+    function flipForward() {
+      if (isAnimating) return;
+      if (currentPageIndex >= pageEls.length) {
+        // Already at end
+        stopAutoFlip();
+        return;
+      }
+
+      const page = pageEls[currentPageIndex];
+      isAnimating = true;
+
+      playFlipSound();  // 👈 sound here
+
+      page.classList.add("flipping-forward");
+      // Small timeout so CSS can apply "flipping-forward" first
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          page.classList.add("flipped");
+          page.classList.remove("flipping-forward");
+        }, 10);
+      });
+
+      // Wait for animation to complete
+      setTimeout(() => {
+        currentPageIndex++;
+        updateStatus();
+        isAnimating = false;
+      }, 950);
+    }
+
+    function flipBackward() {
+      if (isAnimating) return;
+      if (currentPageIndex <= 0) return;
+
+      const page = pageEls[currentPageIndex - 1];
+      isAnimating = true;
+
+      playFlipSound();  // optional for backward
+
+      // Reverse flip
+      page.classList.remove("flipped");
+      // Use same duration as forward flip
+      setTimeout(() => {
+        currentPageIndex--;
+        updateStatus();
+        isAnimating = false;
+      }, 900);
+    }
+
+    function startAutoFlip() {
+      if (isAuto) return;
+      isAuto = true;
+      autoBtn.textContent = "⏸ Stop Auto";
+      autoBtn.classList.add("toggled");
+
+      const speed = parseInt(speedSelect.value, 10) || 2000;
+
+      autoIntervalId = setInterval(() => {
+        if (currentPageIndex >= pageEls.length) {
+          stopAutoFlip();
+        } else {
+          flipForward();
+        }
+      }, speed);
+    }
+
+    function stopAutoFlip() {
+      isAuto = false;
+      autoBtn.textContent = "▶ Auto Flip";
+      autoBtn.classList.remove("toggled");
+      if (autoIntervalId) {
+        clearInterval(autoIntervalId);
+        autoIntervalId = null;
+      }
+    }
+
+    function toggleRotateMode() {
+      bookEl.classList.toggle("rotate-mode");
+      rotateBtn.classList.toggle("toggled");
+
+      if (bookEl.classList.contains("rotate-mode")) {
+        rotateBtn.textContent = "↺ Unrotate Pages";
+      } else {
+        rotateBtn.textContent = "↻ Rotate Pages";
+      }
+    }
+
+    // Event bindings
+    nextBtn.addEventListener("click", () => {
+      stopAutoFlip(); // optional: stop auto when user manually flips
+      flipForward();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      stopAutoFlip();
+      flipBackward();
+    });
+
+    autoBtn.addEventListener("click", () => {
+      if (isAuto) {
+        stopAutoFlip();
+      } else {
+        startAutoFlip();
+      }
+    });
+
+    rotateBtn.addEventListener("click", toggleRotateMode);
+
+    // Keyboard controls
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "ArrowRight") {
+        e.preventDefault();
+        stopAutoFlip();
+        flipForward();
+      } else if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        stopAutoFlip();
+        flipBackward();
+      } else if (e.code === "Space") {
+        e.preventDefault();
+        stopAutoFlip();
+        flipForward();
+      }
+    });
+
+    // Optional: click the right half of the book for next, left half for prev
+    bookEl.addEventListener("click", (e) => {
+      const rect = bookEl.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x > rect.width / 2) {
+        stopAutoFlip();
+        flipForward();
+      } else {
+        stopAutoFlip();
+        flipBackward();
+      }
+    });
+
+    // Initialize
+    createPages();
+  </script>
+</body>
+</html>

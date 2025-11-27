@@ -1,6 +1,6 @@
 import shutil
 from time import time
-from flask import Flask, request, jsonify, render_template, send_from_directory, abort
+from flask import Flask, request, jsonify, render_template, send_from_directory, abort, url_for
 import subprocess, json, math
 from flask_cors import CORS
 import os
@@ -28,6 +28,8 @@ import os
 from flipthrough_video import generate_flipthrough_video, FlipThroughError
 from bg_music_video import merge_video_with_bg_music, BgMusicError
 import sys
+from pdf2image import convert_from_path
+import glob
 
 from media_audio import (
     extract_audio_from_video,
@@ -55,6 +57,14 @@ AUDIO_PATH = BASE_DIR / "audio.wav"   # your file is beside server.py
 
 COLORING_BASE = BASE_DIR / "downloads"
 COLORING_BASE.mkdir(exist_ok=True)
+
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+PAGES_FOLDER = os.path.join(BASE_DIR, "static", "pages")
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(PAGES_FOLDER, exist_ok=True)
+
+POPPLER_PATH = r"C:\poppler-25.11.0\Library\bin"  # Adjust this path as needed
 
 # =========================
 # Defaults (env-overridable)
@@ -1224,6 +1234,10 @@ def aivideoprompt():
 def prep_caption():
     return render_template('index_captions.html')
 
+@app.route('/flipping_book')
+def flipping_book():
+    return render_template('flipping_book.html')
+
 @app.route('/portrait_website_loader')
 def portrait_website_loader():
     return render_template('portrait_website_loader.html')
@@ -2079,6 +2093,64 @@ def clear_folder(folder_path, extensions=None):
         if os.path.isfile(full_path):
             if not extensions or file.lower().endswith(extensions):
                 os.remove(full_path)
+
+
+def clear_old_pages():
+    """Delete any existing generated page images."""
+    for pattern in ("*.png", "*.jpg", "*.jpeg"):
+        for f in glob.glob(os.path.join(PAGES_FOLDER, pattern)):
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
+
+def pdf_to_images(pdf_path):
+    """
+    Convert a PDF into PNG pages under static/pages/.
+    Returns list of static URLs for those pages.
+    """
+    clear_old_pages()
+
+    pages = convert_from_path(pdf_path, dpi=300, poppler_path=POPPLER_PATH)
+
+    urls = []
+    for i, page in enumerate(pages, start=1):
+        filename = f"page_{i:03}.png"
+        full_path = os.path.join(PAGES_FOLDER, filename)
+        page.save(full_path, "PNG")
+
+        # URL for browser
+        urls.append(url_for("static", filename=f"pages/{filename}", _external=False))
+
+    return urls
+
+@app.route("/pdf_to_flipping_book")
+def pdf_to_flipping_book():
+    return render_template("pdf_to_flipping_book.html")
+
+@app.route("/upload_pdf", methods=["POST"])
+def upload_pdf():
+    if "pdf" not in request.files:
+        return jsonify({"success": False, "error": "No file part 'pdf' found."}), 400
+
+    pdf_file = request.files["pdf"]
+    if pdf_file.filename == "":
+        return jsonify({"success": False, "error": "No file selected."}), 400
+
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    pdf_path = os.path.join(UPLOAD_FOLDER, "current.pdf")
+    pdf_file.save(pdf_path)
+
+    try:
+        page_urls = pdf_to_images(pdf_path)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+    if not page_urls:
+        return jsonify({"success": False, "error": "No pages generated."}), 500
+
+    return jsonify({"success": True, "pages": page_urls})
 
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)

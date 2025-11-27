@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Coloring Book – Flipping Viewer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* You can tweak these or change via JS */
+      --book-max-width: 1100px;
+      --book-max-height: 750px;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #fdfcfb, #e2d1f9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: #111827;
+      padding: 20px 10px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin: 0 0 10px;
+      text-align: center;
+    }
+
+    .upload-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px 14px;
+      border-radius: 999px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+    }
+
+    .upload-bar input[type="file"] {
+      font-size: 0.8rem;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      color: white;
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
+      user-select: none;
+    }
+
+    .btn.secondary {
+      background: #e5e7eb;
+      color: #111827;
+      box-shadow: 0 4px 10px rgba(156, 163, 175, 0.5);
+    }
+
+    .btn.toggled {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.2);
+    }
+
+    .status-text {
+      font-size: 0.85rem;
+      color: #4b5563;
+      min-width: 160px;
+      text-align: center;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: #374151;
+    }
+
+    select {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      font-size: 0.85rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Book Scene */
+
+    .book-scene {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 2600px;
+      perspective-origin: 50% 40%;
+    }
+
+    .book-wrapper {
+      position: relative;
+      width: min(var(--book-max-width), 95vw);
+      height: min(var(--book-max-height), 80vh);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+
+    .book-shadow {
+      position: absolute;
+      width: 90%;
+      height: 30px;
+      bottom: 10px;
+      border-radius: 999px;
+      background: radial-gradient(ellipse at center,
+          rgba(15, 23, 42, 0.4),
+          transparent 70%);
+      filter: blur(3px);
+      z-index: 0;
+    }
+
+    .book {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #f9fafb;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.5);
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transform: rotateX(6deg) rotateY(-6deg);
+      transition: transform 0.4s ease;
+    }
+
+    .book:hover {
+      transform: rotateX(4deg) rotateY(-4deg);
+    }
+
+    .book::before {
+      /* spine */
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 48%;
+      width: 4%;
+      height: 100%;
+      background: linear-gradient(to right,
+          rgba(15, 23, 42, 0.2),
+          rgba(249, 250, 251, 0.3),
+          rgba(15, 23, 42, 0.15));
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .book::after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(209, 213, 219, 0.8);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .page-stack-left,
+    .page-stack-right {
+      position: absolute;
+      inset: 18px;
+      border-radius: 10px;
+      background: repeating-linear-gradient(to bottom,
+          #f9fafb,
+          #f9fafb 3px,
+          #f3f4f6 3px,
+          #f3f4f6 4px);
+      box-shadow: inset 0 0 5px rgba(148, 163, 184, 0.5);
+      z-index: 1;
+    }
+
+    .page-stack-left {
+      right: 52%;
+      border-right: none;
+    }
+
+    .page-stack-right {
+      left: 52%;
+      border-left: none;
+    }
+
+    .page {
+      position: absolute;
+      top: 18px;
+      bottom: 18px;
+      width: 50%;
+      transform-origin: left center;
+      transform-style: preserve-3d;
+      transition: transform 0.9s ease, box-shadow 0.9s ease;
+      border-radius: 10px 0 0 10px;
+      overflow: hidden;
+      z-index: 3;
+    }
+
+    .page-inner {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+    }
+
+    .page-front,
+    .page-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .page-front {
+      box-shadow: 8px 0 18px rgba(15, 23, 42, 0.25);
+    }
+
+    .page-back {
+      transform: rotateY(180deg);
+      box-shadow: -8px 0 18px rgba(15, 23, 42, 0.3);
+    }
+
+    .page-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: transform 0.35s ease;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at left center,
+          rgba(17, 24, 39, 0.22),
+          transparent 65%);
+      opacity: 0.0;
+      pointer-events: none;
+      transition: opacity 0.9s ease;
+    }
+
+    .page.flipping-forward::before {
+      opacity: 0.9;
+    }
+
+    .page.flipped::before {
+      opacity: 0.0;
+    }
+
+    .page {
+      left: 50%;
+    }
+
+    .page.flipped {
+      transform: rotateY(-180deg);
+      box-shadow: -3px 0 12px rgba(15, 23, 42, 0.35);
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 10px;
+      right: 20px;
+      font-size: 0.7rem;
+      color: #9ca3af;
+      letter-spacing: 0.04em;
+    }
+
+    .rotate-mode .page-image {
+      transform: rotate(270deg) scale(1.7);
+    }
+
+    /* ===== Single-page layout ===== */
+
+    .book.single-page::before,
+    .book.single-page .page-stack-left,
+    .book.single-page .page-stack-right {
+      display: none;
+      /* hide spine and stacks */
+    }
+
+    /* Center the page instead of right half */
+    .book.single-page .page {
+      width: 70%;
+      left: 15%;
+      /* center: (100 - 70) / 2 */
+    }
+
+    /* Optional: make single page a bit taller visually */
+    .book.single-page {
+      transform: rotateX(4deg);
+      /* a bit flatter */
+    }
+
+
+    .info-banner {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .info-banner kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      font-size: 0.75rem;
+      margin: 0 2px;
+    }
+
+    .error-text {
+      color: #b91c1c;
+      font-size: 0.85rem;
+      margin-top: 6px;
+      min-height: 1.2em;
+    }
+
+    @media (max-width: 768px) {
+      .book-wrapper {
+        height: min(550px, 70vh);
+      }
+
+      .page-front,
+      .page-back {
+        padding: 12px;
+      }
+
+      .btn {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+      }
+
+      h1 {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Page flip sound -->
+  <audio id="flipSound" src="{{ url_for('static', filename='sounds/page-flip.mp3') }}" preload="auto"></audio>
+
+  <h1>Coloring Book – Flipping Preview</h1>
+
+  <!-- Upload bar -->
+  <div class="upload-bar">
+    <input type="file" id="pdfInput" accept="application/pdf" />
+    <button id="uploadBtn" class="btn">Upload PDF & Generate Pages</button>
+    <span id="uploadStatus" class="status-text">No PDF uploaded yet.</span>
+    <input type="file" id="folderInput" webkitdirectory directory multiple />
+    <button id="loadFolderBtn" class="btn secondary">Load Image Folder</button>
+
+  </div>
+  <div id="uploadError" class="error-text"></div>
+
+  <!-- Flip controls -->
+  <div class="controls">
+    <button id="prevBtn" class="btn secondary">⬅ Prev Page</button>
+    <button id="nextBtn" class="btn">Next Page ➡</button>
+    <button id="autoBtn" class="btn secondary">▶ Auto Flip</button>
+
+    <label>
+      Speed
+      <select id="speedSelect">
+        <option value="3000">Slow (3s)</option>
+        <option value="2000" selected>Normal (2s)</option>
+        <option value="1200">Fast (1.2s)</option>
+      </select>
+    </label>
+
+    <button id="rotateBtn" class="btn secondary">↻ Rotate Pages</button>
+
+    <label>
+      Page Size
+      <select id="sizeSelect">
+        <option value="letter" selected>US Letter (8.5×11)</option>
+        <option value="a4">A4</option>
+        <option value="square">Square</option>
+      </select>
+    </label>
+
+    <label>
+      Layout
+      <select id="layoutSelect">
+        <option value="spread">Spread (2 pages)</option>
+        <option value="single" selected>Single Page</option>
+      </select>
+    </label>
+
+
+    <div id="status" class="status-text">No pages loaded</div>
+  </div>
+  <br><br><br><br>
+  <!-- Book viewer -->
+  <div class="book-scene">
+    <div class="book-wrapper">
+      <div class="book-shadow"></div>
+      <div id="book" class="book single-page">
+        <div class="page-stack-left"></div>
+        <div class="page-stack-right"></div>
+        <!-- Pages injected by JS -->
+      </div>
+    </div>
+  </div>
+  <br><br><br><br>
+  <div class="info-banner">
+    Tip: After generating pages, use <kbd>←</kbd> <kbd>→</kbd> to flip. A to toggle auto flip. Press <kbd>Space</kbd> for next.
+    For OBS, set this page to fullscreen (F11) and record the browser window.
+  </div>
+
+  <script>
+    // ======== STATE =========
+    let pageImages = [];          // Filled after upload
+    let pageEls = [];
+    let currentPageIndex = 0;     // index of next page to flip forward
+    let autoIntervalId = null;
+    let isAuto = false;
+    let isAnimating = false;
+
+    const bookEl = document.getElementById("book");
+    const statusEl = document.getElementById("status");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const autoBtn = document.getElementById("autoBtn");
+    const rotateBtn = document.getElementById("rotateBtn");
+    const speedSelect = document.getElementById("speedSelect");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const pdfInput = document.getElementById("pdfInput");
+    const uploadStatus = document.getElementById("uploadStatus");
+    const uploadError = document.getElementById("uploadError");
+    const flipSoundEl = document.getElementById("flipSound");
+
+    let audioUnlocked = false;
+
+    function unlockAudio() {
+      if (!flipSoundEl) return;
+      flipSoundEl.muted = true;
+      flipSoundEl.play().then(() => {
+        flipSoundEl.pause();
+        flipSoundEl.currentTime = 0;
+        flipSoundEl.muted = false;
+        audioUnlocked = true;
+      }).catch(() => { });
+    }
+
+    function playFlipSound() {
+      if (!flipSoundEl || !audioUnlocked) return;
+      const clone = flipSoundEl.cloneNode();
+      clone.play().catch(() => { });
+    }
+
+    window.addEventListener("click", unlockAudio, { once: true });
+    window.addEventListener("keydown", unlockAudio, { once: true });
+
+    // ======== PAGE CREATION =========
+
+    function clearPages() {
+      pageEls.forEach(p => p.remove());
+      pageEls = [];
+      currentPageIndex = 0;
+    }
+
+    const sizeSelect = document.getElementById("sizeSelect");
+
+    function setBookSize(widthPx, heightPx) {
+      document.documentElement.style.setProperty("--book-max-width", widthPx + "px");
+      document.documentElement.style.setProperty("--book-max-height", heightPx + "px");
+    }
+
+    // Basic presets – you can tweak these numbers visually:
+    sizeSelect.addEventListener("change", () => {
+      const v = sizeSelect.value;
+      if (v === "letter") {
+        // 2 pages side by side of 8.5×11 → approx aspect 1.55 : 1
+        setBookSize(1100, 710);
+      } else if (v === "a4") {
+        // A4 ~ 210×297, spread is a bit taller
+        setBookSize(1100, 780);
+      } else if (v === "square") {
+        setBookSize(900, 900);
+      }
+    });
+
+    // Optional: call once on load to enforce default
+    setBookSize(1100, 710);
+
+    const layoutSelect = document.getElementById("layoutSelect");
+
+    layoutSelect.addEventListener("change", () => {
+      const layout = layoutSelect.value;
+      if (layout === "single") {
+        bookEl.classList.add("single-page");
+      } else {
+        bookEl.classList.remove("single-page");
+      }
+    });
+
+    const folderInput = document.getElementById("folderInput");
+const loadFolderBtn = document.getElementById("loadFolderBtn");
+
+
+loadFolderBtn.addEventListener("click", () => {
+  const files = folderInput.files;
+  if (!files || files.length === 0) {
+    uploadError.textContent = "Please select a folder first.";
+    return;
+  }
+
+  uploadError.textContent = "";
+  uploadStatus.textContent = "Loading images from folder...";
+  stopAutoFlip();
+  clearPages();
+
+  // Filter for only PNG/JPG/SVG
+  let images = [...files].filter(f =>
+    f.type.startsWith("image/") ||
+    f.name.toLowerCase().endsWith(".png") ||
+    f.name.toLowerCase().endsWith(".jpg") ||
+    f.name.toLowerCase().endsWith(".jpeg") ||
+    f.name.toLowerCase().endsWith(".svg")
+  );
+
+  if (images.length === 0) {
+    uploadError.textContent = "No image files found in the folder.";
+    uploadStatus.textContent = "";
+    return;
+  }
+
+  // Sort by filename (important for page order)
+  images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+  // Convert File objects → local blob URLs
+  pageImages = images.map(file => URL.createObjectURL(file));
+
+  uploadStatus.textContent = `Loaded ${pageImages.length} images from folder.`;
+  createPages();
+});
+
+    function createPages() {
+      clearPages();
+      if (!pageImages || pageImages.length === 0) {
+        statusEl.textContent = "No pages loaded";
+        return;
+      }
+
+      const total = pageImages.length;
+      for (let i = 0; i < total; i++) {
+        const page = document.createElement("div");
+        page.className = "page";
+        page.style.zIndex = 10 + (total - i); // topmost is first
+
+        const inner = document.createElement("div");
+        inner.className = "page-inner";
+
+        const front = document.createElement("div");
+        front.className = "page-front";
+
+        const imgFront = document.createElement("img");
+        imgFront.className = "page-image";
+        imgFront.src = pageImages[i];
+        imgFront.alt = `Page ${i + 1}`;
+        front.appendChild(imgFront);
+
+        const pageNum = document.createElement("div");
+        pageNum.className = "page-number";
+        pageNum.textContent = `Page ${i + 1}`;
+        front.appendChild(pageNum);
+
+        const back = document.createElement("div");
+        back.className = "page-back";
+        const backLabel = document.createElement("div");
+        backLabel.style.fontSize = "0.8rem";
+        backLabel.style.color = "#9ca3af";
+        backLabel.textContent = "Back side";
+        back.appendChild(backLabel);
+
+        inner.appendChild(front);
+        inner.appendChild(back);
+        page.appendChild(inner);
+
+        bookEl.appendChild(page);
+        pageEls.push(page);
+      }
+
+      updateStatus();
+    }
+
+    function updateStatus() {
+      if (!pageImages || pageImages.length === 0) {
+        statusEl.textContent = "No pages loaded";
+        return;
+      }
+      const total = pageImages.length;
+      const visiblePage = Math.min(currentPageIndex + 1, total);
+      statusEl.textContent = `Page ${visiblePage} of ${total}`;
+    }
+
+    // ======== FLIP LOGIC =========
+
+    function flipForward() {
+      if (isAnimating) return;
+      if (currentPageIndex >= pageEls.length) {
+        stopAutoFlip();
+        return;
+      }
+
+      const page = pageEls[currentPageIndex];
+      isAnimating = true;
+
+      playFlipSound();
+
+      page.classList.add("flipping-forward");
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          page.classList.add("flipped");
+          page.classList.remove("flipping-forward");
+        }, 10);
+      });
+
+      setTimeout(() => {
+        currentPageIndex++;
+        updateStatus();
+        isAnimating = false;
+      }, 950);
+    }
+
+    function flipBackward() {
+      if (isAnimating) return;
+      if (currentPageIndex <= 0) return;
+
+      const page = pageEls[currentPageIndex - 1];
+      isAnimating = true;
+
+      playFlipSound();
+
+      page.classList.remove("flipped");
+      setTimeout(() => {
+        currentPageIndex--;
+        updateStatus();
+        isAnimating = false;
+      }, 900);
+    }
+
+    function startAutoFlip() {
+      if (isAuto || !pageImages.length) return;
+      isAuto = true;
+      autoBtn.textContent = "⏸ Stop Auto";
+      autoBtn.classList.add("toggled");
+
+      const speed = parseInt(speedSelect.value, 10) || 2000;
+
+      autoIntervalId = setInterval(() => {
+        if (currentPageIndex >= pageEls.length) {
+          stopAutoFlip();
+        } else {
+          flipForward();
+        }
+      }, speed);
+    }
+
+    function stopAutoFlip() {
+      isAuto = false;
+      autoBtn.textContent = "▶ Auto Flip";
+      autoBtn.classList.remove("toggled");
+      if (autoIntervalId) {
+        clearInterval(autoIntervalId);
+        autoIntervalId = null;
+      }
+    }
+
+    function toggleRotateMode() {
+      bookEl.classList.toggle("rotate-mode");
+      rotateBtn.classList.toggle("toggled");
+
+      if (bookEl.classList.contains("rotate-mode")) {
+        rotateBtn.textContent = "↺ Unrotate Pages";
+      } else {
+        rotateBtn.textContent = "↻ Rotate Pages";
+      }
+    }
+
+    // ======== EVENTS =========
+
+    nextBtn.addEventListener("click", () => {
+      stopAutoFlip();
+      flipForward();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      stopAutoFlip();
+      flipBackward();
+    });
+
+    autoBtn.addEventListener("click", () => {
+      if (isAuto) {
+        stopAutoFlip();
+      } else {
+        startAutoFlip();
+      }
+    });
+
+    rotateBtn.addEventListener("click", toggleRotateMode);
+
+    bookEl.addEventListener("click", (e) => {
+      if (!pageImages.length) return;
+      const rect = bookEl.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      stopAutoFlip();
+      if (x > rect.width / 2) {
+        flipForward();
+      } else {
+        flipBackward();
+      }
+    });
+
+window.addEventListener("keydown", (e) => {
+  if (!pageImages.length) return;
+
+  // Avoid triggering while typing inside inputs
+  const tag = document.activeElement.tagName.toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+
+  // Auto Flip toggle shortcut: A key
+  if (e.code === "KeyA") {
+    e.preventDefault();
+    if (isAuto) {
+      stopAutoFlip();
+    } else {
+      startAutoFlip();
+    }
+    return;
+  }
+
+  // Existing flip keys
+  if (e.code === "ArrowRight") {
+    e.preventDefault();
+    stopAutoFlip();
+    flipForward();
+  } else if (e.code === "ArrowLeft") {
+    e.preventDefault();
+    stopAutoFlip();
+    flipBackward();
+  } else if (e.code === "Space") {
+    e.preventDefault();
+    stopAutoFlip();
+    flipForward();
+  }
+});
+
+
+    // ======== UPLOAD HANDLING =========
+
+    uploadBtn.addEventListener("click", async () => {
+      uploadError.textContent = "";
+      const file = pdfInput.files && pdfInput.files[0];
+      if (!file) {
+        uploadError.textContent = "Please select a PDF file first.";
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = "Processing...";
+      uploadStatus.textContent = "Uploading & converting PDF...";
+      stopAutoFlip();
+      clearPages();
+
+      try {
+        const formData = new FormData();
+        formData.append("pdf", file);
+
+        const resp = await fetch("/upload_pdf", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok || !data.success) {
+          const msg = data.error || `Server error (${resp.status})`;
+          uploadError.textContent = msg;
+          uploadStatus.textContent = "Failed to generate pages.";
+          return;
+        }
+
+        pageImages = data.pages || [];
+        if (!pageImages.length) {
+          uploadError.textContent = "No pages returned from server.";
+          uploadStatus.textContent = "No pages generated.";
+          return;
+        }
+
+        uploadStatus.textContent = `Loaded ${pageImages.length} pages. Ready to flip.`;
+        createPages();
+      } catch (err) {
+        console.error(err);
+        uploadError.textContent = "Error uploading or converting PDF.";
+        uploadStatus.textContent = "Failed to generate pages.";
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = "Upload PDF & Generate Pages";
+      }
+    });
+
+    // Initial status
+    updateStatus();
+  </script>
+</body>
+
+</html>
