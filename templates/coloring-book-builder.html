@@ -204,6 +204,17 @@
       font-size: 8px;
       color: #111;
     }
+
+    textarea {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+      max-width: 480px;
+      font-size: 14px;
+      resize: vertical;
+      font-family: inherit;
+    }
   </style>
 </head>
 
@@ -217,6 +228,14 @@
       <div class="hint">
         Select your folder or multiple files. Only image files are used.
         They’ll be sorted by file name by default.
+      </div>
+
+      <div style="margin-top:12px;">
+        <label>Optional: Load fun activity pages (mazes, dot-to-dot, etc.)</label><br>
+        <input type="file" id="activitiesInput" multiple webkitdirectory>
+        <div class="hint" id="activitiesHint">
+          Activity pages will be appended near the end in the Generate Book view.
+        </div>
       </div>
 
       <div style="margin-top:10px;">
@@ -265,6 +284,51 @@
         <input type="number" id="pageNumberStart" value="1" min="1" style="width:60px;">
       </label>
     </div>
+    <div style="margin-top:10px;">
+      <label>Book details (for Generate Book view)</label>
+      <div>
+        <input type="text" id="bookTitle" placeholder="Book title" value="Cute Farm Animals Coloring Book">
+      </div>
+      <div style="margin-top:4px;">
+        <input type="text" id="bookSubtitle" placeholder="Subtitle" value="Fun & Easy Coloring Pages for Kids">
+      </div>
+      <div style="margin-top:4px;">
+        <input type="text" id="bookAuthor" placeholder="Author / Brand" value="Creative Cubs">
+      </div>
+      <div style="margin-top:4px;">
+        <input type="text" id="bookAgeRange" placeholder="Age range" value="Ages 3–8">
+      </div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <label>Welcome / instructions text</label>
+      <textarea id="welcomeText" rows="3">
+Welcome to the farm! This book is filled with cute animals, big barns, and sunny fields. 
+Use crayons, markers, or colored pencils and place a scrap sheet behind pages when using markers.
+Have fun and color outside the lines if you like!
+      </textarea>
+    </div>
+
+    <div style="margin-top:10px;">
+      <label>Thank-you / bonus text</label>
+      <textarea id="thankYouText" rows="3">
+Thank you for choosing this Creative Cubs coloring book. 
+Scan the QR code for free bonus pages and more fun printables!
+      </textarea>
+    </div>
+
+    <div style="margin-top:10px;">
+      <label>QR code image URL (optional)</label>
+      <input type="text" id="qrUrl" placeholder="https://your-site.com/qr-code.png">
+    </div>
+
+    <div style="margin-top:10px;">
+      <label>Back cover blurb</label>
+      <textarea id="backBlurb" rows="3">
+Packed with adorable farm scenes, cute animals, and simple designs perfect for little hands. 
+Great for ages 3–8, rainy days, car rides, and screen-free creative time.
+      </textarea>
+    </div>
 
     <div class="inline">
       <label class="inline">
@@ -298,7 +362,15 @@
 
   <div class="panel">
     <label>4. Export</label><br>
-    <button class="btn-primary" id="generatePdfBtn">Generate PDF</button>
+
+    <button class="btn-primary" id="generateBookBtn" type="button">
+      Generate Book (Print View)
+    </button>
+
+    <button class="btn-primary" id="generatePdfBtn" type="button" style="margin-left:8px;">
+      Generate PDF
+    </button>
+
     <div class="hint">
       Generated PDF will use your chosen page size, margins, centered images,
       footer text, and page numbers.
@@ -334,6 +406,12 @@
 
     const generateFlipBtn = document.getElementById('generateFlipBtn');
     const flipResult = document.getElementById('flipResult');
+    const generateBookBtn = document.getElementById('generateBookBtn');
+
+    // Optional fun-activity pages (separate from normal pages)
+    const activityPages = [];  // { file, url, img }
+    const activitiesInput = document.getElementById('activitiesInput');
+    const activitiesHint = document.getElementById('activitiesHint');
 
 
     function renderPreview() {
@@ -626,6 +704,38 @@
 
     });
 
+    if (activitiesInput) {
+      activitiesInput.addEventListener('change', async (e) => {
+        activityPages.length = 0;
+
+        const files = Array.from(e.target.files)
+          .filter(f => f.type.startsWith('image/'))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        for (const file of files) {
+          const url = URL.createObjectURL(file);
+          let img;
+          try {
+            img = await loadImage(url);
+          } catch (err) {
+            console.error('Failed to load activity image:', file.name, err);
+            continue;
+          }
+          activityPages.push({ file, url, img });
+        }
+
+        if (activitiesHint) {
+          if (activityPages.length) {
+            activitiesHint.textContent =
+              `${activityPages.length} activity pages loaded. They will appear near the end in Generate Book view.`;
+          } else {
+            activitiesHint.textContent =
+              'No activity pages loaded yet.';
+          }
+        }
+      });
+    }
+
     function analyzeImage(img, fileName = "") {
       const warnings = [];
 
@@ -840,6 +950,17 @@
       return ordered;
     }
 
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[ch] || ch));
+    }
+
+
     generatePdfBtn.addEventListener('click', () => {
       if (!pages.length) {
         alert('Please load images first.');
@@ -968,6 +1089,300 @@
 
       doc.save('coloring-book.pdf');
     });
+
+    if (generateBookBtn) {
+      generateBookBtn.addEventListener('click', () => {
+        if (!pages.length) {
+          alert('Please load coloring pages first.');
+          return;
+        }
+        openPrintBookWindow();
+      });
+    }
+
+    function openPrintBookWindow() {
+      const size = document.getElementById('pageSize').value;
+      const marginInches = parseFloat(document.getElementById('margin').value) || 0.5;
+      const showPageNumbers = document.getElementById('showPageNumbers').checked;
+      const pageNumberStart = parseInt(document.getElementById('pageNumberStart').value || '1', 10);
+      const footnote = (document.getElementById('footnote').value || '').trim();
+      const rotateImages = document.getElementById('landscapeToggle')?.checked;
+
+      const bookTitle = (document.getElementById('bookTitle')?.value || '').trim();
+      const bookSubtitle = (document.getElementById('bookSubtitle')?.value || '').trim();
+      const bookAuthor = (document.getElementById('bookAuthor')?.value || '').trim();
+      const bookAgeRange = (document.getElementById('bookAgeRange')?.value || '').trim();
+      const welcomeText = (document.getElementById('welcomeText')?.value || '').trim();
+      const thankYouText = (document.getElementById('thankYouText')?.value || '').trim();
+      const qrUrl = (document.getElementById('qrUrl')?.value || '').trim();
+      const backBlurb = (document.getElementById('backBlurb')?.value || '').trim();
+
+      const ordered = getOrderedPages().filter(p => p.enabled);
+      if (!ordered.length) {
+        alert('No pages selected.');
+        return;
+      }
+
+      const pageWidthIn = (size === 'LETTER') ? 8.5 : 8;
+      const pageHeightIn = (size === 'LETTER') ? 11 : 10;
+
+      const win = window.open('', '_blank');
+      if (!win) {
+        alert('Popup blocked. Please allow popups for this site.');
+        return;
+      }
+
+      const doc = win.document;
+      const css = `
+        @page { size: ${pageWidthIn}in ${pageHeightIn}in; margin: 0; }
+        body {
+          margin: 0;
+          padding: 0;
+          background: #e5e7eb;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .book-page {
+          width: ${pageWidthIn}in;
+          height: ${pageHeightIn}in;
+          box-sizing: border-box;
+          margin: 0 auto 0.2in auto;
+          background: #ffffff;
+          padding: ${marginInches}in;
+          position: relative;
+          page-break-after: always;
+        }
+        .page-inner {
+          width: 100%;
+          height: 100%;
+          box-sizing: border-box;
+        }
+        .center { text-align: center; }
+        h1 { font-size: 26pt; margin: 0 0 0.2in 0; }
+        h2 { font-size: 18pt; margin: 0 0 0.15in 0; }
+        h3 { font-size: 14pt; margin: 0 0 0.1in 0; color: #555; }
+        p { font-size: 11pt; line-height: 1.4; margin: 0 0 0.12in 0; }
+        ul { font-size: 11pt; line-height: 1.4; margin: 0.05in 0 0.12in 0.15in; }
+        .belongs-box {
+          border: 2px dashed #9ca3af;
+          border-radius: 0.2in;
+          padding: 0.3in;
+          margin-top: 0.4in;
+          font-size: 18pt;
+        }
+        .belongs-label {
+          font-size: 12pt;
+          margin-bottom: 0.2in;
+        }
+        .image-wrapper {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .image-wrapper img {
+          max-width: 100%;
+          max-height: 100%;
+        }
+        .thumb-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.12in;
+          margin-top: 0.15in;
+        }
+        .thumb-grid img {
+          width: 100%;
+          border: 1px solid #e5e7eb;
+        }
+        .page-footer {
+          position: absolute;
+          left: ${marginInches}in;
+          right: ${marginInches}in;
+          bottom: ${marginInches}in;
+          font-size: 9pt;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .page-footer-num {
+          margin-left: auto;
+        }
+        .qr {
+          margin-top: 0.3in;
+        }
+      `;
+
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>${escapeHtml(bookTitle || 'Coloring Book')}</title>
+            <style>${css}</style>
+          </head>
+          <body></body>
+        </html>
+      `);
+      doc.close();
+
+      const body = doc.body;
+      let currentNumber = pageNumberStart - 1;
+
+      function addFooter(pageEl, skipNumber) {
+        if (!footnote && !showPageNumbers) return;
+        const footer = doc.createElement('div');
+        footer.className = 'page-footer';
+        if (footnote) {
+          const left = doc.createElement('span');
+          left.textContent = footnote;
+          footer.appendChild(left);
+        }
+        if (showPageNumbers && !skipNumber) {
+          currentNumber++;
+          const num = doc.createElement('span');
+          num.className = 'page-footer-num';
+          num.textContent = String(currentNumber);
+          footer.appendChild(num);
+        }
+        pageEl.appendChild(footer);
+      }
+
+      function addStaticPage(htmlContent, options = {}) {
+        const page = doc.createElement('div');
+        page.className = 'book-page';
+        const inner = doc.createElement('div');
+        inner.className = 'page-inner';
+        inner.innerHTML = htmlContent;
+        page.appendChild(inner);
+        addFooter(page, options.skipNumber);
+        body.appendChild(page);
+      }
+
+      function getPageImageSrc(page) {
+        if (!rotateImages) return page.url;
+        const c = document.createElement('canvas');
+        const srcImg = page.img;
+        c.width = srcImg.height;
+        c.height = srcImg.width;
+        const ctx = c.getContext('2d');
+        ctx.translate(c.width / 2, c.height / 2);
+        ctx.rotate(Math.PI / 2); // 90°
+        ctx.drawImage(srcImg, -srcImg.width / 2, -srcImg.height / 2);
+        return c.toDataURL('image/png');
+      }
+
+      function addImagePage(imgSrc) {
+        const page = doc.createElement('div');
+        page.className = 'book-page';
+        const inner = doc.createElement('div');
+        inner.className = 'page-inner';
+
+        const wrap = doc.createElement('div');
+        wrap.className = 'image-wrapper';
+        const img = doc.createElement('img');
+        img.src = imgSrc;
+        wrap.appendChild(img);
+
+        inner.appendChild(wrap);
+        page.appendChild(inner);
+        addFooter(page, false);
+        body.appendChild(page);
+      }
+
+      function buildThumbGrid(imgSrcs) {
+        return `
+          <div class="thumb-grid">
+            ${imgSrcs.map(src => `<img src="${src}">`).join('')}
+          </div>
+        `;
+      }
+
+      // 1) Title page (no number)
+      addStaticPage(`
+        <div class="center">
+          <h1>${escapeHtml(bookTitle || 'Coloring Book')}</h1>
+          ${bookSubtitle ? `<h2>${escapeHtml(bookSubtitle)}</h2>` : ''}
+          ${bookAgeRange ? `<h3>${escapeHtml(bookAgeRange)}</h3>` : ''}
+          ${bookAuthor ? `<p>by ${escapeHtml(bookAuthor)}</p>` : ''}
+        </div>
+      `, { skipNumber: true });
+
+      // 2) This Book Belongs To (no number)
+      addStaticPage(`
+        <div class="center">
+          <h2>This Book Belongs To</h2>
+          <div class="belongs-box">
+            <div class="belongs-label">Write your name here</div>
+            _______________________________
+          </div>
+        </div>
+      `, { skipNumber: true });
+
+      // 3) Welcome / Instructions (no number)
+      if (welcomeText) {
+        addStaticPage(`
+          <h2>Welcome!</h2>
+          <p>${escapeHtml(welcomeText).replace(/\n/g, '<br>')}</p>
+        `, { skipNumber: true });
+      }
+
+      // 4) Interior coloring pages list (we'll use it for preview + full pages)
+      const interiorPages = ordered.filter(p => !p.isCover && !p.isBack);
+
+      // 4a) Preview page (comes BEFORE full-size pages, numbered)
+      const previewImgs = interiorPages.slice(0, 12).map(p => getPageImageSrc(p));
+      if (previewImgs.length) {
+        addStaticPage(`
+          <div class="center">
+            <h2>Preview Pages</h2>
+            <p>A quick look at some of the fun coloring pages inside.</p>
+          </div>
+          ${buildThumbGrid(previewImgs)}
+        `, { skipNumber: false });
+      }
+
+      // 5) Main coloring pages (full-size, numbered)
+      interiorPages.forEach(p => {
+        const src = getPageImageSrc(p);
+        addImagePage(src);
+      });
+
+      // 6) Activity pages (if any, numbered)
+      activityPages.forEach(p => {
+        const src = rotateImages ? getPageImageSrc(p) : p.url;
+        addImagePage(src);
+      });
+
+      // 7) Thank You / Bonus page (numbered)
+      if (thankYouText || qrUrl) {
+        addStaticPage(`
+          <div class="center">
+            <h2>Thank You!</h2>
+          </div>
+          <p>${escapeHtml(thankYouText).replace(/\n/g, '<br>')}</p>
+          ${qrUrl ? `<div class="qr center">
+              <img src="${qrUrl}" alt="QR code" style="max-width:1.8in;">
+              <p>Scan for bonus pages &amp; more.</p>
+            </div>` : ''}
+        `, { skipNumber: false });
+      }
+
+      // 8) Back cover (no number)
+      addStaticPage(`
+        <div class="center">
+          <h2>${escapeHtml(bookTitle || 'Coloring Book')}</h2>
+        </div>
+        <p>${escapeHtml(backBlurb).replace(/\n/g, '<br>')}</p>
+        <ul>
+          <li>Cute farm animals and cozy barn scenes</li>
+          <li>Single-sided pages for easier coloring</li>
+          <li>Perfect for gifts, classrooms, and rainy days</li>
+        </ul>
+      `, { skipNumber: true });
+
+      // At this point the user can use the browser's Print → Save as PDF.
+    }
 
     ['pageSize', 'margin', 'footnote', 'showPageNumbers', 'pageNumberStart', 'landscapeToggle'].forEach(id => {
       const el = document.getElementById(id);
