@@ -60,6 +60,7 @@ COLORING_BASE.mkdir(exist_ok=True)
 
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 PAGES_FOLDER = os.path.join(BASE_DIR, "static", "pages")
+STATIC_FOLDER = os.path.join(BASE_DIR, "static")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PAGES_FOLDER, exist_ok=True)
@@ -1098,6 +1099,10 @@ def _list_all_folders(base_dir: Path):
 @app.route('/thumbnail_images/<path:filename>')
 def serve_thumb_image(filename):
     return send_from_directory(BASE_DIR / 'thumbnail_images', filename)
+
+@app.route('/images/<path:filename>')
+def serve_reg_image(filename):
+    return send_from_directory(BASE_DIR / 'images', filename)
 
 @app.route('/background_videos/<path:filename>')
 def serve_bg_video(filename):

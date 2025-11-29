@@ -48,3 +48,4 @@ add_overlays-del.py
 overlays/*
 downloads/*
 vector_images/*
+*.svg

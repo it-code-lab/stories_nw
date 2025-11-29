@@ -271,6 +271,7 @@
       <input type="number" id="margin" value="0.5" step="0.1" min="0.25" max="1.0">
     </div>
     <div style="margin-top:6px;">
+      <input type="checkbox" id="footerNoteCheckbx">
       <label>Footer text (copyright / brand)</label>
       <input type="text" id="footnote" value="© Creative Cubs | Personal use only | All rights reserved.">
     </div>
@@ -285,6 +286,7 @@
       </label>
     </div>
     <div style="margin-top:10px;">
+      <input type="checkbox" id="showBookCoverDetails">
       <label>Book details (for Generate Book view)</label>
       <div>
         <input type="text" id="bookTitle" placeholder="Book title" value="Cute Farm Animals Coloring Book">
@@ -301,7 +303,7 @@
     </div>
 
     <div style="margin-top:10px;">
-      <label>Welcome / instructions text</label>
+      <label>Welcome / instructions text</label> <br>
       <textarea id="welcomeText" rows="3">
 Welcome to the farm! This book is filled with cute animals, big barns, and sunny fields. 
 Use crayons, markers, or colored pencils and place a scrap sheet behind pages when using markers.
@@ -309,21 +311,32 @@ Have fun and color outside the lines if you like!
       </textarea>
     </div>
 
+
     <div style="margin-top:10px;">
-      <label>Thank-you / bonus text</label>
-      <textarea id="thankYouText" rows="3">
-Thank you for choosing this Creative Cubs coloring book. 
-Scan the QR code for free bonus pages and more fun printables!
+      <label>Thank-you / bonus text</label> <br>
+      <textarea id="thankYouText" rows="4">
+Thanks for coloring with Creative Cubs!
+Color more free pages online at:
+🌈 https://coloring.readernook.com
+
+Love this book? Discover more adorable books here:
+🛒 https://goodsandgift.com/product-category/creative-crafting/
+
+Use coupon code CREATIVE10 for a 10% discount on your next Creative Cubs coloring book!
+
       </textarea>
     </div>
 
+
+
     <div style="margin-top:10px;">
       <label>QR code image URL (optional)</label>
-      <input type="text" id="qrUrl" placeholder="https://your-site.com/qr-code.png">
+      <input type="text" id="qrUrl" value="images/goodsandgift-QR.png">
     </div>
 
     <div style="margin-top:10px;">
-      <label>Back cover blurb</label>
+      <input type="checkbox" id="includeBackBlurb">
+      <label>Back cover blurb</label> <br>
       <textarea id="backBlurb" rows="3">
 Packed with adorable farm scenes, cute animals, and simple designs perfect for little hands. 
 Great for ages 3–8, rainy days, car rides, and screen-free creative time.
@@ -412,7 +425,9 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
     const activityPages = [];  // { file, url, img }
     const activitiesInput = document.getElementById('activitiesInput');
     const activitiesHint = document.getElementById('activitiesHint');
-
+    const showBookCoverDetails = document.getElementById('showBookCoverDetails')?.checked;
+    const includeBackBlurb = document.getElementById('includeBackBlurb')?.checked;
+    const footerNoteCheckbx = document.getElementById('footerNoteCheckbx')?.checked;
 
     function renderPreview() {
       if (!pagePreview) return;
@@ -424,8 +439,13 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
       const marginInches = parseFloat(document.getElementById('margin').value) || 0.5;
       const showPageNumbers = document.getElementById('showPageNumbers').checked;
       const pageNumberStart = parseInt(document.getElementById('pageNumberStart').value || '1', 10);
-      const footnote = (document.getElementById('footnote').value || '').trim();
+      let footnote = (document.getElementById('footnote').value || '').trim();
       const landscape = document.getElementById('landscapeToggle')?.checked;
+
+
+      if (!footerNoteCheckbx) {
+        footnote = "";
+      }
 
       // Base page size in inches
       let baseW, baseH;
@@ -971,7 +991,7 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
       const marginInches = parseFloat(document.getElementById('margin').value) || 0.5;
       const showPageNumbers = document.getElementById('showPageNumbers').checked;
       const pageNumberStart = parseInt(document.getElementById('pageNumberStart').value || '1', 10);
-      const footnote = (document.getElementById('footnote').value || '').trim();
+      let footnote = (document.getElementById('footnote').value || '').trim();
       const landscape = document.getElementById('landscapeToggle')?.checked;
 
       const ptPerInch = 72;
@@ -1008,7 +1028,8 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
 
       let pageNumber = pageNumberStart - 1;
 
-      const ordered = getOrderedPages().filter(p => p.enabled);
+      const ordered = getOrderedPages().filter(p => p.enabled && !p.isCover && !p.isBack);
+
       const rotateImages = document.getElementById('landscapeToggle')?.checked;
 
       ordered.forEach((page, index) => {
@@ -1105,7 +1126,7 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
       const marginInches = parseFloat(document.getElementById('margin').value) || 0.5;
       const showPageNumbers = document.getElementById('showPageNumbers').checked;
       const pageNumberStart = parseInt(document.getElementById('pageNumberStart').value || '1', 10);
-      const footnote = (document.getElementById('footnote').value || '').trim();
+      let footnote = (document.getElementById('footnote').value || '').trim();
       const rotateImages = document.getElementById('landscapeToggle')?.checked;
 
       const bookTitle = (document.getElementById('bookTitle')?.value || '').trim();
@@ -1117,7 +1138,32 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
       const qrUrl = (document.getElementById('qrUrl')?.value || '').trim();
       const backBlurb = (document.getElementById('backBlurb')?.value || '').trim();
 
-      const ordered = getOrderedPages().filter(p => p.enabled);
+      // getOrderedPages returns pages in [cover, middle..., back] order,
+      // but for interior pages we want to be extra sure we NEVER include cover/back again.
+      const ordered = getOrderedPages();
+      const coverPage = ordered.find(p => p.isCover) || null;
+      const backPage = ordered.find(p => p.isBack) || null;
+
+      // Interior pages = all enabled pages that are NOT cover or back,
+      // in whatever order you arranged them in the main list.
+      const interiorPages = pages.filter(p => p.enabled && !p.isCover && !p.isBack);
+
+      // Decide how many activity pages to include:
+      // ~10% of interior pages, min 4, max 16, but never more than we actually have.
+      const totalColoringPages = interiorPages.length;
+      let maxActivityCount = Math.round(totalColoringPages * 0.10);
+
+      if (maxActivityCount < 4) {
+        maxActivityCount = 4;
+      }
+      if (maxActivityCount > 16) {
+        maxActivityCount = 16;
+      }
+
+      // If there are fewer activity pages than the cap, just use them all.
+      const selectedActivityPages = activityPages.slice(0, maxActivityCount);
+
+
       if (!ordered.length) {
         alert('No pages selected.');
         return;
@@ -1229,6 +1275,10 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
       const body = doc.body;
       let currentNumber = pageNumberStart - 1;
 
+      if (!footerNoteCheckbx) {
+        footnote = "";
+      }
+
       function addFooter(pageEl, skipNumber) {
         if (!footnote && !showPageNumbers) return;
         const footer = doc.createElement('div');
@@ -1272,7 +1322,44 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
         return c.toDataURL('image/png');
       }
 
-      function addImagePage(imgSrc) {
+      function getPageImageSrcNoRotate(page) {
+        // Always use the original orientation
+        return page.url;
+      }
+
+      function addCoverPage(imgSrc) {
+        const page = doc.createElement('div');
+        page.className = 'book-page';
+
+        // OVERRIDE margins for cover
+        page.style.padding = '0';
+        page.style.margin = '0 auto';
+
+        const inner = doc.createElement('div');
+        inner.className = 'page-inner';
+        inner.style.padding = '0';
+
+        const wrap = doc.createElement('div');
+        wrap.className = 'image-wrapper';
+        wrap.style.padding = '0';
+        wrap.style.margin = '0';
+
+        const img = doc.createElement('img');
+        img.src = imgSrc;
+
+        wrap.appendChild(img);
+        inner.appendChild(wrap);
+        page.appendChild(inner);
+
+        // Cover = no page number
+        addFooter(page, true);
+
+        body.appendChild(page);
+      }
+
+      function addImagePage(imgSrc, options = {}) {
+        const skipNumber = !!options.skipNumber;
+
         const page = doc.createElement('div');
         page.className = 'book-page';
         const inner = doc.createElement('div');
@@ -1286,9 +1373,10 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
 
         inner.appendChild(wrap);
         page.appendChild(inner);
-        addFooter(page, false);
+        addFooter(page, skipNumber);
         body.appendChild(page);
       }
+
 
       function buildThumbGrid(imgSrcs) {
         return `
@@ -1298,15 +1386,25 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
         `;
       }
 
+      // 0) Cover image (if any, no number)
+      // COVER PAGE (always no rotation, no margins)
+      if (coverPage) {
+        const coverSrc = getPageImageSrcNoRotate(coverPage);
+        addCoverPage(coverSrc);
+      }
+
+
       // 1) Title page (no number)
-      addStaticPage(`
-        <div class="center">
-          <h1>${escapeHtml(bookTitle || 'Coloring Book')}</h1>
-          ${bookSubtitle ? `<h2>${escapeHtml(bookSubtitle)}</h2>` : ''}
-          ${bookAgeRange ? `<h3>${escapeHtml(bookAgeRange)}</h3>` : ''}
-          ${bookAuthor ? `<p>by ${escapeHtml(bookAuthor)}</p>` : ''}
-        </div>
-      `, { skipNumber: true });
+      if (showBookCoverDetails) {
+        addStaticPage(`
+          <div class="center">
+            <h1>${escapeHtml(bookTitle || 'Coloring Book')}</h1>
+            ${bookSubtitle ? `<h2>${escapeHtml(bookSubtitle)}</h2>` : ''}
+            ${bookAgeRange ? `<h3>${escapeHtml(bookAgeRange)}</h3>` : ''}
+            ${bookAuthor ? `<p>by ${escapeHtml(bookAuthor)}</p>` : ''}
+          </div>
+        `, { skipNumber: true });
+      }
 
       // 2) This Book Belongs To (no number)
       addStaticPage(`
@@ -1322,13 +1420,12 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
       // 3) Welcome / Instructions (no number)
       if (welcomeText) {
         addStaticPage(`
-          <h2>Welcome!</h2>
+          <h2 class="center">Welcome!</h2>
           <p>${escapeHtml(welcomeText).replace(/\n/g, '<br>')}</p>
         `, { skipNumber: true });
       }
 
       // 4) Interior coloring pages list (we'll use it for preview + full pages)
-      const interiorPages = ordered.filter(p => !p.isCover && !p.isBack);
 
       // 4a) Preview page (comes BEFORE full-size pages, numbered)
       const previewImgs = interiorPages.slice(0, 12).map(p => getPageImageSrc(p));
@@ -1339,7 +1436,7 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
             <p>A quick look at some of the fun coloring pages inside.</p>
           </div>
           ${buildThumbGrid(previewImgs)}
-        `, { skipNumber: false });
+        `, { skipNumber: true });
       }
 
       // 5) Main coloring pages (full-size, numbered)
@@ -1348,11 +1445,23 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
         addImagePage(src);
       });
 
-      // 6) Activity pages (if any, numbered)
-      activityPages.forEach(p => {
-        const src = rotateImages ? getPageImageSrc(p) : p.url;
-        addImagePage(src);
-      });
+      // 6) Activity pages (if any, numbered, with separator)
+      if (selectedActivityPages.length) {
+        // Separator page: not numbered
+        addStaticPage(`
+          <div class="center">
+            <h2>Bonus Activity Pages</h2>
+            <p>Have extra fun with these find-the-difference and puzzle pages!</p>
+          </div>
+        `, { skipNumber: true });
+
+        // Now add the selected activity pages as normal numbered pages
+        selectedActivityPages.forEach(p => {
+          const src = rotateImages ? getPageImageSrc(p) : p.url;
+          addImagePage(src);
+        });
+      }
+
 
       // 7) Thank You / Bonus page (numbered)
       if (thankYouText || qrUrl) {
@@ -1362,25 +1471,29 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
           </div>
           <p>${escapeHtml(thankYouText).replace(/\n/g, '<br>')}</p>
           ${qrUrl ? `<div class="qr center">
-              <img src="${qrUrl}" alt="QR code" style="max-width:1.8in;">
-              <p>Scan for bonus pages &amp; more.</p>
+              <img src="${qrUrl}" alt="QR code" style="max-width:1in;">
             </div>` : ''}
-        `, { skipNumber: false });
+        `, { skipNumber: true });
       }
 
       // 8) Back cover (no number)
-      addStaticPage(`
-        <div class="center">
-          <h2>${escapeHtml(bookTitle || 'Coloring Book')}</h2>
-        </div>
-        <p>${escapeHtml(backBlurb).replace(/\n/g, '<br>')}</p>
-        <ul>
-          <li>Cute farm animals and cozy barn scenes</li>
-          <li>Single-sided pages for easier coloring</li>
-          <li>Perfect for gifts, classrooms, and rainy days</li>
-        </ul>
-      `, { skipNumber: true });
+      if (includeBackBlurb && backBlurb) {
+        addStaticPage(`
+          <div class="center">
+            <h2>${escapeHtml(bookTitle || 'Coloring Book')}</h2>
+          </div>
+          <p>${escapeHtml(backBlurb).replace(/\n/g, '<br>')}</p>
 
+        `, { skipNumber: true });
+      }
+
+
+      //DND - Working
+      // 9) Back cover image (if any, no number)
+      if (backPage) {
+        const backSrc = getPageImageSrc(backPage);
+        addImagePage(backSrc, { skipNumber: true });
+      }
       // At this point the user can use the browser's Print → Save as PDF.
     }
 
