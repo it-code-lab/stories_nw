@@ -2112,7 +2112,7 @@ def pdf_to_images(pdf_path):
     """
     clear_old_pages()
 
-    pages = convert_from_path(pdf_path, dpi=300, poppler_path=POPPLER_PATH)
+    pages = convert_from_path(pdf_path, dpi=120, poppler_path=POPPLER_PATH)
 
     urls = []
     for i, page in enumerate(pages, start=1):

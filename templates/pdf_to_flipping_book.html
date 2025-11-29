@@ -369,6 +369,37 @@
         font-size: 1.1rem;
       }
     }
+
+    /* Compact pages = lightweight, no heavy shadows/overlays */
+    .page.compact .page-front,
+    .page.compact .page-back {
+      box-shadow: none;
+      padding: 10px;
+      /* slightly thinner */
+    }
+
+    .page.compact::before {
+      display: none;
+      /* no radial overlay */
+    }
+
+    body.performance .book {
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+    }
+
+    body.performance .page-front,
+    body.performance .page-back {
+      box-shadow: none;
+    }
+
+    body.performance .page::before {
+      display: none;
+    }
+
+    body.performance .page-stack-left,
+    body.performance .page-stack-right {
+      box-shadow: inset 0 0 3px rgba(148, 163, 184, 0.4);
+    }
   </style>
 </head>
 
@@ -398,8 +429,8 @@
     <label>
       Speed
       <select id="speedSelect">
-        <option value="3000">Slow (3s)</option>
-        <option value="2000" selected>Normal (2s)</option>
+        <option value="3000" selected>Slow (3s)</option>
+        <option value="2000" >Normal (2s)</option>
         <option value="1200">Fast (1.2s)</option>
       </select>
     </label>
@@ -423,6 +454,7 @@
       </select>
     </label>
 
+    <button id="perfBtn" class="btn secondary">⚡ Performance Mode</button>
 
     <div id="status" class="status-text">No pages loaded</div>
   </div>
@@ -440,7 +472,8 @@
   </div>
   <br><br><br><br>
   <div class="info-banner">
-    Tip: After generating pages, use <kbd>←</kbd> <kbd>→</kbd> to flip. A to toggle auto flip. Press <kbd>Space</kbd> for next.
+    Tip: After generating pages, use <kbd>←</kbd> <kbd>→</kbd> to flip. A to toggle auto flip. Press <kbd>Space</kbd>
+    for next.
     For OBS, set this page to fullscreen (F11) and record the browser window.
   </div>
 
@@ -465,8 +498,16 @@
     const uploadStatus = document.getElementById("uploadStatus");
     const uploadError = document.getElementById("uploadError");
     const flipSoundEl = document.getElementById("flipSound");
-
+    const MAX_PAGES = 50;   // 👈 change this limit as you like
     let audioUnlocked = false;
+
+    const perfBtn = document.getElementById("perfBtn");
+
+    perfBtn.addEventListener("click", () => {
+      document.body.classList.toggle("performance");
+      const on = document.body.classList.contains("performance");
+      perfBtn.textContent = on ? "⚡ Performance ON" : "⚡ Performance Mode";
+    });
 
     function unlockAudio() {
       if (!flipSoundEl) return;
@@ -532,45 +573,54 @@
     });
 
     const folderInput = document.getElementById("folderInput");
-const loadFolderBtn = document.getElementById("loadFolderBtn");
+    const loadFolderBtn = document.getElementById("loadFolderBtn");
 
 
-loadFolderBtn.addEventListener("click", () => {
-  const files = folderInput.files;
-  if (!files || files.length === 0) {
-    uploadError.textContent = "Please select a folder first.";
-    return;
-  }
+    loadFolderBtn.addEventListener("click", () => {
+      const files = folderInput.files;
+      if (!files || files.length === 0) {
+        uploadError.textContent = "Please select a folder first.";
+        return;
+      }
 
-  uploadError.textContent = "";
-  uploadStatus.textContent = "Loading images from folder...";
-  stopAutoFlip();
-  clearPages();
+      uploadError.textContent = "";
+      uploadStatus.textContent = "Loading images from folder...";
+      stopAutoFlip();
+      clearPages();
 
-  // Filter for only PNG/JPG/SVG
-  let images = [...files].filter(f =>
-    f.type.startsWith("image/") ||
-    f.name.toLowerCase().endsWith(".png") ||
-    f.name.toLowerCase().endsWith(".jpg") ||
-    f.name.toLowerCase().endsWith(".jpeg") ||
-    f.name.toLowerCase().endsWith(".svg")
-  );
+      // Filter for only PNG/JPG/SVG
+      let images = [...files].filter(f =>
+        f.type.startsWith("image/") ||
+        f.name.toLowerCase().endsWith(".png") ||
+        f.name.toLowerCase().endsWith(".jpg") ||
+        f.name.toLowerCase().endsWith(".jpeg") ||
+        f.name.toLowerCase().endsWith(".svg")
+      );
 
-  if (images.length === 0) {
-    uploadError.textContent = "No image files found in the folder.";
-    uploadStatus.textContent = "";
-    return;
-  }
+      if (images.length === 0) {
+        uploadError.textContent = "No image files found in the folder.";
+        uploadStatus.textContent = "";
+        return;
+      }
 
-  // Sort by filename (important for page order)
-  images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      // Sort by filename (important for page order)
+      images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
-  // Convert File objects → local blob URLs
-  pageImages = images.map(file => URL.createObjectURL(file));
+      // Convert File objects → local blob URLs
+      let imageUrls = images.map(file => URL.createObjectURL(file));
 
-  uploadStatus.textContent = `Loaded ${pageImages.length} images from folder.`;
-  createPages();
-});
+      // Apply limit
+      if (imageUrls.length > MAX_PAGES) {
+        uploadStatus.textContent = `Found ${imageUrls.length} images. Showing first ${MAX_PAGES} to keep performance smooth.`;
+        pageImages = imageUrls.slice(0, MAX_PAGES);
+      } else {
+        uploadStatus.textContent = `Loaded ${imageUrls.length} images from folder.`;
+        pageImages = imageUrls;
+      }
+
+      createPages();
+
+    });
 
     function createPages() {
       clearPages();
@@ -595,6 +645,8 @@ loadFolderBtn.addEventListener("click", () => {
         imgFront.className = "page-image";
         imgFront.src = pageImages[i];
         imgFront.alt = `Page ${i + 1}`;
+        imgFront.loading = "lazy";      // 👈 lazy load
+        imgFront.decoding = "async";    // 👈 async decode
         front.appendChild(imgFront);
 
         const pageNum = document.createElement("div");
@@ -619,6 +671,31 @@ loadFolderBtn.addEventListener("click", () => {
       }
 
       updateStatus();
+    }
+
+
+    function compactOldPages() {
+      // Keep last 5 pages fully detailed, compact older ones
+      const keepDetailed = 5;
+      const cutoff = currentPageIndex - keepDetailed;
+      if (cutoff <= 0) return;
+
+      for (let i = 0; i < cutoff; i++) {
+        const p = pageEls[i];
+        if (!p || p.classList.contains("compact")) continue;
+
+        p.classList.add("compact");
+
+        // Remove the big image to reduce memory & paint cost
+        const img = p.querySelector(".page-image");
+        if (img) {
+          img.remove();       // or: img.src = ""; for safety
+        }
+
+        // Optional: remove back-label too
+        const backLabel = p.querySelector(".page-back div");
+        if (backLabel) backLabel.remove();
+      }
     }
 
     function updateStatus() {
@@ -656,6 +733,7 @@ loadFolderBtn.addEventListener("click", () => {
       setTimeout(() => {
         currentPageIndex++;
         updateStatus();
+        compactOldPages();  // 👈 add this
         isAnimating = false;
       }, 950);
     }
@@ -749,39 +827,39 @@ loadFolderBtn.addEventListener("click", () => {
       }
     });
 
-window.addEventListener("keydown", (e) => {
-  if (!pageImages.length) return;
+    window.addEventListener("keydown", (e) => {
+      if (!pageImages.length) return;
 
-  // Avoid triggering while typing inside inputs
-  const tag = document.activeElement.tagName.toLowerCase();
-  if (tag === "input" || tag === "textarea") return;
+      // Avoid triggering while typing inside inputs
+      const tag = document.activeElement.tagName.toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
 
-  // Auto Flip toggle shortcut: A key
-  if (e.code === "KeyA") {
-    e.preventDefault();
-    if (isAuto) {
-      stopAutoFlip();
-    } else {
-      startAutoFlip();
-    }
-    return;
-  }
+      // Auto Flip toggle shortcut: A key
+      if (e.code === "KeyA") {
+        e.preventDefault();
+        if (isAuto) {
+          stopAutoFlip();
+        } else {
+          startAutoFlip();
+        }
+        return;
+      }
 
-  // Existing flip keys
-  if (e.code === "ArrowRight") {
-    e.preventDefault();
-    stopAutoFlip();
-    flipForward();
-  } else if (e.code === "ArrowLeft") {
-    e.preventDefault();
-    stopAutoFlip();
-    flipBackward();
-  } else if (e.code === "Space") {
-    e.preventDefault();
-    stopAutoFlip();
-    flipForward();
-  }
-});
+      // Existing flip keys
+      if (e.code === "ArrowRight") {
+        e.preventDefault();
+        stopAutoFlip();
+        flipForward();
+      } else if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        stopAutoFlip();
+        flipBackward();
+      } else if (e.code === "Space") {
+        e.preventDefault();
+        stopAutoFlip();
+        flipForward();
+      }
+    });
 
 
     // ======== UPLOAD HANDLING =========
@@ -818,15 +896,24 @@ window.addEventListener("keydown", (e) => {
           return;
         }
 
-        pageImages = data.pages || [];
-        if (!pageImages.length) {
+        let pagesFromServer = data.pages || [];
+        if (!pagesFromServer.length) {
           uploadError.textContent = "No pages returned from server.";
           uploadStatus.textContent = "No pages generated.";
           return;
         }
 
-        uploadStatus.textContent = `Loaded ${pageImages.length} pages. Ready to flip.`;
+        // Apply limit
+        if (pagesFromServer.length > MAX_PAGES) {
+          uploadStatus.textContent = `Server returned ${pagesFromServer.length} pages. Showing first ${MAX_PAGES} pages to keep performance smooth.`;
+          pageImages = pagesFromServer.slice(0, MAX_PAGES);
+        } else {
+          uploadStatus.textContent = `Loaded ${pagesFromServer.length} pages. Ready to flip.`;
+          pageImages = pagesFromServer;
+        }
+
         createPages();
+
       } catch (err) {
         console.error(err);
         uploadError.textContent = "Error uploading or converting PDF.";
