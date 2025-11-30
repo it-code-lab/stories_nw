@@ -319,10 +319,10 @@ Thanks for coloring with Creative Cubs!
 Color more free pages online at:
 🌈 https://coloring.readernook.com
 
-Love this book? Discover more adorable books here:
+Love this book? Discover more adorable digital books here:
 🛒 https://goodsandgift.com/product-category/creative-crafting/
 
-Use coupon code CREATIVE10 for a 10% discount on your next Creative Cubs coloring book!
+Use coupon code CREATIVE10 for a 10% discount on your next Creative Cubs digital coloring book!
 
       </textarea>
     </div>
@@ -1406,16 +1406,20 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
         `, { skipNumber: true });
       }
 
+      //DND-Working
       // 2) This Book Belongs To (no number)
-      addStaticPage(`
-        <div class="center">
-          <h2>This Book Belongs To</h2>
-          <div class="belongs-box">
-            <div class="belongs-label">Write your name here</div>
-            _______________________________
-          </div>
-        </div>
-      `, { skipNumber: true });
+      // addStaticPage(`
+      //   <div class="center">
+      //     <h2>This Book Belongs To</h2>
+      //     <div class="belongs-box">
+      //       <div class="belongs-label">Write your name here</div>
+      //       _______________________________
+      //     </div>
+      //   </div>
+      // `, { skipNumber: true });
+        const belongsToSrc = "images/ThisBookbelongsTo.svg";
+        addImagePage(belongsToSrc, { skipNumber: true });
+
 
       // 3) Welcome / Instructions (no number)
       if (welcomeText) {
