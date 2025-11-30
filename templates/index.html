@@ -1491,7 +1491,87 @@
         <pre id="buildManifestResult"></pre>
     </form>
     <br>
+    <form id="pinterestExcelFormForColoringPins">
+        <h2 style="background:#fef3c7;">Generate Pinterest Pin Excel</h2>
 
+        <div class="infoBox" style="margin-bottom:8px;">
+            <strong>Option 1 – Upload a folder from your computer:</strong><br>
+            • Uses a directory picker so you don't have to type paths.<br>
+            • You can choose any folder (not just under <code>downloads</code>).<br>
+            • The folder is uploaded to the server under <code>pinterest_uploads/</code> for processing.<br><br>
+            <strong>Option 2 – Use existing folder on server:</strong><br>
+            • If images already exist under <code>downloads/</code> beside <code>server.py</code>,<br>
+            &nbsp; you can just type its relative path (e.g. <code>1.Cute Farm Animals/pages</code>).
+        </div>
+
+        <label>Select source folder (upload directory from your computer):</label><br>
+        <input type="file" id="source_dir" name="source_dir" webkitdirectory directory multiple
+            style="margin-bottom:10px;">
+
+        <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">
+            You can leave this empty if you want to use an existing server-side folder instead.
+        </div>
+
+        <label>Or use existing folder under <code>downloads/</code> (server):</label>
+        <input type="text" name="source_folder" placeholder="e.g. 1.Cute Farm Animals/pages"
+            style="width:100%;max-width:420px;margin-bottom:10px;">
+
+        <label>Media type:</label>
+        <select name="media_type" style="margin-bottom:10px;">
+            <option value="image" selected>Image Pins</option>
+            <option value="video">Video Pins (metadata only)</option>
+        </select>
+
+        <label>Max pins to generate (0 = all):</label>
+        <input type="number" name="max_pins" value="20" style="width:120px;margin-bottom:10px;">
+
+        <label>Output Excel filename:</label>
+        <input type="text" name="output_excel" value="pinterest_pins.xlsx"
+            style="width:100%;max-width:420px;margin-bottom:10px;">
+
+        <div class="infoBox" style="margin-bottom:8px;">
+            <strong>Book info from config file:</strong><br>
+            If the selected folder (or its parent) contains
+            <code>pinterest_config.json</code>, the script will read:<br>
+            • <code>book_title</code>, <code>book_url</code>, <code>board_name</code>, <code>banner_text</code>,
+            <code>watermark_text</code><br>
+            You usually only need to upload/select the folder and click the button.
+        </div>
+
+        <!-- Optional overrides. Leave blank to use pinterest_config.json -->
+        <details style="margin-bottom:10px;">
+            <summary style="cursor:pointer;">Optional overrides (book title, URL, etc.)</summary>
+            <div style="margin-top:8px;">
+                <label>Book title (override):</label>
+                <input type="text" name="book_title" placeholder="Leave blank to use pinterest_config.json"
+                    style="width:100%;max-width:420px;margin-bottom:6px;">
+
+                <label>Book / product URL (override):</label>
+                <input type="text" name="book_url" placeholder="Leave blank to use pinterest_config.json"
+                    style="width:100%;max-width:420px;margin-bottom:6px;">
+
+                <label>Pinterest board name (override):</label>
+                <input type="text" name="board_name" placeholder="Leave blank to use pinterest_config.json"
+                    style="width:100%;max-width:420px;margin-bottom:6px;">
+
+                <label>Banner text (override):</label>
+                <input type="text" name="banner_text" placeholder="Leave blank to use pinterest_config.json"
+                    style="width:100%;max-width:420px;margin-bottom:6px;">
+
+                <label>Watermark text (override):</label>
+                <input type="text" name="watermark_text" placeholder="Leave blank to use pinterest_config.json"
+                    style="width:100%;max-width:420px;margin-bottom:6px;">
+            </div>
+        </details>
+
+        <button type="submit">Generate Pinterest Pin Excel</button>
+
+        <pre id="pinterestExcelResult" style="margin-top:8px;font-size:13px;white-space:pre-wrap;"></pre>
+    </form>
+
+    <br>
+
+    <br>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // --- existing SEO Metadata wiring here ---
@@ -1574,7 +1654,49 @@
             }
         });
     </script>
+    <script>
+        // --- NEW: Pinterest Pin Excel wiring ---
+        const pinForm = document.getElementById("pinterestExcelFormForColoringPins");
+        const pinResult = document.getElementById("pinterestExcelResult");
 
+        if (pinForm && pinResult) {
+            pinForm.addEventListener("submit", async function (e) {
+                e.preventDefault();
+                pinResult.textContent = "Running Pinterest Pin Excel generator...\n";
+
+                const formData = new FormData(pinForm);
+
+                try {
+                    const resp = await fetch("/generate_pinterest_excel_for_coloring_pins", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    const data = await resp.json();
+
+                    if (!data.ok) {
+                        pinResult.textContent += "\n❌ Failed to generate Pinterest Excel.\n";
+                        if (data.error) {
+                            pinResult.textContent += "Error: " + data.error + "\n";
+                        }
+                        if (data.stderr) {
+                            pinResult.textContent += "\nStderr:\n" + data.stderr;
+                        }
+                    } else {
+                        pinResult.textContent += "✅ Pinterest Excel generation completed.\n";
+                        pinResult.textContent += "Return code: " + data.returncode + "\n\n";
+                        if (data.stdout) {
+                            pinResult.textContent += "Log:\n" + data.stdout;
+                        }
+                    }
+                } catch (err) {
+                    pinResult.textContent += "\n❌ Request failed: " + err + "\n";
+                }
+            });
+        }
+
+
+    </script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const seoForm = document.getElementById("seoMetaForm");

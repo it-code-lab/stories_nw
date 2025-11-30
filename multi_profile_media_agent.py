@@ -168,10 +168,13 @@ META_ACCOUNTS: List[Dict[str, str]] = [
 def ensure_dir(p: str | Path):
     Path(p).mkdir(parents=True, exist_ok=True)
 
-def safe_basename(s: str, maxlen: int = 30) -> str:
+def safe_basename(s: str, maxlen: int = 50) -> str:
     s = re.sub(r"[^a-zA-Z0-9._-]+", "_", s).strip("_")
     base = s[:maxlen] or "asset"
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # DND - Working
+    # ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    ts = datetime.now().strftime("%M%S")
     return f"{ts}_{base}"
 
 def open_wb_with_retry(path: str, attempts: int = 5, delay: float = 0.5):

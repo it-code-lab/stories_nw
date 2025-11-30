@@ -1129,6 +1129,139 @@ def list_background_videos():
     data["all_folders"] = _list_all_folders(base)
     return jsonify(data)
 
+@app.post("/generate_pinterest_excel_for_coloring_pins")
+def generate_pinterest_excel_route():
+    """
+    Run generate_excel.py to create a Pinterest Pin Excel file
+    and Pinterest-ready images from either:
+      - an uploaded folder (directory upload from browser), or
+      - an existing folder under COLORING_BASE (downloads).
+    """
+    try:
+        base_dir = BASE_DIR
+        script_path = base_dir / "for_coloring_pin_load_pinterest_excel.py"
+
+        if not script_path.exists():
+            return jsonify({
+                "ok": False,
+                "error": f"Script not found: {script_path}"
+            }), 500
+
+        # --- Read form fields ---
+        data = request.form
+        uploaded_files = request.files.getlist("source_dir")  # directory upload
+
+        # Optional: existing folder on server (relative to COLORING_BASE)
+        source_folder = (data.get("source_folder") or "").strip()
+
+        media_type = (data.get("media_type") or "image").strip()
+        max_pins_str = (data.get("max_pins") or "0").strip()
+        output_excel_name = (data.get("output_excel") or "pinterest_pins.xlsx").strip()
+
+        # These can be blank – generate_excel.py will fall back to pinterest_config.json
+        book_title = (data.get("book_title") or "").strip()
+        book_url = (data.get("book_url") or "").strip()
+        board_name = (data.get("board_name") or "").strip()
+        banner_text = (data.get("banner_text") or "").strip()
+        watermark_text = (data.get("watermark_text") or "").strip()
+
+        try:
+            max_pins = int(max_pins_str)
+        except ValueError:
+            max_pins = 0
+
+        # Decide where images_root & source_subfolder will be
+        images_root = None
+        source_subfolder = None
+
+        # --- CASE 1: user uploaded a directory from their computer ---
+        if uploaded_files:
+            # Store folder under pinterest_uploads/upload_<timestamp>/
+            #upload_root = BASE_DIR / "pinterest_uploads" / f"upload_{int(time())}"
+
+            upload_root = BASE_DIR / "pinterest_uploads/uploads" 
+            upload_root.mkdir(parents=True, exist_ok=True)
+
+            # Clear previous contents
+            for child in upload_root.iterdir():
+                if child.is_file():
+                    child.unlink()
+                elif child.is_dir():
+                    import shutil
+                    shutil.rmtree(child)
+            
+            # With webkitdirectory, file.filename usually contains a relative path like "MyBook/page_01.png"
+            for fs in uploaded_files:
+                filename = Path(fs.filename).name  # ⬅ strip subfolders
+                dest_path = upload_root / filename
+                fs.save(dest_path)
+
+
+            images_root = upload_root
+            source_subfolder = None  # we already uploaded the exact folder tree
+            print(f"[INFO] Using uploaded folder as images_root: {images_root}")
+
+        # --- CASE 2: existing folder on server under COLORING_BASE (/downloads) ---
+        else:
+            # base images_root is COLORING_BASE, e.g. BASE_DIR/downloads
+            images_root = COLORING_BASE
+            source_subfolder = source_folder or None
+            print(f"[INFO] Using server folder. images_root={images_root}, source_subfolder={source_subfolder}")
+
+        output_excel = base_dir / output_excel_name
+
+        # Build command for generate_excel.py
+        cmd = [
+            sys.executable,
+            str(script_path),
+            "--images-root", str(images_root),
+            "--output-excel", str(output_excel),
+            "--media-type", media_type,
+        ]
+
+        if source_subfolder:
+            cmd += ["--source-subfolder", source_subfolder]
+        if max_pins > 0:
+            cmd += ["--max-pins", str(max_pins)]
+
+        # Optional overrides – safe to pass even if empty
+        if book_title:
+            cmd += ["--book-title", book_title]
+        if book_url:
+            cmd += ["--book-url", book_url]
+        if board_name:
+            cmd += ["--board-name", board_name]
+        if banner_text:
+            cmd += ["--banner-text", banner_text]
+        if watermark_text:
+            cmd += ["--watermark-text", watermark_text]
+
+        proc = subprocess.run(
+            cmd,
+            cwd=str(base_dir),
+            capture_output=True,
+            text=True,
+            timeout=60 * 60,
+        )
+
+        ok = (proc.returncode == 0)
+        stdout_tail = (proc.stdout or "")[-4000:]
+        stderr_tail = (proc.stderr or "")[-4000:]
+
+        return jsonify({
+            "ok": ok,
+            "returncode": proc.returncode,
+            "stdout": stdout_tail,
+            "stderr": stderr_tail,
+        }), (200 if ok else 500)
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            "ok": False,
+            "error": str(e),
+        }), 500
+
 @app.route('/select_background_video', methods=['POST'])
 def select_background_video():
     """Copy chosen video to edit_vid_input folder for use."""
