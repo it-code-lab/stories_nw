@@ -1530,6 +1530,11 @@
             Use Gemini API for titles, descriptions & tags
         </label>
 
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <input type="checkbox" name="auto_crop_subject" value="yes" checked>
+        Zoom in on drawing (auto-crop subject)
+        </label>
+
         <label>Output Excel filename:</label>
         <input type="text" name="output_excel" value="pinterest_pins.xlsx"
             style="width:100%;max-width:420px;margin-bottom:10px;">
@@ -1697,7 +1702,7 @@
                 if (!pinForm.use_gemini.checked) {
                     formData.set("use_gemini", "no");
                 }
-                
+
                 try {
                     const resp = await fetch("/generate_pinterest_excel_for_coloring_pins", {
                         method: "POST",

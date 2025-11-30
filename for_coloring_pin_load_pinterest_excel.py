@@ -6,7 +6,7 @@ from pathlib import Path
 import json
 from gemini_pool import GeminiPool  # same helper you use in get_seo_meta_data.py
 import random
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageFilter
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
@@ -134,6 +134,46 @@ def load_book_config(images_root: Path, source_subfolder: str | None) -> dict:
     print("[INFO] No pinterest_config.json found. Using only CLI/UI values.")
     return {}
 
+# threshold=245 works well for black lines with anti-aliasing on white.
+# If it ever crops too aggressively, drop threshold to 235–240.
+# If it leaves too much white, raise to 248–250.
+def crop_to_content(img: Image.Image,
+                    threshold: int = 245,
+                    pad_ratio: float = 0.05) -> Image.Image:
+    """
+    Auto-crop a line-art coloring page so that we remove most of the white margin.
+
+    - threshold: 0–255; higher = treat very light grays as background.
+    - pad_ratio: extra padding around the detected drawing, as a fraction of bbox size.
+    """
+    # Work on grayscale
+    gray = img.convert("L")
+
+    # Create a mask: 255 where pixel is "ink", 0 where it's near-white
+    # Anything darker than `threshold` is considered part of the drawing.
+    bw = gray.point(lambda v: 255 if v < threshold else 0, mode="1")
+
+    bbox = bw.getbbox()
+    if not bbox:
+        # No non-white content detected – return original
+        return img
+
+    left, upper, right, lower = bbox
+    w, h = img.size
+
+    # Add small padding around the drawing bbox
+    box_w = right - left
+    box_h = lower - upper
+    pad_x = int(box_w * pad_ratio)
+    pad_y = int(box_h * pad_ratio)
+
+    left = max(0, left - pad_x)
+    upper = max(0, upper - pad_y)
+    right = min(w, right + pad_x)
+    lower = min(h, lower + pad_y)
+
+    return img.crop((left, upper, right, lower))
+
 def make_pinterest_image(
     src: Path,
     out_dir: Path,
@@ -143,6 +183,7 @@ def make_pinterest_image(
     fit_mode: str = "contain",          # "contain" (no crop) or "cover" (crop)
     bg_style: str = "white",            # "white" or "blur"
     text_shadow: bool = True,
+    auto_crop_subject: bool = True,   # <--- NEW FLAG
 ) -> Path:
     """
     Create a Pinterest-friendly image:
@@ -159,6 +200,10 @@ def make_pinterest_image(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     base_img = Image.open(src).convert("RGB")
+    # NEW: auto-crop to drawing to reduce huge margins
+    if auto_crop_subject:
+        base_img = crop_to_content(base_img, threshold=245, pad_ratio=0.05)
+
     orig_w, orig_h = base_img.size
     tgt_w, tgt_h = target_size
 
@@ -417,6 +462,45 @@ def make_pinterest_image_old(
     img.save(out_path, "WEBP", quality=90)
     return out_path
 
+def get_or_create_workbook(output_excel: Path, base_headers: list[str]):
+    """
+    If output Excel exists, open and reuse it (append new rows).
+    If not, create a new workbook with the given base_headers.
+
+    Returns: wb, ws, headers, header_map
+      - headers: ordered list of header names in row 1
+      - header_map: {header_name: 1-based column index}
+    """
+    if output_excel.exists():
+        wb = load_workbook(output_excel)
+        ws = wb.active
+
+        # Existing headers in first row
+        existing_headers = [cell.value or "" for cell in ws[1]]
+        header_map = {name: idx + 1 for idx, name in enumerate(existing_headers)}
+
+        # Ensure all base_headers exist; if missing, append new columns
+        changed = False
+        for h in base_headers:
+            if h not in header_map:
+                col_idx = len(existing_headers) + 1
+                ws.cell(row=1, column=col_idx, value=h)
+                existing_headers.append(h)
+                header_map[h] = col_idx
+                changed = True
+
+        if changed:
+            print("[INFO] Updated header row with new columns:", base_headers)
+
+        return wb, ws, existing_headers, header_map
+
+    # No existing file → create new workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Pins"
+    ws.append(base_headers)
+    header_map = {name: idx + 1 for idx, name in enumerate(base_headers)}
+    return wb, ws, base_headers, header_map
 
 def build_excel(
     images_root: Path,
@@ -434,6 +518,7 @@ def build_excel(
     text_shadow: bool = True,
     use_gemini: bool = False,          # <--- NEW
     base_tags: str | None = None,      # <--- optional - from config if you add it
+    auto_crop_subject: bool = True,        # <--- NEW
 ) -> None:
     # 1) Load config (if present)
     cfg = load_book_config(images_root, source_subfolder)
@@ -464,12 +549,8 @@ def build_excel(
 
     print(f"[INFO] Found {len(media_files)} media files to process.")
 
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Pins"
-
-    # Column set (you can expand later if you want the earlier "full version")
-    headers = [
+    # Base headers we want to ensure exist (append-only)
+    base_headers = [
         "pin_id",
         "media_file",       # final media file (image or video)
         "media_type",       # image / video
@@ -484,7 +565,15 @@ def build_excel(
         "watermark_text",
         "notes",
     ]
-    ws.append(headers)
+
+    # Open existing workbook if present, otherwise create new
+    wb, ws, headers, header_map = get_or_create_workbook(output_excel, base_headers)
+
+    # Determine next pin_id based on how many data rows already exist
+    existing_rows = ws.max_row - 1  # excluding header row
+    next_pin_id = existing_rows + 1
+    print(f"[INFO] Existing rows: {existing_rows}, next_pin_id starts at {next_pin_id}")
+
 
     # Where to store generated Pinterest-ready images
     pins_output_root = images_root.parent / "pinterest_pins"
@@ -510,7 +599,8 @@ def build_excel(
                     watermark_text=watermark_text,
                     fit_mode=fit_mode,
                     bg_style=bg_style,
-                    text_shadow=text_shadow,                    
+                    text_shadow=text_shadow,  
+                    auto_crop_subject=auto_crop_subject,                  
                 )
                 media_path_for_excel = str(out_img.relative_to(images_root.parent))
             except Exception as e:
@@ -557,22 +647,36 @@ def build_excel(
 
         pin_url_to_link = book_url or ""
 
-        row = [
-            idx,
-            media_path_for_excel,
-            media_type,
-            board_name,
-            book_title,
-            book_url,
-            pin_title,
-            pin_description,
-            tags_str,
-            pin_url_to_link,
-            banner_text or "",
-            watermark_text or "",
-            error_msg,  # or keep a separate error column if you like
-        ]
-        ws.append(row)
+        # Compute pin_id so it keeps incrementing across runs
+        pin_id = next_pin_id
+        next_pin_id += 1
+
+        # Build a dict keyed by header name (only for the columns we care about)
+        row_dict = {
+            "pin_id": pin_id,
+            "media_file": media_path_for_excel,
+            "media_type": media_type,
+            "board_name": board_name,
+            "book_title": book_title,
+            "book_url": book_url,
+            "pin_title": pin_title,
+            "pin_description": pin_description,
+            "pin_tags": tags_str,
+            "pin_url_to_link": pin_url_to_link,
+            "banner_text": banner_text or "",
+            "watermark_text": watermark_text or "",
+            "notes": error_msg,
+        }
+
+        # Create a full row matching the current header order
+        row_values = [None] * len(headers)
+        for key, val in row_dict.items():
+            if key in header_map:
+                col_idx = header_map[key] - 1  # 0-based index for Python list
+                row_values[col_idx] = val
+
+        ws.append(row_values)
+
 
     output_excel.parent.mkdir(parents=True, exist_ok=True)
     wb.save(output_excel)
@@ -710,6 +814,14 @@ def main(argv=None):
         default="no",
         help="Use Gemini API to generate Pinterest titles/descriptions/tags.",
     )
+
+    parser.add_argument(
+        "--auto-crop-subject",
+        choices=["yes", "no"],
+        default="yes",
+        help="If 'yes', automatically crop around the drawing before creating the Pinterest image."
+    )
+
     # These are now OPTIONAL (can be provided by config file)
     parser.add_argument("--book-title", default="", help="Book title to use in Pin metadata (overrides config)")
     parser.add_argument("--book-url", default="", help="URL to link from the Pin (overrides config)")
@@ -733,6 +845,7 @@ def main(argv=None):
     print(f"  max_pins         = {max_pins}")
 
     text_shadow = (args.text_shadow.lower() == "yes")
+    auto_crop_subject = (args.auto_crop_subject.lower() == "yes")
     use_gemini = (args.use_gemini.lower() == "yes")
     global gemini_pool
     if use_gemini:
@@ -760,6 +873,7 @@ def main(argv=None):
         text_shadow=text_shadow,
         use_gemini=use_gemini,
         base_tags=None,  # or pre-read/CLI if you like
+        auto_crop_subject=auto_crop_subject,   # <--- NEW
     )
 
 

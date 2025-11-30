@@ -8,6 +8,7 @@ import traceback  # to print detailed error info
 from build_coloring_app_manifest import build_coloring_manifest
 from caption_generator import prepare_captions_file_for_notebooklm_audio
 from get_audio import get_audio_file
+from pinterest_uploader import upload_pins
 from scraper import scrape_and_process  # Ensure this exists
 from settings import background_music_options, font_settings, tts_engine, voices, sizes
 from video_editor import batch_process
@@ -1171,6 +1172,10 @@ def generate_pinterest_excel_route():
 
         use_gemini_flag = (data.get("use_gemini") or "no").strip().lower()
 
+        auto_crop_subject_flag = (data.get("auto_crop_subject") or "yes").strip().lower()
+        if auto_crop_subject_flag not in ("yes", "no"):
+            auto_crop_subject_flag = "yes"
+
         try:
             max_pins = int(max_pins_str)
         except ValueError:
@@ -1246,6 +1251,7 @@ def generate_pinterest_excel_route():
         cmd += ["--fit-mode", fit_mode]
         cmd += ["--bg-style", bg_style]
         cmd += ["--text-shadow", text_shadow]
+        cmd += ["--auto-crop-subject", auto_crop_subject_flag]  # <--- NEW
 
         cmd += ["--use-gemini", use_gemini_flag]
 
@@ -1260,7 +1266,7 @@ def generate_pinterest_excel_route():
         ok = (proc.returncode == 0)
         stdout_tail = (proc.stdout or "")[-4000:]
         stderr_tail = (proc.stderr or "")[-4000:]
-
+        upload_pins()
         return jsonify({
             "ok": ok,
             "returncode": proc.returncode,
