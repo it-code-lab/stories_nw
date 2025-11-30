@@ -1525,9 +1525,38 @@
         <label>Max pins to generate (0 = all):</label>
         <input type="number" name="max_pins" value="20" style="width:120px;margin-bottom:10px;">
 
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+            <input type="checkbox" name="use_gemini" value="yes">
+            Use Gemini API for titles, descriptions & tags
+        </label>
+
         <label>Output Excel filename:</label>
         <input type="text" name="output_excel" value="pinterest_pins.xlsx"
             style="width:100%;max-width:420px;margin-bottom:10px;">
+
+        <label>Image fit mode:</label>
+        <select name="fit_mode" style="margin-bottom:8px;">
+            <option value="contain" selected>Fit inside (no crop)</option>
+            <option value="cover">Crop to fill (tall pin)</option>
+        </select>
+        <br>
+
+        <label>Background style:</label>
+        <select name="bg_style" style="margin-bottom:8px;">
+            <option value="white" selected>Plain white</option>
+            <option value="blur">Blurred page background</option>
+        </select>
+        <br>
+
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+            <input type="checkbox" name="text_shadow" value="yes" checked>
+            Add subtle shadow behind banner & watermark text
+        </label>
+
+
+
+        <input type="hidden" name="text_shadow" value="no"
+            onclick="return false;" style="display:none;">
 
         <div class="infoBox" style="margin-bottom:8px;">
             <strong>Book info from config file:</strong><br>
@@ -1665,7 +1694,10 @@
                 pinResult.textContent = "Running Pinterest Pin Excel generator...\n";
 
                 const formData = new FormData(pinForm);
-
+                if (!pinForm.use_gemini.checked) {
+                    formData.set("use_gemini", "no");
+                }
+                
                 try {
                     const resp = await fetch("/generate_pinterest_excel_for_coloring_pins", {
                         method: "POST",

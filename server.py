@@ -1165,6 +1165,12 @@ def generate_pinterest_excel_route():
         banner_text = (data.get("banner_text") or "").strip()
         watermark_text = (data.get("watermark_text") or "").strip()
 
+        fit_mode = (data.get("fit_mode") or "contain").strip()
+        bg_style = (data.get("bg_style") or "white").strip()
+        text_shadow = (data.get("text_shadow") or "yes").strip().lower()  # "yes"/"no"
+
+        use_gemini_flag = (data.get("use_gemini") or "no").strip().lower()
+
         try:
             max_pins = int(max_pins_str)
         except ValueError:
@@ -1235,6 +1241,13 @@ def generate_pinterest_excel_route():
             cmd += ["--banner-text", banner_text]
         if watermark_text:
             cmd += ["--watermark-text", watermark_text]
+
+        # New options
+        cmd += ["--fit-mode", fit_mode]
+        cmd += ["--bg-style", bg_style]
+        cmd += ["--text-shadow", text_shadow]
+
+        cmd += ["--use-gemini", use_gemini_flag]
 
         proc = subprocess.run(
             cmd,
