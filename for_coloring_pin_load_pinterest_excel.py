@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import json
 from gemini_pool import GeminiPool  # same helper you use in get_seo_meta_data.py
-
+import random
 from openpyxl import Workbook
 from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageFilter
 
@@ -455,6 +455,10 @@ def build_excel(
     print(f"  use_gemini = {use_gemini!r}")
 
     media_files = collect_media_files(images_root, source_subfolder)
+
+    # Randomize the file order
+    random.shuffle(media_files)
+
     if max_pins and max_pins > 0:
         media_files = media_files[:max_pins]
 
@@ -585,6 +589,9 @@ def generate_pin_meta_with_gemini(
     Calls Gemini via GeminiPool to generate pin_title, pin_description, tags[].
     Returns dict; may raise or return fallback if something fails.
     """
+
+    print(f"[INFO] Generating Pinterest meta with Gemini for page: {page_label!r}")
+
     global gemini_pool
     if gemini_pool is None:
         raise RuntimeError("gemini_pool is not initialised")
@@ -644,6 +651,8 @@ Context (JSON):
         "pin_description": pin_description,
         "tags_str": tags_str,
     }
+
+
 def fallback_pin_meta(book_title: str, product_url: str, page_label: str | None, base_tags: str | None) -> dict:
     print("[INFO] Using fallback pin metadata generation.")
     base_tags = (base_tags or "").strip()
