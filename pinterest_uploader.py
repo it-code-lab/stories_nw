@@ -313,6 +313,68 @@ def extract_pin_url(page) -> str:
 
     return "Unknown"
 
+def fill_description(page, pin_desc: str):
+    """
+    Fill the Pinterest description (Tell everyone what your Pin is about) field.
+
+    We:
+    - locate the contenteditable div via aria-label
+    - focus it via JS (no click, so no 'enabled' check)
+    - clear existing text with keyboard
+    - type the new description
+    """
+    import re
+
+    pin_desc = (pin_desc or "").strip()
+    if not pin_desc:
+        return
+
+    try:
+        # 1. Locate the contenteditable div by aria-label
+        desc = page.locator(
+            'div[contenteditable="true"][role="combobox"][aria-label*="Tell everyone what your Pin"]'
+        )
+
+        # Fallback with regex on aria-label, just in case Pinterest tweaks the text slightly
+        if desc.count() == 0:
+            desc = page.locator(
+                'div[contenteditable="true"][role="combobox"]'
+            ).filter(
+                has_text=re.compile(r".*")
+            )
+
+        if desc.count() == 0:
+            raise RuntimeError("Description contenteditable combobox not found")
+
+        el = desc.first
+
+        # 2. Ensure it's visible in DOM
+        el.wait_for(state="visible", timeout=15000)
+
+        # 3. Focus via JS (bypass 'enabled' checks used by click())
+        el.evaluate("el => el.focus()")
+
+        # Small pause to let focus settle
+        page.wait_for_timeout(300)
+
+        # 4. Clear existing text using keyboard
+        try:
+            page.keyboard.press("Control+A")
+            page.keyboard.press("Backspace")
+        except Exception:
+            # if Control doesn't work (Mac), Meta may be needed, but usually Control is fine on Windows
+            pass
+
+        page.wait_for_timeout(100)
+
+        # 5. Type the description
+        page.keyboard.type(pin_desc, delay=5)
+
+        print("  -> Description filled.")
+
+    except Exception as e:
+        print(f"[WARN] Could not fill description: {e}")
+
 
 def create_pin(page, pin_info: dict) -> str:
     """
@@ -341,27 +403,7 @@ def create_pin(page, pin_info: dict) -> str:
 
     # Description
     pin_desc = (pin_info.get("pin_description") or "").strip()
-    # fill_text_field(
-    #     page,
-    #     label_text="Pin is about",
-    #     value=pin_desc,
-    #     fallback_placeholder="Tell everyone what your Pin is about",
-    # )
-    try:
-        desc = page.get_by_role(
-            "combobox",
-            name=re.compile(r"Tell everyone what your Pin", re.I)
-        )
-        desc.click()
-        # Some Pinterest UIs require typing instead of fill()
-        try:
-            desc.fill(pin_desc)
-        except Exception:
-            desc.type(pin_desc, delay=4)
-        print("  -> Description filled.")
-    except Exception as e:
-        print(f"[WARN] Could not fill description: {e}")
-
+    fill_description(page, pin_desc)
     print("  -> Description filled.")
 
     # Destination link
