@@ -8,6 +8,16 @@ from gemini_pool import GeminiPool  # same helper you use in get_seo_meta_data.p
 import random
 from openpyxl import Workbook, load_workbook
 from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageFilter
+import subprocess
+from moviepy.editor import (
+    ImageClip,
+    TextClip,
+    ColorClip,
+    CompositeVideoClip,
+    concatenate_videoclips,
+)
+from moviepy.video.fx import all as vfx
+
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
 VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".avi"}
@@ -91,6 +101,89 @@ def collect_media_files(root: Path, subfolder: str | None) -> list[Path]:
     files.sort()
     return files
 
+def add_ken_burns(clip, zoom: float = 1.06):
+    """
+    Apply a very gentle Ken Burns-style zoom to a clip over its duration.
+    zoom = final scale at end (e.g. 1.06 = 6% larger).
+    """
+    dur = clip.duration or 1.0
+
+    def scaler(t):
+        # t goes from 0..dur, interpolate scale from 1.0 to zoom
+        return 1.0 + (zoom - 1.0) * (t / dur)
+
+    return clip.fx(vfx.resize, scaler)
+
+def make_title_card(
+    book_title: str,
+    duration: float = 1.5,
+    size: tuple[int, int] = (1080, 1920),
+):
+    """
+    Simple intro/title card: solid background + centered text.
+    """
+    W, H = size
+    bg = ColorClip(size=size, color=(20, 30, 60))  # deep bluish
+    bg = bg.set_duration(duration)
+
+    title_text = book_title.strip() or "Coloring Book Preview"
+
+    try:
+        title = TextClip(
+            title_text,
+            fontsize=60,
+            color="white",
+            method="caption",
+            size=(int(W * 0.9), None),
+        )
+    except Exception:
+        # If TextClip has issues (e.g. missing ImageMagick), just return bg
+        return bg
+
+    title = title.set_duration(duration)
+    title = title.set_position(("center", "center"))
+
+    return CompositeVideoClip([bg, title])
+
+
+def make_outro_card(
+    book_title: str,
+    book_url: str,
+    duration: float = 1.8,
+    size: tuple[int, int] = (1080, 1920),
+):
+    """
+    Simple outro/CTA card: brand color + CTA text.
+    """
+    W, H = size
+    bg = ColorClip(size=size, color=(15, 80, 60))  # teal-ish
+    bg = bg.set_duration(duration)
+
+    line1 = book_title.strip() or "Cute Coloring Pages"
+    line2 = "Download instantly at:"
+    line3 = (book_url.strip() or "goodsandgift.com").replace("https://", "").replace("http://", "")
+
+    texts = []
+    try:
+        t1 = TextClip(line1, fontsize=52, color="white", method="caption", size=(int(W * 0.9), None))
+        t2 = TextClip(line2, fontsize=42, color="white", method="caption", size=(int(W * 0.9), None))
+        t3 = TextClip(line3, fontsize=46, color="#facc15", method="caption", size=(int(W * 0.9), None))
+        texts = [t1, t2, t3]
+    except Exception:
+        return bg
+
+    # stack vertically
+    total_h = sum(t.h for t in texts) + 40
+    y_start = (H - total_h) // 2
+    comps = [bg]
+    y = y_start
+    for t in texts:
+        t = t.set_duration(duration)
+        t = t.set_position(("center", y))
+        comps.append(t)
+        y += t.h + 10
+
+    return CompositeVideoClip(comps)
 
 def load_book_config(images_root: Path, source_subfolder: str | None) -> dict:
     """
@@ -173,6 +266,134 @@ def crop_to_content(img: Image.Image,
     lower = min(h, lower + pad_y)
 
     return img.crop((left, upper, right, lower))
+
+def make_pinterest_video_from_group(
+    images: list[Path],
+    out_dir: Path,
+    video_style: str = "flipbook",
+    duration: float = 8.0,
+    fps: int = 30,
+    size: tuple[int, int] = (1080, 1920),
+    book_title: str | None = None,
+    book_url: str | None = None,
+) -> Path:
+    """
+    Create a vertical MP4 from a group of Pinterest-ready images.
+
+    - images: list of image paths (already branded + auto-cropped).
+    - video_style: "flipbook" or "slideshow".
+    - duration: total video duration in seconds (including intro/outro).
+    """
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if not images:
+        raise ValueError("No images provided for video.")
+
+    # Basic safety
+    duration = max(duration, 4.0)
+
+    # Reserve some time for intro + outro
+    if video_style == "slideshow":
+        intro_dur = 1.6
+        outro_dur = 1.8
+    else:  # flipbook
+        intro_dur = 1.0
+        outro_dur = 1.2
+
+    main_duration = max(1.0, duration - intro_dur - outro_dur)
+    n = len(images)
+
+    # Per-page duration (cap for flipbook)
+    per = main_duration / n
+    if video_style == "flipbook":
+        per = min(per, 0.45)
+        per = max(per, 0.25)  # clamp between 0.25–0.45s
+    else:
+        per = max(per, 0.8)   # slideshow: at least 0.8s per page
+
+    W, H = size
+    clips = []
+
+    for p in images:
+        base = ImageClip(str(p))
+
+        iw, ih = base.size
+        scale = min(W / iw, H / ih)
+        new_w, new_h = int(iw * scale), int(ih * scale)
+        base = base.resize((new_w, new_h))
+        base = base.on_color(size=size, color=(255, 255, 255), pos=("center", "center"))
+        base = base.set_duration(per)
+
+        if video_style == "slideshow":
+            # Gentle Ken Burns zoom
+            base = add_ken_burns(base, zoom=1.06)
+
+        clips.append(base)
+
+    # Intro & outro cards
+    # intro = make_title_card(book_title or "", duration=intro_dur, size=size)
+    # outro = make_outro_card(book_title or "", book_url or "", duration=outro_dur, size=size)
+
+    # Build full sequence: intro + pages + outro
+    # all_clips = [intro] + clips + [outro]
+    # video = concatenate_videoclips(all_clips, method="compose")
+    video = concatenate_videoclips(clips, method="compose")
+
+
+    # Fade-in & fade-out for the whole video
+    # video = video.fx(vfx.fadein, 0.4).fx(vfx.fadeout, 0.4)
+    video = video.fx(vfx.fadein, 0.25).fx(vfx.fadeout, 0.25)
+
+    base_name = images[0].stem
+    out_name = f"{base_name}_{video_style}_pin.mp4"
+    out_path = out_dir / out_name
+
+    video.write_videofile(
+        str(out_path),
+        fps=fps,
+        codec="libx264",
+        audio=False,
+        verbose=False,
+        logger=None,
+    )
+
+    return out_path
+
+
+
+def make_pinterest_video(
+    src: Path,
+    out_dir: Path,
+    duration: float = 8.0,
+    fps: int = 30,
+) -> Path:
+    """
+    Single-page video:
+    - Use the Pinterest image as-is (no extra resize).
+    - Apply gentle Ken Burns zoom.
+    - Add soft fade-in / fade-out.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{src.stem}_pin.mp4"
+
+    # Pinterest image is already the right aspect & size (e.g. 1000x1500)
+    clip = ImageClip(str(src)).set_duration(duration)
+
+    # Motion
+    clip = add_ken_burns(clip, zoom=1.06)
+    clip = clip.fx(vfx.fadein, 0.25).fx(vfx.fadeout, 0.25)
+
+    clip.write_videofile(
+        str(out_path),
+        fps=fps,
+        codec="libx264",
+        audio=False,
+        verbose=False,
+        logger=None,
+    )
+
+    return out_path
+
 
 def make_pinterest_image(
     src: Path,
@@ -311,156 +532,55 @@ def make_pinterest_image(
     canvas.save(out_path, "WEBP", quality=90)
     return out_path
 
-def make_pinterest_image_working_DND(
+def make_video_image(
     src: Path,
     out_dir: Path,
-    banner_text: str | None,
-    watermark_text: str | None,
-    target_size=(1000, 1500),
+    fit_mode: str = "contain",
+    bg_style: str = "white",
+    auto_crop_subject: bool = True,
+    size: tuple[int, int] = (1080, 1920),
 ) -> Path:
     """
-    Create a Pinterest-friendly image WITHOUT CROPPING:
-    - white canvas 1000x1500
-    - image fully visible (scaled to fit)
-    - optional banner + watermark
+    Create a clean vertical image for VIDEO USE ONLY.
+    - No banner
+    - No footer
+    - No watermark
+    - Just auto-cropped subject, centered and padded
     """
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    base_img = Image.open(src).convert("RGB")
-    orig_w, orig_h = base_img.size
-    tgt_w, tgt_h = target_size
+    im = Image.open(src).convert("RGB")
 
-    # Scale to fit entire image inside canvas
-    scale = min(tgt_w / orig_w, tgt_h / orig_h)
-    new_w = int(orig_w * scale)
-    new_h = int(orig_h * scale)
+    # Optional subject auto-cropping
+    if auto_crop_subject:
+        # im = auto_crop_image(im, border=5)
+        im = crop_to_content(im, threshold=245, pad_ratio=0.05)
 
-    resized = base_img.resize((new_w, new_h), Image.LANCZOS)
+    # Resize while preserving aspect
+    iw, ih = im.size
+    W, H = size
 
-    # Create white canvas
-    canvas = Image.new("RGB", (tgt_w, tgt_h), "white")
-    offset_x = (tgt_w - new_w) // 2
-    offset_y = (tgt_h - new_h) // 2
-    canvas.paste(resized, (offset_x, offset_y))
+    scale = min(W / iw, H / ih)
+    new_w, new_h = int(iw * scale), int(ih * scale)
+    im = im.resize((new_w, new_h), Image.LANCZOS)
 
-    draw = ImageDraw.Draw(canvas)
+    # Background
+    if bg_style == "white":
+        bg = Image.new("RGB", (W, H), "white")
+    else:
+        bg = Image.new("RGB", (W, H), bg_style)
 
-    # Fonts
-    try:
-        font = ImageFont.truetype("arial.ttf", 36)
-        font_small = ImageFont.truetype("arial.ttf", 28)
-    except:
-        font = ImageFont.load_default()
-        font_small = ImageFont.load_default()
+    # Center object
+    x = (W - new_w) // 2
+    y = (H - new_h) // 2
+    bg.paste(im, (x, y))
 
-    W, H = canvas.size
+    # Output path
+    out_path = out_dir / f"{src.stem}_video.jpg"
+    bg.save(out_path, "JPEG", quality=95)
 
-    # Helper for text size
-    def measure(text, font):
-        bbox = draw.textbbox((0, 0), text, font=font)
-        return (bbox[2] - bbox[0], bbox[3] - bbox[1])
-
-    # ============= Banner =============
-    if banner_text:
-        banner_h = int(H * 0.12)
-
-        overlay = Image.new("RGBA", (W, banner_h), (0, 0, 0, 160))
-        canvas_rgba = canvas.convert("RGBA")
-        canvas_rgba.alpha_composite(overlay, (0, 0))
-        canvas = canvas_rgba.convert("RGB")
-
-        draw = ImageDraw.Draw(canvas)
-        tw, th = measure(banner_text, font)
-        draw.text(
-            ((W - tw) / 2, (banner_h - th) / 2),
-            banner_text,
-            fill="white",
-            font=font,
-        )
-
-    # ============= Watermark =============
-    if watermark_text:
-        wm_h = int(H * 0.08)
-
-        overlay = Image.new("RGBA", (W, wm_h), (0, 0, 0, 140))
-        canvas_rgba = canvas.convert("RGBA")
-        canvas_rgba.alpha_composite(overlay, (0, H - wm_h))
-        canvas = canvas_rgba.convert("RGB")
-
-        draw = ImageDraw.Draw(canvas)
-        tw, th = measure(watermark_text, font_small)
-        draw.text(
-            ((W - tw) / 2, H - wm_h + (wm_h - th) / 2),
-            watermark_text,
-            fill="white",
-            font=font_small,
-        )
-
-    # Save output
-    out_path = out_dir / (src.stem + "_pin.webp")
-    canvas.save(out_path, "WEBP", quality=90)
     return out_path
 
-
-
-def make_pinterest_image_old(
-    src: Path,
-    out_dir: Path,
-    banner_text: str | None,
-    watermark_text: str | None,
-    target_size=(1000, 1500),
-) -> Path:
-    """
-    Create a Pinterest-friendly image (2:3-ish, tall) with optional banner + watermark.
-    Returns output path.
-    """
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    img = Image.open(src).convert("RGB")
-    # Fit image to 1000x1500, cropping as needed
-    img = ImageOps.fit(img, target_size, method=Image.LANCZOS)
-
-    draw = ImageDraw.Draw(img)
-    W, H = img.size
-    font = ImageFont.load_default()
-
-    # Banner at top
-    if banner_text:
-        banner_h = int(H * 0.12)
-        overlay = Image.new("RGBA", (W, banner_h), (0, 0, 0, 160))
-        img_rgba = img.convert("RGBA")
-        img_rgba.alpha_composite(overlay, (0, 0))
-        img = img_rgba.convert("RGB")
-        draw = ImageDraw.Draw(img)
-        tw, th = draw.textsize(banner_text, font=font)
-        draw.text(
-            ((W - tw) / 2, (banner_h - th) / 2),
-            banner_text,
-            fill="white",
-            font=font,
-        )
-
-    # Watermark at bottom
-    if watermark_text:
-        wm_h = int(H * 0.08)
-        overlay = Image.new("RGBA", (W, wm_h), (0, 0, 0, 140))
-        img_rgba = img.convert("RGBA")
-        img_rgba.alpha_composite(overlay, (0, H - wm_h))
-        img = img_rgba.convert("RGB")
-        draw = ImageDraw.Draw(img)
-        tw, th = draw.textsize(watermark_text, font=font)
-        draw.text(
-            ((W - tw) / 2, H - wm_h + (wm_h - th) / 2),
-            watermark_text,
-            fill="white",
-            font=font,
-        )
-
-    # Output filename
-    out_name = src.stem + "_pin.webp"
-    out_path = out_dir / out_name
-    img.save(out_path, "WEBP", quality=90)
-    return out_path
 
 def get_or_create_workbook(output_excel: Path, base_headers: list[str]):
     """
@@ -519,6 +639,10 @@ def build_excel(
     use_gemini: bool = False,          # <--- NEW
     base_tags: str | None = None,      # <--- optional - from config if you add it
     auto_crop_subject: bool = True,        # <--- NEW
+    video_style: str = "single",        # <--- NEW
+    pages_per_video: int = 10,          # <--- NEW (for flipbook/slideshow)
+    video_duration: float = 8.0,        # <--- already added earlier for single videos
+    video_fps: int = 30,                # <--- already added earlier for single videos
 ) -> None:
     # 1) Load config (if present)
     cfg = load_book_config(images_root, source_subfolder)
@@ -544,10 +668,32 @@ def build_excel(
     # Randomize the file order
     random.shuffle(media_files)
 
-    if max_pins and max_pins > 0:
-        media_files = media_files[:max_pins]
+    groups: list[list[Path]]
 
-    print(f"[INFO] Found {len(media_files)} media files to process.")
+    if media_type == "video" and video_style in ("flipbook", "slideshow"):
+        # multi-page video: group images
+        if pages_per_video < 1:
+            pages_per_video = 8
+        # limit images if max_pins requested
+        if max_pins and max_pins > 0:
+            media_files = media_files[: max_pins * pages_per_video]
+
+        groups = [
+            media_files[i : i + pages_per_video]
+            for i in range(0, len(media_files), pages_per_video)
+        ]
+        if max_pins and max_pins > 0:
+            groups = groups[:max_pins]
+
+        print(f"[INFO] Creating {len(groups)} video pins ({video_style}), "
+              f"{pages_per_video} pages per video (where available).")
+    else:
+        # image pins, or single-image video pins
+        if max_pins and max_pins > 0:
+            media_files = media_files[:max_pins]
+        groups = [[f] for f in media_files]
+        print(f"[INFO] Found {len(groups)} media items to process.")
+
 
     # Base headers we want to ensure exist (append-only)
     base_headers = [
@@ -579,39 +725,127 @@ def build_excel(
     pins_output_root = images_root.parent / "pinterest_pins"
     pins_output_root.mkdir(parents=True, exist_ok=True)
 
-    for idx, f in enumerate(media_files, start=1):
-        ext = f.suffix.lower()
+    for idx, group in enumerate(groups, start=1):
+        primary = group[0]
+        ext = primary.suffix.lower()
         is_image = ext in IMAGE_EXTS
         is_video = ext in VIDEO_EXTS
 
         if not (is_image or is_video):
-            print(f"[SKIP] Unsupported file type: {f}")
+            print(f"[SKIP] Unsupported file type: {primary}")
             continue
 
-        print(f"[PROCESS] {idx}: {f}")
+        print(f"[PROCESS] {idx}: {[g.name for g in group]}")
 
-        if is_image and media_type == "image":
-            try:
-                out_img = make_pinterest_image(
-                    src=f,
-                    out_dir=pins_output_root,
-                    banner_text=banner_text,
-                    watermark_text=watermark_text,
-                    fit_mode=fit_mode,
-                    bg_style=bg_style,
-                    text_shadow=text_shadow,  
-                    auto_crop_subject=auto_crop_subject,                  
-                )
-                media_path_for_excel = str(out_img.relative_to(images_root.parent))
-            except Exception as e:
-                print(f"[WARN] Failed to create Pinterest image for {f}: {e}")
-                media_path_for_excel = str(f.relative_to(images_root.parent))
+
+        if media_type == "image":
+            # ---- IMAGE PINS (existing behaviour) ----
+            if is_image:
+                try:
+                    out_img = make_pinterest_image(
+                        src=primary,
+                        out_dir=pins_output_root,
+                        banner_text=banner_text,
+                        watermark_text=watermark_text,
+                        fit_mode=fit_mode,
+                        bg_style=bg_style,
+                        text_shadow=text_shadow,
+                        auto_crop_subject=auto_crop_subject,
+                    )
+                    media_path_for_excel = str(out_img.relative_to(images_root.parent))
+                except Exception as e:
+                    print(f"[WARN] Failed to create Pinterest image for {primary}: {e}")
+                    media_path_for_excel = str(primary.relative_to(images_root.parent))
+            else:
+                media_path_for_excel = str(primary.relative_to(images_root.parent))
+
+        elif media_type == "video":
+            # ---- VIDEO PINS ----
+            if video_style == "single":
+                # one image → one video (keep your existing single-image->video logic)
+                if is_image:
+                    try:
+                        out_img = make_pinterest_image(
+                            src=primary,
+                            out_dir=pins_output_root,
+                            banner_text=banner_text,
+                            watermark_text=watermark_text,
+                            fit_mode=fit_mode,
+                            bg_style=bg_style,
+                            text_shadow=text_shadow,
+                            auto_crop_subject=auto_crop_subject,
+                        )
+                        out_vid = make_pinterest_video(   # your existing ffmpeg helper
+                            src=out_img,
+                            out_dir=pins_output_root,
+                            duration=video_duration,
+                            fps=video_fps,
+                        )
+                        media_path_for_excel = str(out_vid.relative_to(images_root.parent))
+                    except Exception as e:
+                        print(f"[WARN] Failed to create Pinterest VIDEO for {primary}: {e}")
+                        media_path_for_excel = str(primary.relative_to(images_root.parent))
+                else:
+                    media_path_for_excel = str(primary.relative_to(images_root.parent))
+
+            else:
+                # ---- FLIPBOOK / SLIDESHOW (multi-page) ----
+                # 1) Create Pinterest images for all pages in the group
+                processed_imgs: list[Path] = []
+                for p in group:
+                    if p.suffix.lower() not in IMAGE_EXTS:
+                        continue
+                    try:
+                        if media_type == "video":
+                            proc = make_video_image(
+                                src=p,
+                                out_dir=pins_output_root,
+                                fit_mode=fit_mode,
+                                bg_style=bg_style,
+                                auto_crop_subject=auto_crop_subject,
+                            )
+                        else:
+                            proc = make_pinterest_image(
+                                src=p,
+                                out_dir=pins_output_root,
+                                banner_text=banner_text,
+                                watermark_text=watermark_text,
+                                fit_mode=fit_mode,
+                                bg_style=bg_style,
+                                text_shadow=text_shadow,
+                                auto_crop_subject=auto_crop_subject,
+                            )
+                        processed_imgs.append(proc)
+                    except Exception as e:
+                        print(f"[WARN] Failed to create image for {p}: {e}")
+
+                if not processed_imgs:
+                    print(f"[WARN] No valid images for group {idx}")
+                    media_path_for_excel = str(primary.relative_to(images_root.parent))
+                else:
+                    try:
+                        out_vid = make_pinterest_video_from_group(
+                            images=processed_imgs,
+                            out_dir=pins_output_root,
+                            video_style=video_style,
+                            duration=video_duration,
+                            fps=video_fps,
+                            book_title=book_title,
+                            book_url=book_url,
+                        )
+
+                        media_path_for_excel = str(out_vid.relative_to(images_root.parent))
+                    except Exception as e:
+                        print(f"[WARN] Failed to create {video_style} video for group {idx}: {e}")
+                        # Fallback: use first processed image
+                        media_path_for_excel = str(processed_imgs[0].relative_to(images_root.parent))
         else:
-            # For video mode, or if we decide to support original images without editing
-            media_path_for_excel = str(f.relative_to(images_root.parent))
+            # Unknown media_type
+            media_path_for_excel = str(primary.relative_to(images_root.parent))
+
 
         # Very simple auto metadata (can be swapped with Gemini later)
-        page_label = f.stem.replace("_", " ").replace("-", " ").title()
+        page_label = primary.stem.replace("_", " ").replace("-", " ").title()
 
 
         error_msg = ""
@@ -627,7 +861,7 @@ def build_excel(
             else:
                 meta = fallback_pin_meta(book_title, book_url, page_label, base_tags)
         except Exception as e:
-            print(f"[WARN] Gemini meta failed for {f.name}: {e}")
+            print(f"[WARN] Gemini meta failed for {primary.name}: {e}")
             error_msg = f"Gemini meta failed: {e}"
             meta = fallback_pin_meta(book_title, book_url, page_label, base_tags)
 
@@ -822,6 +1056,32 @@ def main(argv=None):
         help="If 'yes', automatically crop around the drawing before creating the Pinterest image."
     )
 
+    parser.add_argument(
+        "--video-duration",
+        type=float,
+        default=8.0,
+        help="Video duration in seconds for each video pin.",
+    )
+    parser.add_argument(
+        "--video-fps",
+        type=int,
+        default=30,
+        help="Frames per second for video pins.",
+    )
+
+    parser.add_argument(
+        "--video-style",
+        choices=["single", "flipbook", "slideshow"],
+        default="single",
+        help="Style for video pins: single image, flipbook (multi-page), or slideshow.",
+    )
+    parser.add_argument(
+        "--pages-per-video",
+        type=int,
+        default=10,
+        help="Number of pages per video for flipbook/slideshow styles.",
+    )
+
     # These are now OPTIONAL (can be provided by config file)
     parser.add_argument("--book-title", default="", help="Book title to use in Pin metadata (overrides config)")
     parser.add_argument("--book-url", default="", help="URL to link from the Pin (overrides config)")
@@ -873,7 +1133,11 @@ def main(argv=None):
         text_shadow=text_shadow,
         use_gemini=use_gemini,
         base_tags=None,  # or pre-read/CLI if you like
-        auto_crop_subject=auto_crop_subject,   # <--- NEW
+        auto_crop_subject=auto_crop_subject,
+        video_style=args.video_style,          # <---
+        pages_per_video=args.pages_per_video,  # <---
+        video_duration=args.video_duration,
+        video_fps=args.video_fps,
     )
 
 

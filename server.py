@@ -1172,6 +1172,8 @@ def generate_pinterest_excel_route():
 
         use_gemini_flag = (data.get("use_gemini") or "no").strip().lower()
 
+        upload_pinterest_flg = (data.get("upload_pinterest") or "no").strip().lower()
+
         auto_crop_subject_flag = (data.get("auto_crop_subject") or "yes").strip().lower()
         if auto_crop_subject_flag not in ("yes", "no"):
             auto_crop_subject_flag = "yes"
@@ -1180,6 +1182,30 @@ def generate_pinterest_excel_route():
             max_pins = int(max_pins_str)
         except ValueError:
             max_pins = 0
+
+        video_duration_str = (data.get("video_duration") or "8").strip()
+        video_fps_str = (data.get("video_fps") or "30").strip()
+
+        try:
+            video_duration = float(video_duration_str)
+        except ValueError:
+            video_duration = 8.0
+
+        try:
+            video_fps = int(video_fps_str)
+        except ValueError:
+            video_fps = 30
+
+        video_style = (data.get("video_style") or "single").strip()
+        if video_style not in ("single", "flipbook", "slideshow"):
+            video_style = "single"
+
+        pages_per_video_str = (data.get("pages_per_video") or "10").strip()
+        try:
+            pages_per_video = int(pages_per_video_str)
+        except ValueError:
+            pages_per_video = 10
+
 
         # Decide where images_root & source_subfolder will be
         images_root = None
@@ -1235,6 +1261,15 @@ def generate_pinterest_excel_route():
         if max_pins > 0:
             cmd += ["--max-pins", str(max_pins)]
 
+        # NEW: video parameters (safe to pass for both image & video)
+        cmd += [
+            "--video-style", video_style,
+            "--pages-per-video", str(pages_per_video),
+            "--video-duration", str(video_duration),
+            "--video-fps", str(video_fps),
+        ]
+
+
         # Optional overrides – safe to pass even if empty
         if book_title:
             cmd += ["--book-title", book_title]
@@ -1266,7 +1301,10 @@ def generate_pinterest_excel_route():
         ok = (proc.returncode == 0)
         stdout_tail = (proc.stdout or "")[-4000:]
         stderr_tail = (proc.stderr or "")[-4000:]
-        upload_pins()
+
+        if upload_pinterest_flg == "yes" and ok:
+            upload_pins()
+        
         return jsonify({
             "ok": ok,
             "returncode": proc.returncode,

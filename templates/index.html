@@ -1492,7 +1492,7 @@
     </form>
     <br>
     <form id="pinterestExcelFormForColoringPins">
-        <h2 style="background:#fef3c7;">Generate Pinterest Pin Excel</h2>
+        <h2 style="background:#fef3c7;">Generate Pinterest Pin and Upload</h2>
 
         <div class="infoBox" style="margin-bottom:8px;">
             <strong>Option 1 – Upload a folder from your computer:</strong><br>
@@ -1519,11 +1519,33 @@
         <label>Media type:</label>
         <select name="media_type" style="margin-bottom:10px;">
             <option value="image" selected>Image Pins</option>
-            <option value="video">Video Pins (metadata only)</option>
+            <option value="video">Video Pins</option>
         </select>
 
         <label>Max pins to generate (0 = all):</label>
-        <input type="number" name="max_pins" value="20" style="width:120px;margin-bottom:10px;">
+        <input type="number" name="max_pins" value="1" style="width:120px;margin-bottom:10px;">
+
+        <label>Video duration per Pin (seconds):</label>
+        <input type="number" name="video_duration" value="8" min="2" max="60"
+               style="width:120px;margin-bottom:8px;">
+        <div style="font-size:12px;color:#6b7280;margin-top:-6px;margin-bottom:8px;">
+            Used only for Video Pins.
+        </div>
+
+        <label>Video style:</label>
+        <select name="video_style" style="margin-bottom:8px;">
+          <!-- <option value="single">Single page video</option> -->
+          <option value="slideshow">Slideshow (multiple pages)</option>
+          <option value="flipbook">Flipbook (multiple pages)</option>
+        </select>
+
+        <label>Pages per video (for Flipbook/Slideshow):</label>
+        <input type="number" name="pages_per_video" value="10" min="2" max="40"
+               style="width:120px;margin-bottom:10px;">
+
+        <label>Video FPS:</label>
+        <input type="number" name="video_fps" value="30" min="10" max="60"
+               style="width:120px;margin-bottom:10px;">
 
         <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
             <input type="checkbox" name="use_gemini" value="yes">
@@ -1598,7 +1620,12 @@
             </div>
         </details>
 
-        <button type="submit">Generate Pinterest Pin Excel</button>
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+            <input type="checkbox" name="upload_pinterest" value="yes" checked>
+            Upload generated PINs to Pinterest account
+        </label>
+
+        <button type="submit">Generate Pinterest Pin Data and Upload PINs to Pinterest</button>
 
         <pre id="pinterestExcelResult" style="margin-top:8px;font-size:13px;white-space:pre-wrap;"></pre>
     </form>
@@ -1701,6 +1728,10 @@
                 const formData = new FormData(pinForm);
                 if (!pinForm.use_gemini.checked) {
                     formData.set("use_gemini", "no");
+                }
+
+                if (!pinForm.upload_pinterest.checked) {
+                    formData.set("upload_pinterest", "no");
                 }
 
                 try {
