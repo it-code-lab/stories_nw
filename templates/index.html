@@ -1375,7 +1375,7 @@
     <form id="removeBordersForm">
         <h2 style="background:#e0f2fe;">Blank Out Border (Keep Original Size)</h2>
 
-        <label>Source folder under <code>application/</code>:</label>
+        <label>Source folder under <code>application/downloads/</code>:</label>
         <input type="text" name="source_folder" placeholder="e.g. 7b. Dinosaurs"
             style="width:100%;max-width:420px;margin-bottom:6px;">
 
@@ -1629,7 +1629,110 @@
 
         <pre id="pinterestExcelResult" style="margin-top:8px;font-size:13px;white-space:pre-wrap;"></pre>
     </form>
+    <br>
+    <form id="coloringAnimationForm-old">
+        <h2 style="background:#ffe4b5;">Coloring Page Before/After Animation</h2>
 
+        <div class="infoBox">
+            Upload a <strong>colored</strong> coloring-book page. The tool will:
+            <ol style="margin:6px 0 0 18px;padding-left:0;">
+                <li>Strip colors to create a clean line-art frame</li>
+                <li>Animate a smooth left-to-right color fill using the original colors</li>
+            </ol>
+            Perfect for professional before/after videos, Shorts, and Pinterest Pins.
+        </div>
+
+        <label>Upload colored page (PNG/JPG/WEBP):</label>
+        <input type="file" name="image" accept="image/png,image/jpeg,image/webp" required>
+
+        <label>Canvas preset:</label>
+        <select name="canvas_preset" id="canvasPreset">
+            <option value="none" selected>Use original page size</option>
+            <option value="shorts">YouTube Shorts (1080 × 1920)</option>
+            <option value="pinterest">Pinterest (1000 × 1500)</option>
+            <option value="custom">Custom size</option>
+        </select>
+
+        <div id="customCanvasFields" style="display:none; gap:8px; flex-wrap:wrap; margin-top:8px;">
+            <div>
+                <label>Canvas width (px):</label>
+                <input type="number" name="canvas_width" value="1080" min="200" max="4000">
+            </div>
+            <div>
+                <label>Canvas height (px):</label>
+                <input type="number" name="canvas_height" value="1920" min="200" max="4000">
+            </div>
+        </div>
+
+        <label>Animation duration (seconds):</label>
+        <input type="number" name="duration" value="4" step="0.5" min="1" max="20">
+
+        <label>Animation style:</label>
+        <select name="mode">
+            <option value="sweep" selected>Smooth sweep (left → right)</option>
+            <option value="by_color">Artist style (one color at a time)</option>
+        </select>   
+
+        <label>Frames per second:</label>
+        <input type="number" name="fps" value="30" min="10" max="60">
+
+        <button type="submit">Create Coloring Animation</button>
+
+        <div id="coloringAnimationResult"
+            style="margin-top:10px;font-size:14px;white-space:pre-wrap;"></div>
+
+        <video id="coloringAnimationPreview"
+            controls
+            style="margin-top:10px;max-width:100%;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,.15);display:none;">
+        </video>
+    </form>
+    <br>
+    <form id="coloringAnimationForm">
+    <h2>Coloring Page Before/After Animation</h2>
+
+    <label>Upload colored coloring page (PNG/JPG):</label>
+    <input type="file" id="coloringImage" name="image" accept="image/*" required />
+
+    <label>Animation Mode:</label>
+    <select id="coloringMode" name="mode">
+        <option value="sweep">Smooth sweep (global fill)</option>
+        <option value="by_color">Artist style (one color group at a time)</option>
+    </select>
+
+    <label>Frames per second (FPS):</label>
+    <input type="number" id="coloringFps" name="fps" value="24" min="1" max="60" />
+
+    <label>Animation Duration (seconds):</label>
+    <input type="number" id="coloringDuration" name="duration" value="6" min="1" max="60" />
+
+    <label>Canvas Preset:</label>
+    <select id="canvasPreset" name="canvas_preset">
+        <option value="none">Use original image size</option>
+        <option value="shorts">1080×1920 (YouTube Shorts / Reels)</option>
+        <option value="pinterest">1000×1500 (Pinterest)</option>
+        <option value="custom">Custom size</option>
+    </select>
+
+    <div id="customCanvasFields" style="display:none; margin-top:10px;">
+        <label>Custom Width:</label>
+        <input type="number" id="canvasWidth" name="canvas_width" value="1080" min="100" max="4000" />
+
+        <label>Custom Height:</label>
+        <input type="number" id="canvasHeight" name="canvas_height" value="1920" min="100" max="4000" />
+    </div>
+
+    <button type="submit">Create Before/After Coloring Animation</button>
+    <div class="infoBox">
+        This will generate a video in <code>processed_videos/</code> and show a preview + download link below.
+    </div>
+    </form>
+
+    <div id="coloringAnimationResult" style="margin-top:20px;"></div>
+    <video id="coloringAnimationPreview"
+        controls
+        style="display:none; max-width:100%; margin-top:10px;">
+        Your browser does not support the video tag.
+    </video>
     <br>
 
     <br>
@@ -1713,8 +1816,73 @@
                     }
                 });
             }
+
+ 
         });
     </script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form      = document.getElementById('coloringAnimationForm');
+  const resultDiv = document.getElementById('coloringAnimationResult');
+  const videoEl   = document.getElementById('coloringAnimationPreview');
+
+  if (!form || !resultDiv || !videoEl) {
+    console.warn('Coloring animation elements not found; skipping wiring.');
+    return;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    resultDiv.textContent = 'Processing coloring animation…';
+    videoEl.style.display = 'none';
+    videoEl.removeAttribute('src');
+
+    const fd = new FormData(form);
+
+    try {
+      const res  = await fetch('/api/coloring_animation', {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json();
+
+      if (!res.ok || (!data.ok && !data.success)) {
+        const msg = (data && data.error) ? data.error : res.statusText;
+        resultDiv.textContent = 'Error: ' + msg;
+        console.error('Coloring animation error:', data);
+        return;
+      }
+
+      // Accept any of the possible fields
+      const videoUrl =
+        data.video_url ||
+        data.url ||
+        (data.video_path ? '/downloads/' + data.video_path : '');
+
+      if (!videoUrl) {
+        resultDiv.textContent = 'Error: Server did not return a video URL.';
+        console.error('Coloring animation response missing video URL:', data);
+        return;
+      }
+
+      const downloadName = data.filename || 'coloring_animation.mp4';
+
+      resultDiv.innerHTML =
+        'Done! ' +
+        `<a href="${videoUrl}" download="${downloadName}">Download video</a>`;
+
+      videoEl.src = videoUrl;
+      videoEl.style.display = 'block';
+      videoEl.load();
+    } catch (err) {
+      console.error(err);
+      resultDiv.textContent = 'Error calling server: ' + err;
+    }
+  });
+});
+</script>
+
     <script>
         // --- NEW: Pinterest Pin Excel wiring ---
         const pinForm = document.getElementById("pinterestExcelFormForColoringPins");

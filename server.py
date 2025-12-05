@@ -31,6 +31,10 @@ from bg_music_video import merge_video_with_bg_music, BgMusicError
 import sys
 from pdf2image import convert_from_path
 import glob
+import uuid
+from coloring_animation import _create_coloring_animation, _create_coloring_animation_by_color
+from sketch_core import build_sketch_from_pil
+from PIL import Image
 
 from media_audio import (
     extract_audio_from_video,
@@ -109,6 +113,188 @@ def build_coloring_manifest_route():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.post("/api/coloring_sketch")
+def api_coloring_sketch():
+    """
+    Generate sketch SVG + steps for a coloring page.
+
+    Accepts form-data:
+      - file: uploaded image
+      - mode: auto|cartoon|photo (optional, default: auto)
+      - detail: 1..10 (optional, default: 5)
+      - vector: outline|centerline (optional, default: outline)
+    """
+    file = request.files.get("file")
+    if not file:
+        return jsonify({"ok": False, "error": "Missing file"}), 400
+
+    mode = (request.args.get("mode") or request.form.get("mode") or "auto").strip()
+    detail_str = (request.args.get("detail") or request.form.get("detail") or "5").strip()
+    vector = (request.args.get("vector") or request.form.get("vector") or "outline").strip()
+
+    try:
+        detail = int(detail_str)
+    except ValueError:
+        detail = 5
+
+    try:
+        img = Image.open(file.stream).convert("RGB")
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Failed to read image: {e}"}), 400
+
+    try:
+        svg, steps = build_sketch_from_pil(
+            img,
+            mode=mode,
+            detail=detail,
+            vector=vector,
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": f"Sketch failed: {e}"}), 500
+
+    return jsonify({
+        "ok": True,
+        "svg": svg,
+        "steps": steps,
+    })
+
+@app.post("/api/coloring_animation")
+def api_coloring_animation():
+    """
+    Upload a colored coloring-page image and generate a 'before/after' animation:
+      - First: clean line-art (desaturated page)
+      - Then: sweeping color fill using original colors
+
+    Expects multipart/form-data:
+      - image: file (PNG/JPG/WEBP)
+      - fps: optional, default 30
+      - duration: optional, default 4.0 seconds
+      - canvas_preset: "none" | "shorts" | "pinterest" | "custom"
+      - canvas_width, canvas_height: used when canvas_preset == "custom"
+
+    Returns JSON:
+      {
+        ok: true,
+        url: "/downloads/coloring_animation/<file>",
+        filename: "<file>"
+      }
+    """
+    try:
+        _ensure_ffmpeg()
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+    if "image" not in request.files:
+        return jsonify({"ok": False, "error": "Missing 'image' file"}), 400
+
+    file = request.files["image"]
+    if not file.filename:
+        return jsonify({"ok": False, "error": "Empty filename"}), 400
+
+    # Basic extension check
+    fname = file.filename.lower()
+    if not any(fname.endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".webp"]):
+        return jsonify({"ok": False, "error": "Only PNG/JPG/WEBP are supported"}), 400
+
+    # Parse params
+    form = request.form
+    try:
+        fps = int(form.get("fps") or 30)
+        duration = float(form.get("duration") or 4.0)
+    except ValueError:
+        return jsonify({"ok": False, "error": "Invalid fps/duration"}), 400
+
+    canvas_preset = (form.get("canvas_preset") or "none").lower()
+    canvas_width = None
+    canvas_height = None
+
+    if canvas_preset == "shorts":
+        # Portrait Shorts canvas
+        canvas_width, canvas_height = 1080, 1920
+    elif canvas_preset == "pinterest":
+        canvas_width, canvas_height = 1000, 1500
+    elif canvas_preset == "custom":
+        try:
+            canvas_width = int(form.get("canvas_width") or 0)
+            canvas_height = int(form.get("canvas_height") or 0)
+        except ValueError:
+            return jsonify({"ok": False, "error": "Invalid custom canvas width/height"}), 400
+
+    target_size = None
+    if canvas_width and canvas_height and canvas_width > 0 and canvas_height > 0:
+        target_size = (canvas_width, canvas_height)
+
+    # Save uploaded original to uploads/
+    uploads_dir = BASE_DIR / "uploads" / "coloring_animation"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    unique_name = f"{uuid.uuid4().hex}_{os.path.basename(fname)}"
+    input_path = uploads_dir / unique_name
+    file.save(str(input_path))
+
+    # Prepare output under downloads/coloring_animation so it's served via /downloads/...
+    out_dir = COLORING_BASE / "coloring_animation"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_name = unique_name.rsplit(".", 1)[0] + "_anim.mp4"
+    output_path = out_dir / out_name
+    mode = (form.get("mode") or "sweep").lower()
+
+
+    try:
+        if mode == "by_color":
+            _create_coloring_animation_by_color(
+                input_path=input_path,
+                output_path=output_path,
+                fps=fps,
+                num_colors=7,
+                brush_steps_per_color=20,
+                hold_line_sec=0.7,
+                hold_end_sec=0.7,
+                target_size=target_size,
+                bg_color=(255, 255, 255),
+            )
+        else:
+            _create_coloring_animation(
+                input_path=input_path,
+                output_path=output_path,
+                fps=fps,
+                duration_sec=duration,
+                target_size=target_size,
+                bg_color=(255, 255, 255),
+            )
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": f"Failed to create animation: {e}"}), 500
+
+
+
+    # URL under /downloads
+    rel = output_path.resolve().relative_to(COLORING_BASE).as_posix()
+    url = f"/downloads/{rel}"
+
+    return jsonify({
+        # Old style
+        "ok": True,
+        "url": url,
+        "filename": out_name,
+        "fps": fps,
+        "duration": duration,
+        "canvas": {
+            "preset": canvas_preset,
+            "width": canvas_width,
+            "height": canvas_height,
+        },
+        # New style (so either JS version works)
+        "success": True,
+        "video_url": url,
+        "video_path": rel,
+    })
+
+
 
 @app.post("/merge_bg_music")
 def merge_bg_music_route():
