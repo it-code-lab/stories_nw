@@ -88,13 +88,17 @@ def _create_coloring_animation_by_color(
     color_order.sort(reverse=True)  # large regions first
     ordered_indices = [idx for _, idx in color_order]
 
-    # Precompute full random map for 'brushiness'
+    # Precompute coordinate grids for stroke directions
+    yy, xx = np.indices((h, w), dtype=np.float32)
+
+    # Global noise map used to make brush fronts slightly irregular
     rng = np.random.default_rng(42)
-    random_map = rng.random((h, w)).astype(np.float32)
+    noise_map = rng.normal(loc=0.0, scale=0.35, size=(h, w)).astype(np.float32)
 
     # Numpy view of original + line-art
     img_np = np.array(img, dtype=np.float32)
     line_np = np.array(line_art, dtype=np.float32)
+
 
     total_colors = len(ordered_indices)
     if total_colors == 0:
@@ -138,23 +142,54 @@ def _create_coloring_animation_by_color(
                 continue
 
             # For this color, gradually reveal with random brushiness
+            # Skip super tiny regions
+            if mask_color.sum() < 50:
+                continue
+
+            # ---- Directional brush front for this color ----
+            ys, xs = np.where(mask_color > 0.2)
+            if ys.size == 0:
+                continue
+
+            min_x, max_x = xs.min(), xs.max()
+            min_y, max_y = ys.min(), ys.max()
+
+            # Random stroke direction for this color (in radians)
+            theta = float(rng.uniform(0.0, 2.0 * np.pi))
+            dir_x, dir_y = float(np.cos(theta)), float(np.sin(theta))
+
+            # Project each pixel to a 1D coordinate along the stroke direction
+            proj = (xx - min_x) * dir_x + (yy - min_y) * dir_y
+            proj_region = proj[mask_color > 0.2]
+            p_min, p_max = proj_region.min(), proj_region.max()
+            proj_norm = (proj - p_min) / (p_max - p_min + 1e-6)  # 0→1 over region
+
+            # For this color, gradually reveal with a wavy brush front
             for step in range(brush_steps_per_color):
                 t = (step + 1) / brush_steps_per_color  # 0→1
 
-                # Pixels of this color with random_map < t get revealed
-                reveal_mask = (mask_color > 0.1) & (random_map <= t)
+                # Threshold that moves across the region, with noise-based waviness
+                threshold = proj_norm + noise_map * 0.25
+                reveal_mask = (mask_color > 0.1) & (threshold <= t)
                 reveal_mask = reveal_mask.astype(np.float32)
 
                 # Soften edge a bit
                 reveal_img = Image.fromarray((reveal_mask * 255).astype(np.uint8))
-                reveal_img = reveal_img.filter(ImageFilter.GaussianBlur(radius=1.2))
+                reveal_img = reveal_img.filter(ImageFilter.GaussianBlur(radius=1.4))
                 reveal_mask = np.array(reveal_img, dtype=np.float32) / 255.0
+
+                # Restrict strictly to this color region
+                reveal_mask *= (mask_color > 0.05).astype(np.float32)
 
                 # Expand to 3 channels
                 reveal_3 = np.dstack([reveal_mask] * 3)
 
                 # Blend this color from original img into current_frame
                 current_frame = current_frame * (1.0 - reveal_3) + img_np * reveal_3
+
+                # 🔴 NEW: re-impose black ink lines so they never get washed out
+                current_frame = np.minimum(current_frame, line_np)
+
                 current_frame = np.clip(current_frame, 0, 255)
 
                 # Save frame
@@ -162,6 +197,7 @@ def _create_coloring_animation_by_color(
                     tmpdir_path / f"frame_{frame_idx:04d}.png"
                 )
                 frame_idx += 1
+
 
         # Hold final fully-colored frame
         hold_end_frames = int(round(hold_end_sec * fps))
@@ -621,20 +657,32 @@ if __name__ == "__main__":
     # )
 
     # 3️⃣ Organic brushy feel (for fun kids’ pages)
-    create_coloring_animation_frames(
+    # create_coloring_animation_frames(
+    #     input_path="input_colored_page.png",
+    #     frames_dir="frames_fun_noisy",
+    #     style="noisy_brush",
+    #     fps=30,
+    #     color_reveal_duration_sec=3.5,
+    # )
+
+    # frames_to_video(
+    #     frames_dir="frames_fun_noisy",
+    #     output_path="fun_activities_page_noisy_brush.mp4",
+    #     fps=30
+    # )
+
+
+    _create_coloring_animation_by_color(
         input_path="input_colored_page.png",
-        frames_dir="frames_fun_noisy",
-        style="noisy_brush",
-        fps=30,
-        color_reveal_duration_sec=3.5,
+        output_path= "coloring.mp4",
+        fps = 30,
+        num_colors= 7,
+        brush_steps_per_color = 20,
+        hold_line_sec = 0.7,
+        hold_end_sec = 0.7,
+        target_size = None,
+        bg_color=(255, 255, 255),
     )
-
-    frames_to_video(
-        frames_dir="frames_fun_noisy",
-        output_path="fun_activities_page_noisy_brush.mp4",
-        fps=30
-    )
-
 
 ######USAGE EXAMPLES######
 # 1️⃣
