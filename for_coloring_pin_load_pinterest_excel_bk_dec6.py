@@ -28,24 +28,20 @@ CONFIG_FILENAME = "pinterest_config.json"
 # Gemini settings
 DEFAULT_MODEL = "gemini-2.0-flash"
 DEFAULT_TEMPERATURE = 0.3
-# Increased because we now generate multi-platform metadata
-DEFAULT_MAX_TOKENS = 512
+DEFAULT_MAX_TOKENS = 256
 
 # Global gemini_pool – initialised in main guard
 gemini_pool = None
 
 
 PINTEREST_SYSTEM_INSTRUCTION = """
-You are a social media marketing assistant for digital coloring books sold on goodsandgift.com.
+You are a Pinterest marketing assistant for digital coloring books sold on goodsandgift.com.
 
 Goal:
 Given information about a specific coloring book page (sample, cover, or activity page), generate:
-- Pinterest Pin metadata
-- Instagram caption + hashtags
-- TikTok caption + hashtags
-- YouTube title + description + tags
-- X/Twitter text + hashtags
-- Facebook caption + hashtags
+- A compelling Pinterest Pin title
+- A persuasive but natural Pinterest Pin description
+- A small set of relevant hashtags / tags
 
 Audience:
 - Parents looking for printable coloring pages for kids
@@ -58,65 +54,30 @@ General rules:
 - Highlight that it’s a DIGITAL DOWNLOAD (no physical item shipped).
 - Include keywords like "coloring page", "coloring book", "printable", "digital download", "kids activities", where appropriate.
 - Avoid clickbait or ALL CAPS.
-- Keep everything platform-safe (family friendly).
 
-Pinterest title rules:
-- Max ~80 characters.
+Title rules:
+- Max ~80 characters (Pinterest will truncate long titles anyway).
 - Include the main theme (e.g., farm animals, dinosaurs, mandalas, etc.).
 - Mention "coloring page" or "coloring book".
 
-Pinterest description rules:
+Description rules:
 - 1–3 short sentences.
 - 140–300 characters is ideal.
 - Mention what’s included (e.g., number of pages in the book, theme, target age if known).
 - Encourage saving the Pin or downloading/printing later.
 
-Hashtag rules (all platforms):
-- 5–12 items per platform.
+Tags rules:
+- 5–12 items.
 - Each tag should be a hashtag string, e.g. "#coloringpages".
-- Mix broad and specific tags: e.g., "#coloringpages", "#printablecoloring", "#kidsactivities", "#mandalacoloring", "#farmanimals".
-- No duplicates within one platform’s list.
-
-Instagram:
-- One caption string (few short lines ok).
-- Hashtags can be appended at the end in the "instagram_hashtags" field.
-- Caption should be friendly and slightly more expressive.
-
-TikTok:
-- Caption can be similar to Instagram but a bit punchier / hooky.
-- Keep it relatively short.
-
-YouTube:
-- "youtube_title": strong, clear, SEO-friendly title for a Short about this coloring page/book.
-- "youtube_description": 2–4 short lines + a soft CTA to download/print. You may mention that this is a vertical Short preview of the coloring page.
-- "youtube_tags": mix of 5–15 SEO tags (NOT prefixed with "#").
-
-X/Twitter:
-- "x_text": short, tweet-length statement promoting the coloring page/book (~150 characters or less).
-- "x_hashtags": 3–8 relevant hashtags.
-
-Facebook:
-- Caption: similar to Instagram but can be slightly longer if needed.
-- Hashtags: 3–8 relevant hashtags.
-
+- Mix of broad and specific tags: e.g., "#coloringpages", "#printablecoloring", "#kidsactivities", "#mandalacoloring", "#farmanimals", etc.
+- No duplicates.
 
 Return STRICT JSON with this schema only:
 
 {
   "pin_title": "string",
   "pin_description": "string",
-  "tags": ["#tag1", "#tag2", "#tag3"],
-  "instagram_caption": "string",
-  "instagram_hashtags": ["#tag1", "#tag2"],
-  "tiktok_caption": "string",
-  "tiktok_hashtags": ["#tag1", "#tag2"],
-  "youtube_title": "string",
-  "youtube_description": "string",
-  "youtube_tags": ["tag1", "tag2"],
-  "x_text": "string",
-  "x_hashtags": ["#tag1", "#tag2"],
-  "facebook_caption": "string",
-  "facebook_hashtags": ["#tag1", "#tag2"]
+  "tags": ["#tag1", "#tag2", "#tag3"]
 }
 
 Do not include any commentary or text outside this JSON.
@@ -231,7 +192,7 @@ def load_book_config(images_root: Path, source_subfolder: str | None) -> dict:
       book_title, book_url, board_name, banner_text, watermark_text
     Any missing file or key just means "no default" for that field.
     """
-
+    
     if source_subfolder:
         base = images_root / source_subfolder
     else:
@@ -242,6 +203,7 @@ def load_book_config(images_root: Path, source_subfolder: str | None) -> dict:
         base.parent / CONFIG_FILENAME
     ]
 
+    # print candidates
     print(f"[INFO] Looking for Pinterest config in:")
     for c in candidates:
         print(f"  {c}")
@@ -309,7 +271,7 @@ def make_pinterest_video_from_group(
     images: list[Path],
     out_dir: Path,
     video_style: str = "flipbook",
-    duration: float = 10.0,  # default 10s now
+    duration: float = 8.0,
     fps: int = 30,
     size: tuple[int, int] = (1080, 1920),
     book_title: str | None = None,
@@ -368,10 +330,18 @@ def make_pinterest_video_from_group(
 
         clips.append(base)
 
-    # For now we skip intro/outro cards for speed
+    # Intro & outro cards
+    # intro = make_title_card(book_title or "", duration=intro_dur, size=size)
+    # outro = make_outro_card(book_title or "", book_url or "", duration=outro_dur, size=size)
+
+    # Build full sequence: intro + pages + outro
+    # all_clips = [intro] + clips + [outro]
+    # video = concatenate_videoclips(all_clips, method="compose")
     video = concatenate_videoclips(clips, method="compose")
 
+
     # Fade-in & fade-out for the whole video
+    # video = video.fx(vfx.fadein, 0.4).fx(vfx.fadeout, 0.4)
     video = video.fx(vfx.fadein, 0.25).fx(vfx.fadeout, 0.25)
 
     base_name = images[0].stem
@@ -390,10 +360,11 @@ def make_pinterest_video_from_group(
     return out_path
 
 
+
 def make_pinterest_video(
     src: Path,
     out_dir: Path,
-    duration: float = 10.0,  # default 10s now
+    duration: float = 8.0,
     fps: int = 30,
 ) -> Path:
     """
@@ -582,6 +553,7 @@ def make_video_image(
 
     # Optional subject auto-cropping
     if auto_crop_subject:
+        # im = auto_crop_image(im, border=5)
         im = crop_to_content(im, threshold=245, pad_ratio=0.05)
 
     # Resize while preserving aspect
@@ -650,7 +622,6 @@ def get_or_create_workbook(output_excel: Path, base_headers: list[str]):
     header_map = {name: idx + 1 for idx, name in enumerate(base_headers)}
     return wb, ws, base_headers, header_map
 
-
 def build_excel(
     images_root: Path,
     source_subfolder: str | None,
@@ -665,13 +636,13 @@ def build_excel(
     fit_mode: str = "contain",
     bg_style: str = "white",
     text_shadow: bool = True,
-    use_gemini: bool = False,
-    base_tags: str | None = None,
-    auto_crop_subject: bool = True,
-    video_style: str = "single",
-    pages_per_video: int = 10,
-    video_duration: float = 10.0,   # default 10s for all platforms
-    video_fps: int = 30,
+    use_gemini: bool = False,          # <--- NEW
+    base_tags: str | None = None,      # <--- optional - from config if you add it
+    auto_crop_subject: bool = True,        # <--- NEW
+    video_style: str = "single",        # <--- NEW
+    pages_per_video: int = 10,          # <--- NEW (for flipbook/slideshow)
+    video_duration: float = 8.0,        # <--- already added earlier for single videos
+    video_fps: int = 30,                # <--- already added earlier for single videos
 ) -> None:
     # 1) Load config (if present)
     cfg = load_book_config(images_root, source_subfolder)
@@ -723,55 +694,19 @@ def build_excel(
         groups = [[f] for f in media_files]
         print(f"[INFO] Found {len(groups)} media items to process.")
 
-    # Base headers we want to ensure exist (append-only).
-    # These now include multi-platform fields.
+
+    # Base headers we want to ensure exist (append-only)
     base_headers = [
         "pin_id",
         "media_file",       # final media file (image or video)
         "media_type",       # image / video
-        "duration_sec",
-        "aspect_ratio",
         "board_name",
         "book_title",
         "book_url",
-
-        # Platform toggles
-        "platform_pinterest",
-        "platform_instagram",
-        "platform_tiktok",
-        "platform_youtube",
-        "platform_x",
-        "platform_facebook",
-
-        # Pinterest
         "pin_title",
         "pin_description",
         "pin_tags",
         "pin_url_to_link",
-
-        # Instagram
-        "ig_caption",
-        "ig_hashtags",
-
-        # TikTok
-        "tiktok_caption",
-        "tiktok_hashtags",
-
-        # YouTube
-        "yt_title",
-        "yt_description",
-        "yt_tags",
-        "yt_playlist",
-
-        # X / Twitter
-        "x_text",
-        "x_hashtags",
-
-        # Facebook
-        "fb_caption",
-        "fb_hashtags",
-
-        # Common visuals
         "banner_text",
         "watermark_text",
         "notes",
@@ -785,7 +720,8 @@ def build_excel(
     next_pin_id = existing_rows + 1
     print(f"[INFO] Existing rows: {existing_rows}, next_pin_id starts at {next_pin_id}")
 
-    # Where to store generated Pinterest-ready images and videos
+
+    # Where to store generated Pinterest-ready images
     pins_output_root = images_root.parent / "pinterest_pins"
     pins_output_root.mkdir(parents=True, exist_ok=True)
 
@@ -800,6 +736,7 @@ def build_excel(
             continue
 
         print(f"[PROCESS] {idx}: {[g.name for g in group]}")
+
 
         if media_type == "image":
             # ---- IMAGE PINS (existing behaviour) ----
@@ -825,7 +762,7 @@ def build_excel(
         elif media_type == "video":
             # ---- VIDEO PINS ----
             if video_style == "single":
-                # one image → one video
+                # one image → one video (keep your existing single-image->video logic)
                 if is_image:
                     try:
                         out_img = make_pinterest_image(
@@ -838,7 +775,7 @@ def build_excel(
                             text_shadow=text_shadow,
                             auto_crop_subject=auto_crop_subject,
                         )
-                        out_vid = make_pinterest_video(
+                        out_vid = make_pinterest_video(   # your existing ffmpeg helper
                             src=out_img,
                             out_dir=pins_output_root,
                             duration=video_duration,
@@ -853,19 +790,31 @@ def build_excel(
 
             else:
                 # ---- FLIPBOOK / SLIDESHOW (multi-page) ----
-                # 1) Create clean video images for all pages in the group
+                # 1) Create Pinterest images for all pages in the group
                 processed_imgs: list[Path] = []
                 for p in group:
                     if p.suffix.lower() not in IMAGE_EXTS:
                         continue
                     try:
-                        proc = make_video_image(
-                            src=p,
-                            out_dir=pins_output_root,
-                            fit_mode=fit_mode,
-                            bg_style=bg_style,
-                            auto_crop_subject=auto_crop_subject,
-                        )
+                        if media_type == "video":
+                            proc = make_video_image(
+                                src=p,
+                                out_dir=pins_output_root,
+                                fit_mode=fit_mode,
+                                bg_style=bg_style,
+                                auto_crop_subject=auto_crop_subject,
+                            )
+                        else:
+                            proc = make_pinterest_image(
+                                src=p,
+                                out_dir=pins_output_root,
+                                banner_text=banner_text,
+                                watermark_text=watermark_text,
+                                fit_mode=fit_mode,
+                                bg_style=bg_style,
+                                text_shadow=text_shadow,
+                                auto_crop_subject=auto_crop_subject,
+                            )
                         processed_imgs.append(proc)
                     except Exception as e:
                         print(f"[WARN] Failed to create image for {p}: {e}")
@@ -894,8 +843,10 @@ def build_excel(
             # Unknown media_type
             media_path_for_excel = str(primary.relative_to(images_root.parent))
 
-        # Simple label from filename
+
+        # Very simple auto metadata (can be swapped with Gemini later)
         page_label = primary.stem.replace("_", " ").replace("-", " ").title()
+
 
         error_msg = ""
         try:
@@ -914,27 +865,19 @@ def build_excel(
             error_msg = f"Gemini meta failed: {e}"
             meta = fallback_pin_meta(book_title, book_url, page_label, base_tags)
 
-        # Pinterest
         pin_title = meta["pin_title"]
         pin_description = meta["pin_description"]
         tags_str = meta["tags_str"]
 
-        # Multi-platform fields from meta dict (with safe defaults)
-        ig_caption = meta.get("ig_caption", pin_description)
-        ig_hashtags = meta.get("ig_hashtags", tags_str)
-
-        tiktok_caption = meta.get("tiktok_caption", ig_caption)
-        tiktok_hashtags = meta.get("tiktok_hashtags", ig_hashtags)
-
-        yt_title = meta.get("yt_title", pin_title)
-        yt_description = meta.get("yt_description", pin_description)
-        yt_tags = meta.get("yt_tags", "")
-
-        x_text = meta.get("x_text", pin_title)
-        x_hashtags = meta.get("x_hashtags", "")
-
-        fb_caption = meta.get("fb_caption", ig_caption)
-        fb_hashtags = meta.get("fb_hashtags", ig_hashtags)
+        # base_tags = [
+        #     "coloring pages",
+        #     "printable coloring",
+        #     "kids coloring",
+        #     "relaxing art",
+        #     "coloring book",
+        # ]
+        # extra_tag = page_label.split()[0] if page_label else ""
+        # tags_str = ", ".join(base_tags + ([extra_tag] if extra_tag else []))
 
         pin_url_to_link = book_url or ""
 
@@ -942,59 +885,18 @@ def build_excel(
         pin_id = next_pin_id
         next_pin_id += 1
 
-        # Common fields
-        duration_sec = video_duration if media_type == "video" else ""
-        aspect_ratio = "9:16"  # matches 1080x1920 vertical
-
-        # Platform toggles: default everything to "Y" (you can change in Excel)
-        platform_flag = "Y"
-
         # Build a dict keyed by header name (only for the columns we care about)
         row_dict = {
             "pin_id": pin_id,
             "media_file": media_path_for_excel,
             "media_type": media_type,
-            "duration_sec": duration_sec,
-            "aspect_ratio": aspect_ratio,
             "board_name": board_name,
             "book_title": book_title,
             "book_url": book_url,
-
-            "platform_pinterest": platform_flag,
-            "platform_instagram": platform_flag,
-            "platform_tiktok": platform_flag,
-            "platform_youtube": platform_flag,
-            "platform_x": platform_flag,
-            "platform_facebook": platform_flag,
-
-            # Pinterest
             "pin_title": pin_title,
             "pin_description": pin_description,
             "pin_tags": tags_str,
             "pin_url_to_link": pin_url_to_link,
-
-            # Instagram
-            "ig_caption": ig_caption,
-            "ig_hashtags": ig_hashtags,
-
-            # TikTok
-            "tiktok_caption": tiktok_caption,
-            "tiktok_hashtags": tiktok_hashtags,
-
-            # YouTube
-            "yt_title": yt_title,
-            "yt_description": yt_description,
-            "yt_tags": yt_tags,
-            "yt_playlist": "",  # fill manually if needed
-
-            # X / Twitter
-            "x_text": x_text,
-            "x_hashtags": x_hashtags,
-
-            # Facebook
-            "fb_caption": fb_caption,
-            "fb_hashtags": fb_hashtags,
-
             "banner_text": banner_text or "",
             "watermark_text": watermark_text or "",
             "notes": error_msg,
@@ -1009,10 +911,10 @@ def build_excel(
 
         ws.append(row_values)
 
+
     output_excel.parent.mkdir(parents=True, exist_ok=True)
     wb.save(output_excel)
     print(f"[OK] Excel written to: {output_excel}")
-
 
 def generate_pin_meta_with_gemini(
     book_title: str,
@@ -1022,11 +924,11 @@ def generate_pin_meta_with_gemini(
     pin_role: str = "sample_page",
 ) -> dict:
     """
-    Calls Gemini via GeminiPool to generate pin_title, pin_description, tags[],
-    plus multi-platform metadata. Returns dict; may raise or return fallback if something fails.
+    Calls Gemini via GeminiPool to generate pin_title, pin_description, tags[].
+    Returns dict; may raise or return fallback if something fails.
     """
 
-    print(f"[INFO] Generating social meta with Gemini for page: {page_label!r}")
+    print(f"[INFO] Generating Pinterest meta with Gemini for page: {page_label!r}")
 
     global gemini_pool
     if gemini_pool is None:
@@ -1044,7 +946,7 @@ def generate_pin_meta_with_gemini(
 
     prompt = f"""{PINTEREST_SYSTEM_INSTRUCTION}
 
-Now create metadata for one vertical video post derived from a coloring page.
+Now create metadata for one Pinterest Pin.
 
 Context (JSON):
 {json.dumps(context, ensure_ascii=False, indent=2)}
@@ -1058,7 +960,7 @@ Context (JSON):
     )
 
     if not raw:
-        raise RuntimeError("Empty response from Gemini for social meta")
+        raise RuntimeError("Empty response from Gemini for Pinterest meta")
 
     raw = raw.strip()
 
@@ -1070,109 +972,27 @@ Context (JSON):
 
     data = json.loads(raw)
 
-    # Helper to normalize hashtags or tag lists
-    def join_hash_list(val, sep: str = " "):
-        if isinstance(val, list):
-            items = [str(t).strip() for t in val if str(t).strip()]
-            return sep.join(items)
-        return str(val).strip()
-
-    def join_tag_list(val):
-        if isinstance(val, list):
-            items = [str(t).strip() for t in val if str(t).strip()]
-            return ", ".join(items)
-        return str(val).strip()
-
     pin_title = str(data.get("pin_title", "")).strip()
     pin_description = str(data.get("pin_description", "")).strip()
-    tags_str = join_tag_list(data.get("tags", []))
+    tags = data.get("tags", [])
+
+    if isinstance(tags, list):
+        tags_str = ", ".join(str(t).strip() for t in tags if str(t).strip())
+    else:
+        tags_str = str(tags).strip()
 
     if not pin_title:
         raise RuntimeError("Gemini response missing pin_title")
-
-    # Instagram
-    ig_caption = str(data.get("instagram_caption", "")).strip()
-    ig_hashtags = join_hash_list(data.get("instagram_hashtags", []))
-
-    # TikTok
-    tiktok_caption = str(data.get("tiktok_caption", "")).strip()
-    tiktok_hashtags = join_hash_list(data.get("tiktok_hashtags", []))
-
-    # YouTube
-    yt_title = str(data.get("youtube_title", "")).strip()
-    yt_description = str(data.get("youtube_description", "")).strip()
-    yt_tags = join_tag_list(data.get("youtube_tags", []))
-
-    # X / Twitter
-    x_text = str(data.get("x_text", "")).strip()
-    x_hashtags = join_hash_list(data.get("x_hashtags", []))
-
-    # Facebook
-    fb_caption = str(data.get("facebook_caption", "")).strip()
-    fb_hashtags = join_hash_list(data.get("facebook_hashtags", []))
-
-    # Fill reasonable fallbacks if any are missing
-    if not pin_description:
-        pin_description = (
-            f"Download and print this coloring page from the '{book_title}' digital coloring book. "
-            f"Perfect for creative, screen-free time at home or in the classroom. Instant digital download."
-        )
-
-    if not tags_str:
-        tags_str = "#coloringpages, #printablecoloring, #kidsactivities, #digitaldownload"
-
-    if not ig_caption:
-        ig_caption = pin_description
-    if not ig_hashtags:
-        ig_hashtags = tags_str
-
-    if not tiktok_caption:
-        tiktok_caption = ig_caption
-    if not tiktok_hashtags:
-        tiktok_hashtags = ig_hashtags
-
-    if not yt_title:
-        yt_title = pin_title
-    if not yt_description:
-        yt_description = pin_description
-    if not yt_tags:
-        yt_tags = "coloring pages, printable coloring, kids activities, digital download"
-
-    if not x_text:
-        x_text = pin_title
-    if not x_hashtags:
-        x_hashtags = "#coloringpages #printablecoloring #kidsactivities"
-
-    if not fb_caption:
-        fb_caption = ig_caption
-    if not fb_hashtags:
-        fb_hashtags = ig_hashtags
 
     return {
         "pin_title": pin_title,
         "pin_description": pin_description,
         "tags_str": tags_str,
-        "ig_caption": ig_caption,
-        "ig_hashtags": ig_hashtags,
-        "tiktok_caption": tiktok_caption,
-        "tiktok_hashtags": tiktok_hashtags,
-        "yt_title": yt_title,
-        "yt_description": yt_description,
-        "yt_tags": yt_tags,
-        "x_text": x_text,
-        "x_hashtags": x_hashtags,
-        "fb_caption": fb_caption,
-        "fb_hashtags": fb_hashtags,
     }
 
 
-def fallback_pin_meta(
-    book_title: str,
-    product_url: str,
-    page_label: str | None,
-    base_tags: str | None,
-) -> dict:
-    print("[INFO] Using fallback social metadata generation.")
+def fallback_pin_meta(book_title: str, product_url: str, page_label: str | None, base_tags: str | None) -> dict:
+    print("[INFO] Using fallback pin metadata generation.")
     base_tags = (base_tags or "").strip()
     if base_tags:
         tags_str = base_tags
@@ -1189,39 +1009,14 @@ def fallback_pin_meta(
         f"Perfect for creative, screen-free time at home or in the classroom. Instant digital download."
     )
 
-    # Reuse across platforms
-    ig_caption = desc
-    ig_hashtags = tags_str
-    tiktok_caption = desc
-    tiktok_hashtags = tags_str
-    yt_title = title
-    yt_description = desc + " This vertical video shows a quick preview of the page."
-    yt_tags = "coloring pages, printable coloring, kids activities, digital download"
-    x_text = title
-    x_hashtags = "#coloringpages #printablecoloring #kidsactivities"
-    fb_caption = desc
-    fb_hashtags = tags_str
-
     return {
         "pin_title": title,
         "pin_description": desc,
         "tags_str": tags_str,
-        "ig_caption": ig_caption,
-        "ig_hashtags": ig_hashtags,
-        "tiktok_caption": tiktok_caption,
-        "tiktok_hashtags": tiktok_hashtags,
-        "yt_title": yt_title,
-        "yt_description": yt_description,
-        "yt_tags": yt_tags,
-        "x_text": x_text,
-        "x_hashtags": x_hashtags,
-        "fb_caption": fb_caption,
-        "fb_hashtags": fb_hashtags,
     }
 
-
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Generate multi-platform Excel from images/videos (Pinterest + others).")
+    parser = argparse.ArgumentParser(description="Generate Pinterest Pin Excel from images/videos.")
     parser.add_argument("--images-root", required=True, help="Root images folder (e.g. application/downloads)")
     parser.add_argument("--source-subfolder", default="", help="Subfolder under images-root, e.g. '1.Cute Farm Animals/pages'")
     parser.add_argument("--output-excel", default="pinterest_pins.xlsx", help="Output Excel filename")
@@ -1251,7 +1046,7 @@ def main(argv=None):
         "--use-gemini",
         choices=["yes", "no"],
         default="no",
-        help="Use Gemini API to generate multi-platform titles/descriptions/tags.",
+        help="Use Gemini API to generate Pinterest titles/descriptions/tags.",
     )
 
     parser.add_argument(
@@ -1264,8 +1059,8 @@ def main(argv=None):
     parser.add_argument(
         "--video-duration",
         type=float,
-        default=10.0,
-        help="Video duration in seconds for each vertical video.",
+        default=8.0,
+        help="Video duration in seconds for each video pin.",
     )
     parser.add_argument(
         "--video-fps",
@@ -1288,8 +1083,8 @@ def main(argv=None):
     )
 
     # These are now OPTIONAL (can be provided by config file)
-    parser.add_argument("--book-title", default="", help="Book title to use in metadata (overrides config)")
-    parser.add_argument("--book-url", default="", help="URL to link from the post (overrides config)")
+    parser.add_argument("--book-title", default="", help="Book title to use in Pin metadata (overrides config)")
+    parser.add_argument("--book-url", default="", help="URL to link from the Pin (overrides config)")
     parser.add_argument("--board-name", default="", help="Pinterest board name (overrides config)")
     parser.add_argument("--banner-text", default="", help="Text banner at top of image (overrides config)")
     parser.add_argument("--watermark-text", default="", help="Watermark text at bottom of image (overrides config)")
@@ -1302,7 +1097,7 @@ def main(argv=None):
 
     max_pins = args.max_pins if args.max_pins > 0 else None
 
-    print("[INFO] Starting multi-platform Excel generation...")
+    print("[INFO] Starting Pinterest Excel generation...")
     print(f"  images_root      = {images_root}")
     print(f"  source_subfolder = {source_subfolder}")
     print(f"  output_excel     = {output_excel}")
@@ -1312,7 +1107,6 @@ def main(argv=None):
     text_shadow = (args.text_shadow.lower() == "yes")
     auto_crop_subject = (args.auto_crop_subject.lower() == "yes")
     use_gemini = (args.use_gemini.lower() == "yes")
-
     global gemini_pool
     if use_gemini:
         GEM_STATE = Path(__file__).resolve().parent / ".gemini_pool_state_pinterest.json"
@@ -1338,15 +1132,16 @@ def main(argv=None):
         bg_style=args.bg_style,
         text_shadow=text_shadow,
         use_gemini=use_gemini,
-        base_tags=None,
+        base_tags=None,  # or pre-read/CLI if you like
         auto_crop_subject=auto_crop_subject,
-        video_style=args.video_style,
-        pages_per_video=args.pages_per_video,
+        video_style=args.video_style,          # <---
+        pages_per_video=args.pages_per_video,  # <---
         video_duration=args.video_duration,
         video_fps=args.video_fps,
     )
 
-    print("[DONE] Multi-platform Excel generation finished.")
+
+    print("[DONE] Pinterest pin Excel generation finished.")
 
 
 if __name__ == "__main__":
