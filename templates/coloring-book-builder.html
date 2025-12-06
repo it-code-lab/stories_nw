@@ -314,12 +314,17 @@ Have fun and color outside the lines if you like!
 
     <div style="margin-top:10px;">
       <label>Thank-you / bonus text</label> <br>
-      <textarea id="thankYouText" rows="4">
+      <textarea id="thankYouText" disabled rows="4">
 Thanks for coloring with Creative Cubs!
 Color more free pages online at:
 🌈 https://coloring.readernook.com
 
-Love this book? Discover more adorable digital books here:
+Love this book? Discover more adorable books here:
+
+High quality Amazon printed coloring books:
+🛒 https://www.amazon.com/dp/B0G1TK51V4
+
+Digital books:
 🛒 https://goodsandgift.com/product-category/creative-crafting/
 
 Use coupon code CREATIVE10 for a 10% discount on your next Creative Cubs digital coloring book!
@@ -1468,15 +1473,44 @@ Great for ages 3–8, rainy days, car rides, and screen-free creative time.
 
 
       // 7) Thank You / Bonus page (numbered)
+      // if (thankYouText || qrUrl) {
+      //   addStaticPage(`
+      //     <div class="center">
+      //       <h2>Thank You!</h2>
+      //     </div>
+      //     <p>${escapeHtml(thankYouText).replace(/\n/g, '<br>')}</p>
+      //     ${qrUrl ? `<div class="qr center">
+      //         <img src="${qrUrl}" alt="QR code" style="max-width:1in;">
+      //       </div>` : ''}
+      //   `, { skipNumber: true });
+      // }
       if (thankYouText || qrUrl) {
         addStaticPage(`
           <div class="center">
             <h2>Thank You!</h2>
           </div>
-          <p>${escapeHtml(thankYouText).replace(/\n/g, '<br>')}</p>
-          ${qrUrl ? `<div class="qr center">
-              <img src="${qrUrl}" alt="QR code" style="max-width:1in;">
-            </div>` : ''}
+
+          <div style="font-size: 16px; line-height: 1.5;">
+
+            Thanks for coloring with Creative Cubs!<br><br>
+
+            Color more free pages online at:<br>
+            🌈 https://coloring.readernook.com<br>
+            <img src="images/coloring-readernook-qr-code.png" alt="QR code" style="width:1in;"><br><br>
+
+            Love this book? Discover more adorable books here:<br><br>
+
+            High quality Amazon printed coloring books:<br>
+            🛒 https://www.amazon.com/dp/B0G1TK51V4<br>
+            <img src="images/amazon-qr-code.png" alt="Amazon QR code" style="width:1in;"><br><br>
+
+            Digital books:<br>
+            🛒 https://goodsandgift.com/product-category/creative-crafting/<br>
+            <img src="images/goodsandgift-QR.png" alt="Goods and Gift QR code" style="width:1in;"><br><br>
+
+            Use coupon code <strong>CREATIVE10</strong> for a 10% discount on your next Creative Cubs digital coloring book!<br>
+
+          </div>
         `, { skipNumber: true });
       }
 

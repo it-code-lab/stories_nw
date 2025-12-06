@@ -404,6 +404,8 @@
 </head>
 
 <body>
+
+  <!-- DND-Wroking -->
   <!-- Page flip sound -->
   <audio id="flipSound" src="{{ url_for('static', filename='sounds/page-flip.mp3') }}" preload="auto"></audio>
 
@@ -521,6 +523,9 @@
     }
 
     function playFlipSound() {
+      // Disabling temporarily
+      return
+
       if (!flipSoundEl || !audioUnlocked) return;
       const clone = flipSoundEl.cloneNode();
       clone.play().catch(() => { });

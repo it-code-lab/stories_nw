@@ -1393,7 +1393,7 @@
 
     <br>
     <form id="createVectorImagesForm">
-        <h2 style="background:#ffe4b5;">Create Vector Images from Images in downloads folder</h2>
+        <h2 style="background:#ffe4b5;">Create svg Vector Images from Images in downloads folder</h2>
 
         <label for="vectorSourceFolder">Source folder under <code>downloads/</code>:</label>
         <input type="text" id="vectorSourceFolder" name="source_folder" placeholder="e.g. 1.Cute Farm Animals/pages"
@@ -1409,26 +1409,26 @@
     </form>
 
     <br>
-    <form>
+    <form id="coloringBookBuilder">
         <h2 style="background:#ffe4b5;">Coloring Book Builder</h2>
         <a href="coloring_book_builder" target="_blank">Open Coloring Book Builder</a>
 
     </form>
 
     <br>
-    <form>
+    <form id="prepareCaptions">
         <h2 style="background:#ffe4b5;">Caption Editor</h2>
         <a href="prepare_captions" target="_blank">Open Caption Editor</a>
 
     </form>
     <br>
-    <form>
+    <form id="pdfToFlippingBookForm">
         <h2 style="background:#ffe4b5;">Flipping Book Effect</h2>
         <a href="pdf_to_flipping_book" target="_blank">Open Page to convert PDF to flipping book</a>
     </form>
 
     <br>
-    <form>
+    <form id="loadPortait">
         <h2 style="background:#ffe4b5;">Portrait Website Loader</h2>
         <a href="portrait_website_loader" target="_blank">Open Portrait Website Loader</a>
 
@@ -1525,6 +1525,7 @@
         <label>Max pins to generate (0 = all):</label>
         <input type="number" name="max_pins" value="1" style="width:120px;margin-bottom:10px;">
 
+        <div class="infoBox">
         <label>Video duration per Pin (seconds):</label>
         <input type="number" name="video_duration" value="8" min="2" max="60"
                style="width:120px;margin-bottom:8px;">
@@ -1546,7 +1547,7 @@
         <label>Video FPS:</label>
         <input type="number" name="video_fps" value="30" min="10" max="60"
                style="width:120px;margin-bottom:10px;">
-
+        </div>
         <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
             <input type="checkbox" name="use_gemini" value="yes">
             Use Gemini API for titles, descriptions & tags
