@@ -58,12 +58,33 @@ def _create_coloring_animation_by_color(
     w, h = img.size
 
     # --- Make line-art base ---
-    gray = ImageOps.grayscale(img)
-    edges = gray.filter(ImageFilter.FIND_EDGES)
-    edges = ImageOps.autocontrast(edges)
-    edges = ImageOps.invert(edges)
-    edges = edges.point(lambda p: 0 if p < 128 else 255)
-    line_art = edges.convert("RGB")
+    # gray = ImageOps.grayscale(img)
+    # edges = gray.filter(ImageFilter.FIND_EDGES)
+    # edges = ImageOps.autocontrast(edges)
+    # edges = ImageOps.invert(edges)
+    # edges = edges.point(lambda p: 0 if p < 128 else 255)
+    # line_art = edges.convert("RGB")
+
+    # --- Make line-art base: keep original black ink (borders, eyes) ---
+    img_np_full = np.array(img, dtype=np.uint8)
+
+    # Detect “ink” as pixels that are very close to black in ALL channels
+    r = img_np_full[:, :, 0]
+    g = img_np_full[:, :, 1]
+    b = img_np_full[:, :, 2]
+
+    # Tune this threshold if needed (smaller = only pure black, larger = also very dark colors)
+    ink_mask = (r < 60) & (g < 60) & (b < 60)
+
+    # Start with a white page
+    line_np_uint8 = np.full_like(img_np_full, 255, dtype=np.uint8)
+
+    # Put solid black where the original had near-black ink
+    line_np_uint8[ink_mask] = 0
+
+    # This “line_art” now has exactly your original black borders/eyes on white
+    line_art = Image.fromarray(line_np_uint8, mode="RGB")
+
 
     # --- Color quantization ---
     labels, palette_colors = _quantize_to_color_labels(img, num_colors=num_colors)
