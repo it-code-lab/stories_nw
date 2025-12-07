@@ -1343,7 +1343,7 @@ def generate_pinterest_excel_route():
 
         media_type = (data.get("media_type") or "image").strip()
         max_pins_str = (data.get("max_pins") or "0").strip()
-        output_excel_name = (data.get("output_excel") or "pinterest_pins.xlsx").strip()
+        output_excel_name = (data.get("output_excel") or "master_shorts_uploader_data.xlsx").strip()
 
         # These can be blank – generate_excel.py will fall back to pinterest_config.json
         book_title = (data.get("book_title") or "").strip()

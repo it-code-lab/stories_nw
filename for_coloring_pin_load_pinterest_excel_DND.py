@@ -16,7 +16,7 @@ from gemini_pool import GeminiPool  # same helper you already use
 
 BASE_DIR = Path(__file__).resolve().parent
 
-OUTPUT_EXCEL_DEFAULT = BASE_DIR / "pinterest_pins.xlsx"
+OUTPUT_EXCEL_DEFAULT = BASE_DIR / "master_shorts_uploader_data.xlsx"
 PIN_MEDIA_ROOT = BASE_DIR / "pinterest_media"
 
 PIN_WIDTH = 1000
@@ -470,7 +470,7 @@ def parse_args():
     p = argparse.ArgumentParser(description="Generate Pinterest pins Excel from coloring book images.")
     p.add_argument("--source_folder", required=True, help="Folder with source images (relative to BASE_DIR or absolute).")
     p.add_argument("--book_info_excel", required=True, help="Excel file with book-level info (folder, book_title, product_url, board_name, base_tags).")
-    p.add_argument("--output_excel", default=str(OUTPUT_EXCEL_DEFAULT), help="Output Excel file (default: pinterest_pins.xlsx in script folder).")
+    p.add_argument("--output_excel", default=str(OUTPUT_EXCEL_DEFAULT), help="Output Excel file (default: master_shorts_uploader_data.xlsx in script folder).")
     p.add_argument("--media_type", choices=["image", "video", "both"], default="image", help="Type of pins to generate (image/video/both).")
     p.add_argument("--max_pins", type=int, default=20, help="Maximum number of pins to generate from this folder.")
     p.add_argument("--watermark_text", default="goodsandgift.com", help="Optional watermark text to draw on pins.")

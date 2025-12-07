@@ -19,7 +19,7 @@ PROFILE_DIR = r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 21"
 CHROME_EXECUTABLE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
 # Re-use the same Excel for now
-EXCEL_FILE = "pinterest_pins.xlsx"
+EXCEL_FILE = "master_shorts_uploader_data.xlsx"
 
 BASE_DIR = Path(__file__).resolve().parent
 MEDIA_BASE = BASE_DIR / "pinterest_uploads"  # where media_file paths are relative to

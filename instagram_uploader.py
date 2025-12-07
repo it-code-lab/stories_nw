@@ -16,7 +16,7 @@ INSTAGRAM_PROFILE_URL = "https://www.instagram.com/creativecubs173/"
 PROFILE_DIR = r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 21"
 CHROME_EXECUTABLE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
-EXCEL_FILE = "pinterest_pins.xlsx"
+EXCEL_FILE = "master_shorts_uploader_data.xlsx"
 
 BASE_DIR = Path(__file__).resolve().parent
 MEDIA_BASE = BASE_DIR / "pinterest_uploads"   # same folder you use for Pinterest pins

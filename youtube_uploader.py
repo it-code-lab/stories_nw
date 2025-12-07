@@ -8,6 +8,7 @@ from datetime import datetime
 from playwright.sync_api import sync_playwright
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
+import traceback  # to print detailed error info
 
 # DND - To Run
 # python youtube_uploader.py
@@ -159,22 +160,39 @@ def upload_video(page, video_info):
     # page.locator('tp-yt-paper-item[role="option"]:has-text("Upload videos")').click()
 
     # Upload video file
+    # Upload video file
     file_input = page.locator('input[type="file"]')
+    raw_path = video_info["video_path"]
 
-    video_filename = video_info["video_path"]
+    # 1) If it's already an absolute path and exists, use it
+    if os.path.isabs(raw_path) and os.path.exists(raw_path):
+        absolute_video_path = raw_path
+    else:
+        # 2) Try treating it as a relative path (like "pinterest_pins\xyz.mp4")
+        rel_candidate = os.path.abspath(raw_path)
+        if os.path.exists(rel_candidate):
+            absolute_video_path = rel_candidate
+        else:
+            # 3) Backward-compat: look under processed_videos folder
+            video_filename = os.path.basename(raw_path)
+            if not video_filename.lower().endswith(".mp4"):
+                video_filename += ".mp4"
 
-    # If it doesn't already end with ".mp4", add it
-    if not video_filename.lower().endswith(".mp4"):
-        video_filename += ".mp4"
+            processed_candidate = os.path.abspath(
+                os.path.join("processed_videos", video_filename)
+            )
+            if not os.path.exists(processed_candidate):
+                raise FileNotFoundError(
+                    "Video file not found. Tried:\n"
+                    f" - {rel_candidate}\n"
+                    f" - {processed_candidate}"
+                )
 
-    # Prepend the subfolder path
-    full_video_path = os.path.join("processed_videos", video_filename)
+            absolute_video_path = processed_candidate
 
-    # Resolve to absolute path
-    absolute_video_path = os.path.abspath(full_video_path)
-
-    # Now use it
+    print(f"Using video file: {absolute_video_path}")
     file_input.set_input_files(absolute_video_path)
+
 
     #file_input.set_input_files(os.path.abspath(video_info["video_path"]))
 
@@ -359,6 +377,120 @@ def wait_until_enabled(locator, timeout=60):
         elapsed += 1
     raise Exception(f"Timeout: Element {locator} was not enabled after {timeout} seconds.")
 
+
+def load_youtube_rows_from_master(excel_file):
+    wb = load_workbook(excel_file)
+    ws = wb.active
+    # headers = [cell.value for cell in ws[1]]
+    # header_map = {name: idx + 1 for idx, name in enumerate(headers)}
+
+    headers = [cell.value for cell in ws[1]]
+    headers = [h if h is not None else "" for h in headers]
+
+    headers, header_map, _ = ensure_youtube_status_columns(ws, headers)
+
+    required = ["media_file", "yt_title", "yt_description"]
+    for r in required:
+        if r not in header_map:
+            raise Exception(f"Missing column: {r}")
+
+    rows = []
+    for row_idx in range(2, ws.max_row + 1):
+        media_file = ws.cell(row=row_idx, column=header_map["media_file"]).value
+        if not media_file:
+            continue
+
+        title = ws.cell(row=row_idx, column=header_map["yt_title"]).value
+        desc = ws.cell(row=row_idx, column=header_map["yt_description"]).value
+
+        if not title or not desc:
+            continue
+
+        rows.append({
+            "row_idx": row_idx,
+            "media_file": media_file,
+            "youtube_title": title,
+            "youtube_description": desc,
+            "youtube_tags": ws.cell(row=row_idx, column=header_map.get("yt_tags", 0)).value,
+            "youtube_playlist": "Coloring",
+            "made_for_kids": False
+        })
+
+    return wb, ws, header_map, rows
+
+def ensure_youtube_status_columns(ws, headers):
+    """
+    Ensure these columns exist:
+      - youtube_url
+      - youtube_status
+      - youtube_error
+    """
+    extra_cols = [
+        "youtube_url",
+        "youtube_status",
+        "youtube_error"
+    ]
+    changed = False
+    for col_name in extra_cols:
+        if col_name not in headers:
+            headers.append(col_name)
+            ws.cell(row=1, column=len(headers), value=col_name)
+            changed = True
+
+    header_map = {name: idx + 1 for idx, name in enumerate(headers)}
+    return headers, header_map, changed
+
+def save_youtube_status(ws, header_map, row_idx, url, error=None):
+    ws.cell(row=row_idx, column=header_map["youtube_url"], value=url or "")
+    # ws.cell(row=row_idx, column=header_map["youtube_last_attempt"], value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    if error:
+        ws.cell(row=row_idx, column=header_map["youtube_status"], value="error")
+        ws.cell(row=row_idx, column=header_map["youtube_error"], value=str(error)[:500])
+    else:
+        ws.cell(row=row_idx, column=header_map["youtube_status"], value="success")
+        ws.cell(row=row_idx, column=header_map["youtube_error"], value="")
+
+
+def upload_shorts_from_master_file():
+    wb, ws, header_map, youtube_rows = load_youtube_rows_from_master("master_shorts_uploader_data.xlsx")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch_persistent_context(
+            PROFILE_DIR,
+            headless=False,
+            executable_path=CHROME_EXECUTABLE
+        )
+        page = browser.new_page()
+
+        for row in youtube_rows:
+            media =  os.path.join("pinterest_uploads", row["media_file"])
+
+            print(f"\n=== Uploading to YouTube: {media} ===")
+
+            try:
+                video_info = {
+                    "youtube_title": row["youtube_title"],
+                    "youtube_description": row["youtube_description"],
+                    "youtube_tags": row["youtube_tags"],
+                    "youtube_playlist_name": row["youtube_playlist"],
+                    "video_path": media,
+                    "made_for_kids": True,
+                    "youtube_channel_name": "Creative Cubs",
+                    "size": "portrait",
+                }
+
+                url = upload_video(page, video_info)
+                save_youtube_status(ws, header_map, row["row_idx"], url)
+
+            except Exception as e:
+                traceback.print_exc()
+                save_youtube_status(ws, header_map, row["row_idx"], "", str(e))
+
+    wb.save("master_shorts_uploader_data.xlsx")
+    print("All YouTube uploads done.")
+
+
 def upload_videos():
     # videos = load_videos()
     # init_csv()
@@ -429,4 +561,5 @@ def upload_videos():
 
 
 if __name__ == "__main__":
-    upload_videos()
+    # upload_videos()
+    upload_shorts_from_master_file()

@@ -1224,7 +1224,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Generate multi-platform Excel from images/videos (Pinterest + others).")
     parser.add_argument("--images-root", required=True, help="Root images folder (e.g. application/downloads)")
     parser.add_argument("--source-subfolder", default="", help="Subfolder under images-root, e.g. '1.Cute Farm Animals/pages'")
-    parser.add_argument("--output-excel", default="pinterest_pins.xlsx", help="Output Excel filename")
+    parser.add_argument("--output-excel", default="master_shorts_uploader_data.xlsx", help="Output Excel filename")
     parser.add_argument("--media-type", choices=["image", "video"], default="image")
     parser.add_argument("--max-pins", type=int, default=0, help="Max pins to generate (0 = all)")
 
