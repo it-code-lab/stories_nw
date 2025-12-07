@@ -7,12 +7,15 @@ import os
 import traceback  # to print detailed error info
 from build_coloring_app_manifest import build_coloring_manifest
 from caption_generator import prepare_captions_file_for_notebooklm_audio
+from facebook_uploader import upload_facebook_videos
 from get_audio import get_audio_file
+from instagram_uploader import upload_instagram_posts
 from pinterest_uploader import upload_pins
 from scraper import scrape_and_process  # Ensure this exists
 from settings import background_music_options, font_settings, tts_engine, voices, sizes
+from tiktok_uploader import upload_tiktok_videos
 from video_editor import batch_process
-from youtube_uploader import upload_videos
+from youtube_uploader import upload_shorts_from_master_file, upload_videos
 import re
 from pathlib import Path
 import wave
@@ -1489,7 +1492,12 @@ def generate_pinterest_excel_route():
         stderr_tail = (proc.stderr or "")[-4000:]
 
         if upload_pinterest_flg == "yes" and ok:
-            upload_pins()
+            upload_pins() #Pinterest upload
+            if media_type == "video":
+                upload_shorts_from_master_file() #YouTube shorts upload
+                upload_facebook_videos() #Facebook videos upload
+                upload_tiktok_videos() #TikTok videos upload
+                upload_instagram_posts() #Instagram posts upload
         
         return jsonify({
             "ok": ok,

@@ -1190,16 +1190,34 @@ def fallback_pin_meta(
     )
 
     # Reuse across platforms
+    # Reuse across platforms
+    y_tb_desc_add = """
+    📥 Download the Coloring Book (Digital Soft Copy)
+
+    👉 Get the PDF / Printable Pages Here:
+    https://goodsandgift.com/product-category/creative-crafting/
+
+    🖍️ Grab My Physical Coloring Books on Amazon
+
+    📘 Creative Cubs Coloring Book Series:
+    https://www.amazon.com/dp/B0G1TK51V4
+
+    🌐 Free Coloring Pages
+    Color online or download free pages at:
+    https://coloring.readernook.com/
+    """
+
+
     ig_caption = desc
     ig_hashtags = tags_str
-    tiktok_caption = desc
+    tiktok_caption = desc + "\n" + "https://goodsandgift.com/product-category/creative-crafting/"
     tiktok_hashtags = tags_str
     yt_title = title
-    yt_description = desc + " This vertical video shows a quick preview of the page."
+    yt_description = desc + " This vertical video shows a quick preview of the page.\n" + y_tb_desc_add
     yt_tags = "coloring pages, printable coloring, kids activities, digital download"
     x_text = title
     x_hashtags = "#coloringpages #printablecoloring #kidsactivities"
-    fb_caption = desc
+    fb_caption = desc + "\n" + y_tb_desc_add
     fb_hashtags = tags_str
 
     return {
