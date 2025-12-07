@@ -463,6 +463,8 @@ def upload_facebook_videos():
 
 
                 time.sleep(1) # Small pause for "human" typing
+                page.keyboard.press("Escape")
+                time.sleep(1)
 
                 # --- STEP 4: SHARE THE REEL ---
                 

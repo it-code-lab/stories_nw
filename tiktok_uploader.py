@@ -177,6 +177,15 @@ def build_caption(row: dict) -> str:
     manual = (row.get("tiktok_caption") or "").strip()
     if manual:
         caption = manual
+        link = (
+            (row.get("pin_url_to_link") or "") or
+            (row.get("book_url") or "")
+        ).strip()
+
+        if link:
+            if caption:
+                caption += "\n\n"
+            caption += link
     else:
         title = (row.get("pin_title") or "").strip()
         desc = (row.get("pin_description") or "").strip()

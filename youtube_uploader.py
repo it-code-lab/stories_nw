@@ -214,6 +214,8 @@ def upload_video(page, video_info):
     print("Description Entered")
 
     time.sleep(2)
+    page.keyboard.press("Escape")
+    time.sleep(1)
 
     if video_info.get("size", "").lower() == "landscape":
         thumb_path = video_info.get("thumbnail_path")
@@ -389,7 +391,7 @@ def load_youtube_rows_from_master(excel_file):
 
     headers, header_map, _ = ensure_youtube_status_columns(ws, headers)
 
-    required = ["media_file", "yt_title", "yt_description"]
+    required = ["media_file", "yt_title", "yt_description", "youtube_status"]
     for r in required:
         if r not in header_map:
             raise Exception(f"Missing column: {r}")
@@ -397,7 +399,12 @@ def load_youtube_rows_from_master(excel_file):
     rows = []
     for row_idx in range(2, ws.max_row + 1):
         media_file = ws.cell(row=row_idx, column=header_map["media_file"]).value
+        status_val = ws.cell(row=row_idx, column=header_map["youtube_status"]).value
+        
         if not media_file:
+            continue
+        
+        if status_val == "success":
             continue
 
         title = ws.cell(row=row_idx, column=header_map["yt_title"]).value
