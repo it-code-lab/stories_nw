@@ -400,10 +400,14 @@ def load_youtube_rows_from_master(excel_file):
     for row_idx in range(2, ws.max_row + 1):
         media_file = ws.cell(row=row_idx, column=header_map["media_file"]).value
         status_val = ws.cell(row=row_idx, column=header_map["youtube_status"]).value
+        media_type = ws.cell(row=row_idx, column=header_map["media_type"]).value
         
         if not media_file:
             continue
-        
+
+        if media_type and media_type != "video":
+            continue
+
         if status_val == "success":
             continue
 
@@ -482,7 +486,7 @@ def upload_shorts_from_master_file():
                     "youtube_tags": row["youtube_tags"],
                     "youtube_playlist_name": row["youtube_playlist"],
                     "video_path": media,
-                    "made_for_kids": True,
+                    "made_for_kids": False,
                     "youtube_channel_name": "Creative Cubs",
                     "size": "portrait",
                 }

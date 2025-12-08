@@ -73,7 +73,12 @@ def load_videos_from_excel():
         record["_row_idx"] = row_idx
 
         media_file = (record.get("media_file") or "").strip()
+        status_val = (record.get("tiktok_upload_status") or "").strip()
+
         if not media_file:
+            continue
+
+        if status_val == "success":
             continue
 
         ext = Path(media_file).suffix.lower()
@@ -377,9 +382,10 @@ def upload_tiktok_videos():
 
         # You should already be logged in to TikTok in this Chrome profile.
 
-        total = len(rows)
-        for rev_idx, row in enumerate(reversed(rows), start=1):
-            row_idx = total - rev_idx + 2  # Excel row index (header is row 1)
+        # total = len(rows)
+        for row in rows: 
+            # row_idx = total - rev_idx + 2  # Excel row index (header is row 1)
+            row_idx = row["_row_idx"]
 
             status_val = str(row.get("tiktok_upload_status") or "").strip().lower()
             if status_val == "success":
