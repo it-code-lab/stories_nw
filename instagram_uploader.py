@@ -68,6 +68,15 @@ def load_rows_from_excel():
         rec["_row_idx"] = row_idx
 
         media_file = (rec.get("media_file") or "").strip()
+        status_val = (rec.get("instagram_upload_status") or "").strip()
+        media_type = (rec.get("media_type") or "").strip()
+
+        if media_type and media_type != "video":
+            continue
+
+        if status_val == "success":
+            continue
+
         title = (rec.get("pin_title") or "").strip()
         if not media_file or not title:
             continue
@@ -418,10 +427,11 @@ def upload_instagram_posts():
             "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
         )
 
-        total = len(rows)
+        # total = len(rows)
         # Go bottom-to-top, like Pinterest uploader
-        for rev_idx, row in enumerate(reversed(rows), start=1):
-            excel_row_idx = total - rev_idx + 2
+        for row in rows: 
+            # excel_row_idx = total - rev_idx + 2
+            excel_row_idx = row["_row_idx"]
 
             status_val = str(row.get("instagram_upload_status") or "").strip().lower()
             if status_val == "success":
