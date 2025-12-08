@@ -1361,6 +1361,8 @@ def generate_pinterest_excel_route():
 
         use_gemini_flag = (data.get("use_gemini") or "no").strip().lower()
 
+        add_bg_music_flag = (data.get("add_bg_music") or "no").strip().lower()
+
         upload_pinterest_flg = (data.get("upload_pinterest") or "no").strip().lower()
 
         auto_crop_subject_flag = (data.get("auto_crop_subject") or "yes").strip().lower()
@@ -1479,6 +1481,8 @@ def generate_pinterest_excel_route():
 
         cmd += ["--use-gemini", use_gemini_flag]
 
+        cmd += ["--add-bg-music", add_bg_music_flag]
+
         proc = subprocess.run(
             cmd,
             cwd=str(base_dir),
@@ -1490,6 +1494,9 @@ def generate_pinterest_excel_route():
         ok = (proc.returncode == 0)
         stdout_tail = (proc.stdout or "")[-4000:]
         stderr_tail = (proc.stderr or "")[-4000:]
+
+        # if media_type == "video":
+
 
         if upload_pinterest_flg == "yes" and ok:
             upload_pins() #Pinterest upload

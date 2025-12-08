@@ -1,9 +1,11 @@
 # generate_excel.py
 import argparse
+import os
 import sys
 import json
 from pathlib import Path
 import json
+from bg_music_video import merge_video_with_bg_music_overwrite
 from gemini_pool import GeminiPool  # same helper you use in get_seo_meta_data.py
 import random
 from openpyxl import Workbook, load_workbook
@@ -386,7 +388,6 @@ def make_pinterest_video_from_group(
         verbose=False,
         logger=None,
     )
-
     return out_path
 
 
@@ -672,6 +673,7 @@ def build_excel(
     pages_per_video: int = 10,
     video_duration: float = 10.0,   # default 10s for all platforms
     video_fps: int = 30,
+    add_bg_music: bool = False,
 ) -> None:
     # 1) Load config (if present)
     cfg = load_book_config(images_root, source_subfolder)
@@ -886,6 +888,10 @@ def build_excel(
                         )
 
                         media_path_for_excel = str(out_vid.relative_to(images_root.parent))
+
+                        if add_bg_music:
+                            merge_video_with_bg_music_overwrite("pinterest_uploads/" + media_path_for_excel, "background_music/dreamland.mp3", bg_volume=0.4, video_volume=1.0)
+
                     except Exception as e:
                         print(f"[WARN] Failed to create {video_style} video for group {idx}: {e}")
                         # Fallback: use first processed image
@@ -1273,6 +1279,13 @@ def main(argv=None):
     )
 
     parser.add_argument(
+        "--add-bg-music",
+        choices=["yes", "no"],
+        default="no",
+        help="Add background music to video pins.",
+    )
+
+    parser.add_argument(
         "--auto-crop-subject",
         choices=["yes", "no"],
         default="yes",
@@ -1330,6 +1343,7 @@ def main(argv=None):
     text_shadow = (args.text_shadow.lower() == "yes")
     auto_crop_subject = (args.auto_crop_subject.lower() == "yes")
     use_gemini = (args.use_gemini.lower() == "yes")
+    add_bg_music = (args.add_bg_music.lower() == "yes")
 
     global gemini_pool
     if use_gemini:
@@ -1362,6 +1376,7 @@ def main(argv=None):
         pages_per_video=args.pages_per_video,
         video_duration=args.video_duration,
         video_fps=args.video_fps,
+        add_bg_music=add_bg_music,
     )
 
     print("[DONE] Multi-platform Excel generation finished.")

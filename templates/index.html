@@ -1492,7 +1492,7 @@
     </form>
     <br>
     <form id="pinterestExcelFormForColoringPins">
-        <h2 style="background:#fef3c7;">Generate Short Video and Upload to Multiple Platforms</h2>
+        <h2 style="background:#fef3c7;">Generate Short Video and Upload to Multiple Platforms (YouTube, facebook, Insta, Tiktok, Pinterest)</h2>
 
         <div class="infoBox" style="margin-bottom:8px;">
             <strong>Option 1 – Upload a folder from your computer:</strong><br>
@@ -1551,6 +1551,11 @@
         <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
             <input type="checkbox" name="use_gemini" value="yes">
             Use Gemini API for titles, descriptions & tags
+        </label>
+
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+            <input type="checkbox" name="add_bg_music" value="yes">
+           Add background music to videos
         </label>
 
         <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
@@ -1897,6 +1902,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formData = new FormData(pinForm);
                 if (!pinForm.use_gemini.checked) {
                     formData.set("use_gemini", "no");
+                }
+
+                if (!pinForm.add_bg_music.checked) {
+                    formData.set("add_bg_music", "no");
                 }
 
                 if (!pinForm.upload_pinterest.checked) {
