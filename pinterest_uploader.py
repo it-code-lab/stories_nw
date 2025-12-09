@@ -393,6 +393,12 @@ def create_pin(page, pin_info: dict) -> str:
 
     # Title
     pin_title = (pin_info.get("pin_title") or "").strip()
+
+    # Limit length to 100 characters
+    if len(pin_title) > 100:
+        pin_title = pin_title[:100]
+        print("  [INFO] Title truncated to 100 characters.")
+
     fill_text_field(
         page,
         label_text="Title",

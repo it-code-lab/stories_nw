@@ -377,7 +377,8 @@ def make_pinterest_video_from_group(
     video = video.fx(vfx.fadein, 0.25).fx(vfx.fadeout, 0.25)
 
     base_name = images[0].stem
-    out_name = f"{base_name}_{video_style}_pin.mp4"
+    # out_name = f"{base_name}_{video_style}_pin.mp4"
+    out_name = f"{base_name}.mp4"
     out_path = out_dir / out_name
 
     video.write_videofile(
@@ -605,7 +606,8 @@ def make_video_image(
     bg.paste(im, (x, y))
 
     # Output path
-    out_path = out_dir / f"{src.stem}_video.jpg"
+    # out_path = out_dir / f"{src.stem}_video.jpg"
+    out_path = out_dir / f"{src.stem}.jpg"
     bg.save(out_path, "JPEG", quality=95)
 
     return out_path
@@ -1202,6 +1204,8 @@ def fallback_pin_meta(
 
     👉 Get the PDF / Printable Pages Here:
     https://goodsandgift.com/product-category/creative-crafting/
+    
+    https://kishna01.gumroad.com/
 
     🖍️ Grab My Physical Coloring Books on Amazon
 
