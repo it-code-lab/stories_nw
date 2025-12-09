@@ -389,7 +389,7 @@ def upload_facebook_videos():
         # You should already be logged in to Facebook in this Chrome profile.
 
         # total = len(rows)
-        for  row in enumerate(reversed(rows), start=1):
+        for row in reversed(rows):
             # row_idx = total - rev_idx + 2  # Excel row index (header is row 1)
             row_idx = row["_row_idx"]  
 

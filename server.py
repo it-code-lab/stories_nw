@@ -1520,6 +1520,19 @@ def generate_pinterest_excel_route():
             "error": str(e),
         }), 500
 
+@app.route('/process_master_shorts_file_data', methods=['POST'])
+def process_master_shorts_file_data():
+    try:
+        upload_pins() #Pinterest upload
+        upload_shorts_from_master_file() #YouTube shorts upload
+        upload_facebook_videos() #Facebook videos upload
+        upload_tiktok_videos() #TikTok videos upload
+        upload_instagram_posts() #Instagram posts upload
+        return "✅ Processing completed successfully!", 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    
 @app.route('/select_background_video', methods=['POST'])
 def select_background_video():
     """Copy chosen video to edit_vid_input folder for use."""
