@@ -253,10 +253,10 @@ def api_coloring_animation():
                 input_path=input_path,
                 output_path=output_path,
                 fps=fps,
-                num_colors=7,
-                brush_steps_per_color=20,
-                hold_line_sec=0.7,
-                hold_end_sec=0.7,
+                num_colors=5,
+                brush_steps_per_color=40,
+                hold_line_sec=1.2,
+                hold_end_sec=1.2,
                 target_size=target_size,
                 bg_color=(255, 255, 255),
             )
@@ -1345,6 +1345,7 @@ def generate_pinterest_excel_route():
         source_folder = (data.get("source_folder") or "").strip()
 
         media_type = (data.get("media_type") or "image").strip()
+        pin_url = (data.get("pin_url") or "").strip()
         max_pins_str = (data.get("max_pins") or "0").strip()
         output_excel_name = (data.get("output_excel") or "master_shorts_uploader_data.xlsx").strip()
 
@@ -1445,6 +1446,7 @@ def generate_pinterest_excel_route():
             "--images-root", str(images_root),
             "--output-excel", str(output_excel),
             "--media-type", media_type,
+            "--pin-url", pin_url,
         ]
 
         if source_subfolder:
@@ -1500,7 +1502,7 @@ def generate_pinterest_excel_route():
 
         if upload_pinterest_flg == "yes" and ok:
             upload_pins() #Pinterest upload
-            if media_type == "video":
+            if media_type == "video" or media_type == "coloring":
                 upload_shorts_from_master_file() #YouTube shorts upload
                 upload_facebook_videos() #Facebook videos upload
                 upload_tiktok_videos() #TikTok videos upload

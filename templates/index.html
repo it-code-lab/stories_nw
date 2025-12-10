@@ -1492,7 +1492,8 @@
     </form>
     <br>
     <form id="pinterestExcelFormForColoringPins">
-        <h2 style="background:#fef3c7;">Generate Short Video and Upload to Multiple Platforms (YouTube, facebook, Insta, Tiktok, Pinterest)</h2>
+        <h2 style="background:#fef3c7;">Generate Short Video and Upload to Multiple Platforms (YouTube, facebook, Insta,
+            Tiktok, Pinterest)</h2>
 
         <div class="infoBox" style="margin-bottom:8px;">
             <strong>Option 1 – Upload a folder from your computer:</strong><br>
@@ -1516,37 +1517,49 @@
         <input type="text" name="source_folder" placeholder="e.g. 1.Cute Farm Animals/pages"
             style="width:100%;max-width:420px;margin-bottom:10px;">
 
+        <label>Main PIN URL:</label>
+        <select id="pin_url" name="pin_url" style="margin-bottom:10px;">
+            <option value="gng" selected>Goodsandgift path from pinterest_config.json</option>
+            <option value="amazon">Amazon coloring book series Link</option>
+            <option value="gumroad" selected>kishna01.gumroad.com</option>
+            <option value="readernook" selected>coloring.readernook.com</option>
+        </select>
+
+
         <label>Media type:</label>
-        <select name="media_type" style="margin-bottom:10px;">
+        <select id="pin_media_type" name="media_type" style="margin-bottom:10px;">
             <option value="image" selected>Image Pins</option>
             <option value="video">Video Pins</option>
+            <option value="coloring" selected>Coloring Video</option>
         </select>
+        <div class="infoBox" id="coloringVidId" style="margin-bottom:8px;">
+            For "Coloring Video" option, select the input folder that contains colored images</div>
+
 
         <label>Max pins to generate (0 = all):</label>
         <input type="number" name="max_pins" value="1" style="width:120px;margin-bottom:10px;">
 
-        <div class="infoBox">
-        <label>Video duration per Pin (seconds):</label>
-        <input type="number" name="video_duration" value="10" min="2" max="60"
-               style="width:120px;margin-bottom:8px;">
-        <div style="font-size:12px;color:#6b7280;margin-top:-6px;margin-bottom:8px;">
-            Used only for Video Pins.
-        </div>
+        <div class="infoBox" id="videoPinProps">
+            <label>Video duration per Pin (seconds):</label>
+            <input type="number" name="video_duration" value="10" min="2" max="60"
+                style="width:120px;margin-bottom:8px;">
+            <div style="font-size:12px;color:#6b7280;margin-top:-6px;margin-bottom:8px;">
+                Used only for Video Pins.
+            </div>
 
-        <label>Video style:</label>
-        <select name="video_style" style="margin-bottom:8px;">
-          <!-- <option value="single">Single page video</option> -->
-          <option value="slideshow">Slideshow (multiple pages)</option>
-          <option value="flipbook">Flipbook (multiple pages)</option>
-        </select>
+            <label>Video style:</label>
+            <select name="video_style" style="margin-bottom:8px;">
+                <!-- <option value="single">Single page video</option> -->
+                <option value="slideshow">Slideshow (multiple pages)</option>
+                <option value="flipbook">Flipbook (multiple pages)</option>
+            </select>
 
-        <label>Pages per video (for Flipbook/Slideshow):</label>
-        <input type="number" name="pages_per_video" value="10" min="2" max="40"
-               style="width:120px;margin-bottom:10px;">
+            <label>Pages per video (for Flipbook/Slideshow):</label>
+            <input type="number" name="pages_per_video" value="10" min="2" max="40"
+                style="width:120px;margin-bottom:10px;">
 
-        <label>Video FPS:</label>
-        <input type="number" name="video_fps" value="30" min="10" max="60"
-               style="width:120px;margin-bottom:10px;">
+            <label>Video FPS:</label>
+            <input type="number" name="video_fps" value="30" min="10" max="60" style="width:120px;margin-bottom:10px;">
         </div>
         <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
             <input type="checkbox" name="use_gemini" value="yes">
@@ -1555,12 +1568,12 @@
 
         <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
             <input type="checkbox" name="add_bg_music" value="yes">
-           Add background music to videos
+            Add background music to videos
         </label>
 
         <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-        <input type="checkbox" name="auto_crop_subject" value="yes" checked>
-        Zoom in on drawing (auto-crop subject)
+            <input type="checkbox" name="auto_crop_subject" value="yes" checked>
+            Zoom in on drawing (auto-crop subject)
         </label>
 
         <label>Output Excel filename:</label>
@@ -1588,8 +1601,7 @@
 
 
 
-        <input type="hidden" name="text_shadow" value="no"
-            onclick="return false;" style="display:none;">
+        <input type="hidden" name="text_shadow" value="no" onclick="return false;" style="display:none;">
 
         <div class="infoBox" style="margin-bottom:8px;">
             <strong>Book info from config file:</strong><br>
@@ -1631,9 +1643,10 @@
             Upload to Platforms (YouTube, facebook, Insta, Tiktok, Pinterest)
         </label>
 
-        <button type="submit">Generate Pinterest Pin Data and Upload Upload to Platforms (YouTube, facebook, Insta, Tiktok, Pinterest)</button>
-        <button type="button" id="runUploadsFromMasterBtn" 
-            style="background-color: blanchedalmond; color: black;">Only Run Uploads from Master</button>
+        <button type="submit">Generate Pinterest Pin Data and Upload Upload to Platforms (YouTube, facebook, Insta,
+            Tiktok, Pinterest)</button>
+        <button type="button" id="runUploadsFromMasterBtn" style="background-color: blanchedalmond; color: black;">Only
+            Run Uploads from Master</button>
         <pre id="pinterestExcelResult" style="margin-top:8px;font-size:13px;white-space:pre-wrap;"></pre>
     </form>
     <br>
@@ -1695,54 +1708,80 @@
     </form> -->
     <br>
     <form id="coloringAnimationForm">
-    <h2>Coloring Page Before/After Animation</h2>
+        <h2>Coloring Page Before/After Animation</h2>
 
-    <label>Upload colored coloring page (PNG/JPG):</label>
-    <input type="file" id="coloringImage" name="image" accept="image/*" required />
+        <label>Upload colored coloring page (PNG/JPG):</label>
+        <input type="file" id="coloringImage" name="image" accept="image/*" required />
 
-    <label>Animation Mode:</label>
-    <select id="coloringMode" name="mode">
-        <option value="by_color">Artist style (one color group at a time)</option>
-        <option value="sweep">Smooth sweep (global fill)</option>
-    </select>
+        <label>Animation Mode:</label>
+        <select id="coloringMode" name="mode">
+            <option value="by_color">Artist style (one color group at a time)</option>
+            <option value="sweep">Smooth sweep (global fill)</option>
+        </select>
 
-    <label>Frames per second (FPS):</label>
-    <input type="number" id="coloringFps" name="fps" value="24" min="1" max="60" />
+        <label>Frames per second (FPS):</label>
+        <input type="number" id="coloringFps" name="fps" value="24" min="1" max="60" />
 
-    <label>Animation Duration (seconds):</label>
-    <input type="number" id="coloringDuration" name="duration" value="6" min="1" max="60" />
+        <label>Animation Duration (seconds):</label>
+        <input type="number" id="coloringDuration" name="duration" value="6" min="1" max="60" />
 
-    <label>Canvas Preset:</label>
-    <select id="canvasPreset" name="canvas_preset">
-        <option value="none">Use original image size</option>
-        <option value="shorts">1080×1920 (YouTube Shorts / Reels)</option>
-        <option value="pinterest">1000×1500 (Pinterest)</option>
-        <option value="custom">Custom size</option>
-    </select>
+        <label>Canvas Preset:</label>
+        <select id="canvasPreset" name="canvas_preset">
+            <option value="none">Use original image size</option>
+            <option value="shorts">1080×1920 (YouTube Shorts / Reels)</option>
+            <option value="pinterest">1000×1500 (Pinterest)</option>
+            <option value="custom">Custom size</option>
+        </select>
 
-    <div id="customCanvasFields" style="display:none; margin-top:10px;">
-        <label>Custom Width:</label>
-        <input type="number" id="canvasWidth" name="canvas_width" value="1080" min="100" max="4000" />
+        <div id="customCanvasFields" style="display:none; margin-top:10px;">
+            <label>Custom Width:</label>
+            <input type="number" id="canvasWidth" name="canvas_width" value="1080" min="100" max="4000" />
 
-        <label>Custom Height:</label>
-        <input type="number" id="canvasHeight" name="canvas_height" value="1920" min="100" max="4000" />
-    </div>
+            <label>Custom Height:</label>
+            <input type="number" id="canvasHeight" name="canvas_height" value="1920" min="100" max="4000" />
+        </div>
 
-    <button type="submit">Create Before/After Coloring Animation</button>
-    <div class="infoBox">
-        This will generate a video in <code>processed_videos/</code> and show a preview + download link below.
-    </div>
+        <button type="submit">Create Before/After Coloring Animation</button>
+        <div class="infoBox">
+            This will generate a video in <code>processed_videos/</code> and show a preview + download link below.
+        </div>
     </form>
 
     <div id="coloringAnimationResult" style="margin-top:20px;"></div>
-    <video id="coloringAnimationPreview"
-        controls
-        style="display:none; max-width:100%; margin-top:10px;">
+    <video id="coloringAnimationPreview" controls style="display:none; max-width:100%; margin-top:10px;">
         Your browser does not support the video tag.
     </video>
     <br>
 
     <br>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const mediaTypeSelect = document.getElementById("pin_media_type");
+            const videoPropsBox = document.getElementById("videoPinProps");
+            const coloringVidId = document.getElementById("coloringVidId");
+
+            function toggleVideoProps() {
+                if (mediaTypeSelect.value === "video") {
+                    videoPropsBox.style.display = "block";
+                    coloringVidId.style.display = "none";
+                } else if (mediaTypeSelect.value === "coloring") {
+                    coloringVidId.style.display = "block";
+                    videoPropsBox.style.display = "none";
+                } else {
+                    videoPropsBox.style.display = "none";
+                    coloringVidId.style.display = "none";
+                }
+            }
+
+            // run once on load
+            toggleVideoProps();
+
+            // run whenever selection changes
+            mediaTypeSelect.addEventListener("change", toggleVideoProps);
+        });
+    </script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // --- existing SEO Metadata wiring here ---
@@ -1824,71 +1863,71 @@
                 });
             }
 
- 
+
         });
     </script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const form      = document.getElementById('coloringAnimationForm');
-  const resultDiv = document.getElementById('coloringAnimationResult');
-  const videoEl   = document.getElementById('coloringAnimationPreview');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('coloringAnimationForm');
+            const resultDiv = document.getElementById('coloringAnimationResult');
+            const videoEl = document.getElementById('coloringAnimationPreview');
 
-  if (!form || !resultDiv || !videoEl) {
-    console.warn('Coloring animation elements not found; skipping wiring.');
-    return;
-  }
+            if (!form || !resultDiv || !videoEl) {
+                console.warn('Coloring animation elements not found; skipping wiring.');
+                return;
+            }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-    resultDiv.textContent = 'Processing coloring animation…';
-    videoEl.style.display = 'none';
-    videoEl.removeAttribute('src');
+                resultDiv.textContent = 'Processing coloring animation…';
+                videoEl.style.display = 'none';
+                videoEl.removeAttribute('src');
 
-    const fd = new FormData(form);
+                const fd = new FormData(form);
 
-    try {
-      const res  = await fetch('/api/coloring_animation', {
-        method: 'POST',
-        body: fd,
-      });
-      const data = await res.json();
+                try {
+                    const res = await fetch('/api/coloring_animation', {
+                        method: 'POST',
+                        body: fd,
+                    });
+                    const data = await res.json();
 
-      if (!res.ok || (!data.ok && !data.success)) {
-        const msg = (data && data.error) ? data.error : res.statusText;
-        resultDiv.textContent = 'Error: ' + msg;
-        console.error('Coloring animation error:', data);
-        return;
-      }
+                    if (!res.ok || (!data.ok && !data.success)) {
+                        const msg = (data && data.error) ? data.error : res.statusText;
+                        resultDiv.textContent = 'Error: ' + msg;
+                        console.error('Coloring animation error:', data);
+                        return;
+                    }
 
-      // Accept any of the possible fields
-      const videoUrl =
-        data.video_url ||
-        data.url ||
-        (data.video_path ? '/downloads/' + data.video_path : '');
+                    // Accept any of the possible fields
+                    const videoUrl =
+                        data.video_url ||
+                        data.url ||
+                        (data.video_path ? '/downloads/' + data.video_path : '');
 
-      if (!videoUrl) {
-        resultDiv.textContent = 'Error: Server did not return a video URL.';
-        console.error('Coloring animation response missing video URL:', data);
-        return;
-      }
+                    if (!videoUrl) {
+                        resultDiv.textContent = 'Error: Server did not return a video URL.';
+                        console.error('Coloring animation response missing video URL:', data);
+                        return;
+                    }
 
-      const downloadName = data.filename || 'coloring_animation.mp4';
+                    const downloadName = data.filename || 'coloring_animation.mp4';
 
-      resultDiv.innerHTML =
-        'Done! ' +
-        `<a href="${videoUrl}" download="${downloadName}">Download video</a>`;
+                    resultDiv.innerHTML =
+                        'Done! ' +
+                        `<a href="${videoUrl}" download="${downloadName}">Download video</a>`;
 
-      videoEl.src = videoUrl;
-      videoEl.style.display = 'block';
-      videoEl.load();
-    } catch (err) {
-      console.error(err);
-      resultDiv.textContent = 'Error calling server: ' + err;
-    }
-  });
-});
-</script>
+                    videoEl.src = videoUrl;
+                    videoEl.style.display = 'block';
+                    videoEl.load();
+                } catch (err) {
+                    console.error(err);
+                    resultDiv.textContent = 'Error calling server: ' + err;
+                }
+            });
+        });
+    </script>
 
     <script>
         // --- NEW: Pinterest Pin Excel wiring ---
@@ -2442,7 +2481,7 @@ ${JSON.stringify(meta, null, 2)}
             loadVideoFolder('').catch(console.error);
         });
     </script>
-    <script>     
+    <script>
         async function processMasterShortsFile() {
             try {
                 console.log("Processing Master Shorts File Data...");
@@ -2457,7 +2496,7 @@ ${JSON.stringify(meta, null, 2)}
                 console.log("Completed Processing");
                 if (!response.ok) {
                     throw new Error(`Request failed with status ${response.status}`);
-                }                
+                }
                 // optionally: console.log(result);
             } catch (e) {
                 console.error(e);
@@ -2465,10 +2504,10 @@ ${JSON.stringify(meta, null, 2)}
             }
         }
 
-         document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('runUploadsFromMasterBtn')?.addEventListener('click', processMasterShortsFile);
         });
- </script>
+    </script>
 
 
     <script>

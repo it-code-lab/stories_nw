@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import json
 from bg_music_video import merge_video_with_bg_music_overwrite
+from coloring_animation import _create_coloring_animation_by_color
 from gemini_pool import GeminiPool  # same helper you use in get_seo_meta_data.py
 import random
 from openpyxl import Workbook, load_workbook
@@ -676,6 +677,7 @@ def build_excel(
     video_duration: float = 10.0,   # default 10s for all platforms
     video_fps: int = 30,
     add_bg_music: bool = False,
+    pin_url: str = "",
 ) -> None:
     # 1) Load config (if present)
     cfg = load_book_config(images_root, source_subfolder)
@@ -683,6 +685,13 @@ def build_excel(
     # 2) Resolve final values (UI/CLI overrides config)
     book_title = (book_title or cfg.get("book_title") or "Coloring Book").strip()
     book_url = (book_url or cfg.get("book_url") or "").strip()
+    if pin_url == "amazon":
+        book_url = "https://www.amazon.com/dp/B0G1TK51V4"
+    elif pin_url == "gumroad":
+        pin_url = "https://kishna01.gumroad.com/"
+    elif pin_url == "readernook":
+        book_url = "https://www.coloring.readernook.com/"
+
     board_name = (board_name or cfg.get("board_name") or "").strip()
     banner_text = (banner_text or cfg.get("banner_text") or "").strip() or None
     watermark_text = (watermark_text or cfg.get("watermark_text") or "").strip() or None
@@ -892,12 +901,55 @@ def build_excel(
                         media_path_for_excel = str(out_vid.relative_to(images_root.parent))
 
                         if add_bg_music:
-                            merge_video_with_bg_music_overwrite("pinterest_uploads/" + media_path_for_excel, "background_music/dreamland.mp3", bg_volume=0.4, video_volume=1.0)
+                            merge_video_with_bg_music_overwrite("pinterest_uploads/" + media_path_for_excel, "background_music/dreamland.mp3", bg_volume=0.3, video_volume=1.0)
 
                     except Exception as e:
                         print(f"[WARN] Failed to create {video_style} video for group {idx}: {e}")
                         # Fallback: use first processed image
                         media_path_for_excel = str(processed_imgs[0].relative_to(images_root.parent))
+        elif media_type == "coloring":
+            # ---- COLORING ANIMATION VIDEOS ----
+            if is_image:
+                try:
+                    # Where to place the final coloring video
+                    out_vid = pins_output_root / f"{primary.stem}_c.mp4"
+
+                    input_path = str(primary)
+                    output_path = str(out_vid)
+                    target_size = (1080, 1920)  # vertical video like other pins
+
+                    print(f"[INFO] Creating coloring animation for {primary.name}")
+                    _create_coloring_animation_by_color(
+                        input_path=input_path,
+                        output_path=output_path,
+                        fps=video_fps,
+                        num_colors=5,
+                        brush_steps_per_color=40,
+                        hold_line_sec=1.2,
+                        hold_end_sec=1.2,
+                        target_size=target_size,
+                        bg_color=(255, 255, 255),
+                    )
+
+                    media_path_for_excel = str(out_vid.relative_to(images_root.parent))
+
+                    # Add background music exactly like other videos
+                    if add_bg_music:
+                        merge_video_with_bg_music_overwrite(
+                            "pinterest_uploads/" + media_path_for_excel,
+                            "background_music/dreamland.mp3",
+                            bg_volume=0.3,
+                            video_volume=1.0,
+                        )
+
+                except Exception as e:
+                    print(f"[WARN] Failed to create COLORING video for {primary}: {e}")
+                    # Fallback: just log the original image path
+                    media_path_for_excel = str(primary.relative_to(images_root.parent))
+            else:
+                # Not an image – just log original path
+                media_path_for_excel = str(primary.relative_to(images_root.parent))
+
         else:
             # Unknown media_type
             media_path_for_excel = str(primary.relative_to(images_root.parent))
@@ -951,7 +1003,11 @@ def build_excel(
         next_pin_id += 1
 
         # Common fields
-        duration_sec = video_duration if media_type == "video" else ""
+        duration_sec = video_duration if media_type in ("video", "coloring") else ""
+
+        if media_type == "coloring":
+            media_type = "video"
+
         aspect_ratio = "9:16"  # matches 1080x1920 vertical
 
         # Platform toggles: default everything to "Y" (you can change in Excel)
@@ -1204,7 +1260,7 @@ def fallback_pin_meta(
 
     👉 Get the PDF / Printable Pages Here:
     https://goodsandgift.com/product-category/creative-crafting/
-    
+
     https://kishna01.gumroad.com/
 
     🖍️ Grab My Physical Coloring Books on Amazon
@@ -1253,7 +1309,8 @@ def main(argv=None):
     parser.add_argument("--images-root", required=True, help="Root images folder (e.g. application/downloads)")
     parser.add_argument("--source-subfolder", default="", help="Subfolder under images-root, e.g. '1.Cute Farm Animals/pages'")
     parser.add_argument("--output-excel", default="master_shorts_uploader_data.xlsx", help="Output Excel filename")
-    parser.add_argument("--media-type", choices=["image", "video"], default="image")
+    parser.add_argument("--media-type", choices=["image", "video", "coloring"], default="image")
+    parser.add_argument("--pin-url", choices=["gng", "amazon", "gumroad","readernook"], default="gng")
     parser.add_argument("--max-pins", type=int, default=0, help="Max pins to generate (0 = all)")
 
     parser.add_argument(
@@ -1381,6 +1438,7 @@ def main(argv=None):
         video_duration=args.video_duration,
         video_fps=args.video_fps,
         add_bg_music=add_bg_music,
+        pin_url=args.pin_url,
     )
 
     print("[DONE] Multi-platform Excel generation finished.")
