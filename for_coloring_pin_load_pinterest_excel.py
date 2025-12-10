@@ -1005,8 +1005,7 @@ def build_excel(
         # Common fields
         duration_sec = video_duration if media_type in ("video", "coloring") else ""
 
-        if media_type == "coloring":
-            media_type = "video"
+        excel_media_type = "video" if media_type in ("video", "coloring") else media_type
 
         aspect_ratio = "9:16"  # matches 1080x1920 vertical
 
@@ -1017,7 +1016,7 @@ def build_excel(
         row_dict = {
             "pin_id": pin_id,
             "media_file": media_path_for_excel,
-            "media_type": media_type,
+            "media_type": excel_media_type,
             "duration_sec": duration_sec,
             "aspect_ratio": aspect_ratio,
             "board_name": board_name,
@@ -1406,6 +1405,17 @@ def main(argv=None):
     use_gemini = (args.use_gemini.lower() == "yes")
     add_bg_music = (args.add_bg_music.lower() == "yes")
 
+    pin_url = args.pin_url
+    book_url = args.book_url
+
+    if pin_url == "amazon":
+        book_url = "https://www.amazon.com/dp/B0G1TK51V4"
+    elif pin_url == "gumroad":
+        pin_url = "https://kishna01.gumroad.com/"
+    elif pin_url == "readernook":
+        book_url = "https://www.coloring.readernook.com/"
+
+
     global gemini_pool
     if use_gemini:
         GEM_STATE = Path(__file__).resolve().parent / ".gemini_pool_state_pinterest.json"
@@ -1423,7 +1433,7 @@ def main(argv=None):
         media_type=args.media_type,
         max_pins=max_pins,
         book_title=args.book_title,
-        book_url=args.book_url,
+        book_url=book_url,
         board_name=args.board_name,
         banner_text=args.banner_text,
         watermark_text=args.watermark_text,
