@@ -4,8 +4,11 @@ import os
 import time
 from pathlib import Path
 from datetime import datetime
+import traceback
 
 from playwright.sync_api import sync_playwright
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
 from openpyxl import load_workbook
 
 # ================== CONFIG ==================
@@ -136,7 +139,7 @@ def resolve_media_path(media_file: str) -> str:
 
 def open_tiktok_upload(page):
     page.goto(TIKTOK_UPLOAD_URL)
-    page.wait_for_load_state("networkidle")
+    # page.wait_for_load_state("networkidle")
     time.sleep(3)
 
 
@@ -404,9 +407,28 @@ def upload_tiktok_videos():
 
                 # Wait for the main upload button/area to be visible
                 # The 'Select file' button is often the key stable element
-                upload_selector = page.get_by_text("Select video", exact=True)
-                upload_selector.wait_for(state="visible", timeout=30000)
-                print("Upload page loaded successfully.")
+                # upload_selector = page.get_by_text("Select video", exact=True)
+                # upload_selector.wait_for(state="visible", timeout=30000)
+                # print("Upload page loaded successfully.")
+
+                # Wait for the upload UI to be ready
+                # Prefer the actual <input type="file">, which is more stable than button text
+                try:
+                    file_input_locator = page.locator('input[type="file"]').first
+                    file_input_locator.wait_for(state="attached", timeout=10000)
+                    print("Upload file input is ready.")
+                except PlaywrightTimeoutError:
+                    # Fallback: try any 'Select' / 'Upload' text, just for debugging
+                    print("Timed out waiting for file input, trying fallback text locator...")
+                    try:
+                        page.get_by_text("Select", exact=False).first.wait_for(
+                            state="visible", timeout=15000
+                        )
+                        print("Fallback upload button visible.")
+                    except PlaywrightTimeoutError:
+                        print("❌ Could not find TikTok upload UI. Current URL:", page.url)
+                        page.screenshot(path="tiktok_timeout_row.png", full_page=True)
+                        raise
 
                 # --- STEP 2: FILE UPLOAD ---
                 # TikTok Studio uses an HTML input element hidden behind the UI, 
@@ -464,6 +486,7 @@ def upload_tiktok_videos():
             except Exception as e:
                 err_msg = str(e)[:500]
                 print(f"❌ Error uploading TikTok for row {row_idx}: {err_msg}")
+                traceback.print_exc()
                 save_tiktok_status(ws, header_map, row_idx, "", err_msg)
 
             # Gentle pause between posts
