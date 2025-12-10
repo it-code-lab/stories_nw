@@ -1490,7 +1490,7 @@ def generate_pinterest_excel_route():
             cwd=str(base_dir),
             capture_output=True,
             text=True,
-            timeout=60 * 60,
+            # timeout=60 * 60,
         )
 
         ok = (proc.returncode == 0)

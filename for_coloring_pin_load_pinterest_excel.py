@@ -803,42 +803,20 @@ def build_excel(
     pins_output_root.mkdir(parents=True, exist_ok=True)
 
     for idx, group in enumerate(groups, start=1):
-        primary = group[0]
-        ext = primary.suffix.lower()
-        is_image = ext in IMAGE_EXTS
-        is_video = ext in VIDEO_EXTS
+        try:
+            primary = group[0]
+            ext = primary.suffix.lower()
+            is_image = ext in IMAGE_EXTS
+            is_video = ext in VIDEO_EXTS
 
-        if not (is_image or is_video):
-            print(f"[SKIP] Unsupported file type: {primary}")
-            continue
+            if not (is_image or is_video):
+                print(f"[SKIP] Unsupported file type: {primary}")
+                continue
 
-        print(f"[PROCESS] {idx}: {[g.name for g in group]}")
+            print(f"[PROCESS] {idx}: {[g.name for g in group]}")
 
-        if media_type == "image":
-            # ---- IMAGE PINS (existing behaviour) ----
-            if is_image:
-                try:
-                    out_img = make_pinterest_image(
-                        src=primary,
-                        out_dir=pins_output_root,
-                        banner_text=banner_text,
-                        watermark_text=watermark_text,
-                        fit_mode=fit_mode,
-                        bg_style=bg_style,
-                        text_shadow=text_shadow,
-                        auto_crop_subject=auto_crop_subject,
-                    )
-                    media_path_for_excel = str(out_img.relative_to(images_root.parent))
-                except Exception as e:
-                    print(f"[WARN] Failed to create Pinterest image for {primary}: {e}")
-                    media_path_for_excel = str(primary.relative_to(images_root.parent))
-            else:
-                media_path_for_excel = str(primary.relative_to(images_root.parent))
-
-        elif media_type == "video":
-            # ---- VIDEO PINS ----
-            if video_style == "single":
-                # one image → one video
+            if media_type == "image":
+                # ---- IMAGE PINS (existing behaviour) ----
                 if is_image:
                     try:
                         out_img = make_pinterest_image(
@@ -851,229 +829,256 @@ def build_excel(
                             text_shadow=text_shadow,
                             auto_crop_subject=auto_crop_subject,
                         )
-                        out_vid = make_pinterest_video(
-                            src=out_img,
-                            out_dir=pins_output_root,
-                            duration=video_duration,
-                            fps=video_fps,
-                        )
-                        media_path_for_excel = str(out_vid.relative_to(images_root.parent))
+                        media_path_for_excel = str(out_img.relative_to(images_root.parent))
                     except Exception as e:
-                        print(f"[WARN] Failed to create Pinterest VIDEO for {primary}: {e}")
+                        print(f"[WARN] Failed to create Pinterest image for {primary}: {e}")
                         media_path_for_excel = str(primary.relative_to(images_root.parent))
                 else:
                     media_path_for_excel = str(primary.relative_to(images_root.parent))
 
-            else:
-                # ---- FLIPBOOK / SLIDESHOW (multi-page) ----
-                # 1) Create clean video images for all pages in the group
-                processed_imgs: list[Path] = []
-                for p in group:
-                    if p.suffix.lower() not in IMAGE_EXTS:
-                        continue
-                    try:
-                        proc = make_video_image(
-                            src=p,
-                            out_dir=pins_output_root,
-                            fit_mode=fit_mode,
-                            bg_style=bg_style,
-                            auto_crop_subject=auto_crop_subject,
-                        )
-                        processed_imgs.append(proc)
-                    except Exception as e:
-                        print(f"[WARN] Failed to create image for {p}: {e}")
+            elif media_type == "video":
+                # ---- VIDEO PINS ----
+                if video_style == "single":
+                    # one image → one video
+                    if is_image:
+                        try:
+                            out_img = make_pinterest_image(
+                                src=primary,
+                                out_dir=pins_output_root,
+                                banner_text=banner_text,
+                                watermark_text=watermark_text,
+                                fit_mode=fit_mode,
+                                bg_style=bg_style,
+                                text_shadow=text_shadow,
+                                auto_crop_subject=auto_crop_subject,
+                            )
+                            out_vid = make_pinterest_video(
+                                src=out_img,
+                                out_dir=pins_output_root,
+                                duration=video_duration,
+                                fps=video_fps,
+                            )
+                            media_path_for_excel = str(out_vid.relative_to(images_root.parent))
+                        except Exception as e:
+                            print(f"[WARN] Failed to create Pinterest VIDEO for {primary}: {e}")
+                            media_path_for_excel = str(primary.relative_to(images_root.parent))
+                    else:
+                        media_path_for_excel = str(primary.relative_to(images_root.parent))
 
-                if not processed_imgs:
-                    print(f"[WARN] No valid images for group {idx}")
-                    media_path_for_excel = str(primary.relative_to(images_root.parent))
                 else:
+                    # ---- FLIPBOOK / SLIDESHOW (multi-page) ----
+                    # 1) Create clean video images for all pages in the group
+                    processed_imgs: list[Path] = []
+                    for p in group:
+                        if p.suffix.lower() not in IMAGE_EXTS:
+                            continue
+                        try:
+                            proc = make_video_image(
+                                src=p,
+                                out_dir=pins_output_root,
+                                fit_mode=fit_mode,
+                                bg_style=bg_style,
+                                auto_crop_subject=auto_crop_subject,
+                            )
+                            processed_imgs.append(proc)
+                        except Exception as e:
+                            print(f"[WARN] Failed to create image for {p}: {e}")
+
+                    if not processed_imgs:
+                        print(f"[WARN] No valid images for group {idx}")
+                        media_path_for_excel = str(primary.relative_to(images_root.parent))
+                    else:
+                        try:
+                            out_vid = make_pinterest_video_from_group(
+                                images=processed_imgs,
+                                out_dir=pins_output_root,
+                                video_style=video_style,
+                                duration=video_duration,
+                                fps=video_fps,
+                                book_title=book_title,
+                                book_url=book_url,
+                            )
+
+                            media_path_for_excel = str(out_vid.relative_to(images_root.parent))
+
+                            if add_bg_music:
+                                merge_video_with_bg_music_overwrite("pinterest_uploads/" + media_path_for_excel, "background_music/dreamland.mp3", bg_volume=0.3, video_volume=1.0)
+
+                        except Exception as e:
+                            print(f"[WARN] Failed to create {video_style} video for group {idx}: {e}")
+                            # Fallback: use first processed image
+                            media_path_for_excel = str(processed_imgs[0].relative_to(images_root.parent))
+            elif media_type == "coloring":
+                # ---- COLORING ANIMATION VIDEOS ----
+                if is_image:
                     try:
-                        out_vid = make_pinterest_video_from_group(
-                            images=processed_imgs,
-                            out_dir=pins_output_root,
-                            video_style=video_style,
-                            duration=video_duration,
+                        # Where to place the final coloring video
+                        out_vid = pins_output_root / f"{primary.stem}_c.mp4"
+
+                        input_path = str(primary)
+                        output_path = str(out_vid)
+                        target_size = (1080, 1920)  # vertical video like other pins
+
+                        print(f"[INFO] Creating coloring animation for {primary.name}")
+                        _create_coloring_animation_by_color(
+                            input_path=input_path,
+                            output_path=output_path,
                             fps=video_fps,
-                            book_title=book_title,
-                            book_url=book_url,
+                            num_colors=7,
+                            brush_steps_per_color=50,
+                            hold_line_sec=1.2,
+                            hold_end_sec=1.2,
+                            target_size=target_size,
+                            bg_color=(255, 255, 255),
                         )
 
                         media_path_for_excel = str(out_vid.relative_to(images_root.parent))
 
+                        # Add background music exactly like other videos
                         if add_bg_music:
-                            merge_video_with_bg_music_overwrite("pinterest_uploads/" + media_path_for_excel, "background_music/dreamland.mp3", bg_volume=0.3, video_volume=1.0)
+                            merge_video_with_bg_music_overwrite(
+                                "pinterest_uploads/" + media_path_for_excel,
+                                "background_music/dreamland.mp3",
+                                bg_volume=0.3,
+                                video_volume=1.0,
+                            )
 
                     except Exception as e:
-                        print(f"[WARN] Failed to create {video_style} video for group {idx}: {e}")
-                        # Fallback: use first processed image
-                        media_path_for_excel = str(processed_imgs[0].relative_to(images_root.parent))
-        elif media_type == "coloring":
-            # ---- COLORING ANIMATION VIDEOS ----
-            if is_image:
-                try:
-                    # Where to place the final coloring video
-                    out_vid = pins_output_root / f"{primary.stem}_c.mp4"
-
-                    input_path = str(primary)
-                    output_path = str(out_vid)
-                    target_size = (1080, 1920)  # vertical video like other pins
-
-                    print(f"[INFO] Creating coloring animation for {primary.name}")
-                    _create_coloring_animation_by_color(
-                        input_path=input_path,
-                        output_path=output_path,
-                        fps=video_fps,
-                        num_colors=5,
-                        brush_steps_per_color=40,
-                        hold_line_sec=1.2,
-                        hold_end_sec=1.2,
-                        target_size=target_size,
-                        bg_color=(255, 255, 255),
-                    )
-
-                    media_path_for_excel = str(out_vid.relative_to(images_root.parent))
-
-                    # Add background music exactly like other videos
-                    if add_bg_music:
-                        merge_video_with_bg_music_overwrite(
-                            "pinterest_uploads/" + media_path_for_excel,
-                            "background_music/dreamland.mp3",
-                            bg_volume=0.3,
-                            video_volume=1.0,
-                        )
-
-                except Exception as e:
-                    print(f"[WARN] Failed to create COLORING video for {primary}: {e}")
-                    # Fallback: just log the original image path
+                        print(f"[WARN] Failed to create COLORING video for {primary}: {e}")
+                        # Fallback: just log the original image path
+                        media_path_for_excel = str(primary.relative_to(images_root.parent))
+                else:
+                    # Not an image – just log original path
                     media_path_for_excel = str(primary.relative_to(images_root.parent))
+
             else:
-                # Not an image – just log original path
+                # Unknown media_type
                 media_path_for_excel = str(primary.relative_to(images_root.parent))
 
-        else:
-            # Unknown media_type
-            media_path_for_excel = str(primary.relative_to(images_root.parent))
+            # Simple label from filename
+            page_label = primary.stem.replace("_", " ").replace("-", " ").title()
 
-        # Simple label from filename
-        page_label = primary.stem.replace("_", " ").replace("-", " ").title()
-
-        error_msg = ""
-        try:
-            if use_gemini:
-                meta = generate_pin_meta_with_gemini(
-                    book_title=book_title,
-                    product_url=book_url,
-                    page_label=page_label,
-                    base_tags=base_tags,
-                    pin_role="sample_page",
-                )
-            else:
+            error_msg = ""
+            try:
+                if use_gemini:
+                    meta = generate_pin_meta_with_gemini(
+                        book_title=book_title,
+                        product_url=book_url,
+                        page_label=page_label,
+                        base_tags=base_tags,
+                        pin_role="sample_page",
+                    )
+                else:
+                    meta = fallback_pin_meta(book_title, book_url, page_label, base_tags)
+            except Exception as e:
+                print(f"[WARN] Gemini meta failed for {primary.name}: {e}")
+                error_msg = f"Gemini meta failed: {e}"
                 meta = fallback_pin_meta(book_title, book_url, page_label, base_tags)
-        except Exception as e:
-            print(f"[WARN] Gemini meta failed for {primary.name}: {e}")
-            error_msg = f"Gemini meta failed: {e}"
-            meta = fallback_pin_meta(book_title, book_url, page_label, base_tags)
-
-        # Pinterest
-        pin_title = meta["pin_title"]
-        pin_description = meta["pin_description"]
-        tags_str = meta["tags_str"]
-
-        # Multi-platform fields from meta dict (with safe defaults)
-        ig_caption = meta.get("ig_caption", pin_description)
-        ig_hashtags = meta.get("ig_hashtags", tags_str)
-
-        tiktok_caption = meta.get("tiktok_caption", ig_caption)
-        tiktok_hashtags = meta.get("tiktok_hashtags", ig_hashtags)
-
-        yt_title = meta.get("yt_title", pin_title)
-        yt_description = meta.get("yt_description", pin_description)
-        yt_tags = meta.get("yt_tags", "")
-
-        x_text = meta.get("x_text", pin_title)
-        x_hashtags = meta.get("x_hashtags", "")
-
-        fb_caption = meta.get("fb_caption", ig_caption)
-        fb_hashtags = meta.get("fb_hashtags", ig_hashtags)
-
-        pin_url_to_link = book_url or ""
-
-        # Compute pin_id so it keeps incrementing across runs
-        pin_id = next_pin_id
-        next_pin_id += 1
-
-        # Common fields
-        duration_sec = video_duration if media_type in ("video", "coloring") else ""
-
-        excel_media_type = "video" if media_type in ("video", "coloring") else media_type
-
-        aspect_ratio = "9:16"  # matches 1080x1920 vertical
-
-        # Platform toggles: default everything to "Y" (you can change in Excel)
-        platform_flag = "Y"
-
-        # Build a dict keyed by header name (only for the columns we care about)
-        row_dict = {
-            "pin_id": pin_id,
-            "media_file": media_path_for_excel,
-            "media_type": excel_media_type,
-            "duration_sec": duration_sec,
-            "aspect_ratio": aspect_ratio,
-            "board_name": board_name,
-            "book_title": book_title,
-            "book_url": book_url,
-
-            "platform_pinterest": platform_flag,
-            "platform_instagram": platform_flag,
-            "platform_tiktok": platform_flag,
-            "platform_youtube": platform_flag,
-            "platform_x": platform_flag,
-            "platform_facebook": platform_flag,
 
             # Pinterest
-            "pin_title": pin_title,
-            "pin_description": pin_description,
-            "pin_tags": tags_str,
-            "pin_url_to_link": pin_url_to_link,
+            pin_title = meta["pin_title"]
+            pin_description = meta["pin_description"]
+            tags_str = meta["tags_str"]
 
-            # Instagram
-            "ig_caption": ig_caption,
-            "ig_hashtags": ig_hashtags,
+            # Multi-platform fields from meta dict (with safe defaults)
+            ig_caption = meta.get("ig_caption", pin_description)
+            ig_hashtags = meta.get("ig_hashtags", tags_str)
 
-            # TikTok
-            "tiktok_caption": tiktok_caption,
-            "tiktok_hashtags": tiktok_hashtags,
+            tiktok_caption = meta.get("tiktok_caption", ig_caption)
+            tiktok_hashtags = meta.get("tiktok_hashtags", ig_hashtags)
 
-            # YouTube
-            "yt_title": yt_title,
-            "yt_description": yt_description,
-            "yt_tags": yt_tags,
-            "yt_playlist": "",  # fill manually if needed
+            yt_title = meta.get("yt_title", pin_title)
+            yt_description = meta.get("yt_description", pin_description)
+            yt_tags = meta.get("yt_tags", "")
 
-            # X / Twitter
-            "x_text": x_text,
-            "x_hashtags": x_hashtags,
+            x_text = meta.get("x_text", pin_title)
+            x_hashtags = meta.get("x_hashtags", "")
 
-            # Facebook
-            "fb_caption": fb_caption,
-            "fb_hashtags": fb_hashtags,
+            fb_caption = meta.get("fb_caption", ig_caption)
+            fb_hashtags = meta.get("fb_hashtags", ig_hashtags)
 
-            "banner_text": banner_text or "",
-            "watermark_text": watermark_text or "",
-            "notes": error_msg,
-        }
+            pin_url_to_link = book_url or ""
 
-        # Create a full row matching the current header order
-        row_values = [None] * len(headers)
-        for key, val in row_dict.items():
-            if key in header_map:
-                col_idx = header_map[key] - 1  # 0-based index for Python list
-                row_values[col_idx] = val
+            # Compute pin_id so it keeps incrementing across runs
+            pin_id = next_pin_id
+            next_pin_id += 1
 
-        ws.append(row_values)
+            # Common fields
+            duration_sec = video_duration if media_type in ("video", "coloring") else ""
 
-    output_excel.parent.mkdir(parents=True, exist_ok=True)
-    wb.save(output_excel)
+            excel_media_type = "video" if media_type in ("video", "coloring") else media_type
+
+            aspect_ratio = "9:16"  # matches 1080x1920 vertical
+
+            # Platform toggles: default everything to "Y" (you can change in Excel)
+            platform_flag = "Y"
+
+            # Build a dict keyed by header name (only for the columns we care about)
+            row_dict = {
+                "pin_id": pin_id,
+                "media_file": media_path_for_excel,
+                "media_type": excel_media_type,
+                "duration_sec": duration_sec,
+                "aspect_ratio": aspect_ratio,
+                "board_name": board_name,
+                "book_title": book_title,
+                "book_url": book_url,
+
+                "platform_pinterest": platform_flag,
+                "platform_instagram": platform_flag,
+                "platform_tiktok": platform_flag,
+                "platform_youtube": platform_flag,
+                "platform_x": platform_flag,
+                "platform_facebook": platform_flag,
+
+                # Pinterest
+                "pin_title": pin_title,
+                "pin_description": pin_description,
+                "pin_tags": tags_str,
+                "pin_url_to_link": pin_url_to_link,
+
+                # Instagram
+                "ig_caption": ig_caption,
+                "ig_hashtags": ig_hashtags,
+
+                # TikTok
+                "tiktok_caption": tiktok_caption,
+                "tiktok_hashtags": tiktok_hashtags,
+
+                # YouTube
+                "yt_title": yt_title,
+                "yt_description": yt_description,
+                "yt_tags": yt_tags,
+                "yt_playlist": "",  # fill manually if needed
+
+                # X / Twitter
+                "x_text": x_text,
+                "x_hashtags": x_hashtags,
+
+                # Facebook
+                "fb_caption": fb_caption,
+                "fb_hashtags": fb_hashtags,
+
+                "banner_text": banner_text or "",
+                "watermark_text": watermark_text or "",
+                "notes": error_msg,
+            }
+
+            # Create a full row matching the current header order
+            row_values = [None] * len(headers)
+            for key, val in row_dict.items():
+                if key in header_map:
+                    col_idx = header_map[key] - 1  # 0-based index for Python list
+                    row_values[col_idx] = val
+
+            ws.append(row_values)
+            wb.save(output_excel)
+        except Exception as e:
+            print(f"[ERROR] Failed group {idx}: {e}")
+            wb.save(output_excel)  # Save progress even after failures
+            continue            
+    # output_excel.parent.mkdir(parents=True, exist_ok=True)
+    # wb.save(output_excel)
     print(f"[OK] Excel written to: {output_excel}")
 
 
