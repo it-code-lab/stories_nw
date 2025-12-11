@@ -1522,6 +1522,53 @@ def generate_pinterest_excel_route():
             "error": str(e),
         }), 500
 
+@app.route('/batchmakevideoimagesfromdir', methods=['POST'])
+def batch_make_video_images_from_dir_route():
+    try:
+        print("Processing request.batch_make_video_images_from_dir")
+
+        # Read directory path from the form
+        raw_source = (request.form.get('source_dir') or "").strip()
+        target_size = (request.form.get('size_option') or "portrait").strip()
+        if not raw_source:
+            return "❌ Please provide a source directory.", 400
+
+        # Normalize slashes
+        raw_source = raw_source.replace("\\", "/")
+        print(f"[DEBUG] raw source_dir from UI: {raw_source}")
+
+        from pathlib import Path
+
+        # If it's not absolute, treat it as relative to BASE_DIR
+        p = Path(raw_source)
+        if not p.is_absolute():
+            full_source_dir = (BASE_DIR / raw_source).resolve()
+        else:
+            full_source_dir = p.resolve()
+
+        print(f"[DEBUG] Resolved full source_dir: {full_source_dir}")
+
+        # Import your batch helper
+        from for_coloring_pin_load_pinterest_excel import batch_make_video_images_from_dir
+
+        # Call the batch function; it returns processed image count
+        result = batch_make_video_images_from_dir(str(full_source_dir), target_size)
+
+        if isinstance(result, int):
+            msg = f"✅ Batch video generation completed. Processed {result} image(s)."
+        else:
+            msg = "✅ Batch video generation completed."
+
+        print(msg)
+        return msg, 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"❌ Error: {str(e)}", 500
+
+
+
 @app.route('/process_master_shorts_file_data', methods=['POST'])
 def process_master_shorts_file_data():
     try:

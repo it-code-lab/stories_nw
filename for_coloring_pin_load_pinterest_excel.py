@@ -1307,6 +1307,82 @@ def fallback_pin_meta(
         "fb_hashtags": fb_hashtags,
     }
 
+def batch_make_video_images_from_dir(
+    input_dir: str | Path,
+    target_size: str = "portrait",
+    fit_mode: str = "contain",
+    bg_style: str = "white",
+    auto_crop_subject: bool = True,
+
+) -> int:
+    """
+    Convert all images under `input_dir` (including subdirectories) into
+    vertical "video images" using make_video_image, preserving the directory
+    structure under a sibling folder named `edit_vid_output`.
+
+    Example:
+      input_dir = /path/to/downloads/1.Cute Farm Animals/pages
+      output_root = /path/to/downloads/edit_vid_output
+
+      /pages/a/b/cute_cow.png
+      -> /edit_vid_output/a/b/cute_cow.jpg
+
+    Returns:
+        Number of images successfully processed.
+    """
+
+   
+    if target_size == "portrait":
+        size = (1080, 1920)
+    elif target_size == "landscape":
+        size = (1920, 1080)
+    elif target_size == "square":
+        size = (1080, 1080)
+    elif target_size == "pinterest":
+        size = (1000, 1500)
+
+
+    input_dir = Path(input_dir).resolve()
+
+    if not input_dir.is_dir():
+        raise ValueError(f"Input path is not a directory: {input_dir}")
+
+    # edit_vid_output will live next to the input_dir
+    output_root = input_dir.parent / "edit_vid_output"
+
+    print(f"[INFO] Batch video-image conversion")
+    print(f"  input_dir   = {input_dir}")
+    print(f"  output_root = {output_root}")
+
+    processed_count = 0
+
+    for img_path in input_dir.rglob("*"):
+        if not img_path.is_file():
+            continue
+
+        if img_path.suffix.lower() not in IMAGE_EXTS:
+            continue
+
+        # Preserve relative structure under edit_vid_output
+        rel_path = img_path.relative_to(input_dir)
+        out_dir = output_root / rel_path.parent
+
+        try:
+            make_video_image(
+                src=img_path,
+                out_dir=out_dir,
+                fit_mode=fit_mode,
+                bg_style=bg_style,
+                auto_crop_subject=auto_crop_subject,
+                size=size,
+            )
+            processed_count += 1
+            print(f"[OK] Converted: {img_path} -> {out_dir}")
+        except Exception as e:
+            print(f"[WARN] Failed to convert {img_path}: {e}")
+
+    print(f"[DONE] Processed {processed_count} images from {input_dir}")
+    return processed_count
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Generate multi-platform Excel from images/videos (Pinterest + others).")

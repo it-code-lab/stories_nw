@@ -1650,62 +1650,49 @@
         <pre id="pinterestExcelResult" style="margin-top:8px;font-size:13px;white-space:pre-wrap;"></pre>
     </form>
     <br>
-    <!-- <form id="coloringAnimationForm-old">
-        <h2 style="background:#ffe4b5;">Coloring Page Before/After Animation</h2>
+    <br>
+<form id="batchMakeVideoImagesFromDir">
+    <h2>Batch Convert Images to different sizes (Folder Structure)</h2>
+    <div>
+        Walks the given folder (and all subfolders), uses
+        <code>batch_make_video_images_from_dir</code> to create images by cropping /resizing them
+        with <code>make_video_image</code>, and writes them into
+        <code>edit_vid_output/</code> keeping the same directory structure.
+    </div>
 
-        <div class="infoBox">
-            Upload a <strong>colored</strong> coloring-book page. The tool will:
-            <ol style="margin:6px 0 0 18px;padding-left:0;">
-                <li>Strip colors to create a clean line-art frame</li>
-                <li>Animate a smooth left-to-right color fill using the original colors</li>
-            </ol>
-            Perfect for professional before/after videos, Shorts, and Pinterest Pins.
+    <label>Select Source Folder (Directy inside Application folder):</label><br>
+
+    <input type="text" id="source_dir" name="source_dir" value="del" placeholder="e.g. vector_images or downloads "
+    style="width:100%;max-width:420px;margin-bottom:6px;">
+
+    <!-- <input type="file"
+           id="source_folder_picker"
+           webkitdirectory
+           directory
+           multiple
+           style="margin-bottom:10px;">
+
+
+    <input type="hidden" name="source_dir" id="source_dir_hidden"> -->
+    <label>Taget Image Size:</label>
+    <select name="size_option" style="margin-bottom:10px;">
+        <option value="portrait">1080x1920 (YouTube Shorts / Reels)</option>
+        <option value="landscape">1920x1080 (Landscape)</option>
+        <option value="pinterest">1000x1500 (Pinterest)</option>
+        <option value="square">1000x1500 (Square)</option>
+    </select>
+    <button type="submit">Run Batch</button>
+
+
+    <div class="infoBox" style="margin-top:8px;">
+        • Output files are created under <code>edit_vid_output/</code> keeping the same folder structure.<br>
         </div>
 
-        <label>Upload colored page (PNG/JPG/WEBP):</label>
-        <input type="file" name="image" accept="image/png,image/jpeg,image/webp" required>
+    <div id="batchMakeVideoImagesFromDirResult" style="margin-top:10px;"></div>
+</form>
 
-        <label>Canvas preset:</label>
-        <select name="canvas_preset" id="canvasPreset">
-            <option value="none" selected>Use original page size</option>
-            <option value="shorts">YouTube Shorts (1080 × 1920)</option>
-            <option value="pinterest">Pinterest (1000 × 1500)</option>
-            <option value="custom">Custom size</option>
-        </select>
 
-        <div id="customCanvasFields" style="display:none; gap:8px; flex-wrap:wrap; margin-top:8px;">
-            <div>
-                <label>Canvas width (px):</label>
-                <input type="number" name="canvas_width" value="1080" min="200" max="4000">
-            </div>
-            <div>
-                <label>Canvas height (px):</label>
-                <input type="number" name="canvas_height" value="1920" min="200" max="4000">
-            </div>
-        </div>
 
-        <label>Animation duration (seconds):</label>
-        <input type="number" name="duration" value="4" step="0.5" min="1" max="20">
-
-        <label>Animation style:</label>
-        <select name="mode">
-            <option value="sweep" selected>Smooth sweep (left → right)</option>
-            <option value="by_color">Artist style (one color at a time)</option>
-        </select>   
-
-        <label>Frames per second:</label>
-        <input type="number" name="fps" value="30" min="10" max="60">
-
-        <button type="submit">Create Coloring Animation</button>
-
-        <div id="coloringAnimationResult"
-            style="margin-top:10px;font-size:14px;white-space:pre-wrap;"></div>
-
-        <video id="coloringAnimationPreview"
-            controls
-            style="margin-top:10px;max-width:100%;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,.15);display:none;">
-        </video>
-    </form> -->
     <br>
     <form id="coloringAnimationForm">
         <h2>Coloring Page Before/After Animation</h2>
@@ -1754,6 +1741,26 @@
     <br>
 
     <br>
+    <script>
+        document.getElementById('batchMakeVideoImagesFromDir').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request.batchMakeVideoImagesFromDir");
+
+            const formData = new FormData(this);
+            const response = await fetch('/batchmakevideoimagesfromdir', {
+                method: 'POST',
+                body: formData
+            });
+
+            console.log("Completed batchMakeVideoImagesFromDir");
+            const resultText = await response.text();
+
+            const resultDiv = document.getElementById('batchMakeVideoImagesFromDirResult');
+            if (resultDiv) {
+                resultDiv.textContent = resultText;
+            }
+        };
+    </script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
