@@ -453,7 +453,8 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
     Returns: Path to the saved .mp4 in out_dir
     """
 
-    await page.goto(url)
+    # await page.goto(url)
+    await page.goto("https://www.meta.ai/")
 
     # Ensure absolute paths
     image_path = str(Path(imagePath).resolve())
@@ -468,19 +469,19 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
     #     pass  # optional, UI-dependent
 
     # 1) Switch to "Video" mode (recorded flows showed two variants)
-    switched = False
-    try:
-        # Variant A: a toggle button then literal "Video" text
-        await page.get_by_role("button", name="Image").click(timeout=3000)
-        await page.get_by_text("Video", exact=True).click(timeout=3000)
-        switched = True
-    except Exception:
-        try:
-            # Variant B: direct "Video" tab
-            await page.get_by_text("Video", exact=True).click(timeout=3000)
-            switched = True
-        except Exception:
-            pass
+    # switched = False
+    # try:
+    #     # Variant A: a toggle button then literal "Video" text
+    #     await page.get_by_role("button", name="Image").click(timeout=3000)
+    #     await page.get_by_text("Video", exact=True).click(timeout=3000)
+    #     switched = True
+    # except Exception:
+    #     try:
+    #         # Variant B: direct "Video" tab
+    #         await page.get_by_text("Video", exact=True).click(timeout=3000)
+    #         switched = True
+    #     except Exception:
+    #         pass
 
     # if not switched:
     #     # Some shells show a small tab container; try again by clicking the tab region
@@ -494,15 +495,33 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
     # 2) Click "Upload image" and feed the file chooser (prefer file chooser to avoid targeting wrong input)
     try:
         async with page.expect_file_chooser(timeout=10_000) as fc_info:
-            await page.get_by_role("button", name="Upload image").click()
+            await page.get_by_text("Animate my photo", exact=False).click(timeout=3000)
+            # await page.get_by_text("Animate my photo").click(timeout=3000)
+            # await page.get_by_role("button", name="Upload image").click()
         fc = await fc_info.value
         await fc.set_files(image_path)
     except Exception:
         # Fallback: set first visible file input directly
         try:
-            await page.set_input_files("input[type='file']", image_path)
+            async with page.expect_file_chooser(timeout=10_000) as fc_info:
+                await page.get_by_text("Create a video from my photo", exact=False).click(timeout=3000)
+                # await page.get_by_text("Create a video from my photo").click(timeout=3000)
+                # await page.get_by_role("button", name="Upload image").click()
+            fc = await fc_info.value
+            await fc.set_files(image_path)
         except Exception as e:
-            raise RuntimeError(f"Could not upload image: {e}")
+            try:
+                async with page.expect_file_chooser(timeout=10_000) as fc_info:
+                    await page.get_by_role("menuitem", name="Animate my photo").click(timeout=3000)
+                    # await page.get_by_text("Animate my photo").click(timeout=3000)
+                    # await page.get_by_role("button", name="Upload image").click()
+                fc = await fc_info.value
+                await fc.set_files(image_path)
+            except Exception as e:
+                try:
+                    await page.set_input_files("input[type='file']", image_path)
+                except Exception as e:
+                    raise RuntimeError(f"Could not upload image: {e}")
 
     # 3) Fill the animation prompt (textbox labeled "Describe your animation...")
     try:
@@ -511,7 +530,9 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
             await page.get_by_role("paragraph").click(timeout=1500)
         except Exception:
             pass
-        box = page.get_by_role("textbox", name="Describe your animation...")
+        # box = page.get_by_role("textbox", name="Describe your animation...")
+        box = page.get_by_role("textbox", name="Ask anything...")
+
         await expect(box).to_be_visible(timeout=20_000)
         await box.fill(prompt or "Animate this image smoothly with parallax camera move.")
     except Exception as e:
@@ -545,9 +566,14 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
     #animate_btn = page.get_by_role("button", name="Animate")
     animate_btn = page.get_by_role("button", name="Animate", exact=True)
     #animate_btn = page.get_by_role("button", name="Animate").locator(":enabled")
+    
+    try:
+        await page.get_by_role("button", name="Send").click()
+    except Exception:
+        await expect(animate_btn).to_be_enabled(timeout=20_000)
+        await animate_btn.click()
 
-    await expect(animate_btn).to_be_enabled(timeout=20_000)
-    await animate_btn.click()
+
 
     # 3) Wait for a *new* download button that does NOT have our stamp
     #    First prefer the precise ARIA label, then the text fallback.
