@@ -37,6 +37,52 @@ DEFAULT_MAX_TOKENS = 512
 # Global gemini_pool – initialised in main guard
 gemini_pool = None
 
+GENERIC_PROMO_SYSTEM_INSTRUCTION = """
+You are a social media marketing assistant.
+
+Goal:
+Given a campaign and destination URL, generate:
+- Pinterest title + description + tags
+- Instagram caption + hashtags
+- TikTok caption + hashtags
+- YouTube title + description + tags
+- X text + hashtags
+- Facebook caption + hashtags
+
+Rules:
+- Platform-safe, family-friendly.
+- No ALL CAPS clickbait.
+- Make it relevant to destination_type:
+  - product: highlight benefits, use cases, who it's for, soft CTA to check link
+  - video: hook + what viewer will learn + CTA to watch
+  - article: value summary + CTA to read
+  - service: outcome + credibility + CTA to learn more
+- Use "cta_lines" verbatim at the end of long descriptions where appropriate (YouTube/Facebook).
+- Keep Pinterest title <= ~80 chars.
+- Pinterest description 1–3 short sentences.
+- Hashtags:
+  - Pinterest: 5–12 as "#tag" style
+  - Instagram/TikTok: 5–12
+  - X: 3–8
+Return STRICT JSON only with this schema:
+
+{
+  "pin_title": "string",
+  "pin_description": "string",
+  "tags": ["#tag1", "#tag2"],
+  "instagram_caption": "string",
+  "instagram_hashtags": ["#tag1"],
+  "tiktok_caption": "string",
+  "tiktok_hashtags": ["#tag1"],
+  "youtube_title": "string",
+  "youtube_description": "string",
+  "youtube_tags": ["tag1","tag2"],
+  "x_text": "string",
+  "x_hashtags": ["#tag1"],
+  "facebook_caption": "string",
+  "facebook_hashtags": ["#tag1"]
+}
+"""
 
 PINTEREST_SYSTEM_INSTRUCTION = """
 You are a social media marketing assistant for digital coloring books sold on goodsandgift.com.
@@ -226,6 +272,73 @@ def make_outro_card(
         y += t.h + 10
 
     return CompositeVideoClip(comps)
+
+def load_campaign_config(images_root: Path, source_subfolder: str | None) -> dict:
+    """
+    Load pinterest_config.json from:
+      - images_root/source_subfolder/pinterest_config.json
+      - images_root/source_subfolder/../pinterest_config.json
+
+    Backward compatible with older keys:
+      book_title -> campaign_name
+      book_url   -> destination_url
+    """
+
+    base = (images_root / source_subfolder) if source_subfolder else images_root
+
+    candidates = [
+        base / CONFIG_FILENAME,
+        base.parent / CONFIG_FILENAME
+    ]
+
+    print(f"[INFO] Looking for Pinterest config in:")
+    for c in candidates:
+        print(f"  {c}")
+
+    for cfg in candidates:
+        if not cfg.exists():
+            continue
+
+        try:
+            with cfg.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            print(f"[INFO] Loaded Pinterest config from: {cfg}")
+
+            # Backward compatibility
+            book_title = str(data.get("book_title", "")).strip()
+            book_url = str(data.get("book_url", "")).strip()
+
+            campaign_name = str(data.get("campaign_name", "")).strip() or book_title
+            destination_url = str(data.get("destination_url", "")).strip() or book_url
+
+            return {
+                # New generalized keys
+                "campaign_name": campaign_name,
+                "destination_url": destination_url,
+                "destination_type": str(data.get("destination_type", "")).strip() or "product",
+                "topic": str(data.get("topic", "")).strip(),
+
+                "cta_text": str(data.get("cta_text", "")).strip(),
+                "cta_lines": data.get("cta_lines", []) if isinstance(data.get("cta_lines", []), list) else [],
+                "link_overrides": data.get("link_overrides", {}) if isinstance(data.get("link_overrides", {}), dict) else {},
+
+                # Existing keys you already use
+                "board_name": str(data.get("board_name", "")).strip(),
+                "banner_text": str(data.get("banner_text", "")).strip(),
+                "watermark_text": str(data.get("watermark_text", "")).strip(),
+                "base_tags": str(data.get("base_tags", "")).strip(),
+
+                # Keep old keys too (optional)
+                "book_title": book_title,
+                "book_url": book_url,
+            }
+        except Exception as e:
+            print(f"[WARN] Failed to read config {cfg}: {e}")
+            return {}
+
+    print("[INFO] No pinterest_config.json found. Using only CLI/UI values.")
+    return {}
 
 def load_book_config(images_root: Path, source_subfolder: str | None) -> dict:
     """
@@ -654,6 +767,32 @@ def get_or_create_workbook(output_excel: Path, base_headers: list[str]):
     header_map = {name: idx + 1 for idx, name in enumerate(base_headers)}
     return wb, ws, base_headers, header_map
 
+def resolve_destination_url(
+    destination_url: str,
+    pin_url_key: str,
+    cfg: dict
+) -> str:
+    """
+    Resolve final destination link:
+    1) destination_url (from CLI/UI) if provided
+    2) cfg.destination_url if provided
+    3) cfg.link_overrides[pin_url_key] if present
+    4) empty
+    """
+    destination_url = (destination_url or "").strip()
+    if destination_url:
+        return destination_url
+
+    cfg_dest = str(cfg.get("destination_url", "")).strip()
+    if cfg_dest:
+        return cfg_dest
+
+    overrides = cfg.get("link_overrides", {}) if isinstance(cfg.get("link_overrides", {}), dict) else {}
+    override = str(overrides.get(pin_url_key, "")).strip()
+    if override:
+        return override
+
+    return ""
 
 def build_excel(
     images_root: Path,
@@ -677,33 +816,52 @@ def build_excel(
     video_duration: float = 10.0,   # default 10s for all platforms
     video_fps: int = 30,
     add_bg_music: bool = False,
-    pin_url: str = "",
+    # pin_url: str = "",
 ) -> None:
     # 1) Load config (if present)
-    cfg = load_book_config(images_root, source_subfolder)
+    # cfg = load_book_config(images_root, source_subfolder)
+    cfg = load_campaign_config(images_root, source_subfolder)
+
+    # 2) Resolve generalized campaign values (UI/CLI overrides config)
+    campaign_name = (book_title or cfg.get("campaign_name") or cfg.get("book_title") or "Campaign").strip()
+
 
     # 2) Resolve final values (UI/CLI overrides config)
     book_title = (book_title or cfg.get("book_title") or "Coloring Book").strip()
     book_url = (book_url or cfg.get("book_url") or "").strip()
-    if pin_url == "amazon":
-        book_url = "https://www.amazon.com/dp/B0G1TK51V4"
-    elif pin_url == "gumroad":
-        pin_url = "https://kishna01.gumroad.com/"
-    elif pin_url == "readernook":
-        book_url = "https://www.coloring.readernook.com/"
+    # if pin_url == "amazon":
+    #     book_url = "https://www.amazon.com/dp/B0G1TK51V4"
+    # elif pin_url == "gumroad":
+    #     pin_url = "https://kishna01.gumroad.com/"
+    # elif pin_url == "readernook":
+    #     book_url = "https://www.coloring.readernook.com/"
+    pin_url = ""
+    destination_url  = resolve_destination_url(
+        destination_url=book_url,
+        pin_url_key=pin_url,
+        cfg=cfg
+    )
+
+    destination_type = (cfg.get("destination_type") or "product").strip()
+    topic = (cfg.get("topic") or "").strip()
 
     board_name = (board_name or cfg.get("board_name") or "").strip()
     banner_text = (banner_text or cfg.get("banner_text") or "").strip() or None
     watermark_text = (watermark_text or cfg.get("watermark_text") or "").strip() or None
-    base_tags = base_tags or cfg.get("base_tags") or ""
+    base_tags = (base_tags or cfg.get("base_tags") or "").strip()
+
+    cta_text = (cfg.get("cta_text") or "").strip()
+    cta_lines = cfg.get("cta_lines", []) if isinstance(cfg.get("cta_lines", []), list) else []
 
     print(f"[INFO] Using values:")
-    print(f"  book_title   = {book_title!r}")
-    print(f"  book_url     = {book_url!r}")
-    print(f"  board_name   = {board_name!r}")
-    print(f"  banner_text  = {banner_text!r}")
-    print(f"  watermark_text = {watermark_text!r}")
-    print(f"  use_gemini = {use_gemini!r}")
+    print(f"  campaign_name   = {campaign_name!r}")
+    print(f"  destination_url = {destination_url!r}")
+    print(f"  destination_type= {destination_type!r}")
+    print(f"  topic           = {topic!r}")
+    print(f"  board_name      = {board_name!r}")
+    print(f"  banner_text     = {banner_text!r}")
+    print(f"  watermark_text  = {watermark_text!r}")
+    print(f"  use_gemini      = {use_gemini!r}")
 
     media_files = collect_media_files(images_root, source_subfolder)
 
@@ -748,6 +906,10 @@ def build_excel(
         "book_title",
         "book_url",
 
+        "campaign_name",
+        "destination_url",
+        "destination_type",
+        "topic",
         # Platform toggles
         "platform_pinterest",
         "platform_instagram",
@@ -962,14 +1124,25 @@ def build_excel(
             try:
                 if use_gemini:
                     meta = generate_pin_meta_with_gemini(
-                        book_title=book_title,
-                        product_url=book_url,
+                        campaign_name=campaign_name,
+                        destination_url=destination_url,
+                        destination_type=destination_type,
+                        topic=topic,
                         page_label=page_label,
                         base_tags=base_tags,
                         pin_role="sample_page",
+                        cta_lines=cta_lines,
                     )
                 else:
-                    meta = fallback_pin_meta(book_title, book_url, page_label, base_tags)
+                    meta = fallback_pin_meta(
+                        campaign_name=campaign_name,
+                        destination_url=destination_url,
+                        destination_type=destination_type,
+                        page_label=page_label,
+                        base_tags=base_tags,
+                        cta_lines=cta_lines,
+                    )
+
             except Exception as e:
                 print(f"[WARN] Gemini meta failed for {primary.name}: {e}")
                 error_msg = f"Gemini meta failed: {e}"
@@ -997,7 +1170,7 @@ def build_excel(
             fb_caption = meta.get("fb_caption", ig_caption)
             fb_hashtags = meta.get("fb_hashtags", ig_hashtags)
 
-            pin_url_to_link = book_url or ""
+            pin_url_to_link = destination_url or ""
 
             # Compute pin_id so it keeps incrementing across runs
             pin_id = next_pin_id
@@ -1023,7 +1196,10 @@ def build_excel(
                 "board_name": board_name,
                 "book_title": book_title,
                 "book_url": book_url,
-
+                "campaign_name": campaign_name,
+                "destination_url": destination_url,
+                "destination_type": destination_type,
+                "topic": topic,
                 "platform_pinterest": platform_flag,
                 "platform_instagram": platform_flag,
                 "platform_tiktok": platform_flag,
@@ -1083,11 +1259,14 @@ def build_excel(
 
 
 def generate_pin_meta_with_gemini(
-    book_title: str,
-    product_url: str,
+    campaign_name: str,
+    destination_url: str,
+    destination_type: str,
+    topic: str | None,
     page_label: str | None,
     base_tags: str | None,
-    pin_role: str = "sample_page",
+    pin_role: str = "asset",
+    cta_lines: list[str] | None = None,
 ) -> dict:
     """
     Calls Gemini via GeminiPool to generate pin_title, pin_description, tags[],
@@ -1102,21 +1281,24 @@ def generate_pin_meta_with_gemini(
 
     base_tags = (base_tags or "").strip()
 
+    cta_lines = cta_lines or []
+
     context = {
-        "book_title": book_title,
-        "product_url": product_url,
-        "page_label": page_label or "",
+        "campaign_name": campaign_name,
+        "destination_url": destination_url,
+        "destination_type": destination_type,  # product | video | article | service | other
+        "topic": topic or "",
+        "creative_label": page_label or "",
         "pin_role": pin_role,
-        "base_tags": base_tags,
+        "base_tags": (base_tags or "").strip(),
+        "cta_lines": cta_lines,
     }
 
-    prompt = f"""{PINTEREST_SYSTEM_INSTRUCTION}
+    prompt = f"""{GENERIC_PROMO_SYSTEM_INSTRUCTION}
 
-Now create metadata for one vertical video post derived from a coloring page.
-
-Context (JSON):
-{json.dumps(context, ensure_ascii=False, indent=2)}
-"""
+    Context (JSON):
+    {json.dumps(context, ensure_ascii=False, indent=2)}
+    """
 
     raw = gemini_pool.generate_text(
         prompt=prompt,
@@ -1204,12 +1386,12 @@ Context (JSON):
     if not yt_description:
         yt_description = pin_description
     if not yt_tags:
-        yt_tags = "coloring pages, printable coloring, kids activities, digital download"
+        yt_tags = tags_str
 
     if not x_text:
         x_text = pin_title
     if not x_hashtags:
-        x_hashtags = "#coloringpages #printablecoloring #kidsactivities"
+        x_hashtags = tags_str
 
     if not fb_caption:
         fb_caption = ig_caption
@@ -1235,11 +1417,14 @@ Context (JSON):
 
 
 def fallback_pin_meta(
-    book_title: str,
-    product_url: str,
+    campaign_name: str,
+    destination_url: str,
+    destination_type: str,
     page_label: str | None,
     base_tags: str | None,
+    cta_lines: list[str] | None = None,
 ) -> dict:
+
     print("[INFO] Using fallback social metadata generation.")
     base_tags = (base_tags or "").strip()
     if base_tags:
@@ -1247,47 +1432,51 @@ def fallback_pin_meta(
     else:
         tags_str = "#coloringpages, #printablecoloring, #kidsactivities, #digitaldownload"
 
-    if page_label:
-        title = f"{book_title} – {page_label} Coloring Page"
-    else:
-        title = f"{book_title} – Printable Coloring Page"
+
+    # Reuse across platforms
+    # Reuse across platforms
+
+    # y_tb_desc_add = """
+    # 📥 Download the Coloring Book (Digital Soft Copy)
+
+    # 👉 Get the PDF / Printable Pages Here:
+    # https://goodsandgift.com/product-category/creative-crafting/
+
+    # https://kishna01.gumroad.com/
+
+    # 🖍️ Grab My Physical Coloring Books on Amazon
+
+    # 📘 Creative Cubs Coloring Book Series:
+    # https://www.amazon.com/dp/B0G1TK51V4
+
+    # 🌐 Free Coloring Pages
+    # Color online or download free pages at:
+    # https://coloring.readernook.com/
+    # """
+    title = campaign_name
+    cta_lines = cta_lines or []
+    cta_block = "\n".join([line.strip() for line in cta_lines if str(line).strip()])
+
+    if not cta_block and destination_url:
+        cta_block = f"👉 Link: {destination_url}"
 
     desc = (
-        f"Download and print this coloring page from the '{book_title}' digital coloring book. "
-        f"Perfect for creative, screen-free time at home or in the classroom. Instant digital download."
+        f"Check out: '{campaign_name}'. "
+        f"{'Preview: ' + page_label + '. ' if page_label else ''}"
+        f"Learn more at the link."
     )
 
-    # Reuse across platforms
-    # Reuse across platforms
-    y_tb_desc_add = """
-    📥 Download the Coloring Book (Digital Soft Copy)
-
-    👉 Get the PDF / Printable Pages Here:
-    https://goodsandgift.com/product-category/creative-crafting/
-
-    https://kishna01.gumroad.com/
-
-    🖍️ Grab My Physical Coloring Books on Amazon
-
-    📘 Creative Cubs Coloring Book Series:
-    https://www.amazon.com/dp/B0G1TK51V4
-
-    🌐 Free Coloring Pages
-    Color online or download free pages at:
-    https://coloring.readernook.com/
-    """
-
+    yt_description = desc + "\n\n" + cta_block if cta_block else desc
+    fb_caption = desc + "\n\n" + cta_block if cta_block else desc
+    tiktok_caption = desc + ("\n" + destination_url if destination_url else "")
 
     ig_caption = desc
     ig_hashtags = tags_str
-    tiktok_caption = desc + "\n" + "https://goodsandgift.com/product-category/creative-crafting/"
     tiktok_hashtags = tags_str
     yt_title = title
-    yt_description = desc + " This vertical video shows a quick preview of the page.\n" + y_tb_desc_add
     yt_tags = "coloring pages, printable coloring, kids activities, digital download"
     x_text = title
     x_hashtags = "#coloringpages #printablecoloring #kidsactivities"
-    fb_caption = desc + "\n" + y_tb_desc_add
     fb_hashtags = tags_str
 
     return {
@@ -1390,7 +1579,7 @@ def main(argv=None):
     parser.add_argument("--source-subfolder", default="", help="Subfolder under images-root, e.g. '1.Cute Farm Animals/pages'")
     parser.add_argument("--output-excel", default="master_shorts_uploader_data.xlsx", help="Output Excel filename")
     parser.add_argument("--media-type", choices=["image", "video", "coloring"], default="image")
-    parser.add_argument("--pin-url", choices=["gng", "amazon", "gumroad","readernook"], default="gng")
+    # parser.add_argument("--pin-url", choices=["gng", "amazon", "gumroad","readernook"], default="gng")
     parser.add_argument("--max-pins", type=int, default=0, help="Max pins to generate (0 = all)")
 
     parser.add_argument(
@@ -1486,15 +1675,9 @@ def main(argv=None):
     use_gemini = (args.use_gemini.lower() == "yes")
     add_bg_music = (args.add_bg_music.lower() == "yes")
 
-    pin_url = args.pin_url
+    # pin_url = args.pin_url
     book_url = args.book_url
 
-    if pin_url == "amazon":
-        book_url = "https://www.amazon.com/dp/B0G1TK51V4"
-    elif pin_url == "gumroad":
-        book_url = "https://kishna01.gumroad.com/"
-    elif pin_url == "readernook":
-        book_url = "https://www.coloring.readernook.com/"
 
 
     global gemini_pool
@@ -1529,7 +1712,7 @@ def main(argv=None):
         video_duration=args.video_duration,
         video_fps=args.video_fps,
         add_bg_music=add_bg_music,
-        pin_url=args.pin_url,
+        # pin_url=args.pin_url,
     )
 
     print("[DONE] Multi-platform Excel generation finished.")

@@ -1491,6 +1491,40 @@
         <pre id="buildManifestResult"></pre>
     </form>
     <br>
+    <form id="convertLandscapeImagesForm">
+        <h2>Convert Landscape Images → Portrait / 1000×1500</h2>
+
+        <div class="infoBox" style="margin-top:8px;">
+            • Reads images from <code>edit_vid_input/</code> and writes converted JPGs under <code>edit_vid_output/</code> (same folder structure).<br>
+            • <b>cover</b> fills the frame and <b>crops the sides</b> to match the target ratio.<br>
+            • <b>contain</b> keeps the full image and pads with a <i>blur</i> or <i>white</i> background.
+        </div>
+
+        <label>Target format:</label>
+        <select name="mode" style="margin-bottom:10px;">
+            <option value="portrait" selected>Portrait 1080×1920 (9:16)</option>
+            <option value="1000x1500">1000×1500 (2:3)</option>
+        </select>
+
+        <label>Fit method:</label>
+        <select name="fit" style="margin-bottom:10px;">
+            <option value="contain" selected>contain (no crop, add padding)</option>
+            <option value="cover">cover (crop to fill frame)</option>
+        </select>
+
+        <label>Background (used only with contain):</label>
+        <select name="bg" style="margin-bottom:10px;">
+            <option value="blur" selected>blur</option>
+            <option value="white">white</option>
+        </select>
+
+        <label>JPEG quality (1-95):</label>
+        <input type="number" name="quality" value="92" min="1" max="95" style="width:120px;margin-bottom:10px;">
+
+        <button type="submit">Convert Images</button>
+        <div id="convertLandscapeImagesResult" style="margin-top:10px;"></div>
+    </form>    
+    <br>
     <form id="pinterestExcelFormForColoringPins">
         <h2 style="background:#fef3c7;">Generate Short Video and Upload to Multiple Platforms (YouTube, facebook, Insta,
             Tiktok, Pinterest)</h2>
@@ -1517,13 +1551,13 @@
         <input type="text" name="source_folder" placeholder="e.g. 1.Cute Farm Animals/pages"
             style="width:100%;max-width:420px;margin-bottom:10px;">
 
-        <label>Main PIN URL:</label>
+        <!-- <label>Main PIN URL:</label>
         <select id="pin_url" name="pin_url" style="margin-bottom:10px;">
             <option value="gng" selected>Goodsandgift path from pinterest_config.json</option>
             <option value="amazon">Amazon coloring book series Link</option>
             <option value="gumroad" selected>kishna01.gumroad.com</option>
             <option value="readernook" selected>coloring.readernook.com</option>
-        </select>
+        </select> -->
 
 
         <label>Media type:</label>
@@ -1761,7 +1795,40 @@
             }
         };
     </script>
+   <script>
+        document.getElementById('convertLandscapeImagesForm').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request.convertLandscapeImages");
 
+            const resultDiv = document.getElementById('convertLandscapeImagesResult');
+            if (resultDiv) {
+                resultDiv.style.whiteSpace = "pre-wrap";
+                resultDiv.textContent = "Running conversion...\n";
+            }
+
+            try {
+                const formData = new FormData(this);
+                const resp = await fetch('/convert_landscape_images', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await resp.json();
+                if (!resp.ok || !data.ok) {
+                    const msg = (data && (data.error || data.message)) ? (data.error || data.message) : ("HTTP " + resp.status);
+                    if (resultDiv) resultDiv.textContent = "❌ " + msg;
+                    return;
+                }
+
+                const msg = `✅ Done. Read ${data.read_count} image(s), wrote ${data.wrote_count} image(s).\nOutput: ${data.output_dir}`;
+                if (resultDiv) resultDiv.textContent = msg;
+                console.log(msg);
+            } catch (err) {
+                console.error(err);
+                if (resultDiv) resultDiv.textContent = "❌ " + (err?.message || String(err));
+            }
+        };
+    </script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const mediaTypeSelect = document.getElementById("pin_media_type");

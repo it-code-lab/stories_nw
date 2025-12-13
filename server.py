@@ -1345,7 +1345,8 @@ def generate_pinterest_excel_route():
         source_folder = (data.get("source_folder") or "").strip()
 
         media_type = (data.get("media_type") or "image").strip()
-        pin_url = (data.get("pin_url") or "").strip()
+        # pin_url = (data.get("pin_url") or "").strip()
+        # pin_url = ""
         max_pins_str = (data.get("max_pins") or "0").strip()
         output_excel_name = (data.get("output_excel") or "master_shorts_uploader_data.xlsx").strip()
 
@@ -1446,7 +1447,7 @@ def generate_pinterest_excel_route():
             "--images-root", str(images_root),
             "--output-excel", str(output_excel),
             "--media-type", media_type,
-            "--pin-url", pin_url,
+            # "--pin-url", pin_url,
         ]
 
         if source_subfolder:
@@ -1521,6 +1522,91 @@ def generate_pinterest_excel_route():
             "ok": False,
             "error": str(e),
         }), 500
+
+
+@app.route('/convert_landscape_images', methods=['POST'])
+def convert_landscape_images_route():
+    """Convert images from edit_vid_input -> portrait/1000x1500 and write under edit_vid_output."""
+    try:
+        print("Processing request.convert_landscape_images")
+
+        mode = (request.form.get('mode') or 'portrait').strip()
+        fit = (request.form.get('fit') or 'contain').strip()
+        bg = (request.form.get('bg') or 'blur').strip()
+        quality = request.form.get('quality') or 92
+
+        # Resolve folders relative to BASE_DIR
+        in_dir = (BASE_DIR / 'edit_vid_input').resolve()
+        out_dir = (BASE_DIR / 'edit_vid_output').resolve()
+
+        if mode not in ("portrait", "1000x1500"):
+            return jsonify({"ok": False, "error": f"Invalid mode: {mode}"}), 400
+        if fit not in ("contain", "cover"):
+            return jsonify({"ok": False, "error": f"Invalid fit: {fit}"}), 400
+        if bg not in ("blur", "white"):
+            return jsonify({"ok": False, "error": f"Invalid bg: {bg}"}), 400
+
+        try:
+            quality = max(1, min(int(quality), 95))
+        except Exception:
+            quality = 92
+
+        if mode == "portrait":
+            target_w, target_h = 1080, 1920
+        else:
+            target_w, target_h = 1000, 1500
+
+        if not in_dir.exists() or not in_dir.is_dir():
+            return jsonify({"ok": False, "error": f"Input folder not found: {in_dir}"}), 400
+
+        from pathlib import Path
+        import os
+        from convert_landscape_img import convert_one, SUPPORTED_EXTS
+
+        read_count = 0
+        wrote_count = 0
+
+        for root, _, files in os.walk(in_dir):
+            root_p = Path(root)
+            rel = root_p.relative_to(in_dir)
+            for fn in files:
+                ext = Path(fn).suffix.lower()
+                if ext not in SUPPORTED_EXTS:
+                    continue
+
+                read_count += 1
+                in_path = root_p / fn
+                out_path = out_dir / rel / Path(fn).with_suffix('.jpg')
+
+                try:
+                    convert_one(
+                        in_path=in_path,
+                        out_path=out_path,
+                        target_w=target_w,
+                        target_h=target_h,
+                        fit=fit,
+                        bg_style=bg,
+                        quality=quality,
+                    )
+                    wrote_count += 1
+                except Exception as e:
+                    print(f"⚠️ Failed: {in_path} -> {e}")
+
+        return jsonify({
+            "ok": True,
+            "read_count": read_count,
+            "wrote_count": wrote_count,
+            "output_dir": str(out_dir),
+            "mode": mode,
+            "fit": fit,
+            "bg": bg,
+            "quality": quality,
+        }), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 @app.route('/batchmakevideoimagesfromdir', methods=['POST'])
 def batch_make_video_images_from_dir_route():
