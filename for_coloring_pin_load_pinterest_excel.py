@@ -545,7 +545,7 @@ def make_pinterest_image(
     out_dir: Path,
     banner_text: str | None,
     watermark_text: str | None,
-    target_size=(1000, 1500),
+    target_size=(1080, 1920),
     fit_mode: str = "contain",          # "contain" (no crop) or "cover" (crop)
     bg_style: str = "white",            # "white" or "blur"
     text_shadow: bool = True,
