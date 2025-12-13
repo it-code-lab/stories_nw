@@ -1492,7 +1492,7 @@ def main(argv=None):
     if pin_url == "amazon":
         book_url = "https://www.amazon.com/dp/B0G1TK51V4"
     elif pin_url == "gumroad":
-        pin_url = "https://kishna01.gumroad.com/"
+        book_url = "https://kishna01.gumroad.com/"
     elif pin_url == "readernook":
         book_url = "https://www.coloring.readernook.com/"
 
