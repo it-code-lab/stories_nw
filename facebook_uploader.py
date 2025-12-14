@@ -7,7 +7,10 @@ from pathlib import Path
 from datetime import datetime
 
 from playwright.sync_api import sync_playwright
+from playwright.sync_api import TimeoutError as PWTimeoutError
 from openpyxl import load_workbook
+import subprocess
+import json
 
 # ================== CONFIG ==================
 
@@ -27,8 +30,60 @@ MEDIA_BASE = BASE_DIR / "pinterest_uploads"  # where media_file paths are relati
 VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".webm"}
 
 
+
+
+def focus_fb_composer(page, timeout=60000):
+    # 1) Prefer textbox by role with partial/regex match
+    candidates = [
+        lambda: page.get_by_role("textbox", name=re.compile(r"What's on your mind", re.I)),
+        lambda: page.get_by_role("textbox", name=re.compile(r"Write something", re.I)),
+        # 2) Strong structural selector: contenteditable textbox
+        lambda: page.locator('div[contenteditable="true"][role="textbox"]').first,
+        # 3) aria-placeholder fallback
+        lambda: page.locator('div[contenteditable="true"][aria-placeholder]').first,
+    ]
+
+    last_err = None
+    for get in candidates:
+        try:
+            loc = get()
+            loc.wait_for(state="visible", timeout=timeout)
+            loc.click()
+            return loc
+        except Exception as e:
+            last_err = e
+
+    raise last_err
+
 # ================== EXCEL HELPERS ==================
 
+
+
+def is_reel_eligible(video_path):
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height,duration",
+        "-of", "json",
+        video_path
+    ]
+    out = subprocess.check_output(cmd).decode()
+    data = json.loads(out)["streams"][0]
+
+    width = data["width"]
+    height = data["height"]
+    duration = float(data.get("duration", 0))
+    size_mb = os.path.getsize(video_path) / (1024 * 1024)
+
+    aspect = width / height
+
+    return (
+        duration <= 90
+        and height > width
+        and 0.54 <= aspect <= 0.60
+        and size_mb < 1000
+        and video_path.lower().endswith(".mp4")
+    )
 
 def ensure_facebook_status_columns(ws, headers):
     """
@@ -81,11 +136,15 @@ def load_videos_from_excel():
         ext = Path(media_file).suffix.lower()
         media_type = (record.get("media_type") or "").strip().lower()
 
+        faceBookProfile = (record.get("faceBookProfile") or "").strip();
+        if faceBookProfile == "":
+            continue
+        
         # Only take video rows
-        if media_type and media_type != "video":
-            continue
-        if ext and ext not in VIDEO_EXTS:
-            continue
+        # if media_type and media_type != "video":
+        #     continue
+        # if ext and ext not in VIDEO_EXTS:
+        #     continue
 
         rows.append(record)
 
@@ -133,7 +192,7 @@ def resolve_media_path(media_file: str) -> str:
 
 def open_facebook_home(page):
     page.goto(FACEBOOK_UPLOAD_URL)
-    page.wait_for_load_state("networkidle")
+    # page.wait_for_load_state("networkidle")
     time.sleep(3)
 
 
@@ -367,7 +426,7 @@ def upload_facebook_videos():
     wb, ws, rows, header_map = load_videos_from_excel()
 
     if not rows:
-        print("No valid video rows found in Excel.")
+        print("No valid video rows found in Excel for Facebook upload.")
         return
 
     print(f"Loaded {len(rows)} Facebook rows from {EXCEL_FILE}")
@@ -387,7 +446,7 @@ def upload_facebook_videos():
         )
 
         # You should already be logged in to Facebook in this Chrome profile.
-
+        profileLoaded  = False
         # total = len(rows)
         for row in reversed(rows):
             # row_idx = total - rev_idx + 2  # Excel row index (header is row 1)
@@ -397,107 +456,159 @@ def upload_facebook_videos():
             if status_val == "success":
                 print(f"Skipping already uploaded Facebook video: {row.get('pin_title')}")
                 continue
-
+            
+            if row["faceBookProfile"] == "":
+                print(f"Skipping Facebook upload as no profile specified in row {row_idx}.")
+                continue
             try:
                 print(f"\n=== Facebook upload for media: {row.get('media_file')} (row {row_idx}) ===")
 
-                open_facebook_home(page)
+                page.goto("https://www.facebook.com/")
+                # page.wait_for_load_state("networkidle")
+                time.sleep(3)
+                # open_facebook_home(page)
+
+                if not profileLoaded:
+                    faceBookProfile = row["faceBookProfile"]
+                    page.get_by_label("Your profile").first.click(timeout=15000)
+                    time.sleep(5)
+
+                    try:
+                        page.locator(f'span:has-text("{faceBookProfile}")').first.click()
+                        time.sleep(5)
+                    except:
+                        try:
+                            page.get_by_role("button", name="See all profiles").click()
+                            time.sleep(5)
+                            page.locator(f'span:has-text("{faceBookProfile}")').first.click()
+                            time.sleep(5)
+                            profileLoaded = True
+                        except:
+                            page.locator('span:has-text("See more profiles")').first.click()
+                            time.sleep(5)
+                            page.locator(f'span:has-text("{faceBookProfile}")').first.click()
+                            time.sleep(5)
+
+                    profileLoaded = True
+
+
 
                 media_path = resolve_media_path(str(row["media_file"]))
                 if not os.path.exists(media_path):
                     raise FileNotFoundError(f"Media file not found: {media_path}")
 
+                if is_reel_eligible(media_path):
+                    page.goto("https://www.facebook.com/reels/create")
+                    time.sleep(5)
 
-                print("Reels creation page loaded.")
+                    print("Reels creation page loaded.")
 
-                # --- STEP 2: FILE UPLOAD ---
-                print(f"Uploading file: {media_path}")
+                    # --- STEP 2: FILE UPLOAD ---
+                    print(f"Uploading file: {media_path}")
 
-                # Wait for the main file input element to be available on the page
-                # file_input_locator = page.locator('input[type="file"]')
-                # file_input_locator.wait_for(state="attached", timeout=30000)                
-                # file_input_locator.set_input_files(media_path)
+                    # Wait for the main file input element to be available on the page
+                    # file_input_locator = page.locator('input[type="file"]')
+                    # file_input_locator.wait_for(state="attached", timeout=30000)                
+                    # file_input_locator.set_input_files(media_path)
 
-                with page.expect_file_chooser() as fc_info:
-                    page.get_by_role("button", name="Add video or drag and drop").click()
-                
-                file_chooser = fc_info.value
-                file_chooser.set_files(media_path)
+                    with page.expect_file_chooser() as fc_info:
+                        page.get_by_role("button", name="Add video or drag and drop").click()
+                    
+                    file_chooser = fc_info.value
+                    file_chooser.set_files(media_path)
 
 
-                # Wait for the first 'Next' button to appear after upload
-                page.get_by_role("button", name="Next").wait_for(state="visible", timeout=90000)
-                print("Video upload complete. Starting wizard steps.")
+                    # Wait for the first 'Next' button to appear after upload
+                    page.get_by_role("button", name="Next").wait_for(state="visible", timeout=90000)
+                    print("Video upload complete. Starting wizard steps.")
 
-                # --- STEP 2: WIZARD STEPS (Two Next Clicks) ---
-                
-                # 1st Click: Usually for cropping/trimming
-                print("Clicking first 'Next' button...")
-                page.get_by_role("button", name="Next").click()
-                time.sleep(5)
+                    # --- STEP 2: WIZARD STEPS (Two Next Clicks) ---
+                    
+                    # 1st Click: Usually for cropping/trimming
+                    print("Clicking first 'Next' button...")
+                    page.get_by_role("button", name="Next").click()
+                    time.sleep(5)
 
-                # 2nd Click: Usually for editing/enhancements
-                print("Clicking second 'Next' button...")
-                page.get_by_role("button", name="Next").click()
-                time.sleep(5)
+                    # 2nd Click: Usually for editing/enhancements
+                    print("Clicking second 'Next' button...")
+                    page.get_by_role("button", name="Next").click()
+                    time.sleep(5)
 
-                para = page.get_by_role("paragraph")
-                para.wait_for(state="visible", timeout=60000)
-                para.click()
-                print("Para clicked for caption.")
-                time.sleep(5)
+                    para = page.get_by_role("paragraph")
+                    para.wait_for(state="visible", timeout=60000)
+                    para.click()
+                    print("Para clicked for caption.")
+                    time.sleep(5)
 
-                caption = build_caption(row)
-                # Some Facebook editors don't support .fill() directly; type instead:
-                # Clear existing text (just in case)
-                try:
-                    # Try select-all + delete (Ctrl+A, Backspace)
+                    caption = build_caption(row)
+                    # Some Facebook editors don't support .fill() directly; type instead:
+                    # Clear existing text (just in case)
+                    try:
+                        # Try select-all + delete (Ctrl+A, Backspace)
+                        page.keyboard.press("Control+A")
+                        page.keyboard.press("Backspace")
+                        time.sleep(0.5)
+                    except Exception:
+                        pass
+
+                    # para.type(caption, delay=20)
+                    page.keyboard.type(caption, delay=5)
+                    print("Entered caption.")
+
+
+                    time.sleep(1) # Small pause for "human" typing
+                    page.keyboard.press("Escape")
+                    time.sleep(1)
+
+                    # --- STEP 4: SHARE THE REEL ---
+                    
+                    print("  -> Clicking Publish button...")
+                    publish_btn = page.get_by_role("button", name="Publish")
+                    publish_btn.wait_for(state="visible", timeout=60000)
+                    publish_btn.click()
+                    time.sleep(8)  # give time for the post to be submitted
+                    
+                    print("✅ Upload Successful! Your Reel is being shared.")
+
+
+                else:
+                    page.goto("https://www.facebook.com")
+                    time.sleep(5)
+
+                    with page.expect_file_chooser() as fc_info:
+                        page.get_by_role("button", name="Photo/video").click()
+                    
+                    file_chooser = fc_info.value
+                    file_chooser.set_files(media_path)
+
+                    # composer = focus_fb_composer(page, timeout=60000)
+                    composer = page.locator('div[contenteditable="true"][role="textbox"]').first
+                    composer.click()
+                    print("Composer clicked.")
+
+                    time.sleep(1)
+
+                    # Clear existing text (if any)
                     page.keyboard.press("Control+A")
                     page.keyboard.press("Backspace")
                     time.sleep(0.5)
-                except Exception:
-                    pass
 
-                # para.type(caption, delay=20)
-                page.keyboard.type(caption, delay=5)
-                print("Entered caption.")
+                    caption = build_caption(row)
+                    page.keyboard.type(caption, delay=5)
+                    print("Entered caption.")
 
+                    print("Clicking first 'Next' button...")
+                    page.get_by_role("button", name="Next").click()
+                    time.sleep(5)
+                    print("  -> Clicking Post button...")
+                    publish_btn = page.get_by_role("button", name="Post").first
+                    publish_btn.wait_for(state="visible", timeout=60000)
+                    publish_btn.click()
+                    time.sleep(8)  # give time for the post to be submitted
 
-                time.sleep(1) # Small pause for "human" typing
-                page.keyboard.press("Escape")
-                time.sleep(1)
-
-                # --- STEP 4: SHARE THE REEL ---
-                
-                print("  -> Clicking Publish button...")
-                publish_btn = page.get_by_role("button", name="Publish")
-                publish_btn.wait_for(state="visible", timeout=60000)
-                publish_btn.click()
-                time.sleep(8)  # give time for the post to be submitted
-                
-                # --- STEP 5: VERIFICATION ---
-                
-                # Look for the success modal/text. This might change, but "Share" or "Posted" is common.
-                # We look for the status message that appears in the sidebar.
-                # success_text_locator = page.get_by_text("Your Reel is being shared.", exact=True)
-                
-                # success_text_locator.wait_for(timeout=15000)
-                print("✅ Upload Successful! Your Reel is being shared.")
-
-                # open_video_composer(page)
-                # upload_video(page, media_path)
-
-                # caption = build_caption(row)
-                # fill_caption(page, caption)
-
-                # click_post(page)
-                # time.sleep(10)  # let Facebook finish posting
-
-                # post_url = extract_post_url(page)
                 post_url = ""
                 save_facebook_status(ws, header_map, row_idx, post_url, "Success", caption)
                 print(f"✅ Facebook video posted & recorded for row {row_idx}: {post_url}")
-
             except Exception as e:
                 err_msg = str(e)[:500]
                 print(f"❌ Error uploading Facebook video for row {row_idx}: {err_msg}")

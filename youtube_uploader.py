@@ -391,7 +391,7 @@ def load_youtube_rows_from_master(excel_file):
 
     headers, header_map, _ = ensure_youtube_status_columns(ws, headers)
 
-    required = ["media_file", "yt_title", "yt_description", "youtube_status"]
+    required = ["media_file", "yt_title", "yt_description", "youtube_status","youTubeChannel"]
     for r in required:
         if r not in header_map:
             raise Exception(f"Missing column: {r}")
@@ -401,7 +401,11 @@ def load_youtube_rows_from_master(excel_file):
         media_file = ws.cell(row=row_idx, column=header_map["media_file"]).value
         status_val = ws.cell(row=row_idx, column=header_map["youtube_status"]).value
         media_type = ws.cell(row=row_idx, column=header_map["media_type"]).value
+        youTubeChannel = ws.cell(row=row_idx, column=header_map["youTubeChannel"]).value
         
+        if not youTubeChannel:
+            continue
+
         if not media_file:
             continue
 
@@ -424,7 +428,8 @@ def load_youtube_rows_from_master(excel_file):
             "youtube_description": desc,
             "youtube_tags": ws.cell(row=row_idx, column=header_map.get("yt_tags", 0)).value,
             "youtube_playlist": "Coloring",
-            "made_for_kids": False
+            "made_for_kids": False,
+            "youtube_channel_name": youTubeChannel,
         })
 
     return wb, ws, header_map, rows
@@ -466,6 +471,10 @@ def save_youtube_status(ws, header_map, row_idx, url, error=None):
 def upload_shorts_from_master_file():
     wb, ws, header_map, youtube_rows = load_youtube_rows_from_master("master_shorts_uploader_data.xlsx")
 
+    if not youtube_rows:
+        print("No valid rows found in Excel for YouTube upload.")
+        return
+    
     with sync_playwright() as p:
         browser = p.chromium.launch_persistent_context(
             PROFILE_DIR,
@@ -479,6 +488,11 @@ def upload_shorts_from_master_file():
 
             print(f"\n=== Uploading to YouTube: {media} ===")
 
+            if row["youtube_channel_name"] is None or row["youtube_channel_name"].strip() == "":
+                print(f"Skipping row {row['row_idx']} due to missing youTubeChannel.")
+                save_youtube_status(ws, header_map, row["row_idx"], "", "Missing youTubeChannel")
+                continue
+
             try:
                 video_info = {
                     "youtube_title": row["youtube_title"],
@@ -487,7 +501,7 @@ def upload_shorts_from_master_file():
                     "youtube_playlist_name": row["youtube_playlist"],
                     "video_path": media,
                     "made_for_kids": False,
-                    "youtube_channel_name": "Creative Cubs",
+                    "youtube_channel_name": row["youtube_channel_name"],
                     "size": "portrait",
                 }
 

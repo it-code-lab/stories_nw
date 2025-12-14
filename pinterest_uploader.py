@@ -76,7 +76,11 @@ def load_pins_from_excel():
 
         media_file = (record.get("media_file") or "").strip()
         pin_title = (record.get("pin_title") or "").strip()
+        pinterestProfile = (record.get("pinterestProfile") or "").strip()
 
+        if pinterestProfile == "" :
+            continue
+        
         if not media_file or not pin_title:
             continue  # skip incomplete rows
 
@@ -453,7 +457,7 @@ def upload_pins():
     wb, ws, pins, header_map = load_pins_from_excel()
 
     if not pins:
-        print("No valid pins found in Excel.")
+        print("No valid pins found in Excel for Pinterest upload")
         return
 
     print(f"Loaded {len(pins)} pin rows from {EXCEL_FILE}")
@@ -483,6 +487,10 @@ def upload_pins():
             status_val = str(pin.get("pinterest_upload_status") or "").strip().lower()
             if status_val == "success":
                 print(f"Skipping already uploaded: {pin.get('pin_title')}")
+                continue
+
+            if pin.get("pinterestProfile", "") == "":
+                print(f"Skipping row {row_idx} due to missing pinterestProfile.")
                 continue
 
             try:

@@ -77,6 +77,9 @@ def load_videos_from_excel():
 
         media_file = (record.get("media_file") or "").strip()
         status_val = (record.get("tiktok_upload_status") or "").strip()
+        tikTokProfile = (record.get("tikTokProfile") or "").strip()
+        if tikTokProfile == "":
+            continue
 
         if not media_file:
             continue
@@ -364,7 +367,7 @@ def upload_tiktok_videos():
     wb, ws, rows, header_map = load_videos_from_excel()
 
     if not rows:
-        print("No valid video rows found in Excel.")
+        print("No valid video rows found in Excel for tiktok upload.")
         return
 
     print(f"Loaded {len(rows)} TikTok rows from {EXCEL_FILE}")

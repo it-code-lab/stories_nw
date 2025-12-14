@@ -71,6 +71,11 @@ def load_rows_from_excel():
         status_val = (rec.get("instagram_upload_status") or "").strip()
         media_type = (rec.get("media_type") or "").strip()
 
+        instagramProfile = (rec.get("instagramProfile") or "").strip()
+
+        if instagramProfile == "":
+            continue
+
         if media_type and media_type != "video":
             continue
 
@@ -407,7 +412,7 @@ def upload_instagram_posts():
 
     wb, ws, rows, header_map = load_rows_from_excel()
     if not rows:
-        print("No valid rows found in Excel.")
+        print("No valid rows found in Excel for Instagram upload.")
         return
 
     print(f"Loaded {len(rows)} rows from {EXCEL_FILE}")
@@ -436,6 +441,10 @@ def upload_instagram_posts():
             status_val = str(row.get("instagram_upload_status") or "").strip().lower()
             if status_val == "success":
                 print(f"Skipping already uploaded IG row {excel_row_idx}")
+                continue
+
+            if row.get("instagramProfile") == "":
+                print(f"Skipping IG upload for row {excel_row_idx} as instagramProfile is blank")
                 continue
 
             try:

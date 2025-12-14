@@ -20,6 +20,8 @@ from moviepy.editor import (
     concatenate_videoclips,
 )
 from moviepy.video.fx import all as vfx
+import re
+
 
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
@@ -189,6 +191,91 @@ def collect_media_files(root: Path, subfolder: str | None) -> list[Path]:
     files.sort()
     return files
 
+def probe_video_info(video_path: Path) -> tuple[float | None, int | None, int | None]:
+    """
+    Returns (duration_sec, width, height) using ffprobe.
+    If ffprobe fails, returns (None, None, None).
+    """
+    try:
+        cmd = [
+            "ffprobe",
+            "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height:format=duration",
+            "-of", "json",
+            str(video_path),
+        ]
+        p = subprocess.run(cmd, capture_output=True, text=True)
+        if p.returncode != 0:
+            return (None, None, None)
+
+        data = json.loads(p.stdout or "{}")
+        duration = None
+        width = None
+        height = None
+
+        fmt = data.get("format", {}) or {}
+        if "duration" in fmt:
+            try:
+                duration = float(fmt["duration"])
+            except Exception:
+                duration = None
+
+        streams = data.get("streams", []) or []
+        if streams:
+            s0 = streams[0] or {}
+            width = int(s0.get("width")) if s0.get("width") else None
+            height = int(s0.get("height")) if s0.get("height") else None
+
+        return (duration, width, height)
+    except Exception:
+        return (None, None, None)
+
+
+def format_aspect_ratio(width: int | None, height: int | None) -> str:
+    if not width or not height:
+        return ""
+    # simple friendly labels
+    if width * 16 == height * 9:
+        return "16:9"
+    if width * 9 == height * 16:
+        return "9:16"
+    return f"{width}:{height}"
+
+
+def sanitize_filename(name: str, max_len: int = 120) -> str:
+    """
+    Makes filename Windows-safe and pipeline-safe.
+    - Keeps: a-z A-Z 0-9 space _ -
+    - Replaces everything else with _
+    - Collapses multiple underscores
+    - Trims length (keeps extension outside)
+    """
+    # Replace unsafe characters
+    safe = re.sub(r'[^a-zA-Z0-9 _-]', '_', name)
+
+    # Collapse multiple underscores / spaces
+    safe = re.sub(r'[_\s]+', '_', safe).strip('_')
+
+    # Limit length
+    return safe[:max_len]
+
+def sanitize_files_in_dir(root_dir: Path, exts=None):
+    if exts is None:
+        exts = {".mp4", ".mov", ".mkv", ".webm"}
+
+    for path in root_dir.rglob("*"):
+        if path.is_file() and path.suffix.lower() in exts:
+            safe_stem = sanitize_filename(path.stem)
+            new_path = path.with_name(safe_stem + path.suffix)
+
+            if new_path != path:
+                print(f"[RENAME] {path.name} → {new_path.name}")
+                try:
+                    path.rename(new_path)
+                except Exception as e:
+                    print(f"[WARN] Could not rename {path.name}: {e}")
+
 def add_ken_burns(clip, zoom: float = 1.06):
     """
     Apply a very gentle Ken Burns-style zoom to a clip over its duration.
@@ -312,6 +399,12 @@ def load_campaign_config(images_root: Path, source_subfolder: str | None) -> dic
             campaign_name = str(data.get("campaign_name", "")).strip() or book_title
             destination_url = str(data.get("destination_url", "")).strip() or book_url
 
+            pinterestProfile = str(data.get("pinterestProfile", "")).strip()
+            faceBookProfile = str(data.get("faceBookProfile", "")).strip()
+            youTubeChannel = str(data.get("youTubeChannel", "")).strip()
+            tikTokProfile = str(data.get("tikTokProfile", "")).strip()
+            instagramProfile = str(data.get("instagramProfile", "")).strip()
+
             return {
                 # New generalized keys
                 "campaign_name": campaign_name,
@@ -332,6 +425,11 @@ def load_campaign_config(images_root: Path, source_subfolder: str | None) -> dic
                 # Keep old keys too (optional)
                 "book_title": book_title,
                 "book_url": book_url,
+                "pinterestProfile": pinterestProfile,
+                "faceBookProfile": faceBookProfile,
+                "youTubeChannel": youTubeChannel,
+                "tikTokProfile": tikTokProfile,
+                "instagramProfile": instagramProfile,
             }
         except Exception as e:
             print(f"[WARN] Failed to read config {cfg}: {e}")
@@ -825,6 +923,12 @@ def build_excel(
     # 2) Resolve generalized campaign values (UI/CLI overrides config)
     campaign_name = (book_title or cfg.get("campaign_name") or cfg.get("book_title") or "Campaign").strip()
 
+    pinterestProfile = cfg.get("pinterestProfile", "").strip()
+    faceBookProfile = cfg.get("faceBookProfile", "").strip()
+    youTubeChannel = cfg.get("youTubeChannel", "").strip()
+    tikTokProfile = cfg.get("tikTokProfile", "").strip()
+    instagramProfile = cfg.get("instagramProfile", "").strip()
+
 
     # 2) Resolve final values (UI/CLI overrides config)
     book_title = (book_title or cfg.get("book_title") or "Coloring Book").strip()
@@ -843,6 +947,11 @@ def build_excel(
     )
 
     destination_type = (cfg.get("destination_type") or "product").strip()
+
+    # If we are handling already-made videos, treat the destination as a video campaign
+    if media_type == "existing_video":
+        destination_type = "video"
+
     topic = (cfg.get("topic") or "").strip()
 
     board_name = (board_name or cfg.get("board_name") or "").strip()
@@ -863,9 +972,17 @@ def build_excel(
     print(f"  watermark_text  = {watermark_text!r}")
     print(f"  use_gemini      = {use_gemini!r}")
 
+    # media_files = collect_media_files(images_root, source_subfolder)
+
+    # # Randomize the file order
+    # random.shuffle(media_files)
+
     media_files = collect_media_files(images_root, source_subfolder)
 
-    # Randomize the file order
+    # If we are ONLY loading already-created videos, filter to video files only
+    if media_type == "existing_video":
+        media_files = [p for p in media_files if p.suffix.lower() in VIDEO_EXTS]
+
     random.shuffle(media_files)
 
     groups: list[list[Path]]
@@ -917,6 +1034,11 @@ def build_excel(
         "platform_youtube",
         "platform_x",
         "platform_facebook",
+        "pinterestProfile",
+        "faceBookProfile",
+        "youTubeChannel",
+        "tikTokProfile",
+        "instagramProfile",
 
         # Pinterest
         "pin_title",
@@ -1112,6 +1234,13 @@ def build_excel(
                 else:
                     # Not an image – just log original path
                     media_path_for_excel = str(primary.relative_to(images_root.parent))
+            elif media_type == "existing_video":
+                # ---- EXISTING VIDEO (NO CREATION) ----
+                if is_video:
+                    media_path_for_excel = str(primary.relative_to(images_root.parent))
+                else:
+                    print(f"[SKIP] Not a video file in existing_video mode: {primary}")
+                    continue
 
             else:
                 # Unknown media_type
@@ -1177,14 +1306,47 @@ def build_excel(
             next_pin_id += 1
 
             # Common fields
-            duration_sec = video_duration if media_type in ("video", "coloring") else ""
+            # duration_sec = video_duration if media_type in ("video", "coloring") else ""
 
-            excel_media_type = "video" if media_type in ("video", "coloring") else media_type
+            # excel_media_type = "video" if media_type in ("video", "coloring") else media_type
 
-            aspect_ratio = "9:16"  # matches 1080x1920 vertical
+            # aspect_ratio = "9:16"  # matches 1080x1920 vertical
+
+            # Duration + aspect ratio
+            dur_val = ""
+            ar_val = ""
+
+            if media_type in ("video", "coloring"):
+                dur_val = video_duration
+                ar_val = "9:16"
+            elif media_type == "existing_video":
+                dur, w, h = probe_video_info(primary)
+                dur_val = round(dur, 2) if dur else ""
+                ar_val = format_aspect_ratio(w, h)
+
+            duration_sec = dur_val
+            aspect_ratio = ar_val
+
+            excel_media_type = "video" if media_type in ("video", "coloring", "existing_video") else media_type
+
 
             # Platform toggles: default everything to "Y" (you can change in Excel)
-            platform_flag = "Y"
+            # platform_flag = "Y"
+
+            if media_type == "existing_video":
+                platform_pinterest = "N"
+                platform_instagram = "N"
+                platform_tiktok = "N"
+                platform_youtube = "N"
+                platform_x = "N"
+                platform_facebook = "Y"
+            else:
+                platform_pinterest = "Y"
+                platform_instagram = "Y"
+                platform_tiktok = "Y"
+                platform_youtube = "Y"
+                platform_x = "Y"
+                platform_facebook = "Y"
 
             # Build a dict keyed by header name (only for the columns we care about)
             row_dict = {
@@ -1200,12 +1362,17 @@ def build_excel(
                 "destination_url": destination_url,
                 "destination_type": destination_type,
                 "topic": topic,
-                "platform_pinterest": platform_flag,
-                "platform_instagram": platform_flag,
-                "platform_tiktok": platform_flag,
-                "platform_youtube": platform_flag,
-                "platform_x": platform_flag,
-                "platform_facebook": platform_flag,
+                "platform_pinterest": platform_pinterest,
+                "platform_instagram": platform_instagram,
+                "platform_tiktok": platform_tiktok,
+                "platform_youtube": platform_youtube,
+                "platform_x": platform_x,
+                "platform_facebook": platform_facebook,
+                "pinterestProfile": pinterestProfile,
+                "faceBookProfile": faceBookProfile,
+                "youTubeChannel": youTubeChannel,
+                "tikTokProfile": tikTokProfile,
+                "instagramProfile": instagramProfile,
 
                 # Pinterest
                 "pin_title": pin_title,
@@ -1578,7 +1745,7 @@ def main(argv=None):
     parser.add_argument("--images-root", required=True, help="Root images folder (e.g. application/downloads)")
     parser.add_argument("--source-subfolder", default="", help="Subfolder under images-root, e.g. '1.Cute Farm Animals/pages'")
     parser.add_argument("--output-excel", default="master_shorts_uploader_data.xlsx", help="Output Excel filename")
-    parser.add_argument("--media-type", choices=["image", "video", "coloring"], default="image")
+    parser.add_argument("--media-type", choices=["image", "video", "coloring", "existing_video"], default="image")
     # parser.add_argument("--pin-url", choices=["gng", "amazon", "gumroad","readernook"], default="gng")
     parser.add_argument("--max-pins", type=int, default=0, help="Max pins to generate (0 = all)")
 
@@ -1658,6 +1825,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     images_root = Path(args.images_root).resolve()
+
+    sanitize_files_in_dir(images_root)
+    
     source_subfolder = args.source_subfolder or None
     output_excel = Path(args.output_excel).resolve()
 
