@@ -402,6 +402,7 @@ def load_campaign_config(images_root: Path, source_subfolder: str | None) -> dic
             pinterestProfile = str(data.get("pinterestProfile", "")).strip()
             faceBookProfile = str(data.get("faceBookProfile", "")).strip()
             youTubeChannel = str(data.get("youTubeChannel", "")).strip()
+            youTubePlaylist = str(data.get("youTubePlaylist", "")).strip()
             tikTokProfile = str(data.get("tikTokProfile", "")).strip()
             instagramProfile = str(data.get("instagramProfile", "")).strip()
 
@@ -428,6 +429,7 @@ def load_campaign_config(images_root: Path, source_subfolder: str | None) -> dic
                 "pinterestProfile": pinterestProfile,
                 "faceBookProfile": faceBookProfile,
                 "youTubeChannel": youTubeChannel,
+                "youTubePlaylist": youTubePlaylist,
                 "tikTokProfile": tikTokProfile,
                 "instagramProfile": instagramProfile,
             }
@@ -926,6 +928,7 @@ def build_excel(
     pinterestProfile = cfg.get("pinterestProfile", "").strip()
     faceBookProfile = cfg.get("faceBookProfile", "").strip()
     youTubeChannel = cfg.get("youTubeChannel", "").strip()
+    youTubePlaylist = cfg.get("youTubePlaylist", "").strip()
     tikTokProfile = cfg.get("tikTokProfile", "").strip()
     instagramProfile = cfg.get("instagramProfile", "").strip()
 
@@ -1037,6 +1040,7 @@ def build_excel(
         "pinterestProfile",
         "faceBookProfile",
         "youTubeChannel",
+        "youTubePlaylist",
         "tikTokProfile",
         "instagramProfile",
 
@@ -1371,6 +1375,7 @@ def build_excel(
                 "pinterestProfile": pinterestProfile,
                 "faceBookProfile": faceBookProfile,
                 "youTubeChannel": youTubeChannel,
+                "youTubePlaylist": youTubePlaylist,
                 "tikTokProfile": tikTokProfile,
                 "instagramProfile": instagramProfile,
 
@@ -1827,7 +1832,7 @@ def main(argv=None):
     images_root = Path(args.images_root).resolve()
 
     sanitize_files_in_dir(images_root)
-    
+
     source_subfolder = args.source_subfolder or None
     output_excel = Path(args.output_excel).resolve()
 

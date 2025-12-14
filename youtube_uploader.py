@@ -244,12 +244,19 @@ def upload_video(page, video_info):
         #page.locator('ytcp-button:has-text("Select playlist")').click()
         
         #page.locator('button:has-text("Select")').click()
-        page.locator(".right-container.style-scope.ytcp-dropdown-trigger").click()
-        time.sleep(2)
-        page.get_by_text(video_info["youtube_playlist_name"]).locator("xpath=ancestor::label").click()
-        #page.locator(f'div[role="checkbox"]:has-text("{video_info["playlist_name"]}")').click()
-        page.locator('ytcp-button:has-text("Done")').click()
-        print("Playlist selected")
+        try:
+            page.locator(".right-container.style-scope.ytcp-dropdown-trigger").click()
+            time.sleep(2)
+            page.get_by_text(video_info["youtube_playlist_name"]).locator("xpath=ancestor::label").click()
+            #page.locator(f'div[role="checkbox"]:has-text("{video_info["playlist_name"]}")').click()
+            page.locator('ytcp-button:has-text("Done")').click()
+            print("Playlist selected")
+        except Exception as e:
+            print(f"Error selecting playlist: {e}")
+            time.sleep(1)
+            #press escape to close playlist dialog
+            page.keyboard.press("Escape")
+
 
     # Fill Description
     #page.locator('textarea#description-textarea').fill(video_info["description"])
@@ -402,6 +409,7 @@ def load_youtube_rows_from_master(excel_file):
         status_val = ws.cell(row=row_idx, column=header_map["youtube_status"]).value
         media_type = ws.cell(row=row_idx, column=header_map["media_type"]).value
         youTubeChannel = ws.cell(row=row_idx, column=header_map["youTubeChannel"]).value
+        youTubePlaylist = ws.cell(row=row_idx, column=header_map["youTubePlaylist"]).value
         
         if not youTubeChannel:
             continue
@@ -427,9 +435,10 @@ def load_youtube_rows_from_master(excel_file):
             "youtube_title": title,
             "youtube_description": desc,
             "youtube_tags": ws.cell(row=row_idx, column=header_map.get("yt_tags", 0)).value,
-            "youtube_playlist": "Coloring",
+            "youtube_playlist": youTubePlaylist,
             "made_for_kids": False,
             "youtube_channel_name": youTubeChannel,
+
         })
 
     return wb, ws, header_map, rows

@@ -1505,11 +1505,11 @@ def generate_pinterest_excel_route():
 
         if upload_pinterest_flg == "yes" and ok:
             upload_pins() #Pinterest upload
-            if media_type == "video" or media_type == "coloring":
-                upload_shorts_from_master_file() #YouTube shorts upload
-                upload_facebook_videos() #Facebook videos upload
-                upload_tiktok_videos() #TikTok videos upload
-                upload_instagram_posts() #Instagram posts upload
+            # if media_type == "video" or media_type == "coloring":
+            upload_shorts_from_master_file() #YouTube shorts upload
+            upload_facebook_videos() #Facebook videos upload
+            upload_tiktok_videos() #TikTok videos upload
+            upload_instagram_posts() #Instagram posts upload
         
         return jsonify({
             "ok": ok,
