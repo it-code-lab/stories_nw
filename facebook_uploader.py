@@ -519,7 +519,7 @@ def upload_facebook_videos():
 
 
                     # Wait for the first 'Next' button to appear after upload
-                    page.get_by_role("button", name="Next").wait_for(state="visible", timeout=90000)
+                    page.get_by_role("button", name="Next").wait_for(state="visible", timeout=5000)
                     print("Video upload complete. Starting wizard steps.")
 
                     # --- STEP 2: WIZARD STEPS (Two Next Clicks) ---
@@ -562,10 +562,16 @@ def upload_facebook_videos():
 
                     # --- STEP 4: SHARE THE REEL ---
                     
-                    print("  -> Clicking Publish button...")
-                    publish_btn = page.get_by_role("button", name="Publish")
-                    publish_btn.wait_for(state="visible", timeout=60000)
-                    publish_btn.click()
+                    print("  -> Clicking Publish/Post button...")
+
+                    try:
+                        publish_btn = page.get_by_role("button", name="Post").first
+                        publish_btn.wait_for(state="visible", timeout=30000)
+                        publish_btn.click()
+                    except PWTimeoutError:
+                        publish_btn = page.get_by_role("button", name="Publish").first
+                        publish_btn.wait_for(state="visible", timeout=30000)
+                        publish_btn.click()
                     time.sleep(8)  # give time for the post to be submitted
                     
                     print("✅ Upload Successful! Your Reel is being shared.")
