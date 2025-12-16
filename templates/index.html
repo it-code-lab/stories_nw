@@ -1523,7 +1523,41 @@
 
         <button type="submit">Convert Images</button>
         <div id="convertLandscapeImagesResult" style="margin-top:10px;"></div>
-    </form>    
+    </form>  
+
+<br>
+<form id="renderPinsFromPinDataForm">
+  <h2 style="background:#e0f2fe;">Render Pinterest Pins from PIN_DATA.xlsx (JSON Overlay)</h2>
+
+  <div class="infoBox" style="margin-bottom:8px;">
+    <b>Folder must contain:</b> <code>PIN_DATA.xlsx</code> + backgrounds(png/mp4) + overlay.json +  logo.png files.<br>
+    The script will render <b>image</b> pins (.jpg) or <b>video</b> pins (.mp4) and log them to
+    <code>master_shorts_uploader_data.xlsx</code>.
+  </div>
+
+  <label>Select folder (upload directory from your computer):</label><br>
+  <input type="file" id="pin_data_dir" name="source_dir" webkitdirectory directory multiple style="margin-bottom:10px;">
+  <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">
+    Leave empty if you want to use an existing server-side folder path below.
+  </div>
+
+  <label>Or use existing folder (server path relative to application folder):</label><br>
+  <input type="text" name="source_folder" placeholder="e.g. pinterest_uploads/uploads or downloads/my_batch"
+         style="width:100%;max-width:520px;margin-bottom:10px;">
+
+  <label>Pin type:</label><br>
+  <select name="pin_type" style="margin-bottom:10px;">
+    <option value="image" selected>Image pins (.jpg)</option>
+    <option value="video">Video pins (.mp4)</option>
+  </select>
+
+  <label>How many pins to render (0 = all rows):</label><br>
+  <input type="number" name="max_pins" value="0" style="width:120px;margin-bottom:10px;">
+
+  <button type="submit">Render Pins</button>
+  <pre id="renderPinsFromPinDataResult" style="margin-top:8px;font-size:13px;white-space:pre-wrap;"></pre>
+</form>    
+    
     <br>
     <form id="pinterestExcelFormForColoringPins">
         <h2 style="background:#fef3c7;">Generate Short Video and Upload to Multiple Platforms (YouTube, facebook, Insta,
@@ -1778,6 +1812,37 @@
     <br>
 
     <br>
+
+<script>
+  (function(){
+    const form = document.getElementById("renderPinsFromPinDataForm");
+    const out = document.getElementById("renderPinsFromPinDataResult");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      out.textContent = "Processing...";
+
+      const fd = new FormData(form);
+      // IMPORTANT: If the user selected a folder, browsers put files in input.files
+      // FormData(form) should already include them; this is just a safety pattern:
+      const dirInput = document.getElementById("pin_data_dir");
+      if (dirInput && dirInput.files && dirInput.files.length > 0) {
+        // fd already has them by name="source_dir", so do nothing
+      }
+
+      try {
+        const resp = await fetch("/render_pinterest_pins_from_pin_data", {
+          method: "POST",
+          body: fd
+        });
+        const data = await resp.json();
+        out.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        out.textContent = "Error: " + err;
+      }
+    });
+  })();
+</script>    
     <script>
         document.getElementById('batchMakeVideoImagesFromDir').onsubmit = async function (e) {
             e.preventDefault();

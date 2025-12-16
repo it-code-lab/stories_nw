@@ -1319,6 +1319,76 @@ def list_background_videos():
     data["all_folders"] = _list_all_folders(base)
     return jsonify(data)
 
+# server.py (ADD THIS ROUTE)
+
+@app.post("/render_pinterest_pins_from_pin_data")
+def render_pinterest_pins_from_pin_data():
+    """
+    Reads PIN_DATA.xlsx from a folder, renders image/video pins using project_json overlays,
+    writes outputs to pinterest_uploads/pinterest_pins, and appends records to master_shorts_uploader_data.xlsx
+    """
+    try:
+        from pathlib import Path
+        from time import time
+
+        from pin_overlay_batch import batch_render_from_folder
+
+        base_dir = BASE_DIR
+
+        data = request.form
+        uploaded_files = request.files.getlist("source_dir")  # directory upload (optional)
+        source_folder = (data.get("source_folder") or "").strip()
+        pin_type = (data.get("pin_type") or "image").strip().lower()  # image|video
+        max_pins = int((data.get("max_pins") or "0").strip() or 0)
+
+        if pin_type not in ("image", "video"):
+            pin_type = "image"
+
+        # Where the folder is
+        if uploaded_files and len(uploaded_files) > 0:
+            upload_root = base_dir / "pinterest_uploads" / "uploads"
+            upload_root.mkdir(parents=True, exist_ok=True)
+
+            # Clear previous contents
+            for child in upload_root.iterdir():
+                if child.is_file():
+                    child.unlink()
+                elif child.is_dir():
+                    import shutil
+                    shutil.rmtree(child)
+
+            for fs in uploaded_files:
+                filename = Path(fs.filename).name
+                dest_path = upload_root / filename
+                fs.save(dest_path)
+
+            folder = upload_root
+        else:
+            # Use server-side folder relative to BASE_DIR or downloads
+            # If you prefer downloads/ only, swap BASE_DIR for COLORING_BASE
+            folder = (base_dir / source_folder) if source_folder else None
+            if not folder or not folder.exists():
+                return jsonify({"ok": False, "error": f"Folder not found: {folder}"}), 400
+
+        out_dir = base_dir / "pinterest_uploads" / "pinterest_pins"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        master_excel = base_dir / "master_shorts_uploader_data.xlsx"
+
+        result = batch_render_from_folder(
+            folder=folder,
+            pin_type=pin_type,
+            max_pins=max_pins,
+            out_dir=out_dir,
+            master_excel=master_excel
+        )
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 @app.post("/generate_pinterest_excel_for_coloring_pins")
 def generate_pinterest_excel_route():
     """
