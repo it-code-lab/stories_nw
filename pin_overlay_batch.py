@@ -699,6 +699,12 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
         ws.cell(rr, header_map["pin_url_to_link"]).value = rec.get("url")
 
         ws.cell(rr, header_map["pinterestprofile"]).value = rec.get("board_name")
+        ws.cell(rr, header_map["facebookprofile"]).value = rec.get("facebook_profile")
+
+        # Combine title, url, description into fb_caption with line breaks
+        ws.cell(rr, header_map["fb_caption"]).value = f"{rec.get('title')}\n\n{rec.get('url')}\n\n{rec.get('description', '')}"
+        # ws.cell(rr, header_map["fb_caption"]).value = rec.get("title") + " " + rec.get("url") + " " + rec.get("description", "")
+        
         
         # ws.cell(rr, header_map["title"]).value = rec.get("title")
         # ws.cell(rr, header_map["url"]).value = rec.get("url")
@@ -778,6 +784,7 @@ def batch_render_from_folder(
         subhead = str(row.get("subhead") or "")
         title = str(row.get("title") or f"pin_{idx}")
         description = str(row.get("description") or "")
+        facebook_profile = str(row.get("facebook_profile") or "")
         pin_url = str(row.get("pin_url") or "")
         board_name = str(row.get("board_name") or "")
 
@@ -810,6 +817,7 @@ def batch_render_from_folder(
                 "title": title,
                 "url": pin_url,
                 "description": description,
+                "facebook_profile": facebook_profile,
             })
 
             # 3) Mark success immediately and save (so rerun skips)
