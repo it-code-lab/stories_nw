@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
-
+BASE_MEDIA_ROOT = Path("pinterest_uploads")
 # -----------------------------
 # Helpers
 # -----------------------------
@@ -672,11 +672,36 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
     # append
     for rec in records:
         rr = ws.max_row + 1
-        ws.cell(rr, header_map["media_file"]).value = rec.get("media_file")
+        # ws.cell(rr, header_map["media_file"]).value = rec.get("media_file")
+        media_path = rec.get("media_file")
+
+        if media_path:
+            p = Path(media_path)
+
+            # Try to make path relative to pinterest_uploads
+            try:
+                rel = p.as_posix().split("pinterest_uploads/", 1)[1]
+                media_path = rel
+            except IndexError:
+                media_path = p.name  # fallback: filename only
+
+        ws.cell(rr, header_map["media_file"]).value = media_path
+
         ws.cell(rr, header_map["media_type"]).value = rec.get("media_type")
         ws.cell(rr, header_map["board_name"]).value = rec.get("board_name")
-        ws.cell(rr, header_map["title"]).value = rec.get("title")
-        ws.cell(rr, header_map["url"]).value = rec.get("url")
+        ws.cell(rr, header_map["book_title"]).value = rec.get("title")
+        ws.cell(rr, header_map["book_url"]).value = rec.get("url")
+        ws.cell(rr, header_map["campaign_name"]).value = rec.get("board_name")
+        ws.cell(rr, header_map["destination_url"]).value = rec.get("url")
+        ws.cell(rr, header_map["destination_type"]).value = rec.get("media_type")
+        ws.cell(rr, header_map["pin_title"]).value = rec.get("title")
+        ws.cell(rr, header_map["pin_description"]).value = rec.get("description")
+        ws.cell(rr, header_map["pin_url_to_link"]).value = rec.get("url")
+
+        ws.cell(rr, header_map["pinterestprofile"]).value = rec.get("board_name")
+        
+        # ws.cell(rr, header_map["title"]).value = rec.get("title")
+        # ws.cell(rr, header_map["url"]).value = rec.get("url")
 
     wb.save(master_excel)
 
@@ -783,7 +808,8 @@ def batch_render_from_folder(
                 "media_type": media_type,
                 "board_name": board_name,
                 "title": title,
-                "url": pin_url
+                "url": pin_url,
+                "description": description,
             })
 
             # 3) Mark success immediately and save (so rerun skips)
