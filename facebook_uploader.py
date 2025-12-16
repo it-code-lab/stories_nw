@@ -501,7 +501,7 @@ def upload_facebook_videos():
                     page.goto("https://www.facebook.com/reels/create")
                     time.sleep(5)
 
-                    print("Reels creation page loaded.")
+                    print("Eligible for Reel. Reels creation page loaded.")
 
                     # --- STEP 2: FILE UPLOAD ---
                     print(f"Uploading file: {media_path}")
@@ -517,23 +517,22 @@ def upload_facebook_videos():
                     file_chooser = fc_info.value
                     file_chooser.set_files(media_path)
 
-
+                    print("File selected for upload; Clicking first 'Next' button....")
                     # Wait for the first 'Next' button to appear after upload
                     page.get_by_role("button", name="Next").wait_for(state="visible", timeout=5000)
-                    print("Video upload complete. Starting wizard steps.")
-
                     # --- STEP 2: WIZARD STEPS (Two Next Clicks) ---
                     
                     # 1st Click: Usually for cropping/trimming
-                    print("Clicking first 'Next' button...")
-                    page.get_by_role("button", name="Next").click()
-                    time.sleep(5)
-
-                    # 2nd Click: Usually for editing/enhancements
                     print("Clicking second 'Next' button...")
                     page.get_by_role("button", name="Next").click()
                     time.sleep(5)
 
+                    # 2nd Click: Usually for editing/enhancements
+                    print("Clicking third 'Next' button...")
+                    page.get_by_role("button", name="Next").click()
+                    time.sleep(5)
+
+                    print("Getting paragraph to fill caption...")
                     para = page.get_by_role("paragraph")
                     para.wait_for(state="visible", timeout=60000)
                     para.click()
@@ -553,12 +552,15 @@ def upload_facebook_videos():
 
                     # para.type(caption, delay=20)
                     page.keyboard.type(caption, delay=5)
-                    print("Entered caption.")
+                    print("Entered caption. Going to sleep 5 seconds. Not going to press Escape to defocus...")
 
+                    
+                    # time.sleep(5) # Small pause for "human" typing
 
-                    time.sleep(1) # Small pause for "human" typing
-                    page.keyboard.press("Escape")
-                    time.sleep(1)
+                    # page.keyboard.press("Escape")
+
+                    # print("Defocused caption area. Waiting 5 seconds before publishing...")
+                    time.sleep(5)
 
                     # --- STEP 4: SHARE THE REEL ---
                     
@@ -569,6 +571,7 @@ def upload_facebook_videos():
                         publish_btn.wait_for(state="visible", timeout=30000)
                         publish_btn.click()
                     except PWTimeoutError:
+                        print("Post button not found; trying 'Publish' button instead...")
                         publish_btn = page.get_by_role("button", name="Publish").first
                         publish_btn.wait_for(state="visible", timeout=30000)
                         publish_btn.click()
@@ -586,18 +589,20 @@ def upload_facebook_videos():
                     
                     file_chooser = fc_info.value
                     file_chooser.set_files(media_path)
-
+                    print("File selected for upload. Sleeping 5 seconds for upload processing...")
+                    time.sleep(5)  # wait for upload processing
+                    print("Finding textbox to fill caption...")
                     # composer = focus_fb_composer(page, timeout=60000)
                     composer = page.locator('div[contenteditable="true"][role="textbox"]').first
                     composer.click()
                     print("Composer clicked.")
 
-                    time.sleep(1)
+                    time.sleep(5)
 
                     # Clear existing text (if any)
                     page.keyboard.press("Control+A")
                     page.keyboard.press("Backspace")
-                    time.sleep(0.5)
+                    time.sleep(5)
 
                     caption = build_caption(row)
                     page.keyboard.type(caption, delay=5)
@@ -607,6 +612,7 @@ def upload_facebook_videos():
                     page.get_by_role("button", name="Next").click()
                     time.sleep(5)
                     print("  -> Clicking Post button...")
+                    time.sleep(5)
                     publish_btn = page.get_by_role("button", name="Post").first
                     publish_btn.wait_for(state="visible", timeout=60000)
                     publish_btn.click()
