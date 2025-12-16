@@ -1338,14 +1338,16 @@ def render_pinterest_pins_from_pin_data():
         data = request.form
         uploaded_files = request.files.getlist("source_dir")  # directory upload (optional)
         source_folder = (data.get("source_folder") or "").strip()
+        # print("Source folder:", source_folder)
         pin_type = (data.get("pin_type") or "image").strip().lower()  # image|video
         max_pins = int((data.get("max_pins") or "0").strip() or 0)
 
         if pin_type not in ("image", "video"):
             pin_type = "image"
 
+        print(f"uploaded_files: {uploaded_files}, source_folder: {source_folder}, pin_type: {pin_type}, max_pins: {max_pins}")
         # Where the folder is
-        if uploaded_files and len(uploaded_files) > 0:
+        if source_folder == "" and uploaded_files and len(uploaded_files) > 0:
             upload_root = base_dir / "pinterest_uploads" / "uploads"
             upload_root.mkdir(parents=True, exist_ok=True)
 

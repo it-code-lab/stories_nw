@@ -544,6 +544,68 @@ REQUIRED_COLS = [
     "pin_url", "board_name",
 ]
 
+def _read_pin_data_with_rows(excel_path: Path):
+    wb = load_workbook(excel_path)
+    ws = wb.active
+
+    # header map
+    headers = {}
+    for c in range(1, ws.max_column + 1):
+        v = ws.cell(row=1, column=c).value
+        if v:
+            headers[str(v).strip().lower()] = c
+
+    missing = [c for c in REQUIRED_COLS if c not in headers]
+    if missing:
+        raise ValueError(f"PIN_DATA.xlsx missing columns: {missing}")
+
+    # ensure status column exists
+    if "status" not in headers:
+        new_col = ws.max_column + 1
+        ws.cell(row=1, column=new_col).value = "status"
+        headers["status"] = new_col
+        # NOTE: Removed wb.save(excel_path) here. The workbook is saved later
+        # in batch_render_from_folder after all header/data is processed.
+
+    rows = []
+    for r in range(2, ws.max_row + 1):
+        row_obj = {}
+        empty = True
+        for col_name, cidx in headers.items():
+            val = ws.cell(row=r, column=cidx).value
+            if col_name != "status" and val not in (None, ""):
+                empty = False
+            row_obj[col_name] = val
+
+        if empty:
+            continue
+
+        # keep excel row number so we can write status back
+        rows.append({"_excel_row": r, **row_obj})
+
+    return wb, ws, headers, rows
+
+def _find_media_file_for_title(folder: Path, title: str, exts: set[str]) -> Optional[Path]:
+    """
+    If a file exists whose stem matches the title (or sanitized title), return it.
+    Searches recursively under folder.
+    """
+    t = (title or "").strip()
+    if not t:
+        return None
+
+    candidates = {t, sanitize_filename(t)}
+
+    for p in folder.rglob("*"):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in exts:
+            continue
+        if p.stem in candidates:
+            return p
+
+    return None
+
 
 def _read_pin_data(excel_path: Path) -> List[Dict[str, Any]]:
     wb = load_workbook(excel_path)
@@ -639,7 +701,10 @@ def batch_render_from_folder(
     fonts_dir = Path("./fonts")
     ensure_dir(fonts_dir)  # optional
 
-    data_rows = _read_pin_data(excel_path)
+    # Load workbook, worksheet, headers, and data rows
+    wb_pin, ws_pin, headers_pin, data_rows = _read_pin_data_with_rows(excel_path)
+    
+    status_col = headers_pin["status"] # Get the column index for status
 
     # Pick background media files from the folder
     if pin_type == "video":
@@ -658,19 +723,6 @@ def batch_render_from_folder(
             f"Expected one of: {sorted(exts)}"
         )
 
-    if max_pins and max_pins > 0:
-        data_rows = data_rows[:max_pins]
-
-    created = []
-    bg_path = folder
-
-    pj = folder / "overlay.json"
-    # pj = "overlay.json"
-    # if not pj.is_absolute():
-    #     pj = folder / pj
-    # if not pj.exists():
-    #     raise FileNotFoundError(f"overlay.json not found: {pj}")
-
     logo_val = "logo.png"
     logo_path = None
     if logo_val not in (None, ""):
@@ -681,44 +733,86 @@ def batch_render_from_folder(
             # don't crash; just ignore
             logo_path = None
 
-    for i, row in enumerate(data_rows, start=1):
-        # bg_path = Path(str(row["bg_path"])).expanduser()
-        # if not bg_path.is_absolute():
-        #     bg_path = folder / bg_path
-        # if not bg_path.exists():
-        #     raise FileNotFoundError(f"Row {i}: bg_path not found: {bg_path}")
+    pj = folder / "overlay.json"
 
-        # pj = Path(str(row["project_json"])).expanduser()
+    created = []
+    processed_count = 0
+
+    for idx, row in enumerate(data_rows, start=1):
+        excel_r = row["_excel_row"]
+
+        # 1) Skip already successful rows
+        status_val = str(row.get("status") or "").strip().lower()
+        if status_val == "success":
+            continue
+
+        if max_pins and max_pins > 0 and processed_count >= max_pins:
+            break
 
         headline = str(row.get("headline") or "")
         subhead = str(row.get("subhead") or "")
-        title = str(row.get("title") or f"pin_{i}")
+        title = str(row.get("title") or f"pin_{idx}")
         description = str(row.get("description") or "")
         pin_url = str(row.get("pin_url") or "")
         board_name = str(row.get("board_name") or "")
 
         project = load_project_json(pj)
         project = apply_text_overrides(project, headline, subhead, logo_path)
-        
-        bg_path = bg_files[(i - 1) % len(bg_files)]
+
+        # 2) Prefer a media file that matches the title
+        matched = _find_media_file_for_title(folder, title, exts)
+        if matched:
+            bg_path = matched
+        else:
+            bg_path = bg_files[(processed_count) % len(bg_files)]
 
         out_base = sanitize_filename(title)
-        if pin_type == "video":
-            out_path = out_dir / f"{out_base}.mp4"
-            render_video_pin(bg_path, project, out_path, fonts_dir)
-            media_type = "video"
-        else:
-            out_path = out_dir / f"{out_base}.jpg"
-            render_image_pin(bg_path, project, out_path, fonts_dir)
-            media_type = "image"
 
-        created.append({
-            "media_file": str(out_path).replace("\\", "/"),
-            "media_type": media_type,
-            "board_name": board_name,
-            "title": title,
-            "url": pin_url
-        })
+        try:
+            if pin_type == "video":
+                out_path = out_dir / f"{out_base}.mp4"
+                render_video_pin(bg_path, project, out_path, fonts_dir)
+                media_type = "video"
+            else:
+                out_path = out_dir / f"{out_base}.jpg"
+                render_image_pin(bg_path, project, out_path, fonts_dir)
+                media_type = "image"
+
+            created.append({
+                "media_file": str(out_path).replace("\\", "/"),
+                "media_type": media_type,
+                "board_name": board_name,
+                "title": title,
+                "url": pin_url
+            })
+
+            # 3) Mark success immediately and save (so rerun skips)
+            print("Updating status in:", excel_path)
+            print("Sheet:", ws_pin.title, "Row:", excel_r, "Col:", status_col)
+            ws_pin.cell(row=excel_r, column=status_col).value = "success"
+            wb_pin.save(excel_path) # <-- Save after individual success
+
+            processed_count += 1
+
+        except Exception as e:
+            # Mark failed, save, then re-raise
+            ws_pin.cell(row=excel_r, column=status_col).value = f"failed: {type(e).__name__}"
+            
+            # Save the failure status before exiting or continuing
+            try:
+                wb_pin.save(excel_path) 
+            except Exception as save_e:
+                print(f"CRITICAL: Failed to save status update to Excel: {save_e}")
+            
+            raise
+
+    # 4) Final Save: Ensure any status column creation from _read_pin_data_with_rows 
+    # or the last status update is persisted if the loop finished gracefully.
+    try:
+        wb_pin.save(excel_path)
+    except Exception as e:
+        # Log this but don't halt the master log update
+        print(f"WARNING: Final save of {excel_path} failed: {e}") 
 
     # log to master
     _append_master_log(master_excel, created)

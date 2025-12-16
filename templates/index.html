@@ -1535,15 +1535,17 @@
     <code>master_shorts_uploader_data.xlsx</code>.
   </div>
 
-  <label>Select folder (upload directory from your computer):</label><br>
+
+
+  <label>Use existing folder (server path relative to application folder):</label><br>
+  <input type="text" name="source_folder" placeholder="e.g. downloads/0.Systeme.io"
+         style="width:100%;max-width:520px;margin-bottom:10px;">
+
+<label>Or select folder (upload directory from your computer):</label><br>
   <input type="file" id="pin_data_dir" name="source_dir" webkitdirectory directory multiple style="margin-bottom:10px;">
   <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">
     Leave empty if you want to use an existing server-side folder path below.
   </div>
-
-  <label>Or use existing folder (server path relative to application folder):</label><br>
-  <input type="text" name="source_folder" placeholder="e.g. pinterest_uploads/uploads or downloads/my_batch"
-         style="width:100%;max-width:520px;margin-bottom:10px;">
 
   <label>Pin type:</label><br>
   <select name="pin_type" style="margin-bottom:10px;">
