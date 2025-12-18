@@ -83,7 +83,7 @@ ACCOUNTS: List[Dict[str, str]] = [
 
 
     {
-        "id": "s173m", # worked
+        "id": "s173m", # worked sm173
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 3",
         "out": r"downloads",
         "google_url": "https://aistudio.google.com/prompts/1Tyv17HS3-w0sVP6oPNQ8ULMDBzAMvIMF",
