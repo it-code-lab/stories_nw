@@ -400,6 +400,8 @@
         </div>
         <div class="infoBox">If audio length is smaller than video then video will be trimmed</div>
 
+        <div class="infoBox">If audio is not present in edit_vid_audio, only merge of clips in edit_vid_input will be done</div>
+
         <label>Copy video and audio files for captions generations</label>
         <select name="copyforcaption" id="copyforcaption">
             <option value="no">no</option>
@@ -1366,6 +1368,35 @@
         <pre id="createImagesResult"></pre>
     </form>
     <br>
+    <form id="populateMediaJobsForm">
+        <h2 style="background:#e0f7fa;">Populate Media Jobs Excel</h2>
+        
+        <div class="infoBox">
+            Select images to populate <code>media_jobs.xlsx</code>.<br>
+            It clears old data and fills <b>prompt</b> (filename) and <b>image_path</b> (full path).
+        </div>
+        <br>
+
+        <label>Source Type:</label>
+        <select name="source_type" id="pmj_source_type" onchange="togglePmjSource()">
+            <option value="server">Existing Folder on Server</option>
+            <option value="upload">Upload Directory (Saved to temp-del)</option>
+        </select>
+
+        <div id="pmj_server_input">
+            <label>Server Folder Path (relative to application folder):</label>
+            <input type="text" name="server_path" placeholder="e.g. downloads/MyImages or C:/Images">
+        </div>
+
+        <div id="pmj_upload_input" style="display:none;">
+            <label>Select Folder to Upload:</label>
+            <input type="file" name="image_files" webkitdirectory directory multiple>
+        </div>
+
+        <button type="submit">Populate Excel</button>
+        <div id="populateMediaJobsResult" style="margin-top:10px; font-weight:bold;"></div>
+    </form>
+    <br>    
     <form id="createVideosForm">
         <h2 style="background:#ffe4b5;">Create Videos from Excel</h2>
         <button type="submit">Run Video Jobs</button>
@@ -1519,7 +1550,7 @@
         </select>
 
         <label>JPEG quality (1-95):</label>
-        <input type="number" name="quality" value="92" min="1" max="95" style="width:120px;margin-bottom:10px;">
+        <input type="number" name="quality" value="95" min="1" max="95" style="width:120px;margin-bottom:10px;">
 
         <button type="submit">Convert Images</button>
         <div id="convertLandscapeImagesResult" style="margin-top:10px;"></div>
@@ -3367,7 +3398,44 @@ ${JSON.stringify(meta, null, 2)}
         runTask("removeBordersForm", "/remove_borders", "removeBordersResult");
 
     </script>
+<script>
+        // Toggle input fields based on dropdown
+        function togglePmjSource() {
+            const type = document.getElementById("pmj_source_type").value;
+            document.getElementById("pmj_server_input").style.display = (type === "server") ? "block" : "none";
+            document.getElementById("pmj_upload_input").style.display = (type === "upload") ? "block" : "none";
+        }
 
+        // Handle Form Submit
+        document.getElementById('populateMediaJobsForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const resDiv = document.getElementById('populateMediaJobsResult');
+            resDiv.style.color = 'black';
+            resDiv.textContent = "Processing...";
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/populate_media_jobs', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.ok) {
+                    resDiv.style.color = 'green';
+                    resDiv.textContent = "✅ " + result.message;
+                } else {
+                    resDiv.style.color = 'red';
+                    resDiv.textContent = "❌ " + (result.error || "Unknown Error");
+                }
+            } catch (err) {
+                console.error(err);
+                resDiv.style.color = 'red';
+                resDiv.textContent = "❌ Error: " + err;
+            }
+        };
+    </script>
 </body>
 
 </html>

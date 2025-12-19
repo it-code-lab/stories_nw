@@ -4,7 +4,9 @@ from flask import Flask, request, jsonify, render_template, send_from_directory,
 import subprocess, json, math
 from flask_cors import CORS
 import os
-import traceback  # to print detailed error info
+import traceback
+
+import openpyxl  # to print detailed error info
 from build_coloring_app_manifest import build_coloring_manifest
 from caption_generator import prepare_captions_file_for_notebooklm_audio
 from facebook_uploader import upload_facebook_videos
@@ -1319,7 +1321,110 @@ def list_background_videos():
     data["all_folders"] = _list_all_folders(base)
     return jsonify(data)
 
-# server.py (ADD THIS ROUTE)
+@app.post("/populate_media_jobs")
+def populate_media_jobs():
+    """
+    Reads images from a source folder (server path or uploaded 'temp-del'),
+    clears 'media_jobs.xlsx' (keeping headers), and populates:
+      - prompt: filename
+      - image_path: absolute file path
+    """
+    try:
+        data = request.form
+        source_type = data.get("source_type") # 'server' or 'upload'
+        server_path_input = (data.get("server_path") or "").strip()
+        uploaded_files = request.files.getlist("image_files")
+        
+        base_dir = BASE_DIR
+        excel_path = base_dir / "media_jobs.xlsx"
+        
+        # 1. Determine Target Folder
+        target_folder = None
+        
+        if source_type == "upload":
+            # Use 'temp-del' for uploads to generate local paths
+            target_folder = base_dir / "temp-del"
+            target_folder.mkdir(exist_ok=True)
+            
+            # Clear existing files in temp-del to avoid mixing batches
+            for f in target_folder.iterdir():
+                if f.is_file():
+                    f.unlink()
+            
+            # Save uploaded files
+            if not uploaded_files or uploaded_files[0].filename == '':
+                return jsonify({"ok": False, "error": "No files uploaded."}), 400
+                
+            for file in uploaded_files:
+                # webkitdirectory sends relative paths (folder/file.jpg), we need just filename usually
+                # or we keep structure. For this specific job, flat lists are usually better.
+                fname = Path(file.filename).name 
+                file.save(target_folder / fname)
+                
+        else:
+            # Server path
+            if not server_path_input:
+                return jsonify({"ok": False, "error": "Server path is empty."}), 400
+            
+            # Handle absolute vs relative paths
+            if os.path.isabs(server_path_input):
+                target_folder = Path(server_path_input)
+            else:
+                target_folder = (base_dir / server_path_input).resolve()
+                
+            if not target_folder.exists():
+                return jsonify({"ok": False, "error": f"Folder not found: {target_folder}"}), 404
+
+        # 2. Get Image Files
+        valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+        images = [
+            f for f in target_folder.iterdir() 
+            if f.is_file() and f.suffix.lower() in valid_exts
+        ]
+        
+        if not images:
+            return jsonify({"ok": False, "error": "No images found in target folder."}), 400
+
+        # 3. Update Excel
+        if not excel_path.exists():
+            return jsonify({"ok": False, "error": "media_jobs.xlsx not found."}), 404
+
+        wb = openpyxl.load_workbook(excel_path)
+        ws = wb.active
+        
+        # Clear old data (keep header at row 1)
+        # delete_rows is efficient; delete from row 2 to end
+        if ws.max_row > 1:
+            ws.delete_rows(2, ws.max_row - 1)
+            
+        # 4. Populate Data
+        # Header assumed: prompt, account_id, image_path, video_cmd, video_path, status, ...
+        # We map: prompt -> Col A (1), image_path -> Col C (3)
+        
+        count = 0
+        for img in sorted(images, key=lambda x: x.name):
+            ws.append([
+                img.name,       # A: prompt
+                "",             # B: account_id
+                str(img.resolve()), # C: image_path (Absolute path)
+                "",             # D: video_cmd
+                "",             # E: video_path
+                "pending"       # F: status (optional, setting default)
+            ])
+            count += 1
+            
+        wb.save(excel_path)
+        wb.close()
+        
+        return jsonify({
+            "ok": True, 
+            "message": f"Updated media_jobs.xlsx with {count} images.",
+            "folder": str(target_folder)
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.post("/render_pinterest_pins_from_pin_data")
 def render_pinterest_pins_from_pin_data():

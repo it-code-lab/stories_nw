@@ -480,10 +480,11 @@ def upload_pins():
         # If not, the first run will open the login page; log in manually and then rerun.
 
         # Go from bottom to top (similar to your YouTube uploader)
-        total = len(pins)
-        for rev_idx, pin in enumerate(reversed(pins), start=1):
-            row_idx = total - rev_idx + 2  # Excel row index (header is row 1)
-
+        # total = len(pins)
+        # for rev_idx, pin in enumerate(reversed(pins), start=1):
+        #     row_idx = total - rev_idx + 2  # Excel row index (header is row 1)
+        for pin in reversed(pins):
+            row_idx = pin["_row_idx"]  # <--- Use the stored absolute row index
             status_val = str(pin.get("pinterest_upload_status") or "").strip().lower()
             if status_val == "success":
                 print(f"Skipping already uploaded: {pin.get('pin_title')}")
