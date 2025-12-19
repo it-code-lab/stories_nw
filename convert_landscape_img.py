@@ -3,6 +3,7 @@ Convert landscape images in edit_vid_input -> portrait outputs in edit_vid_outpu
 
 Modes:
 - portrait      => 1080x1920 (9:16)
+- landscape     => 1920x1080 (16:9)  <-- NEW
 - 1000x1500     => 1000x1500 (2:3)
 
 Fit:
@@ -125,10 +126,11 @@ def main():
     # Mode flag requested
     parser.add_argument(
         "--mode",
-        choices=["portrait", "1000x1500"],
+        choices=["portrait", "1000x1500", "landscape"],
         default="portrait",
         help="Target format",
     )
+
 
     # Optional behavior flags
     parser.add_argument(
@@ -148,8 +150,11 @@ def main():
 
     if args.mode == "portrait":
         target_w, target_h = 1080, 1920
-    else:
+    elif args.mode == "1000x1500":
         target_w, target_h = 1000, 1500
+    else:  # landscape
+        target_w, target_h = 1920, 1080
+
 
     in_dir = Path(args.input)
     out_dir = Path(args.output)

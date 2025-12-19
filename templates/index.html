@@ -1523,7 +1523,7 @@
     </form>
     <br>
     <form id="convertLandscapeImagesForm">
-        <h2>Convert Images → Portrait / 1000×1500</h2>
+        <h2>Convert/resize Images → Portrait / 1000×1500</h2>
 
         <div class="infoBox" style="margin-top:8px;">
             • Reads images from <code>edit_vid_input/</code> and writes converted JPGs under <code>edit_vid_output/</code> (same folder structure).<br>
@@ -1534,6 +1534,7 @@
         <label>Target format:</label>
         <select name="mode" style="margin-bottom:10px;">
             <option value="portrait" selected>Portrait 1080×1920 (9:16)</option>
+            <option value="landscape">Landscape 1920×1080 (16:9)</option>
             <option value="1000x1500">1000×1500 (2:3)</option>
         </select>
 

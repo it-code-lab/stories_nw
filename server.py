@@ -1704,22 +1704,29 @@ def generate_pinterest_excel_route():
 
 
 @app.route('/convert_landscape_images', methods=['POST'])
-def convert_landscape_images_route():
-    """Convert images from edit_vid_input -> portrait/1000x1500 and write under edit_vid_output."""
+def convert_images_route():
+    """Convert images from edit_vid_input -> target size and write under edit_vid_output."""
     try:
-        print("Processing request.convert_landscape_images")
+        print("Processing request.convert_images")
 
-        mode = (request.form.get('mode') or 'portrait').strip()
-        fit = (request.form.get('fit') or 'contain').strip()
-        bg = (request.form.get('bg') or 'blur').strip()
+        mode = (request.form.get('mode') or 'portrait').strip().lower()
+        fit = (request.form.get('fit') or 'contain').strip().lower()
+        bg = (request.form.get('bg') or 'blur').strip().lower()
         quality = request.form.get('quality') or 92
 
-        # Resolve folders relative to BASE_DIR
+        # Optional custom size
+        target_w_in = request.form.get('target_w')
+        target_h_in = request.form.get('target_h')
+
         in_dir = (BASE_DIR / 'edit_vid_input').resolve()
         out_dir = (BASE_DIR / 'edit_vid_output').resolve()
 
-        if mode not in ("portrait", "1000x1500"):
-            return jsonify({"ok": False, "error": f"Invalid mode: {mode}"}), 400
+        MODE_TO_SIZE = {
+            "portrait": (1080, 1920),
+            "1000x1500": (1000, 1500),
+            "landscape": (1920, 1080),  # ✅ locked as requested
+        }
+
         if fit not in ("contain", "cover"):
             return jsonify({"ok": False, "error": f"Invalid fit: {fit}"}), 400
         if bg not in ("blur", "white"):
@@ -1730,12 +1737,27 @@ def convert_landscape_images_route():
         except Exception:
             quality = 92
 
-        if mode == "portrait":
-            target_w, target_h = 1080, 1920
+        # Resolve target size
+        if mode == "custom":
+            try:
+                target_w = int(target_w_in)
+                target_h = int(target_h_in)
+                if target_w <= 0 or target_h <= 0:
+                    raise ValueError
+            except Exception:
+                return jsonify({
+                    "ok": False,
+                    "error": "Invalid custom size. Provide target_w and target_h."
+                }), 400
         else:
-            target_w, target_h = 1000, 1500
+            if mode not in MODE_TO_SIZE:
+                return jsonify({
+                    "ok": False,
+                    "error": f"Invalid mode: {mode}. Supported: {list(MODE_TO_SIZE.keys()) + ['custom']}"
+                }), 400
+            target_w, target_h = MODE_TO_SIZE[mode]
 
-        if not in_dir.exists() or not in_dir.is_dir():
+        if not in_dir.exists():
             return jsonify({"ok": False, "error": f"Input folder not found: {in_dir}"}), 400
 
         from pathlib import Path
@@ -1748,14 +1770,14 @@ def convert_landscape_images_route():
         for root, _, files in os.walk(in_dir):
             root_p = Path(root)
             rel = root_p.relative_to(in_dir)
+
             for fn in files:
-                ext = Path(fn).suffix.lower()
-                if ext not in SUPPORTED_EXTS:
+                if Path(fn).suffix.lower() not in SUPPORTED_EXTS:
                     continue
 
                 read_count += 1
                 in_path = root_p / fn
-                out_path = out_dir / rel / Path(fn).with_suffix('.jpg')
+                out_path = out_dir / rel / Path(fn).with_suffix(".jpg")
 
                 try:
                     convert_one(
@@ -1777,6 +1799,8 @@ def convert_landscape_images_route():
             "wrote_count": wrote_count,
             "output_dir": str(out_dir),
             "mode": mode,
+            "target_w": target_w,
+            "target_h": target_h,
             "fit": fit,
             "bg": bg,
             "quality": quality,
@@ -1785,6 +1809,7 @@ def convert_landscape_images_route():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 @app.route('/batchmakevideoimagesfromdir', methods=['POST'])
