@@ -168,7 +168,15 @@ META_ACCOUNTS: List[Dict[str, str]] = [
 def ensure_dir(p: str | Path):
     Path(p).mkdir(parents=True, exist_ok=True)
 
-def safe_basename(s: str, maxlen: int = 50) -> str:
+def safe_basename(name: str, ext: str, idx: int | None = None) -> str:
+    base = re.sub(r"[^\w\-]+", "_", name.strip()).strip("_")
+    return f"{base}_{idx}.{ext}" if idx is not None else f"{base}.{ext}"
+
+# def safe_basename(name: str, ext: str) -> str:
+#     base = re.sub(r"[^\w\-]+", "_", name.strip()).strip("_")
+#     return f"{base}.{ext}"
+
+def safe_basename_old(s: str, maxlen: int = 50) -> str:
     s = re.sub(r"[^a-zA-Z0-9._-]+", "_", s).strip("_")
     base = s[:maxlen] or "asset"
     # DND - Working
@@ -602,9 +610,12 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
     await expect(target_btn).to_be_visible(timeout=15_000)
     await expect(target_btn).to_be_enabled(timeout=15_000)
 
-    base = Path(imagePath).resolve().stem
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_path = out_dir / f"{ts}_{base}_meta.mp4"
+    # base = Path(imagePath).resolve().stem
+    # ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # out_path = out_dir / f"{ts}_{base}_meta.mp4"
+
+    base = Path(imagePath).stem
+    out_path = out_dir / f"{base}.mp4"
 
     async with page.expect_download(timeout=90_000) as dl_info:
         await target_btn.click()

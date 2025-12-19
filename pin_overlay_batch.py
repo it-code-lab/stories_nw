@@ -16,6 +16,29 @@ BASE_MEDIA_ROOT = Path("pinterest_uploads")
 # -----------------------------
 # Helpers
 # -----------------------------
+
+def _derive_out_base(filename: str, title: str, fallback: str) -> str:
+    """
+    Priority:
+      1) filename (strip folders, strip extension)
+      2) title
+      3) fallback (e.g., pin_12)
+    """
+    fn = (filename or "").strip()
+    if fn:
+        fn = fn.replace("\\", "/")
+        base = Path(fn).name                 # keep only file name
+        base = Path(base).stem               # remove extension
+        base = base.strip()
+        if base:
+            return sanitize_filename(base)
+
+    t = (title or "").strip()
+    if t:
+        return sanitize_filename(t)
+
+    return sanitize_filename(fallback)
+
 def sanitize_filename(name: str, max_len: int = 140) -> str:
     name = (name or "").strip()
     name = re.sub(r"[^\w\s\-.()]+", "", name, flags=re.UNICODE)
@@ -182,8 +205,111 @@ class RenderJob:
 def load_project_json(p: Path) -> Dict[str, Any]:
     return json.loads(p.read_text(encoding="utf-8"))
 
+def _find_media_file_for_filename(folder: Path, filename: str, exts: set[str]) -> Optional[Path]:
+    """
+    filename may be:
+      - "myvideo.mp4" (exact name)
+      - "subdir/myvideo.mp4" (relative path inside folder)
+      - full absolute path (we'll accept it if exists)
+    Must include extension.
+    """
+    fn = (filename or "").strip()
+    if not fn:
+        return None
+
+    fn_norm = fn.replace("\\", "/").strip()
+
+    # Absolute path case
+    p = Path(fn)
+    if p.is_absolute() and p.exists() and p.is_file() and p.suffix.lower() in exts:
+        return p
+
+    # Relative path inside folder
+    rel_candidate = (folder / Path(fn_norm)).resolve()
+    try:
+        # ensure it's under folder (avoid escaping)
+        rel_candidate.relative_to(folder.resolve())
+        if rel_candidate.exists() and rel_candidate.is_file() and rel_candidate.suffix.lower() in exts:
+            return rel_candidate
+    except Exception:
+        pass
+
+    # Exact filename match anywhere under folder
+    target_name = Path(fn_norm).name  # keep only the last segment
+    for p in folder.rglob("*"):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in exts:
+            continue
+        if p.name == target_name:
+            return p
+
+    return None
 
 def apply_text_overrides(project: Dict[str, Any], headline: str, subhead: str, logo_path: Optional[Path]) -> Dict[str, Any]:
+    """
+    Override layers by name (case-insensitive):
+      - text layer named "headline" gets headline
+      - text layer named "subhead" gets subhead
+      - image layer named "logo" or "logopath" gets logo_path
+    Falls back to old behavior ONLY if named layers aren't found.
+    """
+    layers = project.get("layers", [])
+
+    def norm(s: Any) -> str:
+        return str(s or "").strip().lower()
+
+    # Build quick lookup
+    by_name = {}
+    for ly in layers:
+        n = norm(ly.get("name"))
+        if n:
+            by_name.setdefault(n, []).append(ly)
+
+    # Apply by name
+    found_any = False
+
+    # headline
+    if "headline" in by_name:
+        for ly in by_name["headline"]:
+            if ly.get("type") == "text":
+                ly["text"] = headline or ly.get("text", "")
+                found_any = True
+
+    # subhead
+    if "subhead" in by_name:
+        for ly in by_name["subhead"]:
+            if ly.get("type") == "text":
+                ly["text"] = subhead or ly.get("text", "")
+                found_any = True
+
+    # logo / logopath
+    logo_layer_names = ("logo", "logopath")
+    if logo_path:
+        logo_src = str(logo_path).replace("\\", "/")
+        for nm in logo_layer_names:
+            if nm in by_name:
+                for ly in by_name[nm]:
+                    if ly.get("type") == "image":
+                        ly["imgSrc"] = logo_src
+                        found_any = True
+
+    # Optional fallback to legacy “by order” behavior (only if nothing matched by name)
+    if not found_any:
+        text_layers = [ly for ly in layers if ly.get("type") == "text"]
+        img_layers = [ly for ly in layers if ly.get("type") == "image"]
+
+        if text_layers:
+            text_layers[0]["text"] = headline or text_layers[0].get("text", "")
+        if len(text_layers) > 1:
+            text_layers[1]["text"] = subhead or text_layers[1].get("text", "")
+
+        if logo_path and img_layers:
+            img_layers[0]["imgSrc"] = str(logo_path).replace("\\", "/")
+
+    return project
+
+def apply_text_overrides_old(project: Dict[str, Any], headline: str, subhead: str, logo_path: Optional[Path]) -> Dict[str, Any]:
     """
     Override the first 2 text layers (if present) with headline/subhead,
     and first image layer with logo_path if provided.
@@ -780,6 +906,7 @@ def batch_render_from_folder(
         if max_pins and max_pins > 0 and processed_count >= max_pins:
             break
 
+        filename = str(row.get("filename") or "")
         headline = str(row.get("headline") or "")
         subhead = str(row.get("subhead") or "")
         title = str(row.get("title") or f"pin_{idx}")
@@ -791,14 +918,29 @@ def batch_render_from_folder(
         project = load_project_json(pj)
         project = apply_text_overrides(project, headline, subhead, logo_path)
 
-        # 2) Prefer a media file that matches the title
-        matched = _find_media_file_for_title(folder, title, exts)
+        matched = None
+
+        if filename.strip():
+            matched = _find_media_file_for_filename(folder, filename, exts)
+
+        if not matched:
+            matched = _find_media_file_for_title(folder, title, exts)
+
         if matched:
             bg_path = matched
         else:
             bg_path = bg_files[(processed_count) % len(bg_files)]
 
-        out_base = sanitize_filename(title)
+        # out_base = sanitize_filename(title)
+        out_base = _derive_out_base(filename, title, fallback=f"pin_{idx}")
+
+        candidate = out_base
+        suffix_i = 2
+        ext = ".mp4" if pin_type == "video" else ".jpg"
+        while (out_dir / f"{candidate}{ext}").exists():
+            candidate = f"{out_base}_{suffix_i}"
+            suffix_i += 1
+        out_base = candidate
 
         try:
             if pin_type == "video":
