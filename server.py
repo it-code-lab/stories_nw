@@ -32,7 +32,7 @@ from google import genai
 from google.genai import types
 import os
 from flipthrough_video import generate_flipthrough_video, FlipThroughError
-from bg_music_video import merge_video_with_bg_music, BgMusicError
+from bg_music_video import merge_all_videos_with_bg_music, merge_video_with_bg_music, BgMusicError
 import sys
 from pdf2image import convert_from_path
 import glob
@@ -304,14 +304,14 @@ def api_coloring_animation():
 @app.post("/merge_bg_music")
 def merge_bg_music_route():
     """
-    Mix background music (from edit_vid_audio/) into the first video in edit_vid_input/.
+    Batch mix background music (from edit_vid_audio/) into ALL videos in edit_vid_input/.
+
     Expects form fields:
       - bg_volume: float, 0.0–2.0 (default 0.3)
-      - video_volume: float, 0.0–2.0 (default 1.0) – optional
-      - out_name: optional output filename (default 'video_with_music.mp4')
+      - video_volume: float, 0.0–2.0 (default 1.0)
 
-    Output is written to edit_vid_output/<out_name>.
-    Returns JSON with a web path you can use in the UI.
+    Output is written to edit_vid_output/<same filename as input>.
+    Returns JSON with list of outputs (web paths) for the UI.
     """
     try:
         bg_volume = float(request.form.get("bg_volume", "0.3") or "0.3")
@@ -323,12 +323,9 @@ def merge_bg_music_route():
     except ValueError:
         video_volume = 1.0
 
-    out_name = (request.form.get("out_name") or "video_with_music.mp4").strip()
-
     try:
-        out_path = merge_video_with_bg_music(
+        result = merge_all_videos_with_bg_music(
             base_dir=BASE_DIR,
-            out_name=out_name,
             bg_volume=bg_volume,
             video_volume=video_volume,
         )
@@ -339,16 +336,24 @@ def merge_bg_music_route():
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
 
-    # Assuming you have /video/<filename> serving from BASE_DIR
-    web_path = f"/video/edit_vid_output/{out_path.name}"
+    # Build UI-friendly items
+    items = []
+    for out_path, in_path in result["pairs"]:
+        items.append({
+            "input_name": in_path.name,
+            "output_name": out_path.name,
+            "web_path": f"/video/edit_vid_output/{out_path.name}",
+        })
 
     return jsonify({
         "ok": True,
-        "output_file": str(out_path),
-        "web_path": web_path,
+        "total": result["total"],
+        "music_file": result["music_file"],
         "bg_volume": bg_volume,
         "video_volume": video_volume,
+        "items": items,
     })
+
 
 @app.post("/api/generate_flipthrough")
 def api_generate_flipthrough():

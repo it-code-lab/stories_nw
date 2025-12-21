@@ -54,6 +54,94 @@ def _has_audio_stream(path: Path) -> bool:
         return False
 
 
+def merge_all_videos_with_bg_music(
+    base_dir: str | Path,
+    bg_volume: float = 0.3,
+    video_volume: float = 1.0,
+) -> dict:
+    """
+    Mix the first background music track from edit_vid_audio/ into ALL videos in edit_vid_input/,
+    writing outputs to edit_vid_output/ with the SAME filename as the input.
+
+    Returns:
+      {
+        "total": int,
+        "music_file": str,
+        "pairs": List[Tuple[out_path, in_path]]
+      }
+    """
+    _ensure_ffmpeg()
+
+    base_dir = Path(base_dir).resolve()
+    in_dir = base_dir / "edit_vid_input"
+    aud_dir = base_dir / "edit_vid_audio"
+    out_dir = base_dir / "edit_vid_output"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Collect all videos
+    videos = []
+    if in_dir.exists():
+        for p in sorted(in_dir.iterdir()):
+            if p.is_file() and p.suffix.lower() in VIDEO_EXTS:
+                videos.append(p)
+
+    if not videos:
+        raise BgMusicError(f"No video files found in {in_dir}")
+
+    music_path = _first_file(aud_dir, AUDIO_EXTS)
+    if not music_path:
+        raise BgMusicError(f"No audio files found in {aud_dir}")
+
+    pairs = []
+
+    for video_path in videos:
+        out_path = out_dir / video_path.name  # SAME filename as input
+        has_vid_audio = _has_audio_stream(video_path)
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", str(video_path),
+            "-stream_loop", "-1",
+            "-i", str(music_path),
+            "-map", "0:v:0",
+        ]
+
+        filter_complex_parts = []
+        if has_vid_audio:
+            filter_complex_parts.append(f"[0:a]volume={video_volume}[v1]")
+            filter_complex_parts.append(f"[1:a]volume={bg_volume}[m1]")
+            filter_complex_parts.append("[v1][m1]amix=inputs=2:duration=first:dropout_transition=0[aout]")
+            cmd += ["-map", "[aout]"]
+        else:
+            filter_complex_parts.append(f"[1:a]volume={bg_volume}[aout]")
+            cmd += ["-map", "[aout]"]
+
+        filter_complex = ";".join(filter_complex_parts)
+
+        cmd += [
+            "-filter_complex", filter_complex,
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            "-movflags", "+faststart",
+            str(out_path),
+        ]
+
+        try:
+            print("Running ffmpeg:", " ".join(cmd))
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as e:
+            raise BgMusicError(f"FFmpeg failed for {video_path.name} with code {e.returncode}") from e
+
+        pairs.append((out_path, video_path))
+
+    return {
+        "total": len(pairs),
+        "music_file": music_path.name,
+        "pairs": pairs,
+    }
 
 def merge_video_with_bg_music(
     base_dir: str | Path,

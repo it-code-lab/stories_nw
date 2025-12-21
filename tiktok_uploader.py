@@ -485,12 +485,14 @@ def upload_tiktok_videos():
                 time.sleep(5)
                 save_tiktok_status(ws, header_map, row_idx, "", "Success", caption)
                 print(f"✅ TikTok video posted & recorded for row {row_idx}")
+                wb.save(EXCEL_FILE)
 
             except Exception as e:
                 err_msg = str(e)[:500]
                 print(f"❌ Error uploading TikTok for row {row_idx}: {err_msg}")
                 traceback.print_exc()
                 save_tiktok_status(ws, header_map, row_idx, "", err_msg)
+                wb.save(EXCEL_FILE)
 
             # Gentle pause between posts
             time.sleep(5)

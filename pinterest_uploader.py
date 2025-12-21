@@ -498,10 +498,12 @@ def upload_pins():
                 pin_url = create_pin(page, pin)
                 save_pin_status(ws, header_map, row_idx, pin_url, "Success")
                 print(f"✅ Pin created & recorded for row {row_idx}")
+                wb.save(EXCEL_FILE)
             except Exception as e:
                 err_msg = str(e)[:500]
                 print(f"❌ Error creating pin for row {row_idx}: {err_msg}")
                 save_pin_status(ws, header_map, row_idx, "", err_msg)
+                wb.save(EXCEL_FILE)
 
             # Small pause between pins to be gentle
             time.sleep(3)

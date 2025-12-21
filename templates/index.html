@@ -1275,35 +1275,32 @@
 
     <br>
     <form id="mergeBgMusicForm">
-        <h2 style="background-color:#dbeafe;">3b. Add Background Music to Video</h2>
+    <h2 style="background-color:#dbeafe;">3b. Add Background Music to ALL Videos</h2>
 
-        <div>
-            Takes the first <code>video</code> in <code>edit_vid_input/</code> and the first
-            <code>audio</code> in <code>edit_vid_audio/</code>, then mixes them into a new video.
-        </div>
+    <div>
+        Takes <b>all videos</b> in <code>edit_vid_input/</code> and the first
+        <code>audio</code> in <code>edit_vid_audio/</code>, then mixes them into new videos.
+    </div>
 
-        <div class="infoBox">
-            🎧 <b>How it works:</b><br>
-            • Background music is looped and trimmed to match video length.<br>
-            • If the video already has audio, both are mixed using the volume levels below.<br>
-            • Output is saved in <code>edit_vid_output/</code>.
-        </div>
+    <div class="infoBox">
+        🎧 <b>How it works:</b><br>
+        • Background music is looped and trimmed to match each video length.<br>
+        • If a video already has audio, both are mixed using the volume levels below.<br>
+        • Output is saved in <code>edit_vid_output/</code> using the <b>same filename</b> as the input.
+    </div>
 
-        <label for="merge_out_name">Output filename (in <code>edit_vid_output</code>):</label>
-        <input type="text" id="merge_out_name" name="out_name" value="video_with_music.mp4"
-            placeholder="video_with_music.mp4">
+    <label for="merge_video_volume">Original video audio volume (0.0 – 2.0):</label>
+    <input type="number" id="merge_video_volume" name="video_volume" value="1.0" step="0.1" min="0" max="2">
 
-        <label for="merge_video_volume">Original video audio volume (0.0 – 2.0):</label>
-        <input type="number" id="merge_video_volume" name="video_volume" value="1.0" step="0.1" min="0" max="2">
+    <label for="merge_bg_volume">Background music volume (0.0 – 2.0):</label>
+    <input type="number" id="merge_bg_volume" name="bg_volume" value="0.3" step="0.1" min="0" max="2">
 
-        <label for="merge_bg_volume">Background music volume (0.0 – 2.0):</label>
-        <input type="number" id="merge_bg_volume" name="bg_volume" value="0.3" step="0.1" min="0" max="2">
+    <button type="submit">Merge Background Music (All Videos)</button>
 
-        <button type="submit">Merge Background Music</button>
-
-        <div id="mergeBgMusicResult" style="margin-top:10px;text-align:center;"></div>
+    <div id="mergeBgMusicResult" style="margin-top:10px;text-align:center;"></div>
     </form>
     <br>
+
 
     <form id="polishAudioForm">
         <h2 style="background:#ffeaa7;">Polish Phone Audio → Studio (Adaptive)</h2>
@@ -2207,68 +2204,88 @@
     </script>
 
     <script>
-        (function () {
-            const form = document.getElementById('mergeBgMusicForm');
-            if (!form) return;
+    (function () {
+        const form = document.getElementById('mergeBgMusicForm');
+        if (!form) return;
 
-            const resultBox = document.getElementById('mergeBgMusicResult');
+        const resultBox = document.getElementById('mergeBgMusicResult');
 
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                resultBox.innerHTML = '⏳ Merging background music with video…';
+        form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        resultBox.innerHTML = '⏳ Merging background music with ALL videos…';
 
-                const fd = new FormData(form);
+        const fd = new FormData(form);
 
-                try {
-                    const resp = await fetch('/merge_bg_music', {
-                        method: 'POST',
-                        body: fd
-                    });
-
-                    const data = await resp.json();
-
-                    if (!resp.ok || !data.ok) {
-                        throw new Error(data.error || 'Merge failed');
-                    }
-
-                    // Expecting JSON from Flask like:
-                    // { ok: true, web_path: "/video/edit_vid_output/video_with_music.mp4", ... }
-                    const webPath = data.web_path || '';
-                    const fileName = data.output_file || fd.get('out_name') || 'video_with_music.mp4';
-
-                    let html = `
-                        <div class="infoBox">
-                            ✅ Background music merged successfully.<br>
-                            <code>${fileName}</code> created in <code>edit_vid_output/</code>.
-                        </div>
-                    `;
-
-                    if (webPath) {
-                        html += `
-                            <div style="margin-top:8px;">
-                                <video controls style="width:100%;max-width:520px;">
-                                    <source src="${webPath}?v=${Date.now()}" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                            </div>
-                            <div style="margin-top:8px;">
-                                <a href="${webPath}?v=${Date.now()}" download>⬇️ Download merged video</a>
-                            </div>
-                        `;
-                    }
-
-                    resultBox.innerHTML = html;
-                } catch (err) {
-                    console.error(err);
-                    resultBox.innerHTML = `
-                        <div class="infoBox" style="background:#fee2e2;">
-                            ❌ ${err.message}
-                        </div>
-                    `;
-                }
+        try {
+            const resp = await fetch('/merge_bg_music', {
+            method: 'POST',
+            body: fd
             });
-        })();
+
+            const data = await resp.json();
+
+            if (!resp.ok || !data.ok) {
+            throw new Error(data.error || 'Merge failed');
+            }
+
+            const items = data.items || [];
+            const musicFile = data.music_file || '';
+            const total = data.total || items.length;
+
+            let html = `
+            <div class="infoBox">
+                ✅ Done! Processed <b>${total}</b> video(s).<br>
+                Background music: <code>${musicFile || '(first audio in edit_vid_audio)'}</code>
+            </div>
+            `;
+
+            if (!items.length) {
+            html += `<div class="infoBox" style="background:#fee2e2;">No output items returned.</div>`;
+            resultBox.innerHTML = html;
+            return;
+            }
+
+            // Preview first item (optional)
+            const first = items[0];
+            if (first.web_path) {
+            html += `
+                <div style="margin-top:10px;">
+                <div class="infoBox">🎬 Preview (first output): <code>${first.output_name}</code></div>
+                <video controls style="width:100%;max-width:520px;">
+                    <source src="${first.web_path}?v=${Date.now()}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                </div>
+            `;
+            }
+
+            // List all outputs
+            html += `<div style="margin-top:10px;text-align:left;" class="infoBox"><b>Outputs:</b><br>`;
+            html += `<ul style="margin:8px 0 0 18px;">`;
+            for (const it of items) {
+            const name = it.output_name || it.input_name || 'output';
+            const webPath = it.web_path || '';
+            if (webPath) {
+                html += `<li><code>${name}</code> — <a href="${webPath}?v=${Date.now()}" download>⬇️ Download</a></li>`;
+            } else {
+                html += `<li><code>${name}</code></li>`;
+            }
+            }
+            html += `</ul></div>`;
+
+            resultBox.innerHTML = html;
+        } catch (err) {
+            console.error(err);
+            resultBox.innerHTML = `
+            <div class="infoBox" style="background:#fee2e2;">
+                ❌ ${err.message}
+            </div>
+            `;
+        }
+        });
+    })();
     </script>
+
 
     <script>
         (function () {

@@ -325,6 +325,8 @@ def upload_video(page, video_info):
         next_button = page.locator('button:has-text("Next")')
         next_button.wait_for(state="visible", timeout=60000)  # wait for visible
         wait_until_enabled(next_button, timeout=60)           # wait for enabled
+        if"schedule_date" in video_info and video_info["schedule_date"]:
+            time.sleep(10)  # Extra wait if scheduling
         next_button.click()
         time.sleep(1)
 
@@ -353,10 +355,11 @@ def upload_video(page, video_info):
 
 
         page.get_by_label('Enter date').get_by_label('').fill(schedule_date_value)
+
         print(f"Entered schedule date: {schedule_date_value}")
 
         page.locator('tp-yt-iron-overlay-backdrop').nth(2).click();
-
+        time.sleep(20) # Wait 
         page.locator('ytcp-button:has-text("Schedule")').click()
         print("Video scheduled successfully.")
     else:
