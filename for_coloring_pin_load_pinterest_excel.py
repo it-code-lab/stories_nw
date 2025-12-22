@@ -1397,7 +1397,7 @@ def build_excel(
                 "yt_title": yt_title,
                 "yt_description": yt_description,
                 "yt_tags": yt_tags,
-                "yt_playlist": "",  # fill manually if needed
+                "yt_playlist": youTubePlaylist,  # fill manually if needed
 
                 # X / Twitter
                 "x_text": x_text,

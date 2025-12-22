@@ -1451,6 +1451,7 @@ def render_pinterest_pins_from_pin_data():
         # print("Source folder:", source_folder)
         pin_type = (data.get("pin_type") or "image").strip().lower()  # image|video
         max_pins = int((data.get("max_pins") or "0").strip() or 0)
+        skip_overlays = (data.get("skip_overlays") or "no").strip().lower() == "yes"
 
         if pin_type not in ("image", "video"):
             pin_type = "image"
@@ -1492,7 +1493,8 @@ def render_pinterest_pins_from_pin_data():
             pin_type=pin_type,
             max_pins=max_pins,
             out_dir=out_dir,
-            master_excel=master_excel
+            master_excel=master_excel,
+            skip_overlays=skip_overlays
         )
         return jsonify(result)
 
@@ -2552,11 +2554,16 @@ def assemble_clips_to_make_video_song():
         video_volume = float(request.form.get('video_volume',0.3))
         bg_volume = float(request.form.get('bg_volume',1.0))
 
+        # ---- Derive output filename from first input video ----
+        first_video = sorted(video_files)[0]  # deterministic
+        base_name = os.path.basename(first_video)  # e.g. my_clip_01.mp4
+        output_video_path = os.path.join("edit_vid_output", base_name)
+
         from assemble_from_videos import assemble_videos
         assemble_videos(
             video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
             audio_folder="edit_vid_audio",
-            output_path="edit_vid_output/final_video.mp4",
+            output_path=output_video_path,
             fps=30,
             shuffle=True,                                   # different order each run
             prefer_ffmpeg_concat=True,                       # auto-uses concat if safe; else MoviePy
@@ -2567,7 +2574,7 @@ def assemble_clips_to_make_video_song():
         if copyforcaption == 'no':
             return "✅ Video song assembled successfully!", 200
         
-        shutil.copy("edit_vid_output/final_video.mp4", "composed_video.mp4")
+        shutil.copy(output_video_path, "composed_video.mp4")
 
         audio_folder = "edit_vid_audio"
         from pydub import AudioSegment

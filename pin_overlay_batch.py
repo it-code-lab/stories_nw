@@ -13,6 +13,97 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
 BASE_MEDIA_ROOT = Path("pinterest_uploads")
+
+
+def _split_csv_tags(tag_string: str) -> List[str]:
+    """
+    Split comma-separated tags safely, trimming whitespace and ignoring empties.
+    """
+    if not tag_string:
+        return []
+    return [t.strip() for t in tag_string.split(",") if t.strip()]
+
+def _normalize_tag(tag: str, keep_case: bool = False) -> str:
+    """
+    Normalize a tag:
+    - trim
+    - remove leading '#'
+    - remove special chars (keep letters/numbers/underscore/space)
+    - collapse spaces
+    - convert spaces -> underscore for hashtags
+    """
+    tag = tag.strip()
+    tag = tag.lstrip("#").strip()
+
+    # Remove punctuation/special chars but keep word chars and spaces
+    tag = re.sub(r"[^\w\s]", "", tag)
+
+    # Collapse whitespace
+    tag = re.sub(r"\s+", " ", tag).strip()
+
+    if not keep_case:
+        tag = tag.lower()
+
+    return tag
+
+def _to_hashtag(tag: str) -> str:
+    """
+    Convert normalized tag to a hashtag form: spaces -> underscore.
+    """
+    tag = tag.replace(" ", "_")
+    return f"#{tag}" if tag else ""
+
+def format_tags_for_platforms(
+    comma_tags: str,
+    *,
+    ig_limit: int = 12,
+    tt_limit: int = 5,
+    fb_limit: int = 10,
+    yt_limit: int = 15,
+    pin_limit: int = 10,
+) -> Dict[str, str]:
+    """
+    Returns correctly formatted tags/keywords for:
+    Pinterest, Instagram, Facebook, TikTok, YouTube
+    """
+
+    raw = _split_csv_tags(comma_tags)
+
+    # Deduplicate while preserving order
+    seen = set()
+    cleaned: List[str] = []
+    for t in raw:
+        n = _normalize_tag(t)
+        if not n:
+            continue
+        if n in seen:
+            continue
+        seen.add(n)
+        cleaned.append(n)
+
+    # Pinterest / YouTube: keywords (no #), comma-separated
+    pinterest_keywords = cleaned[:pin_limit]
+    youtube_keywords = cleaned[:yt_limit]
+
+    # Hashtag platforms: hashtags, space-separated
+    ig_tags = [_to_hashtag(t) for t in cleaned[:ig_limit]]
+    tt_tags = [_to_hashtag(t) for t in cleaned[:tt_limit]]
+    fb_tags = [_to_hashtag(t) for t in cleaned[:fb_limit]]
+
+    # Filter empty hashtags (just in case)
+    ig_tags = [t for t in ig_tags if t]
+    tt_tags = [t for t in tt_tags if t]
+    fb_tags = [t for t in fb_tags if t]
+
+    return {
+        "pinterest": ", ".join(pinterest_keywords),
+        "instagram": " ".join(ig_tags),
+        "facebook": " ".join(fb_tags),
+        "tiktok": " ".join(tt_tags),
+        "youtube": ", ".join(youtube_keywords),
+    }
+
+
 # -----------------------------
 # Helpers
 # -----------------------------
@@ -667,7 +758,6 @@ def render_video_pin(bg_video: Path, project: Dict[str, Any], out_path: Path, fo
 REQUIRED_COLS = [
     "headline", "subhead",
     "title", "description",
-    "pin_url", "board_name",
 ]
 
 def _read_pin_data_with_rows(excel_path: Path):
@@ -800,6 +890,12 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
         rr = ws.max_row + 1
         # ws.cell(rr, header_map["media_file"]).value = rec.get("media_file")
         media_path = rec.get("media_file")
+        platform_tags = format_tags_for_platforms(rec.get("comma_separated_tags", ""))
+        pin_keywords = platform_tags["pinterest"]    # comma keywords
+        ig_hashtags  = platform_tags["instagram"]    # #tag #tag
+        fb_hashtags  = platform_tags["facebook"]
+        tt_hashtags  = platform_tags["tiktok"]
+        yt_keywords  = platform_tags["youtube"]
 
         if media_path:
             p = Path(media_path)
@@ -812,7 +908,6 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
                 media_path = p.name  # fallback: filename only
 
         ws.cell(rr, header_map["media_file"]).value = media_path
-
         ws.cell(rr, header_map["media_type"]).value = rec.get("media_type")
         ws.cell(rr, header_map["board_name"]).value = rec.get("board_name")
         ws.cell(rr, header_map["book_title"]).value = rec.get("title")
@@ -820,18 +915,47 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
         ws.cell(rr, header_map["campaign_name"]).value = rec.get("board_name")
         ws.cell(rr, header_map["destination_url"]).value = rec.get("url")
         ws.cell(rr, header_map["destination_type"]).value = rec.get("media_type")
+
+        # Pinterest specific columns
         ws.cell(rr, header_map["pin_title"]).value = rec.get("title")
-        ws.cell(rr, header_map["pin_description"]).value = rec.get("description")
+
+        desc = rec.get("description", "")
+        if pin_keywords:
+            if desc:
+                desc = desc + "\n\n" + pin_keywords
+            else:
+                desc = pin_keywords
+        ws.cell(rr, header_map["pin_description"]).value = desc
         ws.cell(rr, header_map["pin_url_to_link"]).value = rec.get("url")
-
         ws.cell(rr, header_map["pinterestprofile"]).value = rec.get("board_name")
-        ws.cell(rr, header_map["facebookprofile"]).value = rec.get("facebook_profile")
 
-        # Combine title, url, description into fb_caption with line breaks
-        ws.cell(rr, header_map["fb_caption"]).value = f"{rec.get('title')}\n\n{rec.get('url')}\n\n{rec.get('description', '')}"
-        # ws.cell(rr, header_map["fb_caption"]).value = rec.get("title") + " " + rec.get("url") + " " + rec.get("description", "")
+        # Facebook specific columns        
+        ws.cell(rr, header_map["facebookprofile"]).value = rec.get("facebook_profile")
+        ws.cell(rr, header_map["fb_caption"]).value = f"{rec.get('title')}\n\n{rec.get('url')}\n\n{rec.get('description', '')}\n\n{fb_hashtags}"
         
+        # Instagram specific columns  
+        ws.cell(rr, header_map["instagramprofile"]).value = rec.get("instagram_profile")
+        ws.cell(rr, header_map["ig_caption"]).value = f"{rec.get('title')}\n\n{rec.get('url')}\n\n{rec.get('description', '')}\n\n{ig_hashtags}"      
         
+        # TikTok specific columns
+        ws.cell(rr, header_map["tiktokprofile"]).value = rec.get("tiktok_profile")
+        ws.cell(rr, header_map["tiktok_caption"]).value = f"{rec.get('title')}\n\n{rec.get('url')}\n\n{rec.get('description', '')}\n\n{tt_hashtags}"
+
+        # YouTube specific columns
+        ws.cell(rr, header_map["youtubechannel"]).value = rec.get("youtube_profile")
+        ws.cell(rr, header_map["yt_title"]).value = rec.get("title")
+        yt_desc = rec.get("description", "")
+        if fb_hashtags:
+            if yt_desc:
+                yt_desc = yt_desc + "\n\n" + fb_hashtags
+            else:
+                yt_desc = fb_hashtags
+        ws.cell(rr, header_map["yt_description"]).value = yt_desc
+        ws.cell(rr, header_map["yt_playlist"]).value = rec.get("youtube_playlist")  
+        ws.cell(rr, header_map["yt_schedule_date"]).value = rec.get("youtube_schedule_date")
+        ws.cell(rr, header_map["yt_tags"]).value = yt_keywords
+
+
         # ws.cell(rr, header_map["title"]).value = rec.get("title")
         # ws.cell(rr, header_map["url"]).value = rec.get("url")
 
@@ -843,7 +967,8 @@ def batch_render_from_folder(
     pin_type: str,            # "image" | "video"
     max_pins: int,
     out_dir: Path,
-    master_excel: Path
+    master_excel: Path,
+    skip_overlays: bool = False,
 ) -> Dict[str, Any]:
     """
     folder must contain PIN_DATA.xlsx + bg media + json templates + logo files.
@@ -874,7 +999,7 @@ def batch_render_from_folder(
         if p.is_file() and p.suffix.lower() in exts
     ])
 
-    if not bg_files:
+    if not bg_files and not skip_overlays:
         raise FileNotFoundError(
             f"No background {pin_type} files found in {folder}. "
             f"Expected one of: {sorted(exts)}"
@@ -910,10 +1035,18 @@ def batch_render_from_folder(
         headline = str(row.get("headline") or "")
         subhead = str(row.get("subhead") or "")
         title = str(row.get("title") or f"pin_{idx}")
+        post_title = str(row.get("post_title") or "")
         description = str(row.get("description") or "")
+        comma_separated_tags = str(row.get("comma_separated_tags") or "")
         facebook_profile = str(row.get("facebook_profile") or "")
+        youtube_profile = str(row.get("youtube_profile") or "")
+        youtube_playlist = str(row.get("youtube_playlist") or "")
+        youtube_schedule_date = str(row.get("youtube_schedule_date") or "")
+        tiktok_profile = str(row.get("tiktok_profile") or "")
+        instagram_profile = str(row.get("instagram_profile") or "")
         pin_url = str(row.get("pin_url") or "")
-        board_name = str(row.get("board_name") or "")
+        parent_url = str(row.get("parent_url") or "")
+        board_name = str(row.get("pinterest_board_name") or "")
 
         project = load_project_json(pj)
         project = apply_text_overrides(project, headline, subhead, logo_path)
@@ -943,23 +1076,43 @@ def batch_render_from_folder(
         out_base = candidate
 
         try:
-            if pin_type == "video":
-                out_path = out_dir / f"{out_base}.mp4"
-                render_video_pin(bg_path, project, out_path, fonts_dir)
-                media_type = "video"
+            # Always decide extension + default media_type first
+            ext = ".mp4" if pin_type == "video" else ".jpg"
+            media_type = "video" if pin_type == "video" else "image"
+
+            if skip_overlays:
+                # No overlay rendering: just copy the matched/background media into out_dir
+                out_path = out_dir / f"{out_base}{ext}"
+                ensure_dir(out_path.parent)
+                shutil.copy2(bg_path, out_path)
+
             else:
-                out_path = out_dir / f"{out_base}.jpg"
-                render_image_pin(bg_path, project, out_path, fonts_dir)
-                media_type = "image"
+                # Normal overlay rendering
+                if pin_type == "video":
+                    out_path = out_dir / f"{out_base}.mp4"
+                    render_video_pin(bg_path, project, out_path, fonts_dir)
+                    media_type = "video"
+                else:
+                    out_path = out_dir / f"{out_base}.jpg"
+                    render_image_pin(bg_path, project, out_path, fonts_dir)
+                    media_type = "image"
+
 
             created.append({
                 "media_file": str(out_path).replace("\\", "/"),
                 "media_type": media_type,
                 "board_name": board_name,
-                "title": title,
+                "title": post_title or title,
                 "url": pin_url,
                 "description": description,
                 "facebook_profile": facebook_profile,
+                "instagram_profile": instagram_profile,
+                "tiktok_profile": tiktok_profile,
+                "youtube_profile": youtube_profile,
+                "youtube_playlist": youtube_playlist,
+                "youtube_schedule_date": youtube_schedule_date,
+                "parent_url": parent_url,   
+                "comma_separated_tags": comma_separated_tags,            
             })
 
             # 3) Mark success immediately and save (so rerun skips)

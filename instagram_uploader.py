@@ -451,10 +451,12 @@ def upload_instagram_posts():
                 post_url = create_instagram_post(page, row)
                 save_instagram_status(ws, header_map, excel_row_idx, post_url, "Success")
                 print(f"✅ IG post created & recorded for row {excel_row_idx}")
+                wb.save(EXCEL_FILE)
             except Exception as e:
                 err_msg = str(e)[:500]
                 print(f"❌ Error creating IG post for row {excel_row_idx}: {err_msg}")
                 save_instagram_status(ws, header_map, excel_row_idx, "", err_msg)
+                wb.save(EXCEL_FILE)
 
             # Be gentle with IG
             time.sleep(5)

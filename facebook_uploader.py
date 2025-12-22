@@ -539,7 +539,10 @@ def upload_facebook_videos():
                     print("Para clicked for caption.")
                     time.sleep(5)
 
-                    caption = build_caption(row)
+                    # caption = build_caption(row)
+                    caption = row["fb_caption"]
+
+
                     # Some Facebook editors don't support .fill() directly; type instead:
                     # Clear existing text (just in case)
                     try:
@@ -604,7 +607,9 @@ def upload_facebook_videos():
                     page.keyboard.press("Backspace")
                     time.sleep(5)
 
-                    caption = build_caption(row)
+                    # caption = build_caption(row)
+                    caption = row["fb_caption"]
+                    
                     page.keyboard.type(caption, delay=5)
                     print("Entered caption.")
 

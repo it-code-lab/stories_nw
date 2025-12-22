@@ -168,7 +168,7 @@ META_ACCOUNTS: List[Dict[str, str]] = [
 def ensure_dir(p: str | Path):
     Path(p).mkdir(parents=True, exist_ok=True)
 
-def safe_basename(name: str, ext: str, idx: int | None = None) -> str:
+def safe_basename(name: str, ext: str = "png", idx: int | None = None) -> str:
     base = re.sub(r"[^\w\-]+", "_", name.strip()).strip("_")
     return f"{base}_{idx}.{ext}" if idx is not None else f"{base}.{ext}"
 
@@ -349,7 +349,10 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path) -> Pa
     await textbox.fill(prompt)
 
     if DRY_RUN:
-        ph = out_dir / f"{safe_basename(prompt)}__DRYRUN.png"
+        # ph = out_dir / f"{safe_basename(prompt)}__DRYRUN.png"
+        ph = out_dir / f"{safe_basename(prompt, 'png')}__DRYRUN.png"
+
+        
         try:
             from PIL import Image; Image.new("RGB", (16, 16), (210, 210, 210)).save(ph)
         except Exception:
@@ -379,7 +382,9 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path) -> Pa
     print(f"after_cnt = {after_cnt}")
     # Candidate: first new item (append behavior)
     candidate = gallery_items.nth(before_cnt)
-    out_path = out_dir / f"{safe_basename(prompt)}.png"
+    # out_path = out_dir / f"{safe_basename(prompt)}.png"
+    out_path = out_dir / safe_basename(prompt, "png")
+
 
     # Try large-view modal and proper download
     try:

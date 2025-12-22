@@ -286,8 +286,18 @@ def upload_video(page, video_info):
     page.locator('tp-yt-paper-radio-button[name="VIDEO_HAS_ALTERED_CONTENT_NO"]').click()
     print("Altered content option entered")
 
-    # Add Tags
-    tags = video_info.get("youtube_tags", "")[:450]
+    raw_tags = video_info.get("youtube_tags")
+
+    if raw_tags is None:
+        tags = ""
+    elif isinstance(raw_tags, list):
+        # join list into comma-separated string (or space-separated if you prefer)
+        tags = ", ".join([str(t).strip() for t in raw_tags if str(t).strip()])
+    else:
+        tags = str(raw_tags).strip()
+
+    tags = tags[:450]
+
 
     if tags:
         tags_input = page.locator('input[placeholder="Add tag"]')
@@ -412,7 +422,8 @@ def load_youtube_rows_from_master(excel_file):
         status_val = ws.cell(row=row_idx, column=header_map["youtube_status"]).value
         media_type = ws.cell(row=row_idx, column=header_map["media_type"]).value
         youTubeChannel = ws.cell(row=row_idx, column=header_map["youTubeChannel"]).value
-        youTubePlaylist = ws.cell(row=row_idx, column=header_map["youTubePlaylist"]).value
+        youTubePlaylist = ws.cell(row=row_idx, column=header_map["yt_playlist"]).value
+        youTubeScheduleDate = ws.cell(row=row_idx, column=header_map.get("yt_schedule_date", 0)).value
         
         if not youTubeChannel:
             continue
@@ -429,6 +440,7 @@ def load_youtube_rows_from_master(excel_file):
         title = ws.cell(row=row_idx, column=header_map["yt_title"]).value
         desc = ws.cell(row=row_idx, column=header_map["yt_description"]).value
 
+
         if not title or not desc:
             continue
 
@@ -441,6 +453,7 @@ def load_youtube_rows_from_master(excel_file):
             "youtube_playlist": youTubePlaylist,
             "made_for_kids": False,
             "youtube_channel_name": youTubeChannel,
+            "youtube_schedule_date": youTubeScheduleDate,
 
         })
 
@@ -515,6 +528,7 @@ def upload_shorts_from_master_file():
                     "made_for_kids": False,
                     "youtube_channel_name": row["youtube_channel_name"],
                     "size": "portrait",
+                    "schedule_date": row.get("youtube_schedule_date"),
                 }
 
                 url = upload_video(page, video_info)

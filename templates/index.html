@@ -1520,7 +1520,7 @@
     </form>
     <br>
     <form id="convertLandscapeImagesForm">
-        <h2>Convert/resize Images → Portrait / 1000×1500</h2>
+        <h2>Convert/resize Images → Portrait/1000×1500/Landscape</h2>
 
         <div class="infoBox" style="margin-top:8px;">
             • Reads images from <code>edit_vid_input/</code> and writes converted JPGs under <code>edit_vid_output/</code> (same folder structure).<br>
@@ -1580,6 +1580,12 @@
   <select name="pin_type" style="margin-bottom:10px;">
     <option value="image" selected>Image pins (.jpg)</option>
     <option value="video">Video pins (.mp4)</option>
+  </select>
+
+    <label>Skip overlays(Only create the rows in master_shorts_uploader_data.xlsx):</label><br>
+  <select name="skip_overlays" style="margin-bottom:10px;">
+    <option value="no" selected>No</option>
+    <option value="yes">Yes</option>
   </select>
 
   <label>How many pins to render (0 = all rows):</label><br>
