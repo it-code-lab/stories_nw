@@ -915,6 +915,7 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
         ws.cell(rr, header_map["campaign_name"]).value = rec.get("board_name")
         ws.cell(rr, header_map["destination_url"]).value = rec.get("url")
         ws.cell(rr, header_map["destination_type"]).value = rec.get("media_type")
+        ws.cell(rr, header_map["future"]).value = rec.get("future")
 
         # Pinterest specific columns
         ws.cell(rr, header_map["pin_title"]).value = rec.get("title")
@@ -1036,6 +1037,7 @@ def batch_render_from_folder(
         subhead = str(row.get("subhead") or "")
         title = str(row.get("title") or f"pin_{idx}")
         post_title = str(row.get("post_title") or "")
+        future = str(row.get("future") or "")
         description = str(row.get("description") or "")
         comma_separated_tags = str(row.get("comma_separated_tags") or "")
         facebook_profile = str(row.get("facebook_profile") or "")
@@ -1112,7 +1114,8 @@ def batch_render_from_folder(
                 "youtube_playlist": youtube_playlist,
                 "youtube_schedule_date": youtube_schedule_date,
                 "parent_url": parent_url,   
-                "comma_separated_tags": comma_separated_tags,            
+                "comma_separated_tags": comma_separated_tags,     
+                "future": future,      
             })
 
             # 3) Mark success immediately and save (so rerun skips)

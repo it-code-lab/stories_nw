@@ -24,7 +24,7 @@ from playwright.async_api import async_playwright, BrowserContext, Page, expect
 # ===== Excel =====
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-
+import hashlib
 # =========================
 # GLOBAL CONFIG (edit here)
 # =========================
@@ -168,7 +168,35 @@ META_ACCOUNTS: List[Dict[str, str]] = [
 def ensure_dir(p: str | Path):
     Path(p).mkdir(parents=True, exist_ok=True)
 
-def safe_basename(name: str, ext: str = "png", idx: int | None = None) -> str:
+def safe_basename(name: str, ext: str = "png", idx: int | None = None, maxlen: int = 70) -> str:
+    """
+    Windows-safe filename:
+    - strips unsafe chars
+    - truncates to maxlen
+    - appends short hash to preserve uniqueness
+    """
+    raw = (name or "").strip()
+    base = re.sub(r"[^\w\-]+", "_", raw).strip("_")
+
+    # avoid empty names
+    if not base:
+        base = "asset"
+
+    # add uniqueness hash (based on full prompt, not truncated)
+    h = hashlib.sha1(raw.encode("utf-8", errors="ignore")).hexdigest()[:8]
+
+    # reserve room for suffixes
+    suffix = f"_{idx}" if idx is not None else ""
+    tail = f"{suffix}_{h}.{ext}"
+
+    # truncate base so final filename length stays reasonable
+    # (also avoids trailing dot/space issues)
+    keep = max(1, maxlen - len(tail))
+    base = base[:keep].rstrip(" .")
+
+    return f"{base}{tail}"
+
+def safe_basename_old2(name: str, ext: str = "png", idx: int | None = None) -> str:
     base = re.sub(r"[^\w\-]+", "_", name.strip()).strip("_")
     return f"{base}_{idx}.{ext}" if idx is not None else f"{base}.{ext}"
 

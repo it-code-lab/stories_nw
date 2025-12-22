@@ -394,6 +394,12 @@ def upload_tiktok_videos():
             row_idx = row["_row_idx"]
 
             status_val = str(row.get("tiktok_upload_status") or "").strip().lower()
+            future_val = str(row.get("future") or "").strip().lower()
+
+            if future_val == "future":
+                print(f"Skipping future TikTok row: {row.get('pin_title')}")
+                continue
+
             if status_val == "success":
                 print(f"Skipping already uploaded TikTok: {row.get('pin_title')}")
                 continue

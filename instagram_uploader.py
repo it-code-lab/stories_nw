@@ -439,6 +439,12 @@ def upload_instagram_posts():
             excel_row_idx = row["_row_idx"]
 
             status_val = str(row.get("instagram_upload_status") or "").strip().lower()
+            future_val = str(row.get("future") or "").strip().lower()
+
+            if future_val == "future":
+                print(f"Skipping IG row {excel_row_idx} as marked 'future'")
+                continue
+            
             if status_val == "success":
                 print(f"Skipping already uploaded IG row {excel_row_idx}")
                 continue

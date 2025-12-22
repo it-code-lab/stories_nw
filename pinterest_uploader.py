@@ -486,8 +486,13 @@ def upload_pins():
         for pin in reversed(pins):
             row_idx = pin["_row_idx"]  # <--- Use the stored absolute row index
             status_val = str(pin.get("pinterest_upload_status") or "").strip().lower()
+            future_val = str(pin.get("future") or "").strip().lower()
             if status_val == "success":
                 print(f"Skipping already uploaded: {pin.get('pin_title')}")
+                continue
+
+            if future_val == "future":
+                print(f"Skipping row for future: {pin.get('pin_title')}")
                 continue
 
             if pin.get("pinterestProfile", "") == "":

@@ -453,10 +453,15 @@ def upload_facebook_videos():
             row_idx = row["_row_idx"]  
 
             status_val = str(row.get("facebook_upload_status") or "").strip().lower()
+            future_val = str(row.get("future") or "").strip().lower()
             if status_val == "success":
                 print(f"Skipping already uploaded Facebook video: {row.get('pin_title')}")
                 continue
-            
+
+            if future_val == "future":
+                print(f"Skipping future Facebook video row: {row.get('pin_title')}")
+                continue
+
             if row["faceBookProfile"] == "":
                 print(f"Skipping Facebook upload as no profile specified in row {row_idx}.")
                 continue
@@ -609,7 +614,7 @@ def upload_facebook_videos():
 
                     # caption = build_caption(row)
                     caption = row["fb_caption"]
-                    
+
                     page.keyboard.type(caption, delay=5)
                     print("Entered caption.")
 

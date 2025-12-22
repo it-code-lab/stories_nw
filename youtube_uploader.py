@@ -420,6 +420,7 @@ def load_youtube_rows_from_master(excel_file):
     for row_idx in range(2, ws.max_row + 1):
         media_file = ws.cell(row=row_idx, column=header_map["media_file"]).value
         status_val = ws.cell(row=row_idx, column=header_map["youtube_status"]).value
+        future_val = ws.cell(row=row_idx, column=header_map["future"]).value
         media_type = ws.cell(row=row_idx, column=header_map["media_type"]).value
         youTubeChannel = ws.cell(row=row_idx, column=header_map["youTubeChannel"]).value
         youTubePlaylist = ws.cell(row=row_idx, column=header_map["yt_playlist"]).value
@@ -435,6 +436,9 @@ def load_youtube_rows_from_master(excel_file):
             continue
 
         if status_val == "success":
+            continue
+
+        if future_val == "future":
             continue
 
         title = ws.cell(row=row_idx, column=header_map["yt_title"]).value
