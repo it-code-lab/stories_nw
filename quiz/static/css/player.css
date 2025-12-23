@@ -143,8 +143,8 @@ body.player {
   display: flex;
   flex-direction: column;
   gap: .9rem;
-  background: rgba(10, 12, 16, .55);
-  border: 1px solid rgba(255, 255, 255, .08);
+  /* background: rgba(10, 12, 16, .55); */
+  /* border: 1px solid rgba(255, 255, 255, .08); */
   border-radius: 24px;
   padding: 1rem 1rem;
   backdrop-filter: blur(8px);
@@ -306,7 +306,7 @@ body.player {
   border-radius: 18px;
   color: #fff;
   padding: .5rem;
-  font-weight: 600;
+  /* font-weight: 600; */
   cursor: pointer;
   transition: all .25s ease;
 }
@@ -316,10 +316,17 @@ body.player {
   transform: translateY(-2px)
 }
 
-.opt.correct {
+/* .opt.correct {
   background: rgba(0, 255, 150, .18);
   border-color: rgba(0, 255, 150, .6)
+} */
+
+.opt.correct{
+  background: rgba(0,255,150,.18);
+  border-color: rgba(0,255,150,.7);
+  box-shadow: 0 0 18px rgba(0,255,150,.25);
 }
+
 
 .opt.dim {
   opacity: .55
@@ -354,7 +361,7 @@ body.player {
 .opt-text{
   margin-top:.5rem;
   text-align:center;
-  font-weight:800;
+  /* font-weight:800; */
   font-size: calc(1.5rem * var(--opt-scale, 1));
   display:-webkit-box;
   -webkit-box-orient: vertical;
@@ -461,12 +468,24 @@ body.player {
   margin-top: .8rem;
   padding: .8rem 1rem;
   border-radius: 14px;
-  background: rgba(255, 255, 255, .06);
+  /* background: rgba(255, 255, 255, .06); */
+  background-color: purple;
   border: 1px solid rgba(255, 255, 255, .12);
-  font-size: .95rem;
+  font-size: 1.05rem;
   opacity: 0;
   transform: translateY(8px);
   transition: opacity .5s ease, transform .5s ease;
+
+
+}
+.explanation::before{
+  content:"💡";
+  margin-right:.4rem;
+}
+
+.landscape .explanation  {
+  width: 60%;
+  margin: auto;
 }
 
 .portrait .explanation {
