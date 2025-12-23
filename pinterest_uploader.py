@@ -22,7 +22,8 @@ EXCEL_FILE = "master_shorts_uploader_data.xlsx"
 
 # Media files are usually stored relative to your app root, e.g. "pinterest_pins/filename.webp"
 BASE_DIR = Path(__file__).resolve().parent
-MEDIA_BASE = BASE_DIR / "pinterest_uploads"   # so media_file paths are relative to the app root
+# MEDIA_BASE = BASE_DIR / "pinterest_uploads"   # so media_file paths are relative to the app root
+MEDIA_BASE = BASE_DIR
 
 # ================== EXCEL HELPERS ==================
 

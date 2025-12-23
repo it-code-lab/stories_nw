@@ -513,7 +513,9 @@ def upload_shorts_from_master_file():
         page = browser.new_page()
 
         for row in youtube_rows:
-            media =  os.path.join("pinterest_uploads", row["media_file"])
+            # media =  os.path.join("pinterest_uploads", row["media_file"])
+            media = row["media_file"]
+            
 
             print(f"\n=== Uploading to YouTube: {media} ===")
 

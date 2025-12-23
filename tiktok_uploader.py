@@ -24,7 +24,8 @@ CHROME_EXECUTABLE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 EXCEL_FILE = "master_shorts_uploader_data.xlsx"
 
 BASE_DIR = Path(__file__).resolve().parent
-MEDIA_BASE = BASE_DIR / "pinterest_uploads"   # where media_file paths are relative to
+# MEDIA_BASE = BASE_DIR / "pinterest_uploads"   # where media_file paths are relative to
+MEDIA_BASE = BASE_DIR
 
 VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".webm"}
 

@@ -19,7 +19,8 @@ CHROME_EXECUTABLE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 EXCEL_FILE = "master_shorts_uploader_data.xlsx"
 
 BASE_DIR = Path(__file__).resolve().parent
-MEDIA_BASE = BASE_DIR / "pinterest_uploads"   # same folder you use for Pinterest pins
+# MEDIA_BASE = BASE_DIR / "pinterest_uploads"   # same folder you use for Pinterest pins
+MEDIA_BASE = BASE_DIR
 
 # ============== EXCEL HELPERS ==============
 
