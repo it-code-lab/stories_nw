@@ -398,8 +398,13 @@ function renderOptions(q) {
       b.className = 'opt prehidden';
       // b.className = 'opt hidden-vis';
       //b.style.visibility = 'hidden';
-
       // entrance class set later in applyAnimations()
+
+      // Option label (A, B, C, D)
+      const label = document.createElement('span');
+      label.className = 'opt-label';
+      label.textContent = String.fromCharCode(65 + i); // 65 = 'A'
+      b.appendChild(label);
 
       // image + text
       if (opt.image) {

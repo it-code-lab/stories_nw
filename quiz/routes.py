@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 import os, json, uuid
 from flask import request
 import csv, io
+import time
+from pathlib import Path
 from . import quiz_bp  # use the blueprint you defined
 
 import  tempfile, os
@@ -37,12 +39,12 @@ def quiz_template():
     """
     headers = [
         'type', 'question', 'opt1', 'opt2', 'opt3', 'opt4',
-        'correct', 'timer(sec)', 'difficulty', 'explanation',
+        'correct', 'difficulty', 'explanation', 'timer(sec)',
         'qImages', 'opt1_img', 'opt2_img', 'opt3_img', 'opt4_img'
     ]
     sample = [
-        ['mcq','Which planet is known as the Red Planet?','Mercury','Venus','Earth','Mars','4','12','easy','','https://…','','','',''],
-        ['single','Largest mammal on Earth?','','','','','','10','easy','','https://…','','','','','Blue whale'],
+        ['mcq','Which planet is known as the Red Planet?','Mercury','Venus','Earth','Mars','4','easy','','12','https://…','','','',''],
+        ['single','Largest mammal on Earth?','','','','','','easy','','10','https://…','','','','','Blue whale'],
     ]
     mem = io.StringIO()
     w = csv.writer(mem)
@@ -111,23 +113,50 @@ def quiz_import_excel():
 
     return jsonify({'questions': rows})
 
+@quiz_bp.route("/api/upload_background", methods=["POST"])
+def upload_background():
+    f = request.files.get("file")
+    if not f:
+        return jsonify({"ok": False, "error": "Missing file"}), 400
+
+    if not (f.mimetype or "").startswith("image/"):
+        return jsonify({"ok": False, "error": "Only images allowed"}), 400
+
+    bg_dir = Path(APP_ROOT) / "static" / "backgrounds"
+    bg_dir.mkdir(parents=True, exist_ok=True)
+
+    # always overwrite same file
+    out_path = bg_dir / "uploaded_bg.jpg"
+    f.save(str(out_path))
+
+    v = int(time.time())
+    return jsonify({
+        "ok": True,
+        "url": f"/quiz/static/backgrounds/uploaded_bg.jpg?v={v}"
+    })
+
 @quiz_bp.route("/api/media")
 def list_media():
     bg_dir = os.path.join(APP_ROOT, "static/backgrounds")
     music_dir = os.path.join(APP_ROOT, "static/music")
 
-    def list_files(path, ext):
+    def list_files(path, exts):
         try:
-            return [f"/quiz/static/{os.path.basename(path)}/{fn}"
-                    for fn in os.listdir(path)
-                    if fn.lower().endswith(ext)]
+            out = []
+            for fn in os.listdir(path):
+                low = fn.lower()
+                if any(low.endswith(e) for e in exts):
+                    out.append(f"/quiz/static/{os.path.basename(path)}/{fn}")
+            return out
         except FileNotFoundError:
             return []
 
     return jsonify({
-        "videos": list_files(bg_dir, ".mp4"),
-        "music": list_files(music_dir, ".mp3")
+        "videos": list_files(bg_dir, [".mp4", ".webm", ".mov"]),
+        "images": list_files(bg_dir, [".jpg", ".jpeg", ".png", ".webp"]),
+        "music":  list_files(music_dir, [".mp3", ".wav"])
     })
+
 
 @quiz_bp.post("/import/csv")
 def import_csv():

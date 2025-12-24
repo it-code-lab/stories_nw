@@ -186,6 +186,25 @@
                         <input id="musicVol" type="number" step="0.05" min="0" max="1" value="0.35" />
                     </label>
                 </div>
+                <!-- Background Image Upload -->
+                <div class="row2" style="margin-top:.5rem;">
+                <div>
+                    <label class="muted">Background Image (replaces server file)</label>
+                    <input id="bgUploadInput" type="file" accept="image/*" hidden />
+                    <div class="row" style="gap:.5rem;">
+                    <button id="bgUploadBtn" class="btn small" type="button">Upload BG Image</button>
+                    <button id="bgUseUploadedBtn" class="btn ghost small" type="button">Use Uploaded</button>
+                    </div>
+                    <div class="muted" style="font-size:.85rem;margin-top:.35rem;">
+                    Tip: Upload once, then click <b>Use Uploaded</b> to apply it to the current quiz theme.
+                    </div>
+                </div>
+
+                <div>
+                    <label class="muted">Current theme background</label>
+                    <input id="bgSrc" placeholder="/quiz/static/backgrounds/A.mp4 or uploaded image..." />
+                </div>
+                </div>
 
                 <label>Background Video
                     <select id="bgSelect">

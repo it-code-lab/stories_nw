@@ -4,7 +4,7 @@ body{
   color: #fff;
 }
 :root {
-  --primary: #00E5FF;
+  --primary: #7fc8d1;
   --accent: #FF3D7F;
   --bg: #0B0B0B;
   --ink: #e9eef5;
@@ -300,7 +300,8 @@ body.player {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--accent);
+  background-color: cadetblue;
+  /* background: var(--accent); */
   /* background: rgba(255, 255, 255, .06); */
   border: 1px solid rgba(255, 255, 255, .12);
   border-radius: 18px;
@@ -368,6 +369,39 @@ body.player {
   overflow:hidden;
 }
 
+/* Reserve space so text never sits under the label */
+.opt{
+  position: relative;
+  padding-left: 3.2rem;      /* <-- space for [A] */
+}
+
+/* Put label in a stable “gutter” */
+.opt-label{
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: .85rem;
+  font-weight: 800;
+  opacity: .75;
+  background: rgba(0,0,0,.35);
+  padding: 2px 8px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.opt-text{
+  width: 100%;
+  text-align: left;
+}
+
+
+.portrait .opt{ padding-left: 2.8rem; }
+.portrait .opt-label{ left: 10px; font-size: .75rem; }
+
+
+
+
 .portrait .opt-text{
   font-size: calc(0.8rem * var(--opt-scale, 1));
 }
@@ -375,7 +409,7 @@ body.player {
 /* ---------- Footer ---------- */
 .footer {
   position: absolute;
-  bottom: 2px;
+  bottom: 20px;
   /* bottom: 0;
   left: 0; */
   width: 90%;
@@ -452,7 +486,7 @@ body.player {
 
 .bar-fill{
   height:100%; width:100%;
-  background:var(--primary);
+  background:#6495ED;
   border-radius:999px;
   transform-origin:left center;
   transform:scaleX(1);
@@ -486,6 +520,7 @@ body.player {
 .landscape .explanation  {
   width: 60%;
   margin: auto;
+  font-size: 1.5 rem;
 }
 
 .portrait .explanation {

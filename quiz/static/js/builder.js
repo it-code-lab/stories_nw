@@ -46,6 +46,10 @@ const loadJsonInput = $('loadJsonInput');
 const saveBtn = $('saveBtn');
 const playBtn = $('playBtn');
 
+const bgUploadBtn = $('bgUploadBtn');
+const bgUploadInput = $('bgUploadInput');
+const bgUseUploadedBtn = $('bgUseUploadedBtn');
+
 // Auto-advance controls
 const aaEnabled = $('aaEnabled');
 const aaDelay = $('aaDelay');
@@ -307,6 +311,62 @@ replayTransitions.onclick = () => {
 };
 
 const pvTimer = $('pvTimer');
+let lastUploadedBgUrl = null;
+
+async function uploadBackgroundImage(file) {
+  try {
+    const form = new FormData();
+    form.append('file', file);
+
+    const res = await fetch('/quiz/api/upload_background', {
+      method: 'POST',
+      body: form
+    });
+
+    const data = await res.json();
+    if (data?.url) return data.url; // should already include cache-bust (?v=...)
+  } catch (e) {
+    console.warn('Background upload failed', e);
+  }
+  return null;
+}
+
+bgUploadBtn.onclick = () => bgUploadInput.click();
+
+bgUploadInput.onchange = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const url = await uploadBackgroundImage(file);
+  if (!url) return;
+
+  lastUploadedBgUrl = url;
+
+  // Optional: instantly apply it to current quiz theme
+  state.quiz.theme.background = state.quiz.theme.background || {};
+  state.quiz.theme.background.type = 'image';
+  state.quiz.theme.background.src = url;
+
+  // Keep the UI input in sync
+  if (bgSrc) bgSrc.value = url;
+
+  updatePreview();
+  autosave();
+  bgUploadInput.value = '';
+};
+
+bgUseUploadedBtn.onclick = () => {
+  if (!lastUploadedBgUrl) return;
+
+  state.quiz.theme.background = state.quiz.theme.background || {};
+  state.quiz.theme.background.type = 'image';
+  state.quiz.theme.background.src = lastUploadedBgUrl;
+
+  if (bgSrc) bgSrc.value = lastUploadedBgUrl;
+
+  updatePreview();
+  autosave();
+};
 
 function startTimerPreview(sec) {
     pvTimer.classList.remove('timer-anim'); void pvTimer.offsetWidth;
