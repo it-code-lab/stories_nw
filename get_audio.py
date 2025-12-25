@@ -91,7 +91,18 @@ def synthesize_speech_google(text, output_file, language, gender, voice_name,
 
     client = _get_tts_client()
 
-    input_text = texttospeech.SynthesisInput(text=text)
+    is_ssml = "<break" in text or "<speak>" in text
+
+    if is_ssml:
+        if not text.strip().startswith("<speak>"):
+            text = f"<speak>{text}</speak>"
+        input_text = texttospeech.SynthesisInput(ssml=text)
+    else:
+        input_text = texttospeech.SynthesisInput(text=text)
+
+    # input_text = texttospeech.SynthesisInput(text=text)
+
+    
     voice = texttospeech.VoiceSelectionParams(language_code=language, name=voice_name)
     audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.MP3,

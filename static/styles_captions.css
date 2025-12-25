@@ -654,7 +654,33 @@
     max-width: 80%;
 }
 
+.pod  {
+    position: absolute;
+    left: 50%;
+    bottom: 20% !important;
+    /* transform: translate(-50%, -50%); */
+    text-align: center;
+    line-height: 1.6;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    /* transition: opacity 0.5s ease-in-out; */
+    font-size: 1.8em !important;
+    /* background-color: rgba(0, 0, 0, 0.413) !important; */
+    text-transform: uppercase;
+    -webkit-text-stroke: 1px black;
+    font-family: 'Luckiest Guy', cursive !important;
+    width: max-content !important;
+    max-width: 80%;    
+}
 
+.pod .current-word {
+    background-color: rgb(122, 43, 219);
+    border-radius: 2px;
+    /* border: 1px solid #969693; */
+}
 
 .story-block-english {
     position: absolute;
@@ -963,6 +989,9 @@
     font-size: 0.8em !important;
 }
 
+.portrait #captions.pod  {
+    font-size: 0.8em !important;
+}
 .portrait #captions.story-block {
     font-size: 0.8em !important;
 }

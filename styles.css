@@ -340,7 +340,7 @@
     /* color: #ffcc00; 
     text-shadow: 0px 0px 10px rgba(255, 204, 0, 0.8);
     animation: pulseGlow 0.5s infinite alternate; */
-    padding: 5px;
+    /* padding: 5px; */
 }
 
 /* 🔹 Caption Style 1 (Default) */
@@ -578,6 +578,7 @@
     font-weight: bold;
     transition: transform 0.03s ease-in-out !important;
 }
+
 
 
 /* 🔹 Rotating Words for Visual Appeal */

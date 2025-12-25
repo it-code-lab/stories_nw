@@ -363,7 +363,13 @@
 
         <label>Enter Text:</label>
         <textarea name="ttstext" rows="20"></textarea>
-
+        <br> Use below tags for pauses:
+        <textarea readonly rows="6" style="width:100%; font-size:13px;">
+<break time="300ms"/>   short pause
+<break time="700ms"/>   sentence pause
+<break time="1s"/>      dramatic pause
+<break time="2s"/>      section break
+        </textarea>
         <label>Language:</label>
         <select name="language">
             <option>english</option>
@@ -389,6 +395,8 @@
         <button type="submit">Generate Audio File</button>
         <br>
         <div class="infoBox">Created file will be saved as audio.wav in the root folder and edit_vid_audio.
+
+
         </div>
     </form>
     <br>
@@ -400,7 +408,8 @@
         </div>
         <div class="infoBox">If audio length is smaller than video then video will be trimmed</div>
 
-        <div class="infoBox">If audio is not present in edit_vid_audio, only merge of clips in edit_vid_input will be done</div>
+        <div class="infoBox">If audio is not present in edit_vid_audio, only merge of clips in edit_vid_input will be
+            done</div>
 
         <label>Copy video and audio files for captions generations</label>
         <select name="copyforcaption" id="copyforcaption">
@@ -1275,29 +1284,29 @@
 
     <br>
     <form id="mergeBgMusicForm">
-    <h2 style="background-color:#dbeafe;">3b. Add Background Music to ALL Videos</h2>
+        <h2 style="background-color:#dbeafe;">3b. Add Background Music to ALL Videos</h2>
 
-    <div>
-        Takes <b>all videos</b> in <code>edit_vid_input/</code> and the first
-        <code>audio</code> in <code>edit_vid_audio/</code>, then mixes them into new videos.
-    </div>
+        <div>
+            Takes <b>all videos</b> in <code>edit_vid_input/</code> and the first
+            <code>audio</code> in <code>edit_vid_audio/</code>, then mixes them into new videos.
+        </div>
 
-    <div class="infoBox">
-        🎧 <b>How it works:</b><br>
-        • Background music is looped and trimmed to match each video length.<br>
-        • If a video already has audio, both are mixed using the volume levels below.<br>
-        • Output is saved in <code>edit_vid_output/</code> using the <b>same filename</b> as the input.
-    </div>
+        <div class="infoBox">
+            🎧 <b>How it works:</b><br>
+            • Background music is looped and trimmed to match each video length.<br>
+            • If a video already has audio, both are mixed using the volume levels below.<br>
+            • Output is saved in <code>edit_vid_output/</code> using the <b>same filename</b> as the input.
+        </div>
 
-    <label for="merge_video_volume">Original video audio volume (0.0 – 2.0):</label>
-    <input type="number" id="merge_video_volume" name="video_volume" value="1.0" step="0.1" min="0" max="2">
+        <label for="merge_video_volume">Original video audio volume (0.0 – 2.0):</label>
+        <input type="number" id="merge_video_volume" name="video_volume" value="1.0" step="0.1" min="0" max="2">
 
-    <label for="merge_bg_volume">Background music volume (0.0 – 2.0):</label>
-    <input type="number" id="merge_bg_volume" name="bg_volume" value="0.3" step="0.1" min="0" max="2">
+        <label for="merge_bg_volume">Background music volume (0.0 – 2.0):</label>
+        <input type="number" id="merge_bg_volume" name="bg_volume" value="0.3" step="0.1" min="0" max="2">
 
-    <button type="submit">Merge Background Music (All Videos)</button>
+        <button type="submit">Merge Background Music (All Videos)</button>
 
-    <div id="mergeBgMusicResult" style="margin-top:10px;text-align:center;"></div>
+        <div id="mergeBgMusicResult" style="margin-top:10px;text-align:center;"></div>
     </form>
     <br>
 
@@ -1367,7 +1376,7 @@
     <br>
     <form id="populateMediaJobsForm">
         <h2 style="background:#e0f7fa;">Populate Media Jobs Excel</h2>
-        
+
         <div class="infoBox">
             Select images to populate <code>media_jobs.xlsx</code>.<br>
             It clears old data and fills <b>prompt</b> (filename) and <b>image_path</b> (full path).
@@ -1393,7 +1402,7 @@
         <button type="submit">Populate Excel</button>
         <div id="populateMediaJobsResult" style="margin-top:10px; font-weight:bold;"></div>
     </form>
-    <br>    
+    <br>
     <form id="createVideosForm">
         <h2 style="background:#ffe4b5;">Create Videos from Excel</h2>
         <button type="submit">Run Video Jobs</button>
@@ -1523,7 +1532,8 @@
         <h2>Convert/resize Images → Portrait/1000×1500/Landscape</h2>
 
         <div class="infoBox" style="margin-top:8px;">
-            • Reads images from <code>edit_vid_input/</code> and writes converted JPGs under <code>edit_vid_output/</code> (same folder structure).<br>
+            • Reads images from <code>edit_vid_input/</code> and writes converted JPGs under
+            <code>edit_vid_output/</code> (same folder structure).<br>
             • <b>cover</b> fills the frame and <b>crops the sides</b> to match the target ratio.<br>
             • <b>contain</b> keeps the full image and pads with a <i>blur</i> or <i>white</i> background.
         </div>
@@ -1552,49 +1562,51 @@
 
         <button type="submit">Convert Images</button>
         <div id="convertLandscapeImagesResult" style="margin-top:10px;"></div>
-    </form>  
+    </form>
 
-<br>
-<form id="renderPinsFromPinDataForm">
-  <h2 style="background:#e0f2fe;">Render Pinterest Pins from PIN_DATA.xlsx (JSON Overlay)</h2>
+    <br>
+    <form id="renderPinsFromPinDataForm">
+        <h2 style="background:#e0f2fe;">Render Pinterest Pins from PIN_DATA.xlsx (JSON Overlay)</h2>
 
-  <div class="infoBox" style="margin-bottom:8px;">
-    <b>Folder must contain:</b> <code>PIN_DATA.xlsx</code> + backgrounds(png/mp4) + overlay.json +  logo.png files.<br>
-    The script will render <b>image</b> pins (.jpg) or <b>video</b> pins (.mp4) and log them to
-    <code>master_shorts_uploader_data.xlsx</code>.
-  </div>
+        <div class="infoBox" style="margin-bottom:8px;">
+            <b>Folder must contain:</b> <code>PIN_DATA.xlsx</code> + backgrounds(png/mp4) + overlay.json + logo.png
+            files.<br>
+            The script will render <b>image</b> pins (.jpg) or <b>video</b> pins (.mp4) and log them to
+            <code>master_shorts_uploader_data.xlsx</code>.
+        </div>
 
 
 
-  <label>Use existing folder (server path relative to application folder):</label><br>
-  <input type="text" name="source_folder" placeholder="e.g. downloads/0.Systeme.io"
-         style="width:100%;max-width:520px;margin-bottom:10px;">
+        <label>Use existing folder (server path relative to application folder):</label><br>
+        <input type="text" name="source_folder" placeholder="e.g. downloads/0.Systeme.io"
+            style="width:100%;max-width:520px;margin-bottom:10px;">
 
-<label>Or select folder (upload directory from your computer):</label><br>
-  <input type="file" id="pin_data_dir" name="source_dir" webkitdirectory directory multiple style="margin-bottom:10px;">
-  <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">
-    Leave empty if you want to use an existing server-side folder path below.
-  </div>
+        <label>Or select folder (upload directory from your computer):</label><br>
+        <input type="file" id="pin_data_dir" name="source_dir" webkitdirectory directory multiple
+            style="margin-bottom:10px;">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">
+            Leave empty if you want to use an existing server-side folder path below.
+        </div>
 
-  <label>Pin type:</label><br>
-  <select name="pin_type" style="margin-bottom:10px;">
-    <option value="image" selected>Image pins (.jpg)</option>
-    <option value="video">Video pins (.mp4)</option>
-  </select>
+        <label>Pin type:</label><br>
+        <select name="pin_type" style="margin-bottom:10px;">
+            <option value="image" selected>Image pins (.jpg)</option>
+            <option value="video">Video pins (.mp4)</option>
+        </select>
 
-    <label>Skip overlays(Only create the rows in master_shorts_uploader_data.xlsx):</label><br>
-  <select name="skip_overlays" style="margin-bottom:10px;">
-    <option value="no" selected>No</option>
-    <option value="yes">Yes</option>
-  </select>
+        <label>Skip overlays(Only create the rows in master_shorts_uploader_data.xlsx):</label><br>
+        <select name="skip_overlays" style="margin-bottom:10px;">
+            <option value="no" selected>No</option>
+            <option value="yes">Yes</option>
+        </select>
 
-  <label>How many pins to render (0 = all rows):</label><br>
-  <input type="number" name="max_pins" value="0" style="width:120px;margin-bottom:10px;">
+        <label>How many pins to render (0 = all rows):</label><br>
+        <input type="number" name="max_pins" value="0" style="width:120px;margin-bottom:10px;">
 
-  <button type="submit">Render Pins</button>
-  <pre id="renderPinsFromPinDataResult" style="margin-top:8px;font-size:13px;white-space:pre-wrap;"></pre>
-</form>    
-    
+        <button type="submit">Render Pins</button>
+        <pre id="renderPinsFromPinDataResult" style="margin-top:8px;font-size:13px;white-space:pre-wrap;"></pre>
+    </form>
+
     <br>
     <form id="pinterestExcelFormForColoringPins">
         <h2 style="background:#fef3c7;">Generate Short Video and Upload to Multiple Platforms (YouTube, facebook, Insta,
@@ -1611,7 +1623,7 @@
         </div>
 
         <label>Select **PNG** source folder (upload directory from your computer)<br>
-        Or Existing Video source folder if using that uption from the dropdown of Media type:
+            Or Existing Video source folder if using that uption from the dropdown of Media type:
         </label><br>
         <input type="file" id="source_dir" name="source_dir" webkitdirectory directory multiple
             style="margin-bottom:10px;">
@@ -1759,21 +1771,21 @@
     </form>
     <br>
     <br>
-<form id="batchMakeVideoImagesFromDir">
-    <h2>Batch Convert Images to different sizes (Folder Structure)</h2>
-    <div>
-        Walks the given folder (and all subfolders), uses
-        <code>batch_make_video_images_from_dir</code> to create images by cropping /resizing them
-        with <code>make_video_image</code>, and writes them into
-        <code>edit_vid_output/</code> keeping the same directory structure.
-    </div>
+    <form id="batchMakeVideoImagesFromDir">
+        <h2>Batch Convert Images to different sizes (Folder Structure)</h2>
+        <div>
+            Walks the given folder (and all subfolders), uses
+            <code>batch_make_video_images_from_dir</code> to create images by cropping /resizing them
+            with <code>make_video_image</code>, and writes them into
+            <code>edit_vid_output/</code> keeping the same directory structure.
+        </div>
 
-    <label>Select Source Folder (Directy inside Application folder):</label><br>
+        <label>Select Source Folder (Directy inside Application folder):</label><br>
 
-    <input type="text" id="source_dir" name="source_dir" value="del" placeholder="e.g. vector_images or downloads "
-    style="width:100%;max-width:420px;margin-bottom:6px;">
+        <input type="text" id="source_dir" name="source_dir" value="del" placeholder="e.g. vector_images or downloads "
+            style="width:100%;max-width:420px;margin-bottom:6px;">
 
-    <!-- <input type="file"
+        <!-- <input type="file"
            id="source_folder_picker"
            webkitdirectory
            directory
@@ -1782,22 +1794,22 @@
 
 
     <input type="hidden" name="source_dir" id="source_dir_hidden"> -->
-    <label>Taget Image Size:</label>
-    <select name="size_option" style="margin-bottom:10px;">
-        <option value="portrait">1080x1920 (YouTube Shorts / Reels)</option>
-        <option value="landscape">1920x1080 (Landscape)</option>
-        <option value="pinterest">1000x1500 (Pinterest)</option>
-        <option value="square">1000x1000 (Square)</option>
-    </select>
-    <button type="submit">Run Batch</button>
+        <label>Taget Image Size:</label>
+        <select name="size_option" style="margin-bottom:10px;">
+            <option value="portrait">1080x1920 (YouTube Shorts / Reels)</option>
+            <option value="landscape">1920x1080 (Landscape)</option>
+            <option value="pinterest">1000x1500 (Pinterest)</option>
+            <option value="square">1000x1000 (Square)</option>
+        </select>
+        <button type="submit">Run Batch</button>
 
 
-    <div class="infoBox" style="margin-top:8px;">
-        • Output files are created under <code>edit_vid_output/</code> keeping the same folder structure.<br>
+        <div class="infoBox" style="margin-top:8px;">
+            • Output files are created under <code>edit_vid_output/</code> keeping the same folder structure.<br>
         </div>
 
-    <div id="batchMakeVideoImagesFromDirResult" style="margin-top:10px;"></div>
-</form>
+        <div id="batchMakeVideoImagesFromDirResult" style="margin-top:10px;"></div>
+    </form>
 
 
 
@@ -1850,36 +1862,36 @@
 
     <br>
 
-<script>
-  (function(){
-    const form = document.getElementById("renderPinsFromPinDataForm");
-    const out = document.getElementById("renderPinsFromPinDataResult");
+    <script>
+        (function () {
+            const form = document.getElementById("renderPinsFromPinDataForm");
+            const out = document.getElementById("renderPinsFromPinDataResult");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      out.textContent = "Processing...";
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                out.textContent = "Processing...";
 
-      const fd = new FormData(form);
-      // IMPORTANT: If the user selected a folder, browsers put files in input.files
-      // FormData(form) should already include them; this is just a safety pattern:
-      const dirInput = document.getElementById("pin_data_dir");
-      if (dirInput && dirInput.files && dirInput.files.length > 0) {
-        // fd already has them by name="source_dir", so do nothing
-      }
+                const fd = new FormData(form);
+                // IMPORTANT: If the user selected a folder, browsers put files in input.files
+                // FormData(form) should already include them; this is just a safety pattern:
+                const dirInput = document.getElementById("pin_data_dir");
+                if (dirInput && dirInput.files && dirInput.files.length > 0) {
+                    // fd already has them by name="source_dir", so do nothing
+                }
 
-      try {
-        const resp = await fetch("/render_pinterest_pins_from_pin_data", {
-          method: "POST",
-          body: fd
-        });
-        const data = await resp.json();
-        out.textContent = JSON.stringify(data, null, 2);
-      } catch (err) {
-        out.textContent = "Error: " + err;
-      }
-    });
-  })();
-</script>    
+                try {
+                    const resp = await fetch("/render_pinterest_pins_from_pin_data", {
+                        method: "POST",
+                        body: fd
+                    });
+                    const data = await resp.json();
+                    out.textContent = JSON.stringify(data, null, 2);
+                } catch (err) {
+                    out.textContent = "Error: " + err;
+                }
+            });
+        })();
+    </script>
     <script>
         document.getElementById('batchMakeVideoImagesFromDir').onsubmit = async function (e) {
             e.preventDefault();
@@ -1900,7 +1912,7 @@
             }
         };
     </script>
-   <script>
+    <script>
         document.getElementById('convertLandscapeImagesForm').onsubmit = async function (e) {
             e.preventDefault();
             console.log("Processing request.convertLandscapeImages");
@@ -2210,51 +2222,51 @@
     </script>
 
     <script>
-    (function () {
-        const form = document.getElementById('mergeBgMusicForm');
-        if (!form) return;
+        (function () {
+            const form = document.getElementById('mergeBgMusicForm');
+            if (!form) return;
 
-        const resultBox = document.getElementById('mergeBgMusicResult');
+            const resultBox = document.getElementById('mergeBgMusicResult');
 
-        form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        resultBox.innerHTML = '⏳ Merging background music with ALL videos…';
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                resultBox.innerHTML = '⏳ Merging background music with ALL videos…';
 
-        const fd = new FormData(form);
+                const fd = new FormData(form);
 
-        try {
-            const resp = await fetch('/merge_bg_music', {
-            method: 'POST',
-            body: fd
-            });
+                try {
+                    const resp = await fetch('/merge_bg_music', {
+                        method: 'POST',
+                        body: fd
+                    });
 
-            const data = await resp.json();
+                    const data = await resp.json();
 
-            if (!resp.ok || !data.ok) {
-            throw new Error(data.error || 'Merge failed');
-            }
+                    if (!resp.ok || !data.ok) {
+                        throw new Error(data.error || 'Merge failed');
+                    }
 
-            const items = data.items || [];
-            const musicFile = data.music_file || '';
-            const total = data.total || items.length;
+                    const items = data.items || [];
+                    const musicFile = data.music_file || '';
+                    const total = data.total || items.length;
 
-            let html = `
+                    let html = `
             <div class="infoBox">
                 ✅ Done! Processed <b>${total}</b> video(s).<br>
                 Background music: <code>${musicFile || '(first audio in edit_vid_audio)'}</code>
             </div>
             `;
 
-            if (!items.length) {
-            html += `<div class="infoBox" style="background:#fee2e2;">No output items returned.</div>`;
-            resultBox.innerHTML = html;
-            return;
-            }
+                    if (!items.length) {
+                        html += `<div class="infoBox" style="background:#fee2e2;">No output items returned.</div>`;
+                        resultBox.innerHTML = html;
+                        return;
+                    }
 
-            // Preview first item (optional)
-            const first = items[0];
-            if (first.web_path) {
-            html += `
+                    // Preview first item (optional)
+                    const first = items[0];
+                    if (first.web_path) {
+                        html += `
                 <div style="margin-top:10px;">
                 <div class="infoBox">🎬 Preview (first output): <code>${first.output_name}</code></div>
                 <video controls style="width:100%;max-width:520px;">
@@ -2263,33 +2275,33 @@
                 </video>
                 </div>
             `;
-            }
+                    }
 
-            // List all outputs
-            html += `<div style="margin-top:10px;text-align:left;" class="infoBox"><b>Outputs:</b><br>`;
-            html += `<ul style="margin:8px 0 0 18px;">`;
-            for (const it of items) {
-            const name = it.output_name || it.input_name || 'output';
-            const webPath = it.web_path || '';
-            if (webPath) {
-                html += `<li><code>${name}</code> — <a href="${webPath}?v=${Date.now()}" download>⬇️ Download</a></li>`;
-            } else {
-                html += `<li><code>${name}</code></li>`;
-            }
-            }
-            html += `</ul></div>`;
+                    // List all outputs
+                    html += `<div style="margin-top:10px;text-align:left;" class="infoBox"><b>Outputs:</b><br>`;
+                    html += `<ul style="margin:8px 0 0 18px;">`;
+                    for (const it of items) {
+                        const name = it.output_name || it.input_name || 'output';
+                        const webPath = it.web_path || '';
+                        if (webPath) {
+                            html += `<li><code>${name}</code> — <a href="${webPath}?v=${Date.now()}" download>⬇️ Download</a></li>`;
+                        } else {
+                            html += `<li><code>${name}</code></li>`;
+                        }
+                    }
+                    html += `</ul></div>`;
 
-            resultBox.innerHTML = html;
-        } catch (err) {
-            console.error(err);
-            resultBox.innerHTML = `
+                    resultBox.innerHTML = html;
+                } catch (err) {
+                    console.error(err);
+                    resultBox.innerHTML = `
             <div class="infoBox" style="background:#fee2e2;">
                 ❌ ${err.message}
             </div>
             `;
-        }
-        });
-    })();
+                }
+            });
+        })();
     </script>
 
 
@@ -3422,7 +3434,7 @@ ${JSON.stringify(meta, null, 2)}
         runTask("removeBordersForm", "/remove_borders", "removeBordersResult");
 
     </script>
-<script>
+    <script>
         // Toggle input fields based on dropdown
         function togglePmjSource() {
             const type = document.getElementById("pmj_source_type").value;
@@ -3431,21 +3443,21 @@ ${JSON.stringify(meta, null, 2)}
         }
 
         // Handle Form Submit
-        document.getElementById('populateMediaJobsForm').onsubmit = async function(e) {
+        document.getElementById('populateMediaJobsForm').onsubmit = async function (e) {
             e.preventDefault();
             const resDiv = document.getElementById('populateMediaJobsResult');
             resDiv.style.color = 'black';
             resDiv.textContent = "Processing...";
-            
+
             const formData = new FormData(this);
-            
+
             try {
                 const response = await fetch('/populate_media_jobs', {
                     method: 'POST',
                     body: formData
                 });
                 const result = await response.json();
-                
+
                 if (result.ok) {
                     resDiv.style.color = 'green';
                     resDiv.textContent = "✅ " + result.message;
