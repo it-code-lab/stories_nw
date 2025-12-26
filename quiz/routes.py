@@ -75,12 +75,31 @@ def quiz_import_excel():
     rows = []
 
     if ext == '.csv':
-        text = f.stream.read().decode('utf-8-sig', errors='ignore')
+        raw = f.stream.read()
+
+        # Try UTF-8 first (CSV UTF-8), then fall back to Windows-1252 (Excel ANSI CSV)
+        try:
+            text = raw.decode('utf-8-sig')  # strict by default
+        except UnicodeDecodeError:
+            text = raw.decode('cp1252')     # common for Excel CSV on Windows
+
         reader = csv.DictReader(io.StringIO(text))
+
+        def normalize_quotes(s: str) -> str:
+            # Optional: normalize “smart quotes” to plain ones
+            return (s.replace("’", "'")
+                    .replace("‘", "'")
+                    .replace("“", '"')
+                    .replace("”", '"'))
+
         for row in reader:
-            # Keep raw dict; builder will normalize
-            rows.append({k.strip(): (v or '').strip() for k,v in row.items()})
+            rows.append({
+                (k or '').strip(): normalize_quotes((v or '').strip())
+                for k, v in row.items()
+            })
+
         return jsonify({'questions': rows})
+
 
     # Excel path
     if openpyxl is None:
