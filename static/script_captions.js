@@ -40,7 +40,7 @@ let currentSection = {};
 
 const saveWordChanges = document.getElementById("save-word-changes");
 let wordTimestamps = [];
-
+let lastActiveWordIndex = null;
 
 let overlayData = [];
 let currentOverlayText = "";
@@ -233,6 +233,17 @@ captionStyleDropdown.addEventListener("change", () => {
     // Apply new style
     captions.classList.add(selectedStyle);
     //captionPreview.classList.add(selectedStyle);
+
+    if (selectedStyle === "pod") {
+        captionLength.value = 30; // Set higher word limit for "pod" style
+        document.getElementById("captionLength").value = 30;
+        captionWordLimit = parseInt(30, 10) || 5;
+
+        minLineGapSec = 2.0; // Set higher gap for "pod" style
+        document.getElementById("minLineGapSec").value = 2.0;
+
+        bgMusicSelect.value = "story-classical-6-713.mp3"; // Set default bg music for "pod" style
+    }
 });
 
 // Update caption word limit dynamically from user input
@@ -250,7 +261,8 @@ video.addEventListener("timeupdate", () => {
 const minLineGapInput = document.getElementById("minLineGapSec");
 minLineGapInput.addEventListener("input", () => {
     const v = parseFloat(minLineGapInput.value);
-    minLineGapSec = isNaN(v) ? 0.40 : Math.max(0, v);
+    // minLineGapSec = isNaN(v) ? 2.0 : Math.max(0, v);
+    minLineGapSec = 2.0; // force 2.0 sec for now
     computeCaptionSegments();
 });
 
@@ -399,6 +411,9 @@ function updateOverlayAndCaptions() {
 
     let currentIndex = captionsData.findIndex(w => currentTime >= w.start && currentTime <= w.end);
 
+    if (currentIndex !== null && currentIndex !== undefined) {
+        lastActiveWordIndex = currentIndex;
+    }
     if (currentIndex !== -1) {
         // find the segment that contains currentIndex
         let seg = null;
@@ -421,6 +436,8 @@ function updateOverlayAndCaptions() {
 
         // ---- Optional: keep very long lines readable using your existing "Words per Caption" cap ----
         let wordsPer = Math.max(1, captionWordLimit || segWords.length);
+        wordsPer = Math.min(wordsPer, segWords.length); // cap to paragraph length
+
         if (segWords.length > wordsPer) {
             // compute which sub-chunk of this line we are in, based on currentIndex
             let localIdx = currentIndex - seg.startIndex;                  // 0..segWords.length-1
@@ -501,7 +518,8 @@ timeline.addEventListener("input", () => {
 
 
 function computeCaptionSegments() {
-    let minLineGapSec = document.getElementById("minLineGapSec");
+    // let minLineGapSec = document.getElementById("minLineGapSec");
+    let minLineGapSec = 2.0; // force 2.0 sec for now
     captionSegments = [];
     if (!Array.isArray(captionsData) || captionsData.length === 0) return;
 
@@ -515,6 +533,7 @@ function computeCaptionSegments() {
     }
     // flush last segment
     captionSegments.push({ startIndex: segStart, endIndex: captionsData.length - 1 });
+    localStorage.setItem("captionSegments", JSON.stringify(captionSegments));
 }
 
 // 🔹 Simulate Caption Animation in Preview Section

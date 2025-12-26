@@ -128,7 +128,7 @@
 }
 
 /* 🔹 Staying Heading */
-.staying-heading {
+.staying-heading_old {
     position: absolute;
     top: 10%;
     left: 50%;
@@ -144,6 +144,42 @@
     opacity: 0;
     transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
     animation: fadeInSlideDown 0.8s ease-in-out forwards;
+}
+
+.staying-heading {
+    position: absolute;
+    top: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 90%;
+
+    font-family: 'oswald','Inter', 'Poppins', 'Segoe UI', sans-serif;
+    font-size: clamp(28px, 3.2vw, 44px);
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.25;
+    letter-spacing: 0.04em;
+
+    color: #ffffff;
+
+    /* Subtle depth */
+    text-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.55),
+        0 0 30px rgba(255, 255, 255, 0.12);
+
+    padding: 14px 26px;
+    border-radius: 12px;
+
+    /* Optional glass effect */
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.35),
+        rgba(0, 0, 0, 0.15)
+    );
+    backdrop-filter: blur(6px);
+
+    opacity: 0;
+    animation: fadeInSlideDown 0.9s ease-out forwards;
 }
 
 /* 🔹 Staying List Items (appear under staying heading) */
