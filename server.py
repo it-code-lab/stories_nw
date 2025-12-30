@@ -13,6 +13,7 @@ from facebook_uploader import upload_facebook_videos
 from get_audio import get_audio_file
 from instagram_uploader import upload_instagram_posts
 from pinterest_uploader import upload_pins
+from scene_builder import render_background_and_merge
 from scraper import scrape_and_process  # Ensure this exists
 from settings import background_music_options, font_settings, tts_engine, voices, sizes
 from tiktok_uploader import upload_tiktok_videos
@@ -72,6 +73,13 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 PAGES_FOLDER = os.path.join(BASE_DIR, "static", "pages")
 STATIC_FOLDER = os.path.join(BASE_DIR, "static")
 
+DATA_DIR = BASE_DIR / "data"
+UPLOADS_DIR = BASE_DIR / "uploads"
+OUT_DIR = BASE_DIR / "out"
+
+UPLOADS_DIR.mkdir(exist_ok=True)
+OUT_DIR.mkdir(exist_ok=True)
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PAGES_FOLDER, exist_ok=True)
 
@@ -119,7 +127,66 @@ def build_coloring_manifest_route():
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
 
+@app.post("/upload_media")
+def upload_media():
+    f = request.files.get("file")
+    if not f:
+        return "missing file", 400
 
+    name = f.filename or "upload.bin"
+    ext = os.path.splitext(name)[1].lower()
+    safe = f"{os.urandom(8).hex()}{ext}"
+    dst = UPLOADS_DIR / safe
+    f.save(dst)
+
+    mime = (f.mimetype or "").lower()
+    if mime.startswith("image/"):
+        t = "image"
+    elif mime.startswith("video/"):
+        t = "video"
+    else:
+        return "unsupported type", 400
+
+    return jsonify({"url": f"/uploads/{safe}", "type": t})
+
+@app.get("/uploads/<path:fn>")
+def uploads(fn):
+    return send_from_directory(str(UPLOADS_DIR), fn)
+
+@app.post("/save_timeline")
+def save_timeline():
+    payload = request.get_json(force=True)
+    (OUT_DIR / "timeline.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return "Saved to out/timeline.json"
+
+@app.post("/render")
+def render():
+    # timeline must exist
+    tl_path = OUT_DIR / "timeline.json"
+    if not tl_path.exists():
+        return jsonify({"error": "Please Save Timeline first."}), 400
+
+    heygen = request.files.get("heygen")
+    if not heygen:
+        return jsonify({"error": "Missing HeyGen file."}), 400
+
+    out_res = request.form.get("outRes", "1920x1080")
+
+    heygen_path = OUT_DIR / "heygen.mp4"
+    heygen.save(heygen_path)
+
+    try:
+        output_path = render_background_and_merge(
+            timeline_json_path=tl_path,
+            base_dir=BASE_DIR,
+            heygen_path=heygen_path,
+            out_dir=OUT_DIR,
+            out_res=out_res,
+        )
+        return jsonify({"output": str(output_path)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 @app.post("/api/coloring_sketch")
 def api_coloring_sketch():
     """
@@ -1972,6 +2039,10 @@ def index():
 @app.route('/thumbnail')
 def thumbnail():
     return render_template('thu_index.html')
+
+@app.route('/scene_builder')
+def scene_builder():
+    return render_template('scene_builder.html')
 
 @app.route('/coloring_book_builder')
 def coloringbook():

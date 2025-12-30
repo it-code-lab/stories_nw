@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Scene Builder</title>
+  <!-- <link rel="stylesheet" href="/static/styles.css" /> -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='scene_builder.css') }}">
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <label>HeyGen video:</label>
+      <input id="heygenFile" type="file" accept="video/*">
+      <label style="margin-left:12px;">Output:</label>
+      <select id="outRes">
+        <option value="1920x1080">1920x1080 (Landscape)</option>
+        <option value="1080x1920">1080x1920 (Portrait)</option>
+      </select>
+      <button id="btnLoad">Load word_timestamps.json</button>
+    </div>
+
+    <div class="actions">
+      <input id="mediaPick" type="file" accept="image/*,video/*" multiple hidden />
+      <button id="btnAddMedia">Insert Image/Video</button>
+      <button id="btnSave">Save Timeline</button>
+      <button id="btnRender">Render Background + Merge</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="panel">
+      <h3>Editor (click a word to set insertion point)</h3>
+      <div class="hint">
+        Paste an image/video from clipboard OR use “Insert Image/Video”.
+        Media will be inserted at the current caret position.
+      </div>
+      <div id="editor" class="editDescriptionDiv" contenteditable="true"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Timeline (media blocks)</h3>
+      <div id="timeline"></div>
+    </div>
+  </div>
+
+  <!-- <script src="/static/app.js"></script> -->
+  <script src="{{ url_for('static', filename='scene_builder.js') }}"></script>
+</body>
+</html>

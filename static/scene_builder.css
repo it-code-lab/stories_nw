@@ -1,0 +1,24 @@
+body { font-family: Arial, sans-serif; margin: 0; background: #0b0f17; color: #e9eef7; }
+.topbar { display:flex; justify-content:space-between; gap:16px; padding:12px 14px; background:#111827; position:sticky; top:0; }
+.topbar label { font-size: 13px; opacity:0.9; margin-right:6px; }
+.topbar button { padding:8px 12px; border-radius:10px; border:0; cursor:pointer; background:#2563eb; color:white; }
+.topbar button:hover { filter: brightness(1.05); }
+.actions { display:flex; gap:10px; align-items:center; }
+
+.main { display:grid; grid-template-columns: 2fr 1fr; gap: 14px; padding: 14px; }
+.panel { background:#0f172a; border:1px solid #1f2937; border-radius:14px; padding:12px; min-height: 70vh; }
+.hint { font-size: 12px; opacity: 0.8; margin-bottom: 10px; }
+
+#editor { background:#0b1224; border:1px solid #23324a; border-radius:12px; padding:12px; min-height: 58vh; line-height: 1.9; }
+.word { padding: 2px 4px; border-radius: 8px; cursor: pointer; }
+.word:hover { background: rgba(37,99,235,0.25); }
+.word.sel { background: rgba(37,99,235,0.55); }
+
+.media-block { display:inline-block; vertical-align: middle; margin: 6px 6px; border:1px solid #334155; border-radius: 12px; padding: 6px; background:#0b1224; }
+.media-block img { max-width: 220px; border-radius: 10px; display:block; }
+.media-block video { max-width: 220px; border-radius: 10px; display:block; }
+
+#timeline { font-size: 13px; }
+.tline-item { border:1px solid #23324a; border-radius:12px; padding:10px; margin:10px 0; background:#0b1224; }
+.tline-item input { width: 92px; }
+.small { font-size:12px; opacity:0.8; }
