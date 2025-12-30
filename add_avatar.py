@@ -119,7 +119,7 @@ def create_avatar_video_from_ref(REFERENCE_VIDEO = "Avatar_4_SadTalker/reference
 
 # Example Usage
 if __name__ == "__main__":
-    avatar = "Krishna"
+    avatar = "Valmiki"
     temp_audio_path = "temp/audio.wav"
     temp_output_path = "temp/video_b4_adding_avatar.mp4"
     input_video_path="composed_video.mp4"
@@ -130,6 +130,8 @@ if __name__ == "__main__":
 
     extract_audio(temp_output_path, temp_audio_path)
     video_with_audio  = create_avatar_video(temp_output_path, avatar)
+
+
 
     #create_avatar_video("temp/video_b4_adding_avatar.mp4", avatar)
 

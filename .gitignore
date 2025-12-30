@@ -49,3 +49,5 @@ overlays/*
 downloads/*
 vector_images/*
 *.svg
+*.lnk
+*.txt

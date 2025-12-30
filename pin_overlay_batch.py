@@ -896,6 +896,8 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
         fb_hashtags  = platform_tags["facebook"]
         tt_hashtags  = platform_tags["tiktok"]
         yt_keywords  = platform_tags["youtube"]
+        thumbnail_path = rec.get("thumbnail_img")
+
 
         if media_path:
             p = Path(media_path)
@@ -907,6 +909,14 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
             except IndexError:
                 media_path = p.name  # fallback: filename only
 
+        if thumbnail_path:
+            tp = Path(thumbnail_path)
+            try:
+                rel_thumb = tp.as_posix().split("pinterest_uploads/", 1)[1]
+                thumbnail_path = rel_thumb
+            except IndexError:
+                thumbnail_path = tp.name  # fallback: filename only
+
         ws.cell(rr, header_map["media_file"]).value = media_path
         ws.cell(rr, header_map["media_type"]).value = rec.get("media_type")
         ws.cell(rr, header_map["board_name"]).value = rec.get("board_name")
@@ -916,6 +926,7 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
         ws.cell(rr, header_map["destination_url"]).value = rec.get("url")
         ws.cell(rr, header_map["destination_type"]).value = rec.get("media_type")
         ws.cell(rr, header_map["future"]).value = rec.get("future")
+        ws.cell(rr, header_map["thumbnail_img"]).value = thumbnail_path
 
         # Pinterest specific columns
         ws.cell(rr, header_map["pin_title"]).value = rec.get("title")
@@ -1049,6 +1060,7 @@ def batch_render_from_folder(
         pin_url = str(row.get("pin_url") or "")
         parent_url = str(row.get("parent_url") or "")
         board_name = str(row.get("pinterest_board_name") or "")
+        thumbnail_img = str(row.get("thumbnail_image") or "")
 
         project = load_project_json(pj)
         project = apply_text_overrides(project, headline, subhead, logo_path)
@@ -1115,7 +1127,8 @@ def batch_render_from_folder(
                 "youtube_schedule_date": youtube_schedule_date,
                 "parent_url": parent_url,   
                 "comma_separated_tags": comma_separated_tags,     
-                "future": future,      
+                "future": future,  
+                "thumbnail_img": thumbnail_img,   
             })
 
             # 3) Mark success immediately and save (so rerun skips)
