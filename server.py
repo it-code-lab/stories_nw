@@ -2150,6 +2150,67 @@ def process():
         traceback.print_exc() 
         return f"❌ Error: {str(e)}", 500
 
+@app.post("/prepare_captions_from_heygen")
+def heygen_init_captions():
+    """
+    Upload HeyGen mp4, extract audio.wav, generate temp/word_timestamps.json,
+    then UI can call /word_timestamps to load it.
+    """
+    try:
+        CAPTION_LANG_OPTIONS = ["english", "hindi"]
+        language = (request.form.get("language") or "english").strip().lower()
+        if language not in CAPTION_LANG_OPTIONS:
+            language = "english"
+
+        music = (request.form.get("music") or "no").strip().lower()  # optional
+        is_song = (music == "yes")
+
+        f = request.files.get("heygen")
+        if not f or not f.filename:
+            return jsonify({"ok": False, "error": "Missing HeyGen video file (form field name: file)."}), 400
+
+        ext = os.path.splitext(f.filename)[1].lower()
+        if ext not in VIDEO_EXTS:
+            return jsonify({"ok": False, "error": f"Unsupported video type: {ext}"}), 400
+
+        # Save uploaded HeyGen video
+        uploads_dir = Path(__file__).resolve().parent / "uploads"
+        uploads_dir.mkdir(exist_ok=True)
+        heygen_path = uploads_dir / f"heygen{ext}"
+        f.save(str(heygen_path))
+
+        # Extract audio.wav beside server.py (AUDIO_PATH already points to BASE_DIR/audio.wav)
+        base_dir = Path(__file__).resolve().parent
+        res = extract_audio_from_video(
+            base_dir=base_dir,
+            input_path=heygen_path.resolve(),
+            fmt="wav",
+            track=0,
+            root_output_name="audio"  # -> audio.wav
+        )
+
+        if not getattr(res, "ok", False):
+            return jsonify({"ok": False, "error": res.error or "Audio extract failed", "detail": res.detail}), 500
+
+        # Generate captions/word timestamps (writes temp/word_timestamps.json)
+        prepare_captions_file_for_notebooklm_audio(
+            audio_path=str(AUDIO_PATH),   # "audio.wav"
+            language=language,
+            is_song=is_song
+        )
+
+        return jsonify({
+            "ok": True,
+            "language": language,
+            "audio": "audio.wav",
+            "word_timestamps": "/word_timestamps"
+        }), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route('/caption', methods=['POST'])
 def caption():
     try:

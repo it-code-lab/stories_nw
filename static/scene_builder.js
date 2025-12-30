@@ -234,4 +234,23 @@ btnRender.addEventListener("click", async () => {
   alert("Done:\n" + j.output);
 });
 
-btnLoad.click();
+// btnLoad.click();
+
+const btnPrepare = document.getElementById("btnPrepare");
+
+btnPrepare.addEventListener("click", async () => {
+  if (!heygenFile.files?.[0]) return alert("Choose HeyGen video first.");
+
+  const fd = new FormData();
+  fd.append("heygen", heygenFile.files[0]);
+  fd.append("language", document.getElementById("language").value); // or from dropdown
+  fd.append("music", document.getElementById("hasmusic").value);         // or from checkbox
+
+  const res = await fetch("/prepare_captions_from_heygen", { method: "POST", body: fd });
+  const j = await res.json();
+  if (!res.ok) return alert(j.error || "Failed");
+
+  // Now fetch generated timestamps and render
+  await loadWordTimestamps();
+  alert("Captions ready. Editor loaded.");
+});
