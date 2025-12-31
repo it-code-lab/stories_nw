@@ -63,7 +63,7 @@ def merge_with_heygen(background: Path, heygen: Path, out_path: Path, chroma_key
     if chroma_key_hex:
         # Replace HeyGen background (if HeyGen exported with solid chroma key color)
         # Captions/Avatar remain unchanged because we DON'T scale HeyGen layer.
-        
+
         # filt = (
         #     f"[1:v]colorkey={chroma_key_hex}:0.18:0.08,format=rgba[fg];"
         #     f"[0:v][fg]overlay=0:0:format=auto[v]"
@@ -107,7 +107,7 @@ def merge_with_heygen(background: Path, heygen: Path, out_path: Path, chroma_key
     ]
     run(cmd)
 
-def render_background_and_merge(timeline_json_path: Path, base_dir: Path, heygen_path: Path, out_dir: Path, out_res: str):
+def render_background_and_merge(timeline_json_path: Path, base_dir: Path, heygen_path: Path, out_dir: Path, out_res: str, out_filename: str | None = None):
     tl = json.loads(timeline_json_path.read_text(encoding="utf-8"))
     blocks = tl.get("blocks", [])
     if not blocks:
@@ -134,7 +134,12 @@ def render_background_and_merge(timeline_json_path: Path, base_dir: Path, heygen
     background = out_dir / "background.mp4"
     concat_scenes(scenes, background)
 
-    final_out = out_dir / "final.mp4"
+    # final_out = out_dir / "final.mp4"
+
+    if out_filename:
+        final_out = out_dir / out_filename
+    else:
+        final_out = out_dir / "final.mp4"
 
     # If you export HeyGen with solid green background, set chroma key to "0x00FF00".
     # Otherwise leave None (but note: without keying, HeyGen’s background will cover yours).

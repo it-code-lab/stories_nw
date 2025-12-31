@@ -20,5 +20,14 @@ body { font-family: Arial, sans-serif; margin: 0; background: #0b0f17; color: #e
 
 #timeline { font-size: 13px; }
 .tline-item { border:1px solid #23324a; border-radius:12px; padding:10px; margin:10px 0; background:#0b1224; }
-.tline-item input { width: 92px; }
+.tline-item input { width: 42px; }
 .small { font-size:12px; opacity:0.8; }
+
+#timeLinePnl{
+    position: fixed;
+    right: 15px;
+    width: 350px;
+    font-size: 8px !important;
+    overflow: auto;
+    height: 400px;
+}

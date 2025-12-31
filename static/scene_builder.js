@@ -105,7 +105,14 @@ async function uploadFileToServer(file) {
 async function insertMediaFiles(files) {
   for (const f of files) {
     const up = await uploadFileToServer(f);
-    const t = getNearestWordTimeBeforeCaret();
+    // const t = getNearestWordTimeBeforeCaret();
+    const t = getNearestWordTimeAtCaret();
+
+    // Show alert and abort if a valid time is not found
+    if (t === null) {
+      alert("Could not determine the timestamp. Please click on the word in the text to set the insertion point.");
+      return;
+    }
 
     if (up.type === "image") {
       insertHTMLAtCaret(`
@@ -170,6 +177,70 @@ function buildTimelineFromEditor() {
 
   return { duration: lastEnd, blocks };
 }
+
+function getNearestWordTimeAtCaret() {
+  const sel = window.getSelection();
+  // If no selection exists, return null to trigger an alert later
+  if (!sel || sel.rangeCount === 0) return null;
+
+  let node = sel.anchorNode;
+  if (!node) return null;
+
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+
+  const wordEl = node.closest?.(".word") || node.querySelector?.(".word");
+  if (wordEl?.dataset?.start != null) {
+    return Number(wordEl.dataset.start);
+  }
+
+  let prev = node.previousSibling;
+  while (prev) {
+    if (prev.classList?.contains("word")) {
+      return Number(prev.dataset.start);
+    }
+    prev = prev.previousSibling;
+  }
+
+  // Instead of defaulting to wordTimestamps[0], return null
+  return null; 
+}
+
+function getNearestWordTimeAtCaret_old() {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) {
+    const w = wordTimestamps[lastSelectedWordIndex] || wordTimestamps[0];
+    return w ? Number(w.start) : 0.0;
+  }
+
+  let node = sel.anchorNode;
+  if (!node) {
+    const w = wordTimestamps[lastSelectedWordIndex] || wordTimestamps[0];
+    return w ? Number(w.start) : 0.0;
+  }
+
+  // If caret is inside a text node, move up
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+
+  // Find closest word span near caret
+  const wordEl = node.closest?.(".word") || node.querySelector?.(".word");
+  if (wordEl && wordEl.dataset && wordEl.dataset.start != null) {
+    return Number(wordEl.dataset.start);
+  }
+
+  // Otherwise, try previous sibling word
+  let prev = node.previousSibling;
+  while (prev) {
+    if (prev.classList && prev.classList.contains("word")) {
+      return Number(prev.dataset.start);
+    }
+    prev = prev.previousSibling;
+  }
+
+  // Fallback
+  const w = wordTimestamps[lastSelectedWordIndex] || wordTimestamps[0];
+  return w ? Number(w.start) : 0.0;
+}
+
 
 function refreshTimelinePreview() {
   const tl = buildTimelineFromEditor();

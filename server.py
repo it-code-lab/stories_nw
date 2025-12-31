@@ -173,6 +173,11 @@ def render():
     out_res = request.form.get("outRes", "1920x1080")
 
     heygen_path = OUT_DIR / "heygen.mp4"
+    meta = json.loads((OUT_DIR / "job_meta.json").read_text())
+    orig_name = meta["orig_name"]
+    orig_ext  = meta["orig_ext"]
+
+    # heygen_path = OUT_DIR / f"{orig_name}{orig_ext}"
     heygen.save(heygen_path)
 
     try:
@@ -182,6 +187,7 @@ def render():
             heygen_path=heygen_path,
             out_dir=OUT_DIR,
             out_res=out_res,
+            out_filename=f"{orig_name}{orig_ext}",   # ✅ NEW
         )
         return jsonify({"output": str(output_path)})
     except Exception as e:
@@ -2168,6 +2174,15 @@ def heygen_init_captions():
         f = request.files.get("heygen")
         if not f or not f.filename:
             return jsonify({"ok": False, "error": "Missing HeyGen video file (form field name: file)."}), 400
+
+        orig_name = Path(f.filename).stem   # "my_heygen_video"
+        orig_ext  = Path(f.filename).suffix # ".mp4"
+
+        meta_path = OUT_DIR / "job_meta.json"
+        meta_path.write_text(json.dumps({
+            "orig_name": orig_name,
+            "orig_ext": orig_ext
+        }, indent=2))
 
         ext = os.path.splitext(f.filename)[1].lower()
         if ext not in VIDEO_EXTS:
