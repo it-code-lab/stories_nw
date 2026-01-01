@@ -1,32 +1,23 @@
-import os
 import time
-from pathlib import Path
 from datetime import datetime
-
 from openpyxl import load_workbook
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeoutError
-
+import os
 
 # ================== CONFIG ==================
 EXCEL_FILE = "heygen_submit_videos.xlsx"
 SHEET_NAME = "Sheet1"
 
-# Use a DEDICATED Chrome profile you already logged into HeyGen with
-# (Same pattern as your Pinterest uploader)  :contentReference[oaicite:1]{index=1}
-PROFILE_DIR = r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 21"
+STORAGE_STATE = "heygen_state.json"   # <-- from successful login
 CHROME_EXECUTABLE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
 HEADLESS = False
-
 NAV_TIMEOUT = 120_000
 UI_TIMEOUT = 60_000
 
-# Excel columns required
 COL_URL = "HeyGen_Template_url"
 COL_TEXT = "story_text"
 COL_NAME = "video_name"
-
-# Status columns we maintain
 COL_STATUS = "status"
 COL_MESSAGE = "message"
 COL_SUBMITTED_AT = "submitted_at"
@@ -34,306 +25,200 @@ COL_SUBMITTED_AT = "submitted_at"
 
 # ================== HELPERS ==================
 
-def norm(s) -> str:
-    return ("" if s is None else str(s)).strip()
+def norm(v):
+    return "" if v is None else str(v).strip()
 
 
-def is_excel_file_locked(file_path: str) -> bool:
-    """Same style as your Pinterest script: try opening in append mode."""
-    try:
-        with open(file_path, "a"):
+def ensure_columns(ws, headers):
+    existing = [norm(ws.cell(1, c).value) for c in range(1, ws.max_column + 1)]
+    for h in headers:
+        if h not in existing:
+            ws.cell(1, len(existing) + 1, h)
+            existing.append(h)
+    return {h: i + 1 for i, h in enumerate(existing)}
+
+
+def set_status(ws, colmap, row, status, msg=""):
+    ws.cell(row, colmap[COL_STATUS]).value = status
+    ws.cell(row, colmap[COL_MESSAGE]).value = msg
+    ws.cell(row, colmap[COL_SUBMITTED_AT]).value = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+# ================== HEYGEN ACTIONS ==================
+
+def click_story_editor(page):
+    for locator in [
+        lambda: page.get_by_text("text", exact=True),
+        lambda: page.locator("[contenteditable='true']").first,
+        lambda: page.locator("textarea").first,
+    ]:
+        try:
+            el = locator()
+            el.wait_for(state="visible", timeout=10_000)
+            el.click()
+            return
+        except Exception:
             pass
-        return False
-    except PermissionError:
-        return True
+    raise RuntimeError("Story editor not found")
 
 
-def ensure_columns(ws, required_headers):
-    """Ensure headers exist in row 1; create missing ones at the end."""
-    headers = [ws.cell(row=1, column=c).value for c in range(1, ws.max_column + 1)]
-    headers = [norm(h) for h in headers]
-
-    changed = False
-    for h in required_headers:
-        if h not in headers:
-            ws.cell(row=1, column=len(headers) + 1, value=h)
-            headers.append(h)
-            changed = True
-
-    colmap = {h: i + 1 for i, h in enumerate(headers)}  # 1-based
-    return colmap, changed
-
-
-def set_row_status(ws, colmap, row_idx, status, message=""):
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ws.cell(row=row_idx, column=colmap[COL_STATUS]).value = status
-    ws.cell(row=row_idx, column=colmap[COL_MESSAGE]).value = message
-    ws.cell(row=row_idx, column=colmap[COL_SUBMITTED_AT]).value = now_str
-
-
-# ================== HEYGEN FLOW ==================
-
-def _maybe_wait_for_login(page):
-    """
-    If HeyGen redirects to login, pause so user can login once in the Chrome profile.
-    """
-    if "login" in page.url.lower():
-        print("⚠️ HeyGen login detected. Please login in the opened Chrome window.")
-        print("   After you finish login, press ENTER here to continue...")
-        input()
-
-
-def click_any_text_editor(page):
-    """
-    Try multiple strategies to focus the main story text editor.
-    HeyGen UI changes often; these fallbacks reduce flakiness.
-    """
-    # Strategy A: click on the "text" element used in your recording
-    try:
-        page.get_by_text("text", exact=True).click(timeout=10_000)
-        return
-    except Exception:
-        pass
-
-    # Strategy B: first visible contenteditable
-    try:
-        ce = page.locator("[contenteditable='true']").filter(has_not_text="").first
-        # Some editors have empty text; prefer simply the first visible
-        ce = page.locator("[contenteditable='true']").first
-        ce.wait_for(state="visible", timeout=10_000)
-        ce.click(timeout=10_000)
-        return
-    except Exception:
-        pass
-
-    # Strategy C: textarea
-    try:
-        ta = page.locator("textarea").first
-        ta.wait_for(state="visible", timeout=10_000)
-        ta.click(timeout=10_000)
-        return
-    except Exception:
-        pass
-
-    raise RuntimeError("Could not locate the story text editor (text/contenteditable/textarea).")
-
-
-def fill_story_text(page, story_text: str):
-    click_any_text_editor(page)
-
-    # Replace text using keyboard (more robust than .fill() across editor types)
+def fill_story(page, text):
+    click_story_editor(page)
     page.keyboard.press("ControlOrMeta+A")
     page.keyboard.press("Backspace")
-    page.keyboard.insert_text(story_text)
+    page.keyboard.insert_text(text)
 
 
 def click_generate(page):
     page.get_by_role("button", name="Generate").click(timeout=UI_TIMEOUT)
-
-    # Minimal stabilization wait (UI can shift); keep small
-    page.wait_for_timeout(800)
+    page.wait_for_timeout(1000)
 
 
-def rename_video(page, video_name: str):
-    """
-    Your recording uses: textbox name 'Untitled Video'.
-    We'll try a few fallbacks in case the accessible name changes.
-    """
-    # Primary: recorded selector
-    try:
-        box = page.get_by_role("textbox", name="Untitled Video")
-        box.click(timeout=10_000)
-        box.press("ControlOrMeta+A")
-        box.fill(video_name, timeout=10_000)
-        return
-    except Exception:
-        pass
-
-    # Fallback: any textbox currently showing Untitled
-    try:
-        box = page.locator('input[type="text"]').filter(has_text="").first
-        # safer: search by value attribute containing "Untitled"
-        box = page.locator('input[type="text"][value*="Untitled"]').first
-        box.wait_for(state="visible", timeout=10_000)
-        box.click(timeout=10_000)
-        page.keyboard.press("ControlOrMeta+A")
-        page.keyboard.insert_text(video_name)
-        return
-    except Exception:
-        pass
-
-    # Fallback: attempt common title placeholders
-    for ph in ["Untitled Video", "Video title", "Title"]:
-        try:
-            box = page.get_by_placeholder(ph)
-            box.wait_for(state="visible", timeout=5_000)
-            box.click()
-            box.press("ControlOrMeta+A")
-            box.fill(video_name)
-            return
-        except Exception:
-            continue
-
-    raise RuntimeError("Could not find the video title textbox to rename.")
+def rename_video(page, name):
+    box = page.get_by_role("textbox", name="Untitled Video")
+    box.click(timeout=10_000)
+    box.press("ControlOrMeta+A")
+    box.fill(name)
 
 
 def click_submit(page):
     page.get_by_role("button", name="Submit").click(timeout=UI_TIMEOUT)
-    page.wait_for_timeout(800)
+    page.wait_for_timeout(1000)
 
 
-def submit_one_bk(page, template_url: str, story_text: str, video_name: str):
-    # page.goto(template_url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+def ensure_logged_in(page, context, target_url: str, storage_state_path: str):
+    """
+    If redirected to login, pause for manual login, then re-save storage_state.
+    """
+    # If we are on login, or page contains obvious login cues
+    if "login" in page.url.lower():
+        print("\n⚠️ HeyGen login required (session expired).")
+        print("👉 Please login in the opened browser window.")
+        print("👉 After you reach the HeyGen home/dashboard, press ENTER here...")
+        input()
 
-    page.goto("https://app.heygen.com/home")
-    time.sleep(20000)  # wait for full UI load
-    
-    page.goto(template_url)
+        # Re-save updated session so next rows don't require login again
+        context.storage_state(path=storage_state_path)
+        print(f"✅ Updated storage_state saved to: {storage_state_path}")
 
-    # _maybe_wait_for_login(page)
-    time.sleep(20000)  # wait for full UI load
-    # In case it redirected after login
-    if page.url != template_url and "create" not in page.url:
-        page.goto(template_url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+        # Go back to the intended page
+        page.goto(target_url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
 
-    fill_story_text(page, story_text)
+
+def submit_one(page, context, url, text, name):
+    page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+
+    ensure_logged_in(page, context, url, STORAGE_STATE)
+
+    fill_story(page, text)
     click_generate(page)
-    rename_video(page, video_name)
+    rename_video(page, name)
     click_submit(page)
 
-def submit_one(page, template_url: str, story_text: str, video_name: str):
-    # Step 1: Go to home so login UI loads cleanly
-    # page.goto("https://app.heygen.com/home", wait_until="domcontentloaded")
-    # page.goto("https://www.google.com/")
-    page.goto("https://app.heygen.com/home")
-    
-    print("👉 Please log in to HeyGen in the opened browser.")
-    print("👉 Once you see the HeyGen dashboard, press ENTER here.")
-    input()   # <-- safer than sleep
 
-    # Step 2: Open the template
-    # page.goto(template_url, wait_until="domcontentloaded")
 
-    print("👉 Waiting for template editor to fully load.")
-    print("👉 Once the editor is visible, press ENTER here.")
+def ensure_storage_state(p):
+    """
+    Ensures heygen_state.json exists.
+    If missing, launches browser for manual login and saves it.
+    """
+    if os.path.exists(STORAGE_STATE):
+        print(f"✅ Found storage state: {STORAGE_STATE}")
+        return
+
+    print("⚠️ heygen_state.json not found.")
+    print("👉 Opening HeyGen for one-time manual login...")
+
+    browser = p.chromium.launch(
+        headless=False,
+        executable_path=CHROME_EXECUTABLE,
+        args=["--start-maximized"],
+    )
+
+    context = browser.new_context()
+    page = context.new_page()
+
+    page.goto("https://app.heygen.com/home", wait_until="domcontentloaded")
+
+    print("\n=================================================")
+    print("PLEASE LOGIN MANUALLY IN THE OPENED BROWSER")
+    print("After you see the HeyGen dashboard, press ENTER here")
+    print("=================================================\n")
     input()
 
-    # Step 3: Continue automation
-    fill_story_text(page, story_text)
-    click_generate(page)
-    rename_video(page, video_name)
-    click_submit(page)
+    # Save login session
+    context.storage_state(path=STORAGE_STATE)
+    print(f"✅ Storage state saved to {STORAGE_STATE}")
+
+    browser.close()
+
 
 # ================== MAIN ==================
 
 def main():
-    if not os.path.exists(EXCEL_FILE):
-        print(f"❌ Excel file not found: {EXCEL_FILE}")
-        return
-
-    if is_excel_file_locked(EXCEL_FILE):
-        print(f"❌ Please close '{EXCEL_FILE}' before running this script.")
-        return
-
     wb = load_workbook(EXCEL_FILE)
-    if SHEET_NAME not in wb.sheetnames:
-        print(f"❌ Sheet '{SHEET_NAME}' not found in {EXCEL_FILE}")
-        return
     ws = wb[SHEET_NAME]
 
-    required_headers = [COL_URL, COL_TEXT, COL_NAME, COL_STATUS, COL_MESSAGE, COL_SUBMITTED_AT]
-    colmap, changed = ensure_columns(ws, required_headers)
-    if changed:
-        wb.save(EXCEL_FILE)
+    colmap = ensure_columns(
+        ws,
+        [COL_URL, COL_TEXT, COL_NAME, COL_STATUS, COL_MESSAGE, COL_SUBMITTED_AT],
+    )
+    wb.save(EXCEL_FILE)
 
-    # Collect pending rows
-    pending = []
+    rows = []
     for r in range(2, ws.max_row + 1):
         url = norm(ws.cell(r, colmap[COL_URL]).value)
-        story = ws.cell(r, colmap[COL_TEXT]).value
+        text = ws.cell(r, colmap[COL_TEXT]).value
         name = norm(ws.cell(r, colmap[COL_NAME]).value)
         status = norm(ws.cell(r, colmap[COL_STATUS]).value).lower()
 
-        if not url or not name or not norm(story):
-            continue
+        if url and name and norm(text) and status not in ("success", "done"):
+            rows.append((r, url, str(text), name))
 
-        if status in ("success", "done"):
-            continue
-
-        pending.append((r, url, str(story), name))
-
-    if not pending:
-        print("✅ No pending rows found (everything is already Success/Done or incomplete).")
-        return
-
-    print(f"Loaded {len(pending)} pending rows from {EXCEL_FILE}")
-
-    STORAGE_STATE = "heygen_state.json"
-    CHROME_EXECUTABLE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False, executable_path=CHROME_EXECUTABLE)
-        context = browser.new_context()  # <-- incognito-style (fresh)
-        page = context.new_page()
-
-        page.goto("https://app.heygen.com/home", wait_until="domcontentloaded")
-        print("Login manually, complete any verification, then press ENTER here...")
-        input()
-
-        # Save cookies/localStorage
-        context.storage_state(path=STORAGE_STATE)
-        print("Saved:", STORAGE_STATE)
-
-        browser.close()
+    if not rows:
+        print("No pending rows.")
         return
 
     with sync_playwright() as p:
-        context = p.chromium.launch_persistent_context(
-            PROFILE_DIR,
+        
+        # 🔐 Ensure login session exists (auto-login bootstrap)
+        ensure_storage_state(p)    
+
+        browser = p.chromium.launch(
             headless=HEADLESS,
             executable_path=CHROME_EXECUTABLE,
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--start-maximized",
-            ],
+            args=["--start-maximized"],
         )
 
+        context = browser.new_context(storage_state=STORAGE_STATE)
         page = context.new_page()
         page.set_default_timeout(UI_TIMEOUT)
 
-        # Hide automation fingerprint (same idea as your Pinterest script) :contentReference[oaicite:2]{index=2}
-        page.add_init_script(
-            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-        )
-
-        for (row_idx, url, story_text, video_name) in pending:
-            print(f"\n--- Row {row_idx}: {video_name} ---")
+        for r, url, text, name in rows:
+            print(f"\nSubmitting row {r}: {name}")
             try:
-                set_row_status(ws, colmap, row_idx, "processing", "")
+                set_status(ws, colmap, r, "processing")
                 wb.save(EXCEL_FILE)
 
-                submit_one(page, url, story_text, video_name)
+                submit_one(page, context, url, text, name)
 
-                set_row_status(ws, colmap, row_idx, "Success", "Submitted")
+                set_status(ws, colmap, r, "Success", "Submitted")
                 wb.save(EXCEL_FILE)
-                print(f"✅ Success: {video_name}")
+                print("✅ Success")
 
-                # Gentle pacing to reduce bot detection / UI race conditions
                 time.sleep(2)
 
-            except PWTimeoutError as te:
-                msg = f"Timeout: {str(te)[:300]}"
-                set_row_status(ws, colmap, row_idx, "Error", msg)
+            except PWTimeoutError as e:
+                set_status(ws, colmap, r, "Error", "Timeout")
                 wb.save(EXCEL_FILE)
-                print(f"❌ {msg}")
+                print("❌ Timeout")
 
             except Exception as e:
-                msg = str(e)[:300]
-                set_row_status(ws, colmap, row_idx, "Error", msg)
+                set_status(ws, colmap, r, "Error", str(e)[:300])
                 wb.save(EXCEL_FILE)
-                print(f"❌ Error: {msg}")
+                print("❌ Error:", e)
 
-        context.close()
+        browser.close()
 
     print("\nAll done.")
 
