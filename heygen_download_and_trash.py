@@ -78,52 +78,7 @@ def click_card_and_wait_for_navigation(page, card, home_url: str) -> bool:
         print(f"❌ Failed to navigate: {e}")
         return False
     
-def click_card_and_wait_for_navigation_old2(page, card, home_url: str) -> bool:
-    before = page.url
-    
-    # Ensure the card is in the viewport and stable
-    card.scroll_into_view_if_needed()
-    page.wait_for_timeout(500) 
-    
-    # force=True bypasses the "intercepts pointer events" check
-    # that caused your specific TimeoutError
-    card.click(force=True)
 
-    try:
-        # Give the SPA a moment to change the URL
-        for _ in range(15):
-            if page.url != before and "home" not in page.url.lower():
-                return True
-            page.wait_for_timeout(200)
-        return False
-    except Exception:
-        return False
-
-def click_card_and_wait_for_navigation_old(page, card, home_url: str) -> bool:
-    """
-    Click a card.
-    If it navigates away from home (landing page), return True.
-    If it stays on home (likely still processing), return False.
-    """
-    before = page.url
-    card.scroll_into_view_if_needed()
-    # card.click()
-
-    # Add force=True to bypass the "intercepts pointer events" error
-    card.click(force=True)
-
-    # Wait briefly for URL change or some navigation
-    try:
-        page.wait_for_timeout(700)
-        # Give SPA a moment to update route
-        for _ in range(10):
-            if page.url != before and "home" not in page.url.lower():
-                return True
-            page.wait_for_timeout(150)
-        # If still home, treat as not navigated
-        return False
-    except Exception:
-        return False
     
 def scroll_to_bottom(page):
     print("📜 Scrolling to load all videos...")
@@ -213,59 +168,6 @@ def open_more_menu_and_trash(page):
     
     print("🗑️ Item moved to trash.")
 
-def open_more_menu_and_trash_old3(page):
-    # Use the specific icon name found in your HTML [cite: 20, 21]
-    more_btn = page.locator("button:has(iconpark-icon[name='more-level'])").first
-    more_btn.click(force=True)
-    
-    # Wait for the menu to actually appear in the DOM
-    page.wait_for_selector("div[role='menu'], div[data-state='open']", timeout=5000)
-
-    # Use a more reliable way to find 'Download' and 'Trash'
-    # Download first
-    # try:
-    #     page.get_by_text("Download", exact=False).click(timeout=3000)
-    #     print("✅ Download started")
-    #     # Wait for download to trigger before trashing
-    #     page.wait_for_timeout(2000) 
-    # except:
-    #     print("⚠️ Download button not found")
-
-    # Re-open menu for Trash if it closed
-    if not page.get_by_text("Trash", exact=False).is_visible():
-        more_btn.click(force=True)
-
-    page.get_by_text("Trash", exact=False).click(force=True)
-    
-    # Confirm deletion
-    confirm_btn = page.get_by_role("button", name=re.compile("Trash|Confirm|Delete", re.I))
-    confirm_btn.click(force=True)
-    print("🗑️ Moved to trash")
-
-def open_more_menu_and_trash_old2(page):
-    # This specifically targets the "three dots" icon button based on your HTML
-    try:
-        # Target the button containing the 'more-level' icon
-        more_btn = page.locator("button:has(iconpark-icon[name='more-level'])").first
-        more_btn.click(timeout=UI_TIMEOUT, force=True)
-    except Exception:
-        # Fallback to your existing logic if the specific selector fails
-        btn = page.get_by_role("button").filter(has_text=re.compile(r"^$")).nth(1)
-        btn.click(timeout=UI_TIMEOUT, force=True)
-
-    # Click Trash in the opened menu
-    page.get_by_text(TRASH_TEXT, exact=True).click(timeout=UI_TIMEOUT)
-
-    # Confirm Trash
-    for btn_name in ["Trash", "Confirm", "Move to Trash", "Delete"]:
-        try:
-            # Added force=True here as well to avoid interception
-            b = page.get_by_role("button", name=btn_name)
-            b.wait_for(state="visible", timeout=1500)
-            b.click(timeout=3000, force=True)
-            break
-        except Exception:
-            pass
 
 def open_more_menu_and_trash_old(page):
     """
@@ -339,12 +241,6 @@ def main():
         errors = 0
         processed = 0
 
-        # wait for locator(CARD_SEL) to be visible
-        # page.locator(CARD_SEL).first.wait_for(state="visible", timeout=UI_TIMEOUT)
-
-        # In main() before the while loop
-        # Wait for the main content to load by waiting for the cards themselves
-
         while processed < MAX_ITEMS_PER_RUN:
 
             page.goto(HOME_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
@@ -355,34 +251,9 @@ def main():
                 print("⚠️  Warning: Cards did not appear within 15s, proceeding anyway...")
                 break
 
-            # page.wait_for_timeout(2000) # Give the UI a moment to settle
-            # scroll_to_bottom(page)
-
-            # Re-query cards every loop because list changes after deletion
-            # cards = page.locator(CARD_SEL)
-            # cards = page.locator(CARD_SEL).all()
-
-            # if not cards:
-            #         print("🏁 No more videos found.")
-            #         break
-                    
-            # Always process the FIRST card because the previous one was deleted
-            # card = cards[0]
 
             card = page.locator(CARD_SEL).first
 
-            # total = cards.count()
-            # if total == 0:
-            #     print("No video cards found on Home.")
-            #     break
-            # else:
-            #     print(f"\n🏷️  Processing item {processed + 1} of max {MAX_ITEMS_PER_RUN} "
-            #           f"(cards available: {total})")
-
-            # # Work from the top card each time
-            # card = cards.nth(0)
-
-            # Try open landing page; if not navigated, skip and move down
             navigated = click_card_and_wait_for_navigation(page, card, HOME_URL)
             if not navigated:
                 skipped_processing += 1
@@ -399,8 +270,12 @@ def main():
                 print(f"✅ Downloaded: {saved}")
                 downloaded += 1
 
+                page.wait_for_timeout(1000)
+
                 open_more_menu_and_trash(page)
                 print("🗑️ Trashed from landing page.")
+
+                page.wait_for_timeout(2000)
 
                 # wait_back_to_home(page)
                 # ensure_logged_in(page, context)
