@@ -172,7 +172,7 @@ def main():
         name = norm(ws.cell(r, colmap[COL_NAME]).value)
         status = norm(ws.cell(r, colmap[COL_STATUS]).value).lower()
 
-        if url and name and norm(text) and status not in ("success", "done"):
+        if url and name and norm(text) and status not in ("success", "done", "future"):
             rows.append((r, url, str(text), name))
 
     if not rows:
@@ -180,7 +180,7 @@ def main():
         return
 
     with sync_playwright() as p:
-        
+
         # 🔐 Ensure login session exists (auto-login bootstrap)
         ensure_storage_state(p)    
 
