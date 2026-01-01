@@ -114,8 +114,16 @@ def convert_one(
     ensure_dir(out_path.parent)
 
     # Save as JPG for video pipelines (smaller + widely supported)
-    out_path = out_path.with_suffix(".jpg")
-    out_img.save(out_path, format="JPEG", quality=quality, optimize=True)
+    # out_path = out_path.with_suffix(".jpg")
+    # out_img.save(out_path, format="JPEG", quality=quality, optimize=True)
+    # Save as PNG
+    out_path = out_path.with_suffix(".png")
+    out_img.save(
+        out_path,
+        format="PNG",
+        optimize=True,
+        compress_level=6  # 0 (fastest) → 9 (smallest)
+    )
 
 
 def main():
@@ -175,7 +183,8 @@ def main():
 
             count_in += 1
             in_path = root_p / fn
-            out_path = out_dir / rel / Path(fn).with_suffix(".jpg")
+            # out_path = out_dir / rel / Path(fn).with_suffix(".jpg")
+            out_path = out_dir / rel / Path(fn).with_suffix(".png")
 
             try:
                 convert_one(

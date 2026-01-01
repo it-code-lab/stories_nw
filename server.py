@@ -41,6 +41,7 @@ import uuid
 from coloring_animation import _create_coloring_animation, _create_coloring_animation_by_color
 from sketch_core import build_sketch_from_pil
 from PIL import Image
+from scene_builder import probe_duration, make_scene, merge_with_heygen
 
 from media_audio import (
     extract_audio_from_video,
@@ -158,6 +159,142 @@ def save_timeline():
     payload = request.get_json(force=True)
     (OUT_DIR / "timeline.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return "Saved to out/timeline.json"
+
+def _safe_name(s: str) -> str:
+    s = (s or "").strip()
+    s = re.sub(r"[^\w\-. ]+", "", s)
+    s = s.replace(" ", "_")
+    return s or "out"
+
+def _resolve_path(p: str) -> Path:
+    p = (p or "").strip().strip('"').strip("'")
+    if not p:
+        return Path("")
+    pp = Path(p)
+    return pp if pp.is_absolute() else (BASE_DIR / pp).resolve()
+
+@app.post("/render_bulk_bg")
+def render_bulk_bg():
+    """
+    Reads BASE_DIR/heygen_bulk_bg.xlsx with columns:
+      - heygen_video : path to HeyGen mp4
+      - bg          : path to background image/video
+
+    For each row:
+      1) Create background video matching HeyGen duration
+      2) Chroma-key merge (keeps HeyGen captions + avatar bubble untouched/unaltered)
+      3) Output filename defaults to ORIGINAL HeyGen filename (same name) in OUT_DIR
+    """
+    try:
+        excel_path = (BASE_DIR / "heygen_bulk_bg.xlsx").resolve()
+        if not excel_path.exists():
+            return jsonify({"ok": False, "error": f"Missing Excel: {excel_path}"}), 400
+
+        out_res = request.form.get("outRes", "1080x1920")
+        chroma_key = "0x00FF00"  # HeyGen green export
+
+        wb = openpyxl.load_workbook(excel_path)
+        ws = wb.active
+
+        # header -> index
+        headers = {}
+        for c in range(1, ws.max_column + 1):
+            v = ws.cell(row=1, column=c).value
+            if v:
+                headers[str(v).strip().lower()] = c
+
+        if "heygen_video" not in headers or "bg" not in headers:
+            return jsonify({
+                "ok": False,
+                "error": "Excel must have header columns: heygen_video, bg"
+            }), 400
+
+        # Ensure 'status' column exists
+        if "status" not in headers:
+            status_col = ws.max_column + 1
+            ws.cell(row=1, column=status_col).value = "status"
+            headers["status"] = status_col
+        else:
+            status_col = headers["status"]
+
+
+        results = []
+        for r in range(2, ws.max_row + 1):
+            heygen_raw = ws.cell(r, headers["heygen_video"]).value
+            bg_raw = ws.cell(r, headers["bg"]).value
+
+            status_val = ws.cell(r, status_col).value
+            if status_val and str(status_val).strip().lower() == "success":
+                results.append({
+                    "row": r,
+                    "ok": True,
+                    "skipped": True,
+                    "reason": "already processed"
+                })
+                continue
+
+            if not heygen_raw or not bg_raw:
+                continue
+
+            heygen_path = _resolve_path(str(heygen_raw))
+            bg_asset = _resolve_path(str(bg_raw))
+
+            if not heygen_path.exists():
+                results.append({"row": r, "ok": False, "error": f"HeyGen not found: {heygen_path}"})
+                ws.cell(row=r, column=status_col).value = "HeyGen video not found"
+                wb.save(excel_path)   # ✅ save immediately (important)
+                continue
+            if not bg_asset.exists():
+                results.append({"row": r, "ok": False, "error": f"BG not found: {bg_asset}"})
+                ws.cell(row=r, column=status_col).value = "BG asset not found"
+                wb.save(excel_path)   # ✅ save immediately (important)
+                continue
+
+            # 1) duration = HeyGen duration
+            dur = probe_duration(heygen_path)
+
+            # 2) build one full background clip (image loops / video holds last frame)
+            work_dir = (OUT_DIR / "bulk_work").resolve()
+            work_dir.mkdir(exist_ok=True)
+            bg_video = work_dir / f"{_safe_name(heygen_path.stem)}__bg.mp4"
+
+            make_scene(asset=bg_asset, duration=dur, out_path=bg_video, out_res=out_res)
+
+            # 3) output file name = same as original HeyGen file name, but written under OUT_DIR
+            final_out = (OUT_DIR / f"{heygen_path.stem}{heygen_path.suffix}").resolve()
+
+            # merge: captions + avatar remain exactly as HeyGen because we don't scale HeyGen layer
+            merge_with_heygen(
+                background=bg_video,
+                heygen=heygen_path,
+                out_path=final_out,
+                chroma_key_hex=chroma_key if chroma_key else None
+            )
+
+            ws.cell(row=r, column=status_col).value = "success"
+            wb.save(excel_path)   # ✅ save immediately (important)
+
+            results.append({
+                "row": r,
+                "ok": True,
+                "heygen": str(heygen_path),
+                "bg": str(bg_asset),
+                "output": str(final_out)
+            })
+
+        wb.close()
+        # return jsonify({"ok": True, "count": len(results), "results": results})
+        return jsonify({
+        "ok": True,
+        "count": len(results),
+        "results": results,
+        "output": f"Processed/checked {len(results)} rows. See results[] for details."
+        })
+
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.post("/render")
 def render():
@@ -1857,7 +1994,7 @@ def convert_images_route():
 
                 read_count += 1
                 in_path = root_p / fn
-                out_path = out_dir / rel / Path(fn).with_suffix(".jpg")
+                out_path = out_dir / rel / Path(fn).with_suffix(".png")
 
                 try:
                     convert_one(

@@ -5,6 +5,7 @@ const btnLoad = document.getElementById("btnLoad");
 const btnAddMedia = document.getElementById("btnAddMedia");
 const btnSave = document.getElementById("btnSave");
 const btnRender = document.getElementById("btnRender");
+const bulkRun = document.getElementById("bulkRun");
 const outRes = document.getElementById("outRes");
 const heygenFile = document.getElementById("heygenFile");
 
@@ -304,6 +305,25 @@ btnRender.addEventListener("click", async () => {
   if (!res.ok) return alert(j.error || "Render failed");
   alert("Done:\n" + j.output);
 });
+
+bulkRun.addEventListener("click", async () => {
+  const fd = new FormData();
+  fd.append("outRes", outRes.value);
+
+  const res = await fetch("/render_bulk_bg", { method: "POST", body: fd });
+  const j = await res.json();
+
+  if (!res.ok || j.ok === false) return alert(j.error || "Bulk run failed");
+
+  const msg =
+    `Bulk run finished\n\n` +
+    `Count: ${j.count}\n\n` +
+    `Details:\n` +
+    JSON.stringify(j.results, null, 2);
+
+  alert(msg);
+});
+
 
 // btnLoad.click();
 
