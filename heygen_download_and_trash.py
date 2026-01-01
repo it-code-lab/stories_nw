@@ -6,9 +6,9 @@ from datetime import datetime
 
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeoutError
 
-# ---------------- CONFIG ----------------
+# ---------- CONFIG ----------
 CHROME_EXECUTABLE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-STORAGE_STATE = "heygen_state.json"  # keep this in same folder or make absolute
+STORAGE_STATE = "heygen_state.json"
 HEADLESS = False
 
 HOME_URL = "https://app.heygen.com/home"
@@ -16,117 +16,283 @@ NAV_TIMEOUT = 120_000
 UI_TIMEOUT = 30_000
 
 DOWNLOAD_DIR = Path("heygen_downloads").resolve()
-MAX_ITEMS_PER_RUN = 50   # safety cap, change as you like
-SLEEP_BETWEEN = 1.5      # gentle pacing
+MAX_ITEMS_PER_RUN = 80
+SLEEP_BETWEEN = 1.0
+
+# Home card selector (from your HTML earlier)
+# CARD_SEL = "div.tw-cursor-pointer.tw-group.tw-relative"
+# CARD_SEL = "div.tw-pointer-events-none.tw-absolute"
+# CARD_SEL = "div[class*='ProjectCard_container']"
+# CARD_SEL = "div.tw-group.tw-cursor-pointer"
+# CARD_SEL = "div.tw-relative.tw-min-w-\\[280px\\]"
+# CARD_SEL = 'div[class*="tw-min-w-[280px]"]'
 
 
-# ---------------- HELPERS ----------------
+CARD_SEL = "img.tw-size-full.tw-object-contain"
+# CARD_SEL = "a[href*='/share/']"
 
+# Landing page actions (from your recording)
+DOWNLOAD_BTN_ROLE = ("button", "Download")
+CLOSE_BTN_ROLE = ("button", "Close")
+
+# The “More” button you recorded: getByRole('button').filter({ hasText: /^$/ }).nth(1)
+# We'll use a safer heuristic: a top-right icon-only button in the action bar.
+ICON_ONLY_BUTTONS_SEL = "button:has(svg)"
+
+# Trash menu item
+TRASH_TEXT = "Trash"
+
+
+# ---------- HELPERS ----------
 def safe_filename(name: str) -> str:
     name = (name or "").strip()
     name = re.sub(r'[<>:"/\\|?*\x00-\x1F]+', "_", name)
     name = re.sub(r"\s+", " ", name).strip()
-    return name[:160] or "heygen_video"
+    return name[:180] or "heygen_video"
 
 
 def ensure_logged_in(page, context):
-    # If session expired, you will be redirected to login.
     if "login" in page.url.lower():
-        print("\n⚠️ Login required. Please login in the opened browser window.")
-        print("👉 After you land on HeyGen home/dashboard, press ENTER here...")
+        print("\n⚠️ Session expired. Please login in the opened browser.")
+        print("After you reach HeyGen Home, press ENTER here...")
         input()
         context.storage_state(path=STORAGE_STATE)
-        print(f"✅ Updated storage_state saved to: {STORAGE_STATE}")
+        print(f"✅ Updated storage_state: {STORAGE_STATE}")
         page.goto(HOME_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
 
-
-def open_card_menu(card):
-    """
-    Each video card has a 3-dots menu button:
-    <button ...><iconpark-icon name="more-level" ...></iconpark-icon></button>
-    We'll hover the card to reveal it, then click it.
-    """
-    card.scroll_into_view_if_needed()
-    card.hover()
-
-    menu_btn = card.locator("button:has(iconpark-icon[name='more-level'])").first
-    menu_btn.wait_for(state="visible", timeout=UI_TIMEOUT)
-    menu_btn.click(timeout=UI_TIMEOUT)
-
-
-def click_menu_item(page, label: str, timeout=UI_TIMEOUT) -> bool:
-    """
-    Click a menu item by visible text (Download/Trash/etc).
-    Returns True if clicked, False if not found.
-    """
-    item = page.get_by_text(label, exact=True)
+def click_card_and_wait_for_navigation(page, card, home_url: str) -> bool:
     try:
-        item.wait_for(state="visible", timeout=1500)
-        item.click(timeout=timeout)
+        # 1. Get the title of the video before clicking (for logging)
+        title_element = card.locator("span.tw-truncate.tw-text-textTitle").first
+        title = title_element.inner_text() if title_element.is_visible() else "Unknown Video"
+        print(f"🎬 Attempting to open: {title}")
+
+        # 2. Click the card using the middle area to avoid clicking the 'Edit' or 'More' icons
+        card.scroll_into_view_if_needed()
+        card.click(force=True, position={'x': 100, 'y': 100}) 
+
+        # 3. Wait for the URL to change away from home
+        page.wait_for_url(lambda url: "home" not in url.lower(), timeout=10000)
         return True
+    except Exception as e:
+        print(f"❌ Failed to navigate: {e}")
+        return False
+    
+def click_card_and_wait_for_navigation_old2(page, card, home_url: str) -> bool:
+    before = page.url
+    
+    # Ensure the card is in the viewport and stable
+    card.scroll_into_view_if_needed()
+    page.wait_for_timeout(500) 
+    
+    # force=True bypasses the "intercepts pointer events" check
+    # that caused your specific TimeoutError
+    card.click(force=True)
+
+    try:
+        # Give the SPA a moment to change the URL
+        for _ in range(15):
+            if page.url != before and "home" not in page.url.lower():
+                return True
+            page.wait_for_timeout(200)
+        return False
     except Exception:
         return False
 
-
-def try_download_from_open_menu(page, download_dir: Path) -> str | None:
+def click_card_and_wait_for_navigation_old(page, card, home_url: str) -> bool:
     """
-    Assumes menu is already open.
-    If Download exists: click it -> click Download confirm -> save file.
-    Returns saved file path, or None if Download not available.
+    Click a card.
+    If it navigates away from home (landing page), return True.
+    If it stays on home (likely still processing), return False.
     """
-    # If processing, "Download" won't be there.
-    if not click_menu_item(page, "Download"):
-        return None
+    before = page.url
+    card.scroll_into_view_if_needed()
+    # card.click()
 
-    # A dialog opens with a Download button
-    # We expect a real browser download.
+    # Add force=True to bypass the "intercepts pointer events" error
+    card.click(force=True)
+
+    # Wait briefly for URL change or some navigation
     try:
-        download_dir.mkdir(parents=True, exist_ok=True)
+        page.wait_for_timeout(700)
+        # Give SPA a moment to update route
+        for _ in range(10):
+            if page.url != before and "home" not in page.url.lower():
+                return True
+            page.wait_for_timeout(150)
+        # If still home, treat as not navigated
+        return False
+    except Exception:
+        return False
+    
+def scroll_to_bottom(page):
+    print("📜 Scrolling to load all videos...")
+    last_height = page.evaluate("document.body.scrollHeight")
+    while True:
+        page.mouse.wheel(0, 2000) # Scroll down
+        page.wait_for_timeout(1000) # Wait for lazy load
+        new_height = page.evaluate("document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
+    print("✅ All videos loaded.")
 
-        with page.expect_download(timeout=120_000) as dl_info:
-            page.get_by_role("button", name="Download").click(timeout=UI_TIMEOUT)
+def landing_download(page) -> str:
+    """
+    Click Download on landing page and save file.
+    Uses browser download event.
+    """
+    DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-        download = dl_info.value
+    # Click Download (your recording: getByRole('button', { name: 'Download' }))
+    # page.get_by_role(*DOWNLOAD_BTN_ROLE).click(timeout=UI_TIMEOUT)
 
-        # Build a nice filename
-        # suggested = download.suggested_filename or "heygen_video.mp4"
-        # base = Path(suggested).stem
-        # ext = Path(suggested).suffix or ".mp4"
-        # ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        # final_name = f"{safe_filename(base)}_{ts}{ext}"
-        # final_path = download_dir / final_name
+    role, name = DOWNLOAD_BTN_ROLE
+    download_btn = page.get_by_role(role, name=re.compile(name, re.I))    
 
-        suggested = download.suggested_filename or "heygen_video.mp4"
-        final_path = download_dir / safe_filename(suggested)
+    download_btn.click(timeout=UI_TIMEOUT)
 
 
-        download.save_as(str(final_path))
+    # In some UIs, clicking Download immediately triggers download; in others there's a dialog.
+    # We'll wait for download event around a "Download" button click if it appears, otherwise
+    # we just wait for download.
+    try:
+        # If a dialog appears with another Download button, click it while expecting download
+        dl_btn = page.get_by_role("button", name="Download")
+        with page.expect_download(timeout=180_000) as dl_info:
+            dl_btn.click(timeout=UI_TIMEOUT)
+        dl = dl_info.value
+    except Exception:
+        # Otherwise, just expect a download without the second click
+        with page.expect_download(timeout=180_000) as dl_info:
+            # Some flows trigger download already after first click
+            page.wait_for_timeout(500)
+        dl = dl_info.value
 
-        # Close dialog (if present)
+    suggested = dl.suggested_filename or "heygen_video.mp4"
+    final_path = DOWNLOAD_DIR / safe_filename(suggested)
+    dl.save_as(str(final_path))
+
+    # Close dialog (your recording has Close)
+    print("Closing download dialog...")
+    try:
+        page.get_by_role("button", name="Close").click(timeout=5000)
+    except Exception:
+        print("⚠️ Close button not found; continuing...")
+        pass
+
+    return str(final_path)
+
+def open_more_menu_and_trash(page):
+    print("🔘 Opening 'More' menu...")
+    
+    # 1. Target the button via its data attribute
+    more_btn = page.locator('button[data-more-btn="true"]').first
+    more_btn.scroll_into_view_if_needed()
+    more_btn.click(force=True)
+    
+    # 2. Wait for the menu to appear in the DOM
+    # We wait for the 'data-state' to change to 'open'
+    try:
+        page.wait_for_selector('button[data-state="open"]', timeout=3000)
+    except:
+        # Fallback: simple timeout if the state attribute doesn't update immediately
+        page.wait_for_timeout(500)
+
+    # 3. Find and click Trash
+    # We use a filter to ensure we get the visible menu item
+    trash_item = page.get_by_text("Trash", exact=True).first
+    trash_item.wait_for(state="visible", timeout=5000)
+    trash_item.click()
+
+    # 4. Handle the Confirmation Dialog
+    # Usually, a secondary "Trash" or "Confirm" button appears in a modal
+    # confirm_btn = page.get_by_role("button", name=re.compile("Trash|Confirm|Delete", re.I))
+    # confirm_btn.wait_for(state="visible", timeout=5000)
+    # confirm_btn.click(force=True)
+    
+    print("🗑️ Item moved to trash.")
+
+def open_more_menu_and_trash_old3(page):
+    # Use the specific icon name found in your HTML [cite: 20, 21]
+    more_btn = page.locator("button:has(iconpark-icon[name='more-level'])").first
+    more_btn.click(force=True)
+    
+    # Wait for the menu to actually appear in the DOM
+    page.wait_for_selector("div[role='menu'], div[data-state='open']", timeout=5000)
+
+    # Use a more reliable way to find 'Download' and 'Trash'
+    # Download first
+    # try:
+    #     page.get_by_text("Download", exact=False).click(timeout=3000)
+    #     print("✅ Download started")
+    #     # Wait for download to trigger before trashing
+    #     page.wait_for_timeout(2000) 
+    # except:
+    #     print("⚠️ Download button not found")
+
+    # Re-open menu for Trash if it closed
+    if not page.get_by_text("Trash", exact=False).is_visible():
+        more_btn.click(force=True)
+
+    page.get_by_text("Trash", exact=False).click(force=True)
+    
+    # Confirm deletion
+    confirm_btn = page.get_by_role("button", name=re.compile("Trash|Confirm|Delete", re.I))
+    confirm_btn.click(force=True)
+    print("🗑️ Moved to trash")
+
+def open_more_menu_and_trash_old2(page):
+    # This specifically targets the "three dots" icon button based on your HTML
+    try:
+        # Target the button containing the 'more-level' icon
+        more_btn = page.locator("button:has(iconpark-icon[name='more-level'])").first
+        more_btn.click(timeout=UI_TIMEOUT, force=True)
+    except Exception:
+        # Fallback to your existing logic if the specific selector fails
+        btn = page.get_by_role("button").filter(has_text=re.compile(r"^$")).nth(1)
+        btn.click(timeout=UI_TIMEOUT, force=True)
+
+    # Click Trash in the opened menu
+    page.get_by_text(TRASH_TEXT, exact=True).click(timeout=UI_TIMEOUT)
+
+    # Confirm Trash
+    for btn_name in ["Trash", "Confirm", "Move to Trash", "Delete"]:
         try:
-            page.get_by_role("button", name="Close").click(timeout=3000)
+            # Added force=True here as well to avoid interception
+            b = page.get_by_role("button", name=btn_name)
+            b.wait_for(state="visible", timeout=1500)
+            b.click(timeout=3000, force=True)
+            break
         except Exception:
-            # sometimes dialog closes automatically after saving
             pass
 
-        return str(final_path)
-
-    except PWTimeoutError:
-        raise RuntimeError("Download timed out (no download event).")
-    except Exception as e:
-        raise RuntimeError(f"Download failed: {e}")
-
-
-def trash_from_open_menu(page):
+def open_more_menu_and_trash_old(page):
     """
-    Assumes menu is open. Click Trash. Some accounts show a confirm step;
-    we handle both cases.
+    Open the more/options menu on landing page and click Trash.
+    Recording:
+      - click icon-only role button nth(1)
+      - click Trash text
+    We'll pick an icon-only button in the top action area.
     """
-    if not click_menu_item(page, "Trash"):
-        raise RuntimeError("Trash option not found after download.")
+    # Try to click the 2nd icon-only button as in your recording
+    try:
+        btn = page.get_by_role("button").filter(has_text=re.compile(r"^$")).nth(1)
+        btn.click(timeout=UI_TIMEOUT)
+    except Exception:
+        # Fallback: click a likely "more" icon button (one of the svg buttons)
+        svg_btns = page.locator(ICON_ONLY_BUTTONS_SEL)
+        if svg_btns.count() == 0:
+            raise RuntimeError("Could not find any icon-only buttons for the menu.")
+        # Often the more menu is near the top-right; nth(1) is a decent heuristic
+        svg_btns.nth(1 if svg_btns.count() > 1 else 0).click(timeout=UI_TIMEOUT)
+
+    # Click Trash in the opened menu
+    # Your recording: locator('div').filter({ hasText: /^Trash$/ }).first().click();
+    # We'll do exact text click.
+    page.get_by_text(TRASH_TEXT, exact=True).click(timeout=UI_TIMEOUT)
 
     # Optional confirm
-    # (If HeyGen shows a confirmation modal, one of these usually exists.)
     for btn_name in ["Trash", "Confirm", "Move to Trash", "Delete"]:
         try:
             b = page.get_by_role("button", name=btn_name)
@@ -137,11 +303,20 @@ def trash_from_open_menu(page):
             pass
 
 
+def wait_back_to_home(page):
+    # After trash, HeyGen often redirects to home.
+    try:
+        page.wait_for_url(re.compile(r".*/home.*"), timeout=30_000)
+    except Exception:
+        # fallback: try navigating home
+        page.goto(HOME_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+
+
 def main():
     if not os.path.exists(STORAGE_STATE):
         raise FileNotFoundError(
-            f"Storage state not found: {STORAGE_STATE}\n"
-            "Create it once via your login bootstrap (storage_state)."
+            f"{STORAGE_STATE} not found.\n"
+            "Create it once via your login bootstrap method."
         )
 
     with sync_playwright() as p:
@@ -150,87 +325,106 @@ def main():
             executable_path=CHROME_EXECUTABLE,
             args=["--start-maximized"],
         )
-
-        context = browser.new_context(
-            storage_state=STORAGE_STATE,
-            accept_downloads=True,   # IMPORTANT
-        )
-
+        context = browser.new_context(storage_state=STORAGE_STATE, accept_downloads=True)
         page = context.new_page()
         page.set_default_timeout(UI_TIMEOUT)
-        
+
         page.goto(HOME_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
         ensure_logged_in(page, context)
 
-        # wait for UI to load
-        page.wait_for_selector("button:has(iconpark-icon[name='more-level'])", timeout=NAV_TIMEOUT)
+        
 
-        # Heuristic: video cards commonly have the 3-dots menu icon inside.
-        # We'll iterate over cards by finding menu buttons, then walking up to a reasonable container.
-        menu_buttons = page.locator("button:has(iconpark-icon[name='more-level'])")
-        count = menu_buttons.count()
-
-        if count == 0:
-            print("No menu buttons found on Home. UI may have changed or content not loaded.")
-            browser.close()
-            return
-
-        print(f"Found {count} video menu buttons (cards). Will process up to {MAX_ITEMS_PER_RUN}.")
-
-        processed = 0
         downloaded = 0
-        skipped = 0
+        skipped_processing = 0
+        errors = 0
+        processed = 0
 
-        # We re-query each time because UI changes after trashing.
-        i = 0
+        # wait for locator(CARD_SEL) to be visible
+        # page.locator(CARD_SEL).first.wait_for(state="visible", timeout=UI_TIMEOUT)
+
+        # In main() before the while loop
+        # Wait for the main content to load by waiting for the cards themselves
+
         while processed < MAX_ITEMS_PER_RUN:
-            menu_buttons = page.locator("button:has(iconpark-icon[name='more-level'])")
-            count = menu_buttons.count()
-            if i >= count:
-                break
 
-            btn = menu_buttons.nth(i)
-
-            # pick a container “card” around the button
-            # closest clickable container varies; we take a few parents up.
-            card = btn.locator("xpath=ancestor::div[contains(@class,'tw-rounded')][1]")
-            if card.count() == 0:
-                # fallback: just use the button's parent card-ish div
-                card = btn.locator("xpath=ancestor::div[1]")
+            page.goto(HOME_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
 
             try:
-                open_card_menu(card)
+                page.locator(CARD_SEL).first.wait_for(state="visible", timeout=UI_TIMEOUT)
+            except Exception:
+                print("⚠️  Warning: Cards did not appear within 15s, proceeding anyway...")
+                break
 
-                saved_path = try_download_from_open_menu(page, DOWNLOAD_DIR)
-                if not saved_path:
-                    skipped += 1
-                    processed += 1
-                    i += 1
-                    # close menu by clicking outside
-                    page.mouse.click(10, 10)
-                    continue
+            # page.wait_for_timeout(2000) # Give the UI a moment to settle
+            # scroll_to_bottom(page)
 
+            # Re-query cards every loop because list changes after deletion
+            # cards = page.locator(CARD_SEL)
+            # cards = page.locator(CARD_SEL).all()
+
+            # if not cards:
+            #         print("🏁 No more videos found.")
+            #         break
+                    
+            # Always process the FIRST card because the previous one was deleted
+            # card = cards[0]
+
+            card = page.locator(CARD_SEL).first
+
+            # total = cards.count()
+            # if total == 0:
+            #     print("No video cards found on Home.")
+            #     break
+            # else:
+            #     print(f"\n🏷️  Processing item {processed + 1} of max {MAX_ITEMS_PER_RUN} "
+            #           f"(cards available: {total})")
+
+            # # Work from the top card each time
+            # card = cards.nth(0)
+
+            # Try open landing page; if not navigated, skip and move down
+            navigated = click_card_and_wait_for_navigation(page, card, HOME_URL)
+            if not navigated:
+                skipped_processing += 1
+                processed += 1
+                # Scroll down a bit to avoid hitting same processing card repeatedly
+                page.mouse.wheel(0, 420)
+                continue
+
+            ensure_logged_in(page, context)
+
+            try:
+                print("Navigated to video page. ⬇️ Downloading video...")
+                saved = landing_download(page)
+                print(f"✅ Downloaded: {saved}")
                 downloaded += 1
-                print(f"✅ Downloaded: {saved_path}")
 
-                # After download dialog closes, open menu again and trash
-                open_card_menu(card)
-                trash_from_open_menu(page)
-                print("🗑️ Trashed the video.")
+                open_more_menu_and_trash(page)
+                print("🗑️ Trashed from landing page.")
+
+                # wait_back_to_home(page)
+                # ensure_logged_in(page, context)
 
                 processed += 1
-
-                # UI may reflow; do NOT increment i aggressively after trash
-                # Re-start scanning from same index.
                 time.sleep(SLEEP_BETWEEN)
 
             except Exception as e:
-                print(f"❌ Error on item {i+1}: {e}")
+                errors += 1
+                print(f"❌ Error on landing page: {e}")
+                # Try to go back home to recover
+                try:
+                    page.goto(HOME_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+                    ensure_logged_in(page, context)
+                except Exception:
+                    pass
                 processed += 1
-                i += 1
-                time.sleep(1.0)
+                time.sleep(0.8)
 
-        print(f"\nDone. Downloaded={downloaded}, Skipped(processing/no-download)={skipped}, Processed={processed}")
+        print(
+            f"\nDone. Downloaded={downloaded}, "
+            f"Skipped(processing/not-openable)={skipped_processing}, "
+            f"Errors={errors}, Processed={processed}"
+        )
         browser.close()
 
 
