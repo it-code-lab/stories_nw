@@ -215,11 +215,11 @@ def wait_back_to_home(page):
 
 
 def main():
-    if not os.path.exists(STORAGE_STATE):
-        raise FileNotFoundError(
-            f"{STORAGE_STATE} not found.\n"
-            "Create it once via your login bootstrap method."
-        )
+    # if not os.path.exists(STORAGE_STATE):
+    #     raise FileNotFoundError(
+    #         f"{STORAGE_STATE} not found.\n"
+    #         "Create it once via your login bootstrap method."
+    #     )
 
     with sync_playwright() as p:
         browser = p.chromium.launch(

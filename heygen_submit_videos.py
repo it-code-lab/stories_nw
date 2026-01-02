@@ -64,9 +64,11 @@ def click_story_editor(page):
 
 def fill_story(page, text):
     click_story_editor(page)
+    page.wait_for_timeout(1000)
     page.keyboard.press("ControlOrMeta+A")
     page.keyboard.press("Backspace")
     page.keyboard.insert_text(text)
+    page.wait_for_timeout(20000)
 
 
 def click_generate(page):
@@ -76,9 +78,11 @@ def click_generate(page):
 
 def rename_video(page, name):
     box = page.get_by_role("textbox", name="Untitled Video")
+    page.wait_for_timeout(1000)
     box.click(timeout=10_000)
     box.press("ControlOrMeta+A")
     box.fill(name)
+    page.wait_for_timeout(1000)
 
 
 def click_submit(page):
@@ -111,8 +115,11 @@ def submit_one(page, context, url, text, name):
     ensure_logged_in(page, context, url, STORAGE_STATE)
 
     fill_story(page, text)
+    page.wait_for_timeout(1000)
     click_generate(page)
+    page.wait_for_timeout(1000)  # wait a bit for UI to update
     rename_video(page, name)
+    page.wait_for_timeout(1000)
     click_submit(page)
 
 
