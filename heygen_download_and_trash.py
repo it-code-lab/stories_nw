@@ -251,8 +251,9 @@ def main():
                 print("⚠️  Warning: Cards did not appear within 15s, proceeding anyway...")
                 break
 
-
-            card = page.locator(CARD_SEL).first
+            # Select the card after count skipped_processing
+            card = page.locator(CARD_SEL).nth(skipped_processing)
+            # card = page.locator(CARD_SEL).first
 
             navigated = click_card_and_wait_for_navigation(page, card, HOME_URL)
             if not navigated:
