@@ -29,6 +29,8 @@ SLEEP_BETWEEN = 1.0
 
 
 CARD_SEL = "img.tw-size-full.tw-object-contain"
+CARD_SEL_2 = "img.tw-size-full.tw-object-cover"
+
 # CARD_SEL = "a[href*='/share/']"
 
 # Landing page actions (from your recording)
@@ -248,8 +250,13 @@ def main():
             try:
                 page.locator(CARD_SEL).first.wait_for(state="visible", timeout=UI_TIMEOUT)
             except Exception:
-                print("⚠️  Warning: Cards did not appear within 15s, proceeding anyway...")
-                break
+                try:
+                    CARD_SEL = CARD_SEL_2
+                    page.locator(CARD_SEL).first.wait_for(state="visible", timeout=UI_TIMEOUT)
+                except Exception:
+                    print("⚠️  Warning: Cards did not appear within 15s, proceeding anyway...")
+                    break
+
 
             # Select the card after count skipped_processing
             card = page.locator(CARD_SEL).nth(skipped_processing)

@@ -1026,13 +1026,39 @@
         (Opens in new tab)
     </form>
 
+
+
     <br>
+
     <form id="sceneBuilder">
-        <h2>Scene Builder</h2>
+        <h2 style="background:#ffe4b5;">Heygen Scene Builder</h2>
         <a href="scene_builder" target="_blank">Open Scene Builder</a>
         (Opens in new tab)
 
-        This is used to create background scenes for Hey Gen video with Avatar and Captions
+        <div class="infoBox">This is used to create background scenes for Hey Gen video with Avatar and Captions</div>
+    </form>
+    <br>
+
+    <form id="sceneBulkCommandExecutor">
+        <h2 style="background:#ffe4b5;">Heygen Bulk Shorts Creator</h2>
+        <a href="trigger_heygen_bulk_shorts" target="_blank">Trigger Heygen Bulk Shorts</a>
+        <div class="infoBox"> Load the data through heygen_submit_videos.xlsx</div>
+
+
+
+    </form>
+    <br>
+    <form id="heyGenVideoDownloads">
+        <h2 style="background:#ffe4b5;">Heygen Video Downloads</h2>
+        <a href="trigger_heygen_downloads" target="_blank">Download the Heygen Videos</a>
+        <div class="infoBox"> Downloads the videos for which processing has completed and then deletes from account</div>
+    </form>
+
+    <br>
+    <form id="addBGToHeyGenVideos">
+        <h2 style="background:#ffe4b5;">Add Background to HeyGen Videos in bulk</h2>
+        <a href="add_heygen_backgrounds" target="_blank">Add background to Heygen Videos</a>
+        <div class="infoBox"> Videos and backgrounds info is provided through heygen_bulk_bg.xlsx. By default it uses portrait size. Update render_bulk_bg() on server.py if need to change</div>
     </form>
 
     <br>    

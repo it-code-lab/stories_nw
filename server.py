@@ -239,6 +239,11 @@ def render_bulk_bg():
             heygen_path = _resolve_path(str(heygen_raw))
             bg_asset = _resolve_path(str(bg_raw))
 
+            if bg_asset.suffix.lower() == ".mp4" and not bg_asset.exists():
+                png_fallback = bg_asset.with_suffix(".png")
+                if png_fallback.exists():
+                    bg_asset = png_fallback  # use the png instead
+
             if not heygen_path.exists():
                 results.append({"row": r, "ok": False, "error": f"HeyGen not found: {heygen_path}"})
                 ws.cell(row=r, column=status_col).value = "HeyGen video not found"
@@ -1518,6 +1523,42 @@ def serve_bg_video(filename):
 @app.route('/quiz/downloads/<path:filename>')
 def serve_quiz_downloads(filename):
     return send_from_directory(BASE_DIR / 'downloads', filename)
+
+@app.get('/trigger_heygen_bulk_shorts')
+def trigger_heygen_bulk_shorts():
+    """Trigger background creation of HeyGen shorts."""
+    from heygen_submit_videos import main as trigger_shorts
+    try:
+        count = trigger_shorts()
+        return jsonify({"ok": True, "message": f"Triggered creation for {count} HeyGen shorts."})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.get('/add_heygen_backgrounds')
+def add_heygen_backgrounds():
+    """Add HeyGen backgrounds to the system."""
+    try:
+        render_bulk_bg()
+        return jsonify({"ok": True, "message": "HeyGen backgrounds added successfully."})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.get('/trigger_heygen_downloads')
+def trigger_heygen_downloads():
+    """Trigger background download of HeyGen videos."""
+    from heygen_download_and_trash import main as trigger_downloads
+    try:
+        count = trigger_downloads()
+        return jsonify({"ok": True, "message": f"Triggered downloads for {count} HeyGen videos."})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 # --- BROWSING APIs ---
 @app.get('/list_thumbnail_images')
