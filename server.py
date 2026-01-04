@@ -2878,6 +2878,11 @@ def assemble_clips_to_make_video_song():
         keep_video_audio = request.form.get('keep_video_audio','no')
         video_volume = float(request.form.get('video_volume',0.3))
         bg_volume = float(request.form.get('bg_volume',1.0))
+        add_titles = request.form.get('add_titles', 'no') == 'yes'
+        add_transitions = request.form.get('add_transitions', 'no') == 'yes'
+        title_sec = float(request.form.get('title_sec', 2.0))
+        transition_sec = float(request.form.get('transition_sec', 0.5))
+
 
         # ---- Derive output filename from first input video ----
         first_video = sorted(video_files)[0]  # deterministic
@@ -2894,7 +2899,11 @@ def assemble_clips_to_make_video_song():
             prefer_ffmpeg_concat=True,                       # auto-uses concat if safe; else MoviePy
             keep_video_audio = keep_video_audio == 'yes',
             video_volume = video_volume,
-            bg_volume = bg_volume
+            bg_volume = bg_volume,
+            add_titles=add_titles,
+            title_sec=title_sec,
+            add_transitions=add_transitions,
+            transition_sec=transition_sec
         )
         if copyforcaption == 'no':
             return "✅ Video song assembled successfully!", 200

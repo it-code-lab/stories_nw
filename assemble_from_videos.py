@@ -4,6 +4,194 @@ from glob import glob
 from typing import List, Dict, Tuple
 from moviepy.editor import AudioFileClip, VideoFileClip, concatenate_videoclips, CompositeAudioClip
 
+
+import shlex
+
+def _escape_drawtext(s: str) -> str:
+    # For Windows paths in filtergraphs: 
+    # 1. Replace backslash with 4 backslashes (for FFmpeg's nested parsing)
+    # 2. Escape the colon (C\: instead of C:)
+    return (s.replace("\\", "\\\\")
+             .replace(":", "\\:")
+             .replace("'", "'\\''")
+             .replace("%", "\\%"))
+
+def _escape_drawtext_old(s: str) -> str:
+    # drawtext escaping: \, :, ', and %
+    return (s.replace("\\", "\\\\")
+             .replace(":", "\\:")
+             .replace("'", "\\'")
+             .replace("%", "\\%"))
+
+def _build_titles_transitions_cmd(
+    plan,                 # [(path, full_d, use_d), ...]
+    output_path: str,
+    audio_path: str | None,
+    fps: int,
+    add_titles: bool,
+    title_sec: float,
+    use_transitions: bool,
+    trans_sec: float,
+    keep_video_audio: bool,
+    video_volume: float,
+    bg_volume: float,
+    crf: int = 18,
+    preset: str = "veryfast",
+    fontfile: str | None = None,
+):
+    """
+    FFmpeg filter graph that:
+    - trims each input to use_d (we pass -t per input)
+    - applies xfade between clips (optional)
+    - overlays filename titles for first title_sec of each clip (optional)
+    - audio:
+        - if bg audio exists => uses bg audio, optionally mixes original audio
+        - if bg audio missing => optionally keeps original audio, otherwise no audio
+    NOTE: This path re-encodes (required for titles/transitions).
+    """
+
+    n = len(plan)
+    if n == 0:
+        raise RuntimeError("Empty plan")
+
+    cmd = ["ffmpeg", "-y"]
+
+    # inputs: each clip trimmed to use_d via -t
+    for (p, _full_d, use_d) in plan:
+        cmd += ["-t", f"{use_d:.3f}", "-i", p]
+
+        # cmd += ["-i", p, "-t", f"{use_d:.3f}"]
+
+    # optional bg audio as last input
+    bg_audio_idx = None
+    if audio_path:
+        bg_audio_idx = n
+        cmd += ["-i", audio_path]
+
+    # --- filter_complex for video ---
+    fc = []
+
+    # normalize each clip video stream
+    vlabels = []
+    for i in range(n):
+        v = f"v{i}"
+        vlabels.append(v)
+        fc.append(f"[{i}:v]setpts=PTS-STARTPTS,fps={fps},format=yuv420p[{v}]")
+
+    # chain video with or without transitions
+    if use_transitions and n > 1:
+        cur = vlabels[0]
+        total = plan[0][2]  # accumulated timeline length
+        for i in range(1, n):
+            nxt = vlabels[i]
+            offset = max(total - trans_sec, 0.0)
+            out = f"vx{i}"
+            fc.append(
+                f"[{cur}][{nxt}]xfade=transition=fade:duration={trans_sec}:offset={offset:.3f}[{out}]"
+            )
+            cur = out
+            total += plan[i][2] - trans_sec  # overlap removes trans duration
+        vout = cur
+        timeline_total = total
+    else:
+        ins = "".join([f"[{vlabels[i]}]" for i in range(n)])
+        fc.append(f"{ins}concat=n={n}:v=1:a=0[vcat]")
+        vout = "vcat"
+        timeline_total = sum(x[2] for x in plan)
+
+    # --- optional titles ---
+    final_v = vout
+    if add_titles:
+        t_cursor = 0.0
+        for i, (p, _full_d, use_d) in enumerate(plan):
+            title = os.path.splitext(os.path.basename(p))[0]
+            title = _escape_drawtext(title)
+
+            start = t_cursor
+            end = t_cursor + min(title_sec, use_d)
+
+            font = f":fontfile={_escape_drawtext(fontfile)}" if fontfile else ""
+            outv = f"vt{i}"
+
+            # lower-third style
+            fc.append(
+                f"[{final_v}]drawtext=text='{title}'{font}:"
+                f"x=60:y=80:fontsize=56:fontcolor=white:"
+                f"box=1:boxcolor=black@0.45:boxborderw=20:"
+                f"enable='between(t,{start:.3f},{end:.3f})'[{outv}]"
+            )
+            final_v = outv
+
+            t_cursor += use_d
+            if use_transitions and n > 1:
+                t_cursor -= trans_sec  # account for overlap
+
+    # --- audio handling ---
+    # cases:
+    # 1) bg audio exists:
+    #    - if keep_video_audio and clips have audio => mix clip audio + bg audio
+    #    - else => bg audio only
+    # 2) bg audio missing:
+    #    - if keep_video_audio => concat original audio (best effort)
+    #    - else => no audio
+
+    map_args = []
+    out_args = []
+
+    map_args += ["-map", f"[{final_v}]"]
+
+    if audio_path:
+        # bg audio only OR mix
+        if keep_video_audio:
+            # concat clip audios (if any). If a clip has no audio, ffmpeg may fail;
+            # your workflow usually has audio in clips when keep_video_audio=yes.
+            # If needed, we can add an "anullsrc" fallback later.
+            alabels = []
+            for i in range(n):
+                a = f"a{i}"
+                alabels.append(a)
+                fc.append(f"[{i}:a]asetpts=PTS-STARTPTS[{a}]")
+
+            # concat audio from clips
+            insa = "".join([f"[{a}]" for a in alabels])
+            fc.append(f"{insa}concat=n={n}:v=0:a=1[acat]")
+
+            # mix with bg audio
+            fc.append(
+                f"[acat]volume={video_volume}[va];"
+                f"[{bg_audio_idx}:a]volume={bg_volume}[ba];"
+                f"[va][ba]amix=inputs=2:normalize=1[aout]"
+            )
+            map_args += ["-map", "[aout]"]
+        else:
+            map_args += ["-map", f"{bg_audio_idx}:a:0"]
+
+        out_args += ["-c:a", "aac", "-b:a", "192k", "-shortest"]
+
+    else:
+        if keep_video_audio:
+            # best-effort concat original audio tracks
+            alabels = []
+            for i in range(n):
+                a = f"a{i}"
+                alabels.append(a)
+                fc.append(f"[{i}:a]asetpts=PTS-STARTPTS[{a}]")
+            insa = "".join([f"[{a}]" for a in alabels])
+            fc.append(f"{insa}concat=n={n}:v=0:a=1[acat]")
+            map_args += ["-map", "[acat]"]
+            out_args += ["-c:a", "aac", "-b:a", "192k"]
+        else:
+            out_args += ["-an"]
+
+    cmd += ["-filter_complex", ";".join(fc)]
+    cmd += map_args
+    cmd += ["-c:v", "libx264", "-crf", str(crf), "-preset", preset]
+    cmd += out_args
+    cmd += [output_path]
+
+    print("▶ Titles/Transitions cmd:\n", " ".join(shlex.quote(x) for x in cmd))
+    return cmd
+
 # --------------------------
 # FFmpeg / FFprobe utilities
 # --------------------------
@@ -297,6 +485,10 @@ def assemble_videos(
     keep_video_audio: bool = False,
     video_volume: float = 0.4,
     bg_volume: float = 1.0,
+    add_titles: bool = False,
+    title_sec: float = 2.0,
+    add_transitions: bool = False,
+    transition_sec: float = 0.5,
 ):
     """
     If bg audio exists -> match bg-audio duration (existing behavior).
@@ -334,6 +526,41 @@ def assemble_videos(
                 cmd += ["-an"]
             cmd += [output_path]
             print("▶ Single-video (no bg audio):", " ".join(cmd))
+            subprocess.run(cmd, check=True)
+            return
+
+        # ---- NEW: titles/transitions even when bg audio is missing ----
+        if (add_titles or add_transitions) and _bin_exists("ffmpeg"):
+            # Build a plan that uses full clip durations (no trimming needed)
+            tiny = 0.02
+            plan = []
+            for p in video_paths:
+                d = _ffprobe_duration(p)
+                if d > tiny:
+                    plan.append((p, d, d))
+
+            if not plan:
+                raise RuntimeError("All candidate videos are zero-length or unreadable.")
+
+            # Locate this section in assemble_videos (around line 535)
+            raw_font = r"C:\Windows\Fonts\arial.ttf"
+            # We escape it specifically for the drawtext filter's requirements
+            escaped_font = raw_font.replace("\\", "/").replace(":", "\\:")
+
+            cmd = _build_titles_transitions_cmd(
+                plan=plan,
+                output_path=output_path,
+                audio_path=None,                 # no bg audio
+                fps=fps,
+                add_titles=add_titles,
+                title_sec=title_sec,
+                use_transitions=add_transitions,
+                trans_sec=transition_sec,
+                keep_video_audio=keep_video_audio,
+                video_volume=video_volume,       # used only if mixing (bg audio present); harmless here
+                bg_volume=bg_volume,
+                fontfile=escaped_font ,  # Pass the escaped version
+            )
             subprocess.run(cmd, check=True)
             return
 
@@ -435,6 +662,30 @@ def assemble_videos(
         plan.append((p, d, use_d))
         remaining -= use_d
         idx += 1
+
+    # ---- NEW: titles/transitions path (forces re-encode) ----
+    if (add_titles or add_transitions) and _bin_exists("ffmpeg"):
+        try:
+            audio.close()
+        except: 
+            pass
+
+        cmd = _build_titles_transitions_cmd(
+            plan=plan,
+            output_path=output_path,
+            audio_path=audio_path,              # may be None, but here it's present
+            fps=fps,
+            add_titles=add_titles,
+            title_sec=title_sec,
+            use_transitions=add_transitions,
+            trans_sec=transition_sec,
+            keep_video_audio=keep_video_audio,
+            video_volume=video_volume,
+            bg_volume=bg_volume,
+            # fontfile=r"C:\Windows\Fonts\arial.ttf",  # optional if drawtext font issues
+        )
+        subprocess.run(cmd, check=True)
+        return
 
     # Try high-performance ffmpeg concat path
     if prefer_ffmpeg_concat:
