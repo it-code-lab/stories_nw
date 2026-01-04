@@ -829,7 +829,7 @@ def _ffmpeg_concat_demuxer(
     except:
         pass
 
-def assemble_videos(
+def assemble_videos_new(
     video_folder: str,
     audio_folder: str,
     output_path: str,
@@ -1159,7 +1159,7 @@ def assemble_videos(
 # --------------------------
 # Main assembly
 # --------------------------
-def assemble_videos_old2(
+def assemble_videos(
     video_folder: str,
     audio_folder: str,
     output_path: str,
@@ -1183,6 +1183,8 @@ def assemble_videos_old2(
     clear_folder("edit_vid_output")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
+    breathing_mode = "none"
+
     if add_titles or add_transitions:
         add_titles = False
         add_transitions = False
@@ -1204,6 +1206,175 @@ def assemble_videos_old2(
     else:
         print(f"[Info] No background audio found in '{audio_folder}'. Proceeding with video-only merge.")
 
+
+
+    # -------------------------------------------------------------------------
+    # NEW PATH: breathing_mode == "title_card"
+    # -------------------------------------------------------------------------
+    if breathing_mode == "title_card":
+        # Probe first clip to set output canvas (w/h). We keep a stable canvas for all title cards.
+        # v0 = _ffprobe_stream_info(video_paths[0], stream_type="v:0")
+        v0 = _ffprobe_stream_info(video_paths[0])
+
+        if not v0:
+            raise RuntimeError(f"Could not ffprobe first video: {video_paths[0]}")
+        out_w = int(v0.get("width") or 1920)
+        out_h = int(v0.get("height") or 1080)
+
+        # Optionally auto-pick a default font file on Windows if not supplied
+        title_prefix = "Next:"
+        title_bg = "#101010"
+        title_font_size = 64
+        title_box_alpha = 0.35
+        title_box_border = 40
+        title_fade_sec = 0.25
+        title_fontfile = "C:/Windows/Fonts/arial.ttf"       
+        title_text_color = "white"
+        breathing_sec = 5
+
+        # Build an expanded list of segments:
+        # clip1, title(for clip2), clip2, title(for clip3), clip3, ...
+        temp_dir = os.path.join(os.path.dirname(output_path) or ".", "__tmp_titlecards")
+        os.makedirs(temp_dir, exist_ok=True)
+
+        segments = [video_paths[0]]
+        for i in range(1, len(video_paths)):
+            next_clip = video_paths[i]
+            next_title = _infer_title_from_path(next_clip)
+            card_path = os.path.join(temp_dir, f"title_{i:03d}.mp4")          
+
+
+            _make_title_card_ffmpeg(
+                out_path=card_path,
+                title=f"{title_prefix} {next_title}".strip(),
+                w=out_w,
+                h=out_h,
+                fps=fps,
+                dur=breathing_sec,
+                bg=title_bg,
+                fontfile=title_fontfile,
+                fontsize=title_font_size,
+                fontcolor=title_text_color,
+                box_alpha=title_box_alpha,
+                box_border=title_box_border,
+                fade_sec=title_fade_sec,
+            )
+            segments.append(card_path)
+            segments.append(next_clip)
+
+        # If we are keeping clip audio, ensure each segment has audio.
+        # Title cards DO have silent audio, but real clips might not.
+        # if keep_video_audio:
+        #     for p in segments:
+        #         ainfo = _ffprobe_stream_info(p, stream_type="a:0")
+        #         if not ainfo:
+        #             raise RuntimeError(
+        #                 f"Input segment has no audio stream but keep_video_audio=True:\n  {p}\n"
+        #                 "Fix: re-export that clip with audio, OR set keep_video_audio=False."
+        #             )
+        if keep_video_audio:
+            for p in segments:
+                if not _has_audio_stream(p):
+                    raise RuntimeError(
+                        f"Input segment has no audio stream but keep_video_audio=True:\n  {p}\n"
+                        "Fix: re-export that clip with audio, OR set keep_video_audio=False."
+            )
+
+        # Concat (re-encode) to a temp output first
+        tmp_concat = os.path.join(os.path.dirname(output_path) or ".", "__tmp_concat.mp4")
+        plan = []
+        for p in segments:
+            d = _ffprobe_duration(p)
+            if d <= 0.02:
+                continue
+            plan.append((p, d, d))
+
+        _ffmpeg_concat_reencode(
+            plan=plan,
+            out_path=tmp_concat,
+            fps=fps,
+            w=out_w,
+            h=out_h,
+            keep_audio=keep_video_audio,
+        )
+
+
+        # If no BG audio, finalize by moving tmp_concat to output_path
+        if not audio_path:
+            try:
+                if os.path.abspath(tmp_concat) != os.path.abspath(output_path):
+                    if os.path.exists(output_path):
+                        os.remove(output_path)
+                    os.replace(tmp_concat, output_path)
+            finally:
+                # Cleanup temp title cards
+                try:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                except:
+                    pass
+            print(f"[OK] Saved: {output_path}")
+            return output_path
+
+        # If BG audio exists, mix it on top (without changing video timing)
+        # 1) compute durations (video and bg)
+        vid_dur = _ffprobe_duration(tmp_concat) or 0.0
+        bg_dur = _ffprobe_duration(audio_path) or 0.0
+
+        # 2) loop bg audio if it's shorter than video
+        # We'll create a temp bg track that is >= vid_dur then trim to vid_dur
+        tmp_bg = os.path.join(os.path.dirname(output_path) or ".", "__tmp_bg.wav")
+        if bg_dur <= 0:
+            # fallback: just output video as-is
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            os.replace(tmp_concat, output_path)
+            print(f"[Warn] BG audio had zero duration. Saved video-only: {output_path}")
+            return output_path
+
+        loops = int(math.ceil(vid_dur / bg_dur)) if bg_dur > 0 else 1
+        # Create looped bg (concat filter on audio)
+        _make_looped_audio(
+            input_audio=audio_path,
+            out_audio=tmp_bg,
+            loops=max(1, loops),
+            target_sec=vid_dur,
+            bg_volume=bg_volume,
+        )
+
+        # 3) mix: clip audio (volume video_volume) + bg audio (already at bg_volume)
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", tmp_concat,
+            "-i", tmp_bg,
+            "-filter_complex",
+            (
+                f"[0:a]volume={video_volume}[va];"
+                f"[1:a]volume=1.0[ba];"
+                f"[va][ba]amix=inputs=2:duration=first:dropout_transition=0[aout]"
+            ),
+            "-map", "0:v:0",
+            "-map", "[aout]",
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-shortest",
+            output_path
+        ]
+        _run_cmd(cmd)
+
+        # Cleanup
+        for p in [tmp_concat, tmp_bg]:
+            try:
+                if os.path.exists(p):
+                    os.remove(p)
+            except:
+                pass
+        try:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        except:
+            pass
+
+        print(f"[OK] Saved: {output_path}")
+        return output_path
     # -------------------------
     # VIDEO-ONLY path (no bg audio)
     # -------------------------
