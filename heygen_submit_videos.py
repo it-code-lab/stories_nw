@@ -68,7 +68,7 @@ def fill_story(page, text):
     page.keyboard.press("ControlOrMeta+A")
     page.keyboard.press("Backspace")
     page.keyboard.insert_text(text)
-    page.wait_for_timeout(20000)
+    page.wait_for_timeout(10000)
 
 
 def click_generate(page):
