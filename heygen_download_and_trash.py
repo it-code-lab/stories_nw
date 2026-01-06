@@ -28,8 +28,11 @@ SLEEP_BETWEEN = 1.0
 # CARD_SEL = 'div[class*="tw-min-w-[280px]"]'
 
 
-CARD_SEL = "img.tw-size-full.tw-object-contain"
-CARD_SEL_2 = "img.tw-size-full.tw-object-cover"
+# CARD_SEL = "img.tw-size-full.tw-object-contain"
+# CARD_SEL_2 = "img.tw-size-full.tw-object-cover"
+
+CARD_SEL = "img.tw-size-full.tw-object-contain, img.tw-size-full.tw-object-cover"
+
 
 # CARD_SEL = "a[href*='/share/']"
 
@@ -250,12 +253,8 @@ def main():
             try:
                 page.locator(CARD_SEL).first.wait_for(state="visible", timeout=UI_TIMEOUT)
             except Exception:
-                try:
-                    CARD_SEL = CARD_SEL_2
-                    page.locator(CARD_SEL).first.wait_for(state="visible", timeout=UI_TIMEOUT)
-                except Exception:
-                    print("⚠️  Warning: Cards did not appear within 15s, proceeding anyway...")
-                    break
+                print("⚠️  Warning: Cards did not appear within 15s, proceeding anyway...")
+                break
 
 
             # Select the card after count skipped_processing

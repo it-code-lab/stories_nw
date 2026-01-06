@@ -29,8 +29,8 @@ from quiz import quiz_bp
 from flask import send_file
 import tempfile
 from coloring_upscale import process_coloring_folder
-from google import genai
-from google.genai import types
+# from google import genai
+# from google.genai import types
 import os
 from flipthrough_video import generate_flipthrough_video, FlipThroughError
 from bg_music_video import merge_all_videos_with_bg_music, merge_video_with_bg_music, BgMusicError
