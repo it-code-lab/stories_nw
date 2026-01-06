@@ -10,6 +10,7 @@ audios
 images
 splits
 venv
+venv_whisperx
 0.SM-Reference.docx
 *.wav
 *.gif
@@ -52,3 +53,6 @@ vector_images/*
 *.lnk
 *.txt
 playwright_heygen_profile/*
+venv_whisperx/*
+venv_whisperx\*
+venv_whisperx/Lib/site-packages/isympy.py
