@@ -8,8 +8,6 @@ import sys
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-from PIL import ImageFont
-
 
 DEFAULT_MODEL = "large-v3"
 DEFAULT_COMPUTE_TYPE = "int8"
@@ -17,27 +15,26 @@ DEFAULT_VAD_METHOD = "silero"
 
 WORDS_PER_PHRASE_PORTRAIT = 3
 WORDS_PER_PHRASE_LANDSCAPE = 5
+
+# If there's a long silence between words, start a new phrase
 MAX_GAP = 0.55
 
-FONT_SIZE_PORTRAIT = 62
-FONT_SIZE_LANDSCAPE = 52
-BOTTOM_MARGIN_PORTRAIT = 150
-BOTTOM_MARGIN_LANDSCAPE = 80
-LINE_GAP = 14
-
-BOX_PAD_X = 18
-BOX_PAD_Y = 10
-BOX_RADIUS = 12
-
+# Layout / wrapping (character-based; avoids font-metric issues)
 MAX_CHARS_PER_LINE_PORTRAIT = 26
 MAX_CHARS_PER_LINE_LANDSCAPE = 38
 
-FONT_PATHS = [
-    "C:/Windows/Fonts/arialbd.ttf",
-    "C:/Windows/Fonts/segoeuib.ttf",
-    "C:/Windows/Fonts/calibrib.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-]
+# Positioning
+BOTTOM_MARGIN_PORTRAIT = 150
+BOTTOM_MARGIN_LANDSCAPE = 80
+
+# Font sizing (dynamic based on video height)
+def auto_font_size(video_w: int, video_h: int) -> int:
+    portrait = video_h >= video_w
+    if portrait:
+        # tuned for readability without looking huge in fullscreen
+        return int(max(40, min(56, round(video_h * 0.045))))
+    else:
+        return int(max(30, min(46, round(video_h * 0.070))))
 
 
 @dataclass
@@ -52,6 +49,7 @@ class Phrase:
     words: List[Word]
     start: float
     end: float
+    # lines are lists of Word, for optional wrapping
     lines: List[List[Word]]
 
 
@@ -63,6 +61,10 @@ def which_or_die(bin_name: str):
 def run(cmd: List[str], check=True):
     return subprocess.run(cmd, check=check)
 
+def pick_font_for_language(lang: str) -> str:
+    if lang and lang.lower().startswith("hi"):
+        return "Noto Sans Devanagari"
+    return "Arial"
 
 def ffprobe_resolution(video_path: str) -> Tuple[int, int]:
     which_or_die("ffprobe")
@@ -112,36 +114,8 @@ def clean_word(w: str) -> str:
 
 
 def ass_escape(s: str) -> str:
+    # escape ASS special chars
     return s.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}")
-
-
-def pick_font(font_size: int) -> ImageFont.FreeTypeFont:
-    for p in FONT_PATHS:
-        if os.path.exists(p):
-            return ImageFont.truetype(p, font_size)
-    raise FileNotFoundError("No font found. Set FONT_PATHS to a valid .ttf path on your system.")
-
-
-def text_width(font: ImageFont.FreeTypeFont, s: str) -> int:
-    bbox = font.getbbox(s)
-    return bbox[2] - bbox[0]
-
-
-def rect_path(w: int, h: int, r: int) -> str:
-    r = max(0, min(r, min(w, h)//2))
-    if r == 0:
-        return f"m 0 0 l {w} 0 l {w} {h} l 0 {h} l 0 0"
-    return (
-        f"m {r} 0 "
-        f"l {w-r} 0 "
-        f"b {w-r//2} 0 {w} {r//2} {w} {r} "
-        f"l {w} {h-r} "
-        f"b {w} {h-r//2} {w-r//2} {h} {w-r} {h} "
-        f"l {r} {h} "
-        f"b {r//2} {h} 0 {h-r//2} 0 {h-r} "
-        f"l 0 {r} "
-        f"b 0 {r//2} {r//2} 0 {r} 0"
-    )
 
 
 def newest_json(out_dir: str) -> str:
@@ -198,6 +172,7 @@ def max_chars_per_line(video_w: int, video_h: int) -> int:
 
 
 def wrap_phrase(words: List[Word], max_chars: int) -> List[List[Word]]:
+    # simple char-based wrapping into up to 2 lines
     text = " ".join(w.text for w in words)
     if len(text) <= max_chars:
         return [words]
@@ -233,12 +208,22 @@ def break_into_phrases(words: List[Word], video_w: int, video_h: int) -> List[Ph
     flush()
     return phrases
 
-
-def build_ass(phrases: List[Phrase], video_w: int, video_h: int) -> str:
+def build_ass(phrases: List[Phrase], video_w: int, video_h: int, language="en") -> str:
     portrait = (video_h >= video_w)
-    font_size = FONT_SIZE_PORTRAIT if portrait else FONT_SIZE_LANDSCAPE
+    font_size = auto_font_size(video_w, video_h)
+    
+    # Modern sans-serif stack
+    font_name = "Montserrat" if not language.startswith("hi") else "Noto Sans Devanagari"
     bottom_margin = BOTTOM_MARGIN_PORTRAIT if portrait else BOTTOM_MARGIN_LANDSCAPE
-    font = pick_font(font_size)
+
+    # BGR Color Constants
+    BASE_COLOR = "&H00FFFFFF"     # Pure White
+    HI_COLOR = "&H0000FFFF"       # Neon Yellow (High Contrast)
+    OUTLINE_COLOR = "&H00000000"  # Pure Black
+    
+    # Thickness settings for max visibility
+    BORDER_THICKNESS = 3.0 
+    SHADOW_DEPTH = 0  # High-end modern style usually drops the shadow if the border is thick
 
     header = f"""[Script Info]
 ScriptType: v4.00+
@@ -249,78 +234,133 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Base,Arial,{font_size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,2,80,80,{bottom_margin},1
-Style: Word,Arial,{font_size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,4,2,7,0,0,0,1
-Style: Box,Arial,{font_size},&H00000000,&H00000000,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
+Style: Base,{font_name},{font_size},{BASE_COLOR},{BASE_COLOR},{OUTLINE_COLOR},&H00000000,1,0,0,0,100,100,1.5,0,1,{BORDER_THICKNESS},{SHADOW_DEPTH},2,80,80,{bottom_margin},1
+Style: Hi,{font_name},{font_size},{HI_COLOR},{HI_COLOR},{OUTLINE_COLOR},&H00000000,1,0,0,0,100,100,1.5,0,1,{BORDER_THICKNESS},{SHADOW_DEPTH},2,80,80,{bottom_margin},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
-    def line_string(ws: List[Word]) -> str:
-        return " ".join(w.text for w in ws)
+    def join_line(words: List[Word]) -> str:
+        return " ".join(ass_escape(w.text) for w in words)
 
-    def compute_layout(phrase: Phrase):
-        num_lines = len(phrase.lines)
-        line_h = font_size + LINE_GAP
-        total_h = num_lines * line_h - LINE_GAP
-        y_bottom = video_h - bottom_margin
-        y_start = y_bottom - total_h
+    def base_text_for_phrase(lines: List[List[Word]]) -> str:
+        return "\\N".join(join_line(lw) for lw in lines)
 
-        layouts = []
-        for li, lw in enumerate(phrase.lines):
-            s = line_string(lw)
-            wpx = text_width(font, s)
-            x0 = (video_w - wpx) // 2
-            y_top = y_start + li * line_h
-            layouts.append({"words": lw, "x0": x0, "y_top": y_top})
-        return layouts
+    def overlay_text_for_phrase(lines: List[List[Word]], target: Word) -> str:
+        out_lines = []
+        for lw in lines:
+            parts = []
+            for i, w in enumerate(lw):
+                spacer = " " if i > 0 else ""
+                if w is target:
+                    # Highlight active word with color and a slight scale "pop"
+                    parts.append(
+                        f"{spacer}{{\\alpha&H00&\\c{HI_COLOR}\\fscx106\\fscy106}}{ass_escape(w.text)}{{\\fscx100\\fscy100\\alpha&HFF&}}"
+                    )
+                else:
+                    parts.append(f"{spacer}{{\\alpha&HFF&}}{ass_escape(w.text)}")
+            out_lines.append("".join(parts))
+        return "\\N".join(out_lines)
 
     events: List[str] = []
 
     for ph in phrases:
-        layouts = compute_layout(ph)
+        # Layer 0: The full phrase (Static White with Black Border)
+        base_txt = base_text_for_phrase(ph.lines)
+        events.append(f"Dialogue: 0,{ass_time(ph.start)},{ass_time(ph.end)},Base,,0,0,0,,{base_txt}")
 
-        base_lines = [ass_escape(line_string(l["words"])) for l in layouts]
-        base_text = "\\N".join(base_lines)
-        events.append(f"Dialogue: 0,{ass_time(ph.start)},{ass_time(ph.end)},Base,,0,0,0,,{base_text}")
+        # Layer 1: The active word highlight (Neon Yellow with Black Border)
+        for w in ph.words:
+            txt = overlay_text_for_phrase(ph.lines, w)
+            events.append(f"Dialogue: 1,{ass_time(w.start)},{ass_time(w.end)},Hi,,0,0,0,,{txt}")
 
-        for line in layouts:
-            x_cursor = line["x0"]
-            y_top = line["y_top"]
+    return header + "\n".join(events) + "\n"
 
-            for wi, wobj in enumerate(line["words"]):
-                prefix = "" if wi == 0 else " "
-                prefix_w = text_width(font, prefix)
-                word_w = text_width(font, wobj.text)
-                word_h = font_size
 
-                x_word = x_cursor + prefix_w
-                y_word = y_top
-                x_cursor = x_word + word_w
+def build_ass_wrk(phrases: List[Phrase], video_w: int, video_h: int, language="en") -> str:
+    portrait = (video_h >= video_w)
+    font_size = auto_font_size(video_w, video_h)
+    font_name = pick_font_for_language(language)
+    bottom_margin = BOTTOM_MARGIN_PORTRAIT if portrait else BOTTOM_MARGIN_LANDSCAPE
 
-                box_w = word_w + 2 * BOX_PAD_X
-                box_h = word_h + 2 * BOX_PAD_Y
-                box_x = x_word - BOX_PAD_X
-                box_y = y_word - BOX_PAD_Y
+    # Netflix-ish: thin outline + soft shadow; highlight is yellow
+    base_outline = 2
+    base_shadow = 1
 
-                path = rect_path(box_w, box_h, BOX_RADIUS)
+    # ASS colors are BGR (not RGB)
+    # white = &H00FFFFFF
+    # yellow = &H0000FFFF  (B=00, G=FF, R=FF)
+    BASE_COLOR = "&H00FFFFFF"
+    OUTLINE_COLOR = "&H00000000"
+    HI_COLOR = "&H0000FFFF"
 
-                box_text = f"{{\\an7\\pos({box_x},{box_y})\\p1\\1c&H0000FF&}}{path}{{\\p0}}"
-                events.append(f"Dialogue: 1,{ass_time(wobj.start)},{ass_time(wobj.end)},Box,,0,0,0,,{box_text}")
+    header = f"""[Script Info]
+ScriptType: v4.00+
+PlayResX: {video_w}
+PlayResY: {video_h}
+WrapStyle: 2
+ScaledBorderAndShadow: yes
 
-                word_text = f"{{\\an7\\pos({x_word},{y_word})}}{ass_escape(wobj.text)}"
-                events.append(f"Dialogue: 2,{ass_time(wobj.start)},{ass_time(wobj.end)},Word,,0,0,0,,{word_text}")
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Base,{font_name},{font_size},{BASE_COLOR},{BASE_COLOR},{OUTLINE_COLOR},&H64000000,1,0,0,0,100,100,0,0,1,{base_outline},{base_shadow},2,80,80,{bottom_margin},1
+Style: Hi,{font_name},{font_size},{HI_COLOR},{HI_COLOR},{OUTLINE_COLOR},&H00000000,1,0,0,0,100,100,0,0,1,{base_outline},{base_shadow},2,80,80,{bottom_margin},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+
+    def join_line(words: List[Word]) -> str:
+        return " ".join(ass_escape(w.text) for w in words)
+
+    def base_text_for_phrase(lines: List[List[Word]]) -> str:
+        return "\\N".join(join_line(lw) for lw in lines)
+
+    def overlay_text_for_phrase(lines: List[List[Word]], target: Word) -> str:
+        """
+        Build a full phrase where all text is transparent except the target word,
+        which is yellow. This avoids any shifting because libass renders the whole
+        line layout consistently.
+        """
+        out_lines = []
+        for lw in lines:
+            parts = []
+            for i, w in enumerate(lw):
+                spacer = " " if i > 0 else ""
+                if w is target:
+                    # visible + yellow
+                    parts.append(
+                        f"{spacer}{{\\alpha&H00&\\c{HI_COLOR}}}{ass_escape(w.text)}{{\\alpha&HFF&}}"
+                    )
+                else:
+                    # invisible
+                    parts.append(f"{spacer}{{\\alpha&HFF&}}{ass_escape(w.text)}")
+            out_lines.append("".join(parts))
+        return "\\N".join(out_lines)
+
+    events: List[str] = []
+
+    for ph in phrases:
+        # 1) Base line (white) for whole phrase duration
+        base_txt = base_text_for_phrase(ph.lines)
+        events.append(f"Dialogue: 0,{ass_time(ph.start)},{ass_time(ph.end)},Base,,0,0,0,,{base_txt}")
+
+        # 2) Overlay: only the spoken word is visible and yellow during its time
+        for w in ph.words:
+            txt = overlay_text_for_phrase(ph.lines, w)
+            events.append(f"Dialogue: 1,{ass_time(w.start)},{ass_time(w.end)},Hi,,0,0,0,,{txt}")
 
     return header + "\n".join(events) + "\n"
 
 
 def ffmpeg_filter_escape_path(p: str) -> str:
-    """
+    r"""
     Escapes a filesystem path for use inside FFmpeg -vf filter strings (Windows-safe).
     - use forward slashes
     - escape ':' as '\:'
     """
+
     p = os.path.abspath(p).replace("\\", "/")
     p = p.replace(":", r"\:")
     return p
@@ -330,7 +370,7 @@ def burn_ass_into_video(video_in: str, ass_path: str, video_out: str):
     which_or_die("ffmpeg")
     ass_esc = ffmpeg_filter_escape_path(ass_path)
 
-    # Use subtitles filter (libass). This is more stable than ass=... on Windows parsing.
+    # Use subtitles filter (libass) - most stable on Windows
     vf = f"subtitles='{ass_esc}'"
 
     cmd = [
@@ -344,11 +384,11 @@ def burn_ass_into_video(video_in: str, ass_path: str, video_out: str):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Video -> WhisperX JSON -> Word-highlight ASS -> Burned captions video")
+    ap = argparse.ArgumentParser(description="Video -> WhisperX JSON -> Netflix-style word highlight ASS -> Burn-in")
     ap.add_argument("--video", required=True)
     ap.add_argument("--out", default=None)
     ap.add_argument("--workdir", default="caption_work")
-    ap.add_argument("--language", default=None)
+    ap.add_argument("--language", default="en")
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--compute_type", default=DEFAULT_COMPUTE_TYPE)
     ap.add_argument("--vad_method", default=DEFAULT_VAD_METHOD)
@@ -361,7 +401,6 @@ def main():
 
     base, _ = os.path.splitext(args.video)
     out_video = args.out or (base + "_captioned.mp4")
-
     os.makedirs(args.workdir, exist_ok=True)
 
     vw, vh = ffprobe_resolution(args.video)
@@ -385,6 +424,7 @@ def main():
 
     words = flatten_words_from_whisperx(data)
     phrases = break_into_phrases(words, vw, vh)
+
     ass_text = build_ass(phrases, vw, vh)
 
     ass_path = os.path.join(args.workdir, "captions.ass")
@@ -419,10 +459,11 @@ if __name__ == "__main__":
 
 # Running the script
 # English
-# python whisperx_captions_2.py --video input.mp4 --language en
-# Hindi
-# python whisperx_captions_2.py --video input.mp4 --language hi
+# python whisperx_captions.py --video input.mp4 --language en
+
+# Hindi - DOES NOT WORK WELL
+# python whisperx_captions.py --video input.mp4 --language hi
 
 # Auto Language Detect - Takes more time and processing
-# python whisperx_captions_2.py --video input.mp4
+# python whisperx_captions.py --video input.mp4
 

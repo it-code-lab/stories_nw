@@ -7,283 +7,158 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Base,Arial,52,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,2,80,80,80,1
-Style: Word,Arial,52,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,4,2,7,0,0,0,1
-Style: Box,Arial,52,&H00000000,&H00000000,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
+Style: Base,Montserrat,32,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,1.5,0,1,3.0,0,2,80,80,80,1
+Style: Hi,Montserrat,32,&H0000FFFF,&H0000FFFF,&H00000000,&H00000000,1,0,0,0,100,100,1.5,0,1,3.0,0,2,80,80,80,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 Dialogue: 0,0:00:00.48,0:00:02.06,Base,,0,0,0,,You hear the sudden, cheerful
-Dialogue: 1,0:00:00.48,0:00:00.66,Box,,0,0,0,,{\an7\pos(26,322)\p1\1c&H0000FF&}m 12 0 l 119 0 b 125 0 131 6 131 12 l 131 60 b 131 66 125 72 119 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:00.48,0:00:00.66,Word,,0,0,0,,{\an7\pos(44,332)}You
-Dialogue: 1,0:00:00.70,0:00:00.86,Box,,0,0,0,,{\an7\pos(135,322)\p1\1c&H0000FF&}m 12 0 l 135 0 b 141 0 147 6 147 12 l 147 60 b 147 66 141 72 135 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:00.70,0:00:00.86,Word,,0,0,0,,{\an7\pos(153,332)}hear
-Dialogue: 1,0:00:00.94,0:00:01.04,Box,,0,0,0,,{\an7\pos(260,322)\p1\1c&H0000FF&}m 12 0 l 102 0 b 108 0 114 6 114 12 l 114 60 b 114 66 108 72 102 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:00.94,0:00:01.04,Word,,0,0,0,,{\an7\pos(278,332)}the
-Dialogue: 1,0:00:01.14,0:00:01.54,Box,,0,0,0,,{\an7\pos(352,322)\p1\1c&H0000FF&}m 12 0 l 223 0 b 229 0 235 6 235 12 l 235 60 b 235 66 229 72 223 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:01.14,0:00:01.54,Word,,0,0,0,,{\an7\pos(370,332)}sudden,
-Dialogue: 1,0:00:01.68,0:00:02.06,Box,,0,0,0,,{\an7\pos(565,322)\p1\1c&H0000FF&}m 12 0 l 226 0 b 232 0 238 6 238 12 l 238 60 b 238 66 232 72 226 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:01.68,0:00:02.06,Word,,0,0,0,,{\an7\pos(583,332)}cheerful
+Dialogue: 1,0:00:00.48,0:00:00.66,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}You{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hear {\alpha&HFF&}the {\alpha&HFF&}sudden, {\alpha&HFF&}cheerful
+Dialogue: 1,0:00:00.70,0:00:00.86,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hear{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}sudden, {\alpha&HFF&}cheerful
+Dialogue: 1,0:00:00.94,0:00:01.04,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&HFF&}hear {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}sudden, {\alpha&HFF&}cheerful
+Dialogue: 1,0:00:01.14,0:00:01.54,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&HFF&}hear {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}sudden,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}cheerful
+Dialogue: 1,0:00:01.68,0:00:02.06,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&HFF&}hear {\alpha&HFF&}the {\alpha&HFF&}sudden, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}cheerful{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:02.14,0:00:03.29,Base,,0,0,0,,pops from a pot of
-Dialogue: 1,0:00:02.14,0:00:02.52,Box,,0,0,0,,{\an7\pos(169,322)\p1\1c&H0000FF&}m 12 0 l 148 0 b 154 0 160 6 160 12 l 160 60 b 160 66 154 72 148 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:02.14,0:00:02.52,Word,,0,0,0,,{\an7\pos(187,332)}pops
-Dialogue: 1,0:00:02.58,0:00:02.72,Box,,0,0,0,,{\an7\pos(307,322)\p1\1c&H0000FF&}m 12 0 l 140 0 b 146 0 152 6 152 12 l 152 60 b 152 66 146 72 140 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:02.58,0:00:02.72,Word,,0,0,0,,{\an7\pos(325,332)}from
-Dialogue: 1,0:00:02.76,0:00:02.82,Box,,0,0,0,,{\an7\pos(437,322)\p1\1c&H0000FF&}m 12 0 l 53 0 b 59 0 65 6 65 12 l 65 60 b 65 66 59 72 53 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:02.76,0:00:02.82,Word,,0,0,0,,{\an7\pos(455,332)}a
-Dialogue: 1,0:00:02.92,0:00:03.21,Box,,0,0,0,,{\an7\pos(480,322)\p1\1c&H0000FF&}m 12 0 l 105 0 b 111 0 117 6 117 12 l 117 60 b 117 66 111 72 105 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:02.92,0:00:03.21,Word,,0,0,0,,{\an7\pos(498,332)}pot
-Dialogue: 1,0:00:03.25,0:00:03.29,Box,,0,0,0,,{\an7\pos(575,322)\p1\1c&H0000FF&}m 12 0 l 75 0 b 81 0 87 6 87 12 l 87 60 b 87 66 81 72 75 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:03.25,0:00:03.29,Word,,0,0,0,,{\an7\pos(593,332)}of
+Dialogue: 1,0:00:02.14,0:00:02.52,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pops{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}from {\alpha&HFF&}a {\alpha&HFF&}pot {\alpha&HFF&}of
+Dialogue: 1,0:00:02.58,0:00:02.72,Hi,,0,0,0,,{\alpha&HFF&}pops {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}from{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}pot {\alpha&HFF&}of
+Dialogue: 1,0:00:02.76,0:00:02.82,Hi,,0,0,0,,{\alpha&HFF&}pops {\alpha&HFF&}from {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pot {\alpha&HFF&}of
+Dialogue: 1,0:00:02.92,0:00:03.21,Hi,,0,0,0,,{\alpha&HFF&}pops {\alpha&HFF&}from {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pot{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}of
+Dialogue: 1,0:00:03.25,0:00:03.29,Hi,,0,0,0,,{\alpha&HFF&}pops {\alpha&HFF&}from {\alpha&HFF&}a {\alpha&HFF&}pot {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}of{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:03.41,0:00:05.05,Base,,0,0,0,,popcorn kernels as they heat.
-Dialogue: 1,0:00:03.41,0:00:03.89,Box,,0,0,0,,{\an7\pos(31,322)\p1\1c&H0000FF&}m 12 0 l 232 0 b 238 0 244 6 244 12 l 244 60 b 244 66 238 72 232 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:03.41,0:00:03.89,Word,,0,0,0,,{\an7\pos(49,332)}popcorn
-Dialogue: 1,0:00:03.95,0:00:04.35,Box,,0,0,0,,{\an7\pos(253,322)\p1\1c&H0000FF&}m 12 0 l 206 0 b 212 0 218 6 218 12 l 218 60 b 218 66 212 72 206 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:03.95,0:00:04.35,Word,,0,0,0,,{\an7\pos(271,332)}kernels
-Dialogue: 1,0:00:04.45,0:00:04.49,Box,,0,0,0,,{\an7\pos(449,322)\p1\1c&H0000FF&}m 12 0 l 82 0 b 88 0 94 6 94 12 l 94 60 b 94 66 88 72 82 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:04.45,0:00:04.49,Word,,0,0,0,,{\an7\pos(467,332)}as
-Dialogue: 1,0:00:04.55,0:00:04.67,Box,,0,0,0,,{\an7\pos(521,322)\p1\1c&H0000FF&}m 12 0 l 131 0 b 137 0 143 6 143 12 l 143 60 b 143 66 137 72 131 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:04.55,0:00:04.67,Word,,0,0,0,,{\an7\pos(539,332)}they
-Dialogue: 1,0:00:04.75,0:00:05.05,Box,,0,0,0,,{\an7\pos(642,322)\p1\1c&H0000FF&}m 12 0 l 145 0 b 151 0 157 6 157 12 l 157 60 b 157 66 151 72 145 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:04.75,0:00:05.05,Word,,0,0,0,,{\an7\pos(660,332)}heat.
+Dialogue: 1,0:00:03.41,0:00:03.89,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}popcorn{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}kernels {\alpha&HFF&}as {\alpha&HFF&}they {\alpha&HFF&}heat.
+Dialogue: 1,0:00:03.95,0:00:04.35,Hi,,0,0,0,,{\alpha&HFF&}popcorn {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}kernels{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}as {\alpha&HFF&}they {\alpha&HFF&}heat.
+Dialogue: 1,0:00:04.45,0:00:04.49,Hi,,0,0,0,,{\alpha&HFF&}popcorn {\alpha&HFF&}kernels {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}as{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}they {\alpha&HFF&}heat.
+Dialogue: 1,0:00:04.55,0:00:04.67,Hi,,0,0,0,,{\alpha&HFF&}popcorn {\alpha&HFF&}kernels {\alpha&HFF&}as {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}they{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}heat.
+Dialogue: 1,0:00:04.75,0:00:05.05,Hi,,0,0,0,,{\alpha&HFF&}popcorn {\alpha&HFF&}kernels {\alpha&HFF&}as {\alpha&HFF&}they {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}heat.{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:05.59,0:00:07.37,Base,,0,0,0,,This isn't just corn expanding,
-Dialogue: 1,0:00:05.59,0:00:05.75,Box,,0,0,0,,{\an7\pos(23,322)\p1\1c&H0000FF&}m 12 0 l 131 0 b 137 0 143 6 143 12 l 143 60 b 143 66 137 72 131 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:05.59,0:00:05.75,Word,,0,0,0,,{\an7\pos(41,332)}This
-Dialogue: 1,0:00:05.83,0:00:06.07,Box,,0,0,0,,{\an7\pos(144,322)\p1\1c&H0000FF&}m 12 0 l 129 0 b 135 0 141 6 141 12 l 141 60 b 141 66 135 72 129 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:05.83,0:00:06.07,Word,,0,0,0,,{\an7\pos(162,332)}isn't
-Dialogue: 1,0:00:06.13,0:00:06.37,Box,,0,0,0,,{\an7\pos(263,322)\p1\1c&H0000FF&}m 12 0 l 119 0 b 125 0 131 6 131 12 l 131 60 b 131 66 125 72 119 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:06.13,0:00:06.37,Word,,0,0,0,,{\an7\pos(281,332)}just
-Dialogue: 1,0:00:06.47,0:00:06.71,Box,,0,0,0,,{\an7\pos(372,322)\p1\1c&H0000FF&}m 12 0 l 137 0 b 143 0 149 6 149 12 l 149 60 b 149 66 143 72 137 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:06.47,0:00:06.71,Word,,0,0,0,,{\an7\pos(390,332)}corn
-Dialogue: 1,0:00:06.75,0:00:07.37,Box,,0,0,0,,{\an7\pos(499,322)\p1\1c&H0000FF&}m 12 0 l 299 0 b 305 0 311 6 311 12 l 311 60 b 311 66 305 72 299 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:06.75,0:00:07.37,Word,,0,0,0,,{\an7\pos(517,332)}expanding,
+Dialogue: 1,0:00:05.59,0:00:05.75,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}This{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}isn't {\alpha&HFF&}just {\alpha&HFF&}corn {\alpha&HFF&}expanding,
+Dialogue: 1,0:00:05.83,0:00:06.07,Hi,,0,0,0,,{\alpha&HFF&}This {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}isn't{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}just {\alpha&HFF&}corn {\alpha&HFF&}expanding,
+Dialogue: 1,0:00:06.13,0:00:06.37,Hi,,0,0,0,,{\alpha&HFF&}This {\alpha&HFF&}isn't {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}just{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}corn {\alpha&HFF&}expanding,
+Dialogue: 1,0:00:06.47,0:00:06.71,Hi,,0,0,0,,{\alpha&HFF&}This {\alpha&HFF&}isn't {\alpha&HFF&}just {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}corn{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}expanding,
+Dialogue: 1,0:00:06.75,0:00:07.37,Hi,,0,0,0,,{\alpha&HFF&}This {\alpha&HFF&}isn't {\alpha&HFF&}just {\alpha&HFF&}corn {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}expanding,{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:07.83,0:00:09.56,Base,,0,0,0,,it's a miniature pressure cooker
-Dialogue: 1,0:00:07.83,0:00:07.93,Box,,0,0,0,,{\an7\pos(5,322)\p1\1c&H0000FF&}m 12 0 l 97 0 b 103 0 109 6 109 12 l 109 60 b 109 66 103 72 97 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:07.83,0:00:07.93,Word,,0,0,0,,{\an7\pos(23,332)}it's
-Dialogue: 1,0:00:07.99,0:00:08.01,Box,,0,0,0,,{\an7\pos(92,322)\p1\1c&H0000FF&}m 12 0 l 53 0 b 59 0 65 6 65 12 l 65 60 b 65 66 59 72 53 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:07.99,0:00:08.01,Word,,0,0,0,,{\an7\pos(110,332)}a
-Dialogue: 1,0:00:08.09,0:00:08.63,Box,,0,0,0,,{\an7\pos(135,322)\p1\1c&H0000FF&}m 12 0 l 258 0 b 264 0 270 6 270 12 l 270 60 b 270 66 264 72 258 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:08.09,0:00:08.63,Word,,0,0,0,,{\an7\pos(153,332)}miniature
-Dialogue: 1,0:00:08.77,0:00:09.13,Box,,0,0,0,,{\an7\pos(383,322)\p1\1c&H0000FF&}m 12 0 l 244 0 b 250 0 256 6 256 12 l 256 60 b 256 66 250 72 244 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:08.77,0:00:09.13,Word,,0,0,0,,{\an7\pos(401,332)}pressure
-Dialogue: 1,0:00:09.23,0:00:09.56,Box,,0,0,0,,{\an7\pos(617,322)\p1\1c&H0000FF&}m 12 0 l 195 0 b 201 0 207 6 207 12 l 207 60 b 207 66 201 72 195 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:09.23,0:00:09.56,Word,,0,0,0,,{\an7\pos(635,332)}cooker
+Dialogue: 1,0:00:07.83,0:00:07.93,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}it's{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}miniature {\alpha&HFF&}pressure {\alpha&HFF&}cooker
+Dialogue: 1,0:00:07.99,0:00:08.01,Hi,,0,0,0,,{\alpha&HFF&}it's {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}miniature {\alpha&HFF&}pressure {\alpha&HFF&}cooker
+Dialogue: 1,0:00:08.09,0:00:08.63,Hi,,0,0,0,,{\alpha&HFF&}it's {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}miniature{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pressure {\alpha&HFF&}cooker
+Dialogue: 1,0:00:08.77,0:00:09.13,Hi,,0,0,0,,{\alpha&HFF&}it's {\alpha&HFF&}a {\alpha&HFF&}miniature {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pressure{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}cooker
+Dialogue: 1,0:00:09.23,0:00:09.56,Hi,,0,0,0,,{\alpha&HFF&}it's {\alpha&HFF&}a {\alpha&HFF&}miniature {\alpha&HFF&}pressure {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}cooker{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:09.62,0:00:12.88,Base,,0,0,0,,explosion. Inside each hard kernel
-Dialogue: 1,0:00:09.62,0:00:10.28,Box,,0,0,0,,{\an7\pos(-27,322)\p1\1c&H0000FF&}m 12 0 l 281 0 b 287 0 293 6 293 12 l 293 60 b 293 66 287 72 281 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:09.62,0:00:10.28,Word,,0,0,0,,{\an7\pos(-9,332)}explosion.
-Dialogue: 1,0:00:10.32,0:00:11.74,Box,,0,0,0,,{\an7\pos(244,322)\p1\1c&H0000FF&}m 12 0 l 174 0 b 180 0 186 6 186 12 l 186 60 b 186 66 180 72 174 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:10.32,0:00:11.74,Word,,0,0,0,,{\an7\pos(262,332)}Inside
-Dialogue: 1,0:00:11.78,0:00:12.06,Box,,0,0,0,,{\an7\pos(408,322)\p1\1c&H0000FF&}m 12 0 l 143 0 b 149 0 155 6 155 12 l 155 60 b 155 66 149 72 143 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:11.78,0:00:12.06,Word,,0,0,0,,{\an7\pos(426,332)}each
-Dialogue: 1,0:00:12.12,0:00:12.36,Box,,0,0,0,,{\an7\pos(541,322)\p1\1c&H0000FF&}m 12 0 l 137 0 b 143 0 149 6 149 12 l 149 60 b 149 66 143 72 137 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:12.12,0:00:12.36,Word,,0,0,0,,{\an7\pos(559,332)}hard
-Dialogue: 1,0:00:12.44,0:00:12.88,Box,,0,0,0,,{\an7\pos(668,322)\p1\1c&H0000FF&}m 12 0 l 177 0 b 183 0 189 6 189 12 l 189 60 b 189 66 183 72 177 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:12.44,0:00:12.88,Word,,0,0,0,,{\an7\pos(686,332)}kernel
+Dialogue: 1,0:00:09.62,0:00:10.28,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}explosion.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Inside {\alpha&HFF&}each {\alpha&HFF&}hard {\alpha&HFF&}kernel
+Dialogue: 1,0:00:10.32,0:00:11.74,Hi,,0,0,0,,{\alpha&HFF&}explosion. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Inside{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}each {\alpha&HFF&}hard {\alpha&HFF&}kernel
+Dialogue: 1,0:00:11.78,0:00:12.06,Hi,,0,0,0,,{\alpha&HFF&}explosion. {\alpha&HFF&}Inside {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}each{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hard {\alpha&HFF&}kernel
+Dialogue: 1,0:00:12.12,0:00:12.36,Hi,,0,0,0,,{\alpha&HFF&}explosion. {\alpha&HFF&}Inside {\alpha&HFF&}each {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hard{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}kernel
+Dialogue: 1,0:00:12.44,0:00:12.88,Hi,,0,0,0,,{\alpha&HFF&}explosion. {\alpha&HFF&}Inside {\alpha&HFF&}each {\alpha&HFF&}hard {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}kernel{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:13.04,0:00:14.16,Base,,0,0,0,,is a small amount of
-Dialogue: 1,0:00:13.04,0:00:13.10,Box,,0,0,0,,{\an7\pos(147,322)\p1\1c&H0000FF&}m 12 0 l 67 0 b 73 0 79 6 79 12 l 79 60 b 79 66 73 72 67 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:13.04,0:00:13.10,Word,,0,0,0,,{\an7\pos(165,332)}is
-Dialogue: 1,0:00:13.14,0:00:13.20,Box,,0,0,0,,{\an7\pos(204,322)\p1\1c&H0000FF&}m 12 0 l 53 0 b 59 0 65 6 65 12 l 65 60 b 65 66 59 72 53 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:13.14,0:00:13.20,Word,,0,0,0,,{\an7\pos(222,332)}a
-Dialogue: 1,0:00:13.32,0:00:13.70,Box,,0,0,0,,{\an7\pos(247,322)\p1\1c&H0000FF&}m 12 0 l 157 0 b 163 0 169 6 169 12 l 169 60 b 169 66 163 72 157 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:13.32,0:00:13.70,Word,,0,0,0,,{\an7\pos(265,332)}small
-Dialogue: 1,0:00:13.76,0:00:14.06,Box,,0,0,0,,{\an7\pos(394,322)\p1\1c&H0000FF&}m 12 0 l 212 0 b 218 0 224 6 224 12 l 224 60 b 224 66 218 72 212 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:13.76,0:00:14.06,Word,,0,0,0,,{\an7\pos(412,332)}amount
-Dialogue: 1,0:00:14.12,0:00:14.16,Box,,0,0,0,,{\an7\pos(596,322)\p1\1c&H0000FF&}m 12 0 l 75 0 b 81 0 87 6 87 12 l 87 60 b 87 66 81 72 75 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:14.12,0:00:14.16,Word,,0,0,0,,{\an7\pos(614,332)}of
+Dialogue: 1,0:00:13.04,0:00:13.10,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}small {\alpha&HFF&}amount {\alpha&HFF&}of
+Dialogue: 1,0:00:13.14,0:00:13.20,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}small {\alpha&HFF&}amount {\alpha&HFF&}of
+Dialogue: 1,0:00:13.32,0:00:13.70,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}small{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}amount {\alpha&HFF&}of
+Dialogue: 1,0:00:13.76,0:00:14.06,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}a {\alpha&HFF&}small {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}amount{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}of
+Dialogue: 1,0:00:14.12,0:00:14.16,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}a {\alpha&HFF&}small {\alpha&HFF&}amount {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}of{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:14.18,0:00:16.06,Base,,0,0,0,,water stored in a soft,
-Dialogue: 1,0:00:14.18,0:00:14.58,Box,,0,0,0,,{\an7\pos(129,322)\p1\1c&H0000FF&}m 12 0 l 161 0 b 167 0 173 6 173 12 l 173 60 b 173 66 167 72 161 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:14.18,0:00:14.58,Word,,0,0,0,,{\an7\pos(147,332)}water
-Dialogue: 1,0:00:14.72,0:00:15.16,Box,,0,0,0,,{\an7\pos(280,322)\p1\1c&H0000FF&}m 12 0 l 183 0 b 189 0 195 6 195 12 l 195 60 b 195 66 189 72 183 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:14.72,0:00:15.16,Word,,0,0,0,,{\an7\pos(298,332)}stored
-Dialogue: 1,0:00:15.20,0:00:15.38,Box,,0,0,0,,{\an7\pos(453,322)\p1\1c&H0000FF&}m 12 0 l 70 0 b 76 0 82 6 82 12 l 82 60 b 82 66 76 72 70 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:15.20,0:00:15.38,Word,,0,0,0,,{\an7\pos(471,332)}in
-Dialogue: 1,0:00:15.44,0:00:15.46,Box,,0,0,0,,{\an7\pos(513,322)\p1\1c&H0000FF&}m 12 0 l 53 0 b 59 0 65 6 65 12 l 65 60 b 65 66 59 72 53 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:15.44,0:00:15.46,Word,,0,0,0,,{\an7\pos(531,332)}a
-Dialogue: 1,0:00:15.58,0:00:16.06,Box,,0,0,0,,{\an7\pos(556,322)\p1\1c&H0000FF&}m 12 0 l 134 0 b 140 0 146 6 146 12 l 146 60 b 146 66 140 72 134 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:15.58,0:00:16.06,Word,,0,0,0,,{\an7\pos(574,332)}soft,
+Dialogue: 1,0:00:14.18,0:00:14.58,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}water{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}stored {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&HFF&}soft,
+Dialogue: 1,0:00:14.72,0:00:15.16,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}stored{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&HFF&}soft,
+Dialogue: 1,0:00:15.20,0:00:15.38,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}stored {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}in{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}soft,
+Dialogue: 1,0:00:15.44,0:00:15.46,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}stored {\alpha&HFF&}in {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}soft,
+Dialogue: 1,0:00:15.58,0:00:16.06,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}stored {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}soft,{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:16.26,0:00:17.23,Base,,0,0,0,,starchy center.
-Dialogue: 1,0:00:16.26,0:00:16.74,Box,,0,0,0,,{\an7\pos(214,322)\p1\1c&H0000FF&}m 12 0 l 209 0 b 215 0 221 6 221 12 l 221 60 b 221 66 215 72 209 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:16.26,0:00:16.74,Word,,0,0,0,,{\an7\pos(232,332)}starchy
-Dialogue: 1,0:00:16.84,0:00:17.23,Box,,0,0,0,,{\an7\pos(413,322)\p1\1c&H0000FF&}m 12 0 l 192 0 b 198 0 204 6 204 12 l 204 60 b 204 66 198 72 192 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:16.84,0:00:17.23,Word,,0,0,0,,{\an7\pos(431,332)}center.
+Dialogue: 1,0:00:16.26,0:00:16.74,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}starchy{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}center.
+Dialogue: 1,0:00:16.84,0:00:17.23,Hi,,0,0,0,,{\alpha&HFF&}starchy {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}center.{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:18.51,0:00:20.07,Base,,0,0,0,,As the kernel heats, this
-Dialogue: 1,0:00:18.51,0:00:18.59,Box,,0,0,0,,{\an7\pos(99,322)\p1\1c&H0000FF&}m 12 0 l 90 0 b 96 0 102 6 102 12 l 102 60 b 102 66 96 72 90 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:18.51,0:00:18.59,Word,,0,0,0,,{\an7\pos(117,332)}As
-Dialogue: 1,0:00:18.63,0:00:18.75,Box,,0,0,0,,{\an7\pos(179,322)\p1\1c&H0000FF&}m 12 0 l 102 0 b 108 0 114 6 114 12 l 114 60 b 114 66 108 72 102 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:18.63,0:00:18.75,Word,,0,0,0,,{\an7\pos(197,332)}the
-Dialogue: 1,0:00:18.81,0:00:19.17,Box,,0,0,0,,{\an7\pos(271,322)\p1\1c&H0000FF&}m 12 0 l 177 0 b 183 0 189 6 189 12 l 189 60 b 189 66 183 72 177 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:18.81,0:00:19.17,Word,,0,0,0,,{\an7\pos(289,332)}kernel
-Dialogue: 1,0:00:19.25,0:00:19.63,Box,,0,0,0,,{\an7\pos(438,322)\p1\1c&H0000FF&}m 12 0 l 174 0 b 180 0 186 6 186 12 l 186 60 b 186 66 180 72 174 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:19.25,0:00:19.63,Word,,0,0,0,,{\an7\pos(456,332)}heats,
-Dialogue: 1,0:00:19.89,0:00:20.07,Box,,0,0,0,,{\an7\pos(602,322)\p1\1c&H0000FF&}m 12 0 l 116 0 b 122 0 128 6 128 12 l 128 60 b 128 66 122 72 116 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:19.89,0:00:20.07,Word,,0,0,0,,{\an7\pos(620,332)}this
+Dialogue: 1,0:00:18.51,0:00:18.59,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}As{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&HFF&}heats, {\alpha&HFF&}this
+Dialogue: 1,0:00:18.63,0:00:18.75,Hi,,0,0,0,,{\alpha&HFF&}As {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}kernel {\alpha&HFF&}heats, {\alpha&HFF&}this
+Dialogue: 1,0:00:18.81,0:00:19.17,Hi,,0,0,0,,{\alpha&HFF&}As {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}kernel{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}heats, {\alpha&HFF&}this
+Dialogue: 1,0:00:19.25,0:00:19.63,Hi,,0,0,0,,{\alpha&HFF&}As {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}heats,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}this
+Dialogue: 1,0:00:19.89,0:00:20.07,Hi,,0,0,0,,{\alpha&HFF&}As {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&HFF&}heats, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}this{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:20.19,0:00:21.61,Base,,0,0,0,,water turns to steam,
-Dialogue: 1,0:00:20.19,0:00:20.51,Box,,0,0,0,,{\an7\pos(136,322)\p1\1c&H0000FF&}m 12 0 l 161 0 b 167 0 173 6 173 12 l 173 60 b 173 66 167 72 161 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:20.19,0:00:20.51,Word,,0,0,0,,{\an7\pos(154,332)}water
-Dialogue: 1,0:00:20.63,0:00:20.97,Box,,0,0,0,,{\an7\pos(287,322)\p1\1c&H0000FF&}m 12 0 l 154 0 b 160 0 166 6 166 12 l 166 60 b 166 66 160 72 154 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:20.63,0:00:20.97,Word,,0,0,0,,{\an7\pos(305,332)}turns
-Dialogue: 1,0:00:21.03,0:00:21.13,Box,,0,0,0,,{\an7\pos(431,322)\p1\1c&H0000FF&}m 12 0 l 73 0 b 79 0 85 6 85 12 l 85 60 b 85 66 79 72 73 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:21.03,0:00:21.13,Word,,0,0,0,,{\an7\pos(449,332)}to
-Dialogue: 1,0:00:21.21,0:00:21.61,Box,,0,0,0,,{\an7\pos(494,322)\p1\1c&H0000FF&}m 12 0 l 189 0 b 195 0 201 6 201 12 l 201 60 b 201 66 195 72 189 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:21.21,0:00:21.61,Word,,0,0,0,,{\an7\pos(512,332)}steam,
+Dialogue: 1,0:00:20.19,0:00:20.51,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}water{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}turns {\alpha&HFF&}to {\alpha&HFF&}steam,
+Dialogue: 1,0:00:20.63,0:00:20.97,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}turns{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}to {\alpha&HFF&}steam,
+Dialogue: 1,0:00:21.03,0:00:21.13,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}turns {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}to{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}steam,
+Dialogue: 1,0:00:21.21,0:00:21.61,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}turns {\alpha&HFF&}to {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}steam,{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:22.17,0:00:24.40,Base,,0,0,0,,building immense pressure. The hard
-Dialogue: 1,0:00:22.17,0:00:22.51,Box,,0,0,0,,{\an7\pos(-65,322)\p1\1c&H0000FF&}m 12 0 l 226 0 b 232 0 238 6 238 12 l 238 60 b 238 66 232 72 226 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:22.17,0:00:22.51,Word,,0,0,0,,{\an7\pos(-47,332)}building
-Dialogue: 1,0:00:22.55,0:00:23.07,Box,,0,0,0,,{\an7\pos(151,322)\p1\1c&H0000FF&}m 12 0 l 249 0 b 255 0 261 6 261 12 l 261 60 b 261 66 255 72 249 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:22.55,0:00:23.07,Word,,0,0,0,,{\an7\pos(169,332)}immense
-Dialogue: 1,0:00:23.19,0:00:23.60,Box,,0,0,0,,{\an7\pos(390,322)\p1\1c&H0000FF&}m 12 0 l 258 0 b 264 0 270 6 270 12 l 270 60 b 270 66 264 72 258 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:23.19,0:00:23.60,Word,,0,0,0,,{\an7\pos(408,332)}pressure.
-Dialogue: 1,0:00:23.98,0:00:24.08,Box,,0,0,0,,{\an7\pos(638,322)\p1\1c&H0000FF&}m 12 0 l 116 0 b 122 0 128 6 128 12 l 128 60 b 128 66 122 72 116 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:23.98,0:00:24.08,Word,,0,0,0,,{\an7\pos(656,332)}The
-Dialogue: 1,0:00:24.14,0:00:24.40,Box,,0,0,0,,{\an7\pos(744,322)\p1\1c&H0000FF&}m 12 0 l 137 0 b 143 0 149 6 149 12 l 149 60 b 149 66 143 72 137 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:24.14,0:00:24.40,Word,,0,0,0,,{\an7\pos(762,332)}hard
+Dialogue: 1,0:00:22.17,0:00:22.51,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}building{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}immense {\alpha&HFF&}pressure. {\alpha&HFF&}The {\alpha&HFF&}hard
+Dialogue: 1,0:00:22.55,0:00:23.07,Hi,,0,0,0,,{\alpha&HFF&}building {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}immense{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pressure. {\alpha&HFF&}The {\alpha&HFF&}hard
+Dialogue: 1,0:00:23.19,0:00:23.60,Hi,,0,0,0,,{\alpha&HFF&}building {\alpha&HFF&}immense {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pressure.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}The {\alpha&HFF&}hard
+Dialogue: 1,0:00:23.98,0:00:24.08,Hi,,0,0,0,,{\alpha&HFF&}building {\alpha&HFF&}immense {\alpha&HFF&}pressure. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}The{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hard
+Dialogue: 1,0:00:24.14,0:00:24.40,Hi,,0,0,0,,{\alpha&HFF&}building {\alpha&HFF&}immense {\alpha&HFF&}pressure. {\alpha&HFF&}The {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hard{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:24.54,0:00:26.62,Base,,0,0,0,,outer shell, called the pericarp,
-Dialogue: 1,0:00:24.54,0:00:24.78,Box,,0,0,0,,{\an7\pos(15,322)\p1\1c&H0000FF&}m 12 0 l 155 0 b 161 0 167 6 167 12 l 167 60 b 167 66 161 72 155 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:24.54,0:00:24.78,Word,,0,0,0,,{\an7\pos(33,332)}outer
-Dialogue: 1,0:00:24.84,0:00:25.20,Box,,0,0,0,,{\an7\pos(160,322)\p1\1c&H0000FF&}m 12 0 l 157 0 b 163 0 169 6 169 12 l 169 60 b 169 66 163 72 157 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:24.84,0:00:25.20,Word,,0,0,0,,{\an7\pos(178,332)}shell,
-Dialogue: 1,0:00:25.48,0:00:25.78,Box,,0,0,0,,{\an7\pos(307,322)\p1\1c&H0000FF&}m 12 0 l 171 0 b 177 0 183 6 183 12 l 183 60 b 183 66 177 72 171 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:25.48,0:00:25.78,Word,,0,0,0,,{\an7\pos(325,332)}called
-Dialogue: 1,0:00:25.82,0:00:25.96,Box,,0,0,0,,{\an7\pos(468,322)\p1\1c&H0000FF&}m 12 0 l 102 0 b 108 0 114 6 114 12 l 114 60 b 114 66 108 72 102 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:25.82,0:00:25.96,Word,,0,0,0,,{\an7\pos(486,332)}the
-Dialogue: 1,0:00:26.00,0:00:26.62,Box,,0,0,0,,{\an7\pos(560,322)\p1\1c&H0000FF&}m 12 0 l 244 0 b 250 0 256 6 256 12 l 256 60 b 256 66 250 72 244 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:26.00,0:00:26.62,Word,,0,0,0,,{\an7\pos(578,332)}pericarp,
+Dialogue: 1,0:00:24.54,0:00:24.78,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}outer{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}shell, {\alpha&HFF&}called {\alpha&HFF&}the {\alpha&HFF&}pericarp,
+Dialogue: 1,0:00:24.84,0:00:25.20,Hi,,0,0,0,,{\alpha&HFF&}outer {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}shell,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}called {\alpha&HFF&}the {\alpha&HFF&}pericarp,
+Dialogue: 1,0:00:25.48,0:00:25.78,Hi,,0,0,0,,{\alpha&HFF&}outer {\alpha&HFF&}shell, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}called{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}pericarp,
+Dialogue: 1,0:00:25.82,0:00:25.96,Hi,,0,0,0,,{\alpha&HFF&}outer {\alpha&HFF&}shell, {\alpha&HFF&}called {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pericarp,
+Dialogue: 1,0:00:26.00,0:00:26.62,Hi,,0,0,0,,{\alpha&HFF&}outer {\alpha&HFF&}shell, {\alpha&HFF&}called {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pericarp,{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:26.98,0:00:28.42,Base,,0,0,0,,is strong enough to contain
-Dialogue: 1,0:00:26.98,0:00:27.06,Box,,0,0,0,,{\an7\pos(55,322)\p1\1c&H0000FF&}m 12 0 l 67 0 b 73 0 79 6 79 12 l 79 60 b 79 66 73 72 67 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:26.98,0:00:27.06,Word,,0,0,0,,{\an7\pos(73,332)}is
-Dialogue: 1,0:00:27.16,0:00:27.52,Box,,0,0,0,,{\an7\pos(112,322)\p1\1c&H0000FF&}m 12 0 l 186 0 b 192 0 198 6 198 12 l 198 60 b 198 66 192 72 186 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:27.16,0:00:27.52,Word,,0,0,0,,{\an7\pos(130,332)}strong
-Dialogue: 1,0:00:27.56,0:00:27.80,Box,,0,0,0,,{\an7\pos(288,322)\p1\1c&H0000FF&}m 12 0 l 212 0 b 218 0 224 6 224 12 l 224 60 b 224 66 218 72 212 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:27.56,0:00:27.80,Word,,0,0,0,,{\an7\pos(306,332)}enough
-Dialogue: 1,0:00:27.86,0:00:27.94,Box,,0,0,0,,{\an7\pos(490,322)\p1\1c&H0000FF&}m 12 0 l 73 0 b 79 0 85 6 85 12 l 85 60 b 85 66 79 72 73 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:27.86,0:00:27.94,Word,,0,0,0,,{\an7\pos(508,332)}to
-Dialogue: 1,0:00:27.98,0:00:28.42,Box,,0,0,0,,{\an7\pos(553,322)\p1\1c&H0000FF&}m 12 0 l 209 0 b 215 0 221 6 221 12 l 221 60 b 221 66 215 72 209 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:27.98,0:00:28.42,Word,,0,0,0,,{\an7\pos(571,332)}contain
+Dialogue: 1,0:00:26.98,0:00:27.06,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}strong {\alpha&HFF&}enough {\alpha&HFF&}to {\alpha&HFF&}contain
+Dialogue: 1,0:00:27.16,0:00:27.52,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}strong{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}enough {\alpha&HFF&}to {\alpha&HFF&}contain
+Dialogue: 1,0:00:27.56,0:00:27.80,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}strong {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}enough{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}to {\alpha&HFF&}contain
+Dialogue: 1,0:00:27.86,0:00:27.94,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}strong {\alpha&HFF&}enough {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}to{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}contain
+Dialogue: 1,0:00:27.98,0:00:28.42,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}strong {\alpha&HFF&}enough {\alpha&HFF&}to {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}contain{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:28.50,0:00:30.44,Base,,0,0,0,,it, until the temperature reaches
-Dialogue: 1,0:00:28.50,0:00:28.72,Box,,0,0,0,,{\an7\pos(3,322)\p1\1c&H0000FF&}m 12 0 l 70 0 b 76 0 82 6 82 12 l 82 60 b 82 66 76 72 70 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:28.50,0:00:28.72,Word,,0,0,0,,{\an7\pos(21,332)}it,
-Dialogue: 1,0:00:28.99,0:00:29.33,Box,,0,0,0,,{\an7\pos(63,322)\p1\1c&H0000FF&}m 12 0 l 134 0 b 140 0 146 6 146 12 l 146 60 b 146 66 140 72 134 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:28.99,0:00:29.33,Word,,0,0,0,,{\an7\pos(81,332)}until
-Dialogue: 1,0:00:29.35,0:00:29.46,Box,,0,0,0,,{\an7\pos(187,322)\p1\1c&H0000FF&}m 12 0 l 102 0 b 108 0 114 6 114 12 l 114 60 b 114 66 108 72 102 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:29.35,0:00:29.46,Word,,0,0,0,,{\an7\pos(205,332)}the
-Dialogue: 1,0:00:29.50,0:00:30.00,Box,,0,0,0,,{\an7\pos(279,322)\p1\1c&H0000FF&}m 12 0 l 325 0 b 331 0 337 6 337 12 l 337 60 b 337 66 331 72 325 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:29.50,0:00:30.00,Word,,0,0,0,,{\an7\pos(297,332)}temperature
-Dialogue: 1,0:00:30.04,0:00:30.44,Box,,0,0,0,,{\an7\pos(594,322)\p1\1c&H0000FF&}m 12 0 l 221 0 b 227 0 233 6 233 12 l 233 60 b 233 66 227 72 221 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:30.04,0:00:30.44,Word,,0,0,0,,{\an7\pos(612,332)}reaches
+Dialogue: 1,0:00:28.50,0:00:28.72,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}it,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}until {\alpha&HFF&}the {\alpha&HFF&}temperature {\alpha&HFF&}reaches
+Dialogue: 1,0:00:28.99,0:00:29.33,Hi,,0,0,0,,{\alpha&HFF&}it, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}until{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}temperature {\alpha&HFF&}reaches
+Dialogue: 1,0:00:29.35,0:00:29.46,Hi,,0,0,0,,{\alpha&HFF&}it, {\alpha&HFF&}until {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}temperature {\alpha&HFF&}reaches
+Dialogue: 1,0:00:29.50,0:00:30.00,Hi,,0,0,0,,{\alpha&HFF&}it, {\alpha&HFF&}until {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}temperature{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}reaches
+Dialogue: 1,0:00:30.04,0:00:30.44,Hi,,0,0,0,,{\alpha&HFF&}it, {\alpha&HFF&}until {\alpha&HFF&}the {\alpha&HFF&}temperature {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}reaches{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:30.54,0:00:33.52,Base,,0,0,0,,around 180 degrees Celsius. Then,
-Dialogue: 1,0:00:30.54,0:00:30.82,Box,,0,0,0,,{\an7\pos(-31,322)\p1\1c&H0000FF&}m 12 0 l 200 0 b 206 0 212 6 212 12 l 212 60 b 212 66 206 72 200 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:30.54,0:00:30.82,Word,,0,0,0,,{\an7\pos(-13,332)}around
-Dialogue: 1,0:00:30.84,0:00:31.10,Box,,0,0,0,,{\an7\pos(159,322)\p1\1c&H0000FF&}m 12 0 l 111 0 b 117 0 123 6 123 12 l 123 60 b 123 66 117 72 111 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:30.84,0:00:31.10,Word,,0,0,0,,{\an7\pos(177,332)}180
-Dialogue: 1,0:00:31.30,0:00:32.26,Box,,0,0,0,,{\an7\pos(260,322)\p1\1c&H0000FF&}m 12 0 l 223 0 b 229 0 235 6 235 12 l 235 60 b 235 66 229 72 223 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:31.30,0:00:32.26,Word,,0,0,0,,{\an7\pos(278,332)}degrees
-Dialogue: 1,0:00:32.34,0:00:32.98,Box,,0,0,0,,{\an7\pos(473,322)\p1\1c&H0000FF&}m 12 0 l 223 0 b 229 0 235 6 235 12 l 235 60 b 235 66 229 72 223 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:32.34,0:00:32.98,Word,,0,0,0,,{\an7\pos(491,332)}Celsius.
-Dialogue: 1,0:00:33.26,0:00:33.52,Box,,0,0,0,,{\an7\pos(686,322)\p1\1c&H0000FF&}m 12 0 l 163 0 b 169 0 175 6 175 12 l 175 60 b 175 66 169 72 163 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:33.26,0:00:33.52,Word,,0,0,0,,{\an7\pos(704,332)}Then,
+Dialogue: 1,0:00:30.54,0:00:30.82,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}around{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}180 {\alpha&HFF&}degrees {\alpha&HFF&}Celsius. {\alpha&HFF&}Then,
+Dialogue: 1,0:00:30.84,0:00:31.10,Hi,,0,0,0,,{\alpha&HFF&}around {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}180{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}degrees {\alpha&HFF&}Celsius. {\alpha&HFF&}Then,
+Dialogue: 1,0:00:31.30,0:00:32.26,Hi,,0,0,0,,{\alpha&HFF&}around {\alpha&HFF&}180 {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}degrees{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Celsius. {\alpha&HFF&}Then,
+Dialogue: 1,0:00:32.34,0:00:32.98,Hi,,0,0,0,,{\alpha&HFF&}around {\alpha&HFF&}180 {\alpha&HFF&}degrees {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Celsius.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Then,
+Dialogue: 1,0:00:33.26,0:00:33.52,Hi,,0,0,0,,{\alpha&HFF&}around {\alpha&HFF&}180 {\alpha&HFF&}degrees {\alpha&HFF&}Celsius. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Then,{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:33.58,0:00:35.80,Base,,0,0,0,,the pressure becomes too great.
-Dialogue: 1,0:00:33.58,0:00:34.12,Box,,0,0,0,,{\an7\pos(-4,322)\p1\1c&H0000FF&}m 12 0 l 102 0 b 108 0 114 6 114 12 l 114 60 b 114 66 108 72 102 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:33.58,0:00:34.12,Word,,0,0,0,,{\an7\pos(14,332)}the
-Dialogue: 1,0:00:34.20,0:00:34.58,Box,,0,0,0,,{\an7\pos(88,322)\p1\1c&H0000FF&}m 12 0 l 244 0 b 250 0 256 6 256 12 l 256 60 b 256 66 250 72 244 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:34.20,0:00:34.58,Word,,0,0,0,,{\an7\pos(106,332)}pressure
-Dialogue: 1,0:00:34.66,0:00:35.10,Box,,0,0,0,,{\an7\pos(322,322)\p1\1c&H0000FF&}m 12 0 l 249 0 b 255 0 261 6 261 12 l 261 60 b 261 66 255 72 249 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:34.66,0:00:35.10,Word,,0,0,0,,{\an7\pos(340,332)}becomes
-Dialogue: 1,0:00:35.14,0:00:35.42,Box,,0,0,0,,{\an7\pos(561,322)\p1\1c&H0000FF&}m 12 0 l 105 0 b 111 0 117 6 117 12 l 117 60 b 117 66 111 72 105 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:35.14,0:00:35.42,Word,,0,0,0,,{\an7\pos(579,332)}too
-Dialogue: 1,0:00:35.50,0:00:35.80,Box,,0,0,0,,{\an7\pos(656,322)\p1\1c&H0000FF&}m 12 0 l 166 0 b 172 0 178 6 178 12 l 178 60 b 178 66 172 72 166 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:35.50,0:00:35.80,Word,,0,0,0,,{\an7\pos(674,332)}great.
+Dialogue: 1,0:00:33.58,0:00:34.12,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pressure {\alpha&HFF&}becomes {\alpha&HFF&}too {\alpha&HFF&}great.
+Dialogue: 1,0:00:34.20,0:00:34.58,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pressure{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}becomes {\alpha&HFF&}too {\alpha&HFF&}great.
+Dialogue: 1,0:00:34.66,0:00:35.10,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}pressure {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}becomes{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}too {\alpha&HFF&}great.
+Dialogue: 1,0:00:35.14,0:00:35.42,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}pressure {\alpha&HFF&}becomes {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}too{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}great.
+Dialogue: 1,0:00:35.50,0:00:35.80,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}pressure {\alpha&HFF&}becomes {\alpha&HFF&}too {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}great.{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:36.48,0:00:39.31,Base,,0,0,0,,The shell\Nruptures catastrophically, and
-Dialogue: 1,0:00:36.48,0:00:36.60,Box,,0,0,0,,{\an7\pos(285,256)\p1\1c&H0000FF&}m 12 0 l 116 0 b 122 0 128 6 128 12 l 128 60 b 128 66 122 72 116 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:36.48,0:00:36.60,Word,,0,0,0,,{\an7\pos(303,266)}The
-Dialogue: 1,0:00:36.68,0:00:36.98,Box,,0,0,0,,{\an7\pos(391,256)\p1\1c&H0000FF&}m 12 0 l 143 0 b 149 0 155 6 155 12 l 155 60 b 155 66 149 72 143 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:36.68,0:00:36.98,Word,,0,0,0,,{\an7\pos(409,266)}shell
-Dialogue: 1,0:00:37.10,0:00:37.58,Box,,0,0,0,,{\an7\pos(28,322)\p1\1c&H0000FF&}m 12 0 l 235 0 b 241 0 247 6 247 12 l 247 60 b 247 66 241 72 235 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:37.10,0:00:37.58,Word,,0,0,0,,{\an7\pos(46,332)}ruptures
-Dialogue: 1,0:00:37.72,0:00:38.78,Box,,0,0,0,,{\an7\pos(253,322)\p1\1c&H0000FF&}m 12 0 l 431 0 b 437 0 443 6 443 12 l 443 60 b 443 66 437 72 431 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:37.72,0:00:38.78,Word,,0,0,0,,{\an7\pos(271,332)}catastrophically,
-Dialogue: 1,0:00:38.83,0:00:39.31,Box,,0,0,0,,{\an7\pos(674,322)\p1\1c&H0000FF&}m 12 0 l 116 0 b 122 0 128 6 128 12 l 128 60 b 128 66 122 72 116 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:38.83,0:00:39.31,Word,,0,0,0,,{\an7\pos(692,332)}and
+Dialogue: 1,0:00:36.48,0:00:36.60,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}The{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}shell\N{\alpha&HFF&}ruptures {\alpha&HFF&}catastrophically, {\alpha&HFF&}and
+Dialogue: 1,0:00:36.68,0:00:36.98,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}shell{\fscx100\fscy100\alpha&HFF&}\N{\alpha&HFF&}ruptures {\alpha&HFF&}catastrophically, {\alpha&HFF&}and
+Dialogue: 1,0:00:37.10,0:00:37.58,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}shell\N{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}ruptures{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}catastrophically, {\alpha&HFF&}and
+Dialogue: 1,0:00:37.72,0:00:38.78,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}shell\N{\alpha&HFF&}ruptures {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}catastrophically,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}and
+Dialogue: 1,0:00:38.83,0:00:39.31,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}shell\N{\alpha&HFF&}ruptures {\alpha&HFF&}catastrophically, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:39.35,0:00:41.75,Base,,0,0,0,,the superheated starch and steam
-Dialogue: 1,0:00:39.35,0:00:39.51,Box,,0,0,0,,{\an7\pos(-24,322)\p1\1c&H0000FF&}m 12 0 l 102 0 b 108 0 114 6 114 12 l 114 60 b 114 66 108 72 102 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:39.35,0:00:39.51,Word,,0,0,0,,{\an7\pos(-6,332)}the
-Dialogue: 1,0:00:39.61,0:00:40.41,Box,,0,0,0,,{\an7\pos(68,322)\p1\1c&H0000FF&}m 12 0 l 333 0 b 339 0 345 6 345 12 l 345 60 b 345 66 339 72 333 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:39.61,0:00:40.41,Word,,0,0,0,,{\an7\pos(86,332)}superheated
-Dialogue: 1,0:00:40.53,0:00:40.93,Box,,0,0,0,,{\an7\pos(391,322)\p1\1c&H0000FF&}m 12 0 l 180 0 b 186 0 192 6 192 12 l 192 60 b 192 66 186 72 180 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:40.53,0:00:40.93,Word,,0,0,0,,{\an7\pos(409,332)}starch
-Dialogue: 1,0:00:41.07,0:00:41.17,Box,,0,0,0,,{\an7\pos(561,322)\p1\1c&H0000FF&}m 12 0 l 116 0 b 122 0 128 6 128 12 l 128 60 b 128 66 122 72 116 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:41.07,0:00:41.17,Word,,0,0,0,,{\an7\pos(579,332)}and
-Dialogue: 1,0:00:41.35,0:00:41.75,Box,,0,0,0,,{\an7\pos(667,322)\p1\1c&H0000FF&}m 12 0 l 174 0 b 180 0 186 6 186 12 l 186 60 b 186 66 180 72 174 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:41.35,0:00:41.75,Word,,0,0,0,,{\an7\pos(685,332)}steam
+Dialogue: 1,0:00:39.35,0:00:39.51,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}superheated {\alpha&HFF&}starch {\alpha&HFF&}and {\alpha&HFF&}steam
+Dialogue: 1,0:00:39.61,0:00:40.41,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}superheated{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}starch {\alpha&HFF&}and {\alpha&HFF&}steam
+Dialogue: 1,0:00:40.53,0:00:40.93,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}superheated {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}starch{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}and {\alpha&HFF&}steam
+Dialogue: 1,0:00:41.07,0:00:41.17,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}superheated {\alpha&HFF&}starch {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}steam
+Dialogue: 1,0:00:41.35,0:00:41.75,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}superheated {\alpha&HFF&}starch {\alpha&HFF&}and {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}steam{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:41.87,0:00:43.95,Base,,0,0,0,,inside instantly expand,
-Dialogue: 1,0:00:41.87,0:00:42.41,Box,,0,0,0,,{\an7\pos(103,322)\p1\1c&H0000FF&}m 12 0 l 174 0 b 180 0 186 6 186 12 l 186 60 b 186 66 180 72 174 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:41.87,0:00:42.41,Word,,0,0,0,,{\an7\pos(121,332)}inside
-Dialogue: 1,0:00:42.45,0:00:43.15,Box,,0,0,0,,{\an7\pos(267,322)\p1\1c&H0000FF&}m 12 0 l 238 0 b 244 0 250 6 250 12 l 250 60 b 250 66 244 72 238 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:42.45,0:00:43.15,Word,,0,0,0,,{\an7\pos(285,332)}instantly
-Dialogue: 1,0:00:43.27,0:00:43.95,Box,,0,0,0,,{\an7\pos(495,322)\p1\1c&H0000FF&}m 12 0 l 221 0 b 227 0 233 6 233 12 l 233 60 b 233 66 227 72 221 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:43.27,0:00:43.95,Word,,0,0,0,,{\an7\pos(513,332)}expand,
+Dialogue: 1,0:00:41.87,0:00:42.41,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}inside{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}instantly {\alpha&HFF&}expand,
+Dialogue: 1,0:00:42.45,0:00:43.15,Hi,,0,0,0,,{\alpha&HFF&}inside {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}instantly{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}expand,
+Dialogue: 1,0:00:43.27,0:00:43.95,Hi,,0,0,0,,{\alpha&HFF&}inside {\alpha&HFF&}instantly {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}expand,{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:44.55,0:00:46.43,Base,,0,0,0,,turning the kernel inside out
-Dialogue: 1,0:00:44.55,0:00:44.87,Box,,0,0,0,,{\an7\pos(48,322)\p1\1c&H0000FF&}m 12 0 l 203 0 b 209 0 215 6 215 12 l 215 60 b 215 66 209 72 203 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:44.55,0:00:44.87,Word,,0,0,0,,{\an7\pos(66,332)}turning
-Dialogue: 1,0:00:44.93,0:00:44.99,Box,,0,0,0,,{\an7\pos(241,322)\p1\1c&H0000FF&}m 12 0 l 102 0 b 108 0 114 6 114 12 l 114 60 b 114 66 108 72 102 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:44.93,0:00:44.99,Word,,0,0,0,,{\an7\pos(259,332)}the
-Dialogue: 1,0:00:45.05,0:00:45.37,Box,,0,0,0,,{\an7\pos(333,322)\p1\1c&H0000FF&}m 12 0 l 177 0 b 183 0 189 6 189 12 l 189 60 b 189 66 183 72 177 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:45.05,0:00:45.37,Word,,0,0,0,,{\an7\pos(351,332)}kernel
-Dialogue: 1,0:00:45.53,0:00:46.11,Box,,0,0,0,,{\an7\pos(500,322)\p1\1c&H0000FF&}m 12 0 l 174 0 b 180 0 186 6 186 12 l 186 60 b 186 66 180 72 174 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:45.53,0:00:46.11,Word,,0,0,0,,{\an7\pos(518,332)}inside
-Dialogue: 1,0:00:46.29,0:00:46.43,Box,,0,0,0,,{\an7\pos(664,322)\p1\1c&H0000FF&}m 12 0 l 105 0 b 111 0 117 6 117 12 l 117 60 b 117 66 111 72 105 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:46.29,0:00:46.43,Word,,0,0,0,,{\an7\pos(682,332)}out
+Dialogue: 1,0:00:44.55,0:00:44.87,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}turning{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&HFF&}inside {\alpha&HFF&}out
+Dialogue: 1,0:00:44.93,0:00:44.99,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}kernel {\alpha&HFF&}inside {\alpha&HFF&}out
+Dialogue: 1,0:00:45.05,0:00:45.37,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}kernel{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}inside {\alpha&HFF&}out
+Dialogue: 1,0:00:45.53,0:00:46.11,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}inside{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}out
+Dialogue: 1,0:00:46.29,0:00:46.43,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&HFF&}inside {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}out{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:46.45,0:00:48.00,Base,,0,0,0,,into a fluffy white puff.
-Dialogue: 1,0:00:46.45,0:00:46.74,Box,,0,0,0,,{\an7\pos(120,322)\p1\1c&H0000FF&}m 12 0 l 119 0 b 125 0 131 6 131 12 l 131 60 b 131 66 125 72 119 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:46.45,0:00:46.74,Word,,0,0,0,,{\an7\pos(138,332)}into
-Dialogue: 1,0:00:46.78,0:00:46.84,Box,,0,0,0,,{\an7\pos(229,322)\p1\1c&H0000FF&}m 12 0 l 53 0 b 59 0 65 6 65 12 l 65 60 b 65 66 59 72 53 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:46.78,0:00:46.84,Word,,0,0,0,,{\an7\pos(247,332)}a
-Dialogue: 1,0:00:46.96,0:00:47.32,Box,,0,0,0,,{\an7\pos(272,322)\p1\1c&H0000FF&}m 12 0 l 151 0 b 157 0 163 6 163 12 l 163 60 b 163 66 157 72 151 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:46.96,0:00:47.32,Word,,0,0,0,,{\an7\pos(290,332)}fluffy
-Dialogue: 1,0:00:47.38,0:00:47.60,Box,,0,0,0,,{\an7\pos(413,322)\p1\1c&H0000FF&}m 12 0 l 157 0 b 163 0 169 6 169 12 l 169 60 b 169 66 163 72 157 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:47.38,0:00:47.60,Word,,0,0,0,,{\an7\pos(431,332)}white
-Dialogue: 1,0:00:47.68,0:00:48.00,Box,,0,0,0,,{\an7\pos(560,322)\p1\1c&H0000FF&}m 12 0 l 137 0 b 143 0 149 6 149 12 l 149 60 b 149 66 143 72 137 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:47.68,0:00:48.00,Word,,0,0,0,,{\an7\pos(578,332)}puff.
+Dialogue: 1,0:00:46.45,0:00:46.74,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}into{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}fluffy {\alpha&HFF&}white {\alpha&HFF&}puff.
+Dialogue: 1,0:00:46.78,0:00:46.84,Hi,,0,0,0,,{\alpha&HFF&}into {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}fluffy {\alpha&HFF&}white {\alpha&HFF&}puff.
+Dialogue: 1,0:00:46.96,0:00:47.32,Hi,,0,0,0,,{\alpha&HFF&}into {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}fluffy{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}white {\alpha&HFF&}puff.
+Dialogue: 1,0:00:47.38,0:00:47.60,Hi,,0,0,0,,{\alpha&HFF&}into {\alpha&HFF&}a {\alpha&HFF&}fluffy {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}white{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}puff.
+Dialogue: 1,0:00:47.68,0:00:48.00,Hi,,0,0,0,,{\alpha&HFF&}into {\alpha&HFF&}a {\alpha&HFF&}fluffy {\alpha&HFF&}white {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}puff.{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:48.82,0:00:50.10,Base,,0,0,0,,Each pop is the sound
-Dialogue: 1,0:00:48.82,0:00:49.00,Box,,0,0,0,,{\an7\pos(120,322)\p1\1c&H0000FF&}m 12 0 l 148 0 b 154 0 160 6 160 12 l 160 60 b 160 66 154 72 148 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:48.82,0:00:49.00,Word,,0,0,0,,{\an7\pos(138,332)}Each
-Dialogue: 1,0:00:49.10,0:00:49.36,Box,,0,0,0,,{\an7\pos(258,322)\p1\1c&H0000FF&}m 12 0 l 119 0 b 125 0 131 6 131 12 l 131 60 b 131 66 125 72 119 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:49.10,0:00:49.36,Word,,0,0,0,,{\an7\pos(276,332)}pop
-Dialogue: 1,0:00:49.46,0:00:49.52,Box,,0,0,0,,{\an7\pos(367,322)\p1\1c&H0000FF&}m 12 0 l 67 0 b 73 0 79 6 79 12 l 79 60 b 79 66 73 72 67 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:49.46,0:00:49.52,Word,,0,0,0,,{\an7\pos(385,332)}is
-Dialogue: 1,0:00:49.60,0:00:49.68,Box,,0,0,0,,{\an7\pos(424,322)\p1\1c&H0000FF&}m 12 0 l 102 0 b 108 0 114 6 114 12 l 114 60 b 114 66 108 72 102 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:49.60,0:00:49.68,Word,,0,0,0,,{\an7\pos(442,332)}the
-Dialogue: 1,0:00:49.76,0:00:50.10,Box,,0,0,0,,{\an7\pos(516,322)\p1\1c&H0000FF&}m 12 0 l 180 0 b 186 0 192 6 192 12 l 192 60 b 192 66 186 72 180 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:49.76,0:00:50.10,Word,,0,0,0,,{\an7\pos(534,332)}sound
+Dialogue: 1,0:00:48.82,0:00:49.00,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Each{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pop {\alpha&HFF&}is {\alpha&HFF&}the {\alpha&HFF&}sound
+Dialogue: 1,0:00:49.10,0:00:49.36,Hi,,0,0,0,,{\alpha&HFF&}Each {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pop{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}is {\alpha&HFF&}the {\alpha&HFF&}sound
+Dialogue: 1,0:00:49.46,0:00:49.52,Hi,,0,0,0,,{\alpha&HFF&}Each {\alpha&HFF&}pop {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}sound
+Dialogue: 1,0:00:49.60,0:00:49.68,Hi,,0,0,0,,{\alpha&HFF&}Each {\alpha&HFF&}pop {\alpha&HFF&}is {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}sound
+Dialogue: 1,0:00:49.76,0:00:50.10,Hi,,0,0,0,,{\alpha&HFF&}Each {\alpha&HFF&}pop {\alpha&HFF&}is {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}sound{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:50.14,0:00:51.76,Base,,0,0,0,,of a tiny hole failing,
-Dialogue: 1,0:00:50.14,0:00:50.20,Box,,0,0,0,,{\an7\pos(146,322)\p1\1c&H0000FF&}m 12 0 l 75 0 b 81 0 87 6 87 12 l 87 60 b 87 66 81 72 75 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:50.14,0:00:50.20,Word,,0,0,0,,{\an7\pos(164,332)}of
-Dialogue: 1,0:00:50.22,0:00:50.24,Box,,0,0,0,,{\an7\pos(211,322)\p1\1c&H0000FF&}m 12 0 l 53 0 b 59 0 65 6 65 12 l 65 60 b 65 66 59 72 53 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:50.22,0:00:50.24,Word,,0,0,0,,{\an7\pos(229,332)}a
-Dialogue: 1,0:00:50.42,0:00:50.82,Box,,0,0,0,,{\an7\pos(254,322)\p1\1c&H0000FF&}m 12 0 l 117 0 b 123 0 129 6 129 12 l 129 60 b 129 66 123 72 117 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:50.42,0:00:50.82,Word,,0,0,0,,{\an7\pos(272,332)}tiny
-Dialogue: 1,0:00:50.88,0:00:51.12,Box,,0,0,0,,{\an7\pos(361,322)\p1\1c&H0000FF&}m 12 0 l 131 0 b 137 0 143 6 143 12 l 143 60 b 143 66 137 72 131 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:50.88,0:00:51.12,Word,,0,0,0,,{\an7\pos(379,332)}hole
-Dialogue: 1,0:00:51.24,0:00:51.76,Box,,0,0,0,,{\an7\pos(482,322)\p1\1c&H0000FF&}m 12 0 l 192 0 b 198 0 204 6 204 12 l 204 60 b 204 66 198 72 192 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:51.24,0:00:51.76,Word,,0,0,0,,{\an7\pos(500,332)}failing,
+Dialogue: 1,0:00:50.14,0:00:50.20,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}of{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}tiny {\alpha&HFF&}hole {\alpha&HFF&}failing,
+Dialogue: 1,0:00:50.22,0:00:50.24,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}tiny {\alpha&HFF&}hole {\alpha&HFF&}failing,
+Dialogue: 1,0:00:50.42,0:00:50.82,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}tiny{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hole {\alpha&HFF&}failing,
+Dialogue: 1,0:00:50.88,0:00:51.12,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&HFF&}a {\alpha&HFF&}tiny {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hole{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}failing,
+Dialogue: 1,0:00:51.24,0:00:51.76,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&HFF&}a {\alpha&HFF&}tiny {\alpha&HFF&}hole {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}failing,{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:52.32,0:00:54.22,Base,,0,0,0,,releasing its stored steam and
-Dialogue: 1,0:00:52.32,0:00:52.78,Box,,0,0,0,,{\an7\pos(23,322)\p1\1c&H0000FF&}m 12 0 l 252 0 b 258 0 264 6 264 12 l 264 60 b 264 66 258 72 252 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:52.32,0:00:52.78,Word,,0,0,0,,{\an7\pos(41,332)}releasing
-Dialogue: 1,0:00:52.86,0:00:52.96,Box,,0,0,0,,{\an7\pos(265,322)\p1\1c&H0000FF&}m 12 0 l 85 0 b 91 0 97 6 97 12 l 97 60 b 97 66 91 72 85 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:52.86,0:00:52.96,Word,,0,0,0,,{\an7\pos(283,332)}its
-Dialogue: 1,0:00:53.06,0:00:53.48,Box,,0,0,0,,{\an7\pos(340,322)\p1\1c&H0000FF&}m 12 0 l 183 0 b 189 0 195 6 195 12 l 195 60 b 195 66 189 72 183 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:53.06,0:00:53.48,Word,,0,0,0,,{\an7\pos(358,332)}stored
-Dialogue: 1,0:00:53.64,0:00:54.06,Box,,0,0,0,,{\an7\pos(513,322)\p1\1c&H0000FF&}m 12 0 l 174 0 b 180 0 186 6 186 12 l 186 60 b 186 66 180 72 174 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:53.64,0:00:54.06,Word,,0,0,0,,{\an7\pos(531,332)}steam
-Dialogue: 1,0:00:54.14,0:00:54.22,Box,,0,0,0,,{\an7\pos(677,322)\p1\1c&H0000FF&}m 12 0 l 116 0 b 122 0 128 6 128 12 l 128 60 b 128 66 122 72 116 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:54.14,0:00:54.22,Word,,0,0,0,,{\an7\pos(695,332)}and
+Dialogue: 1,0:00:52.32,0:00:52.78,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}releasing{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}its {\alpha&HFF&}stored {\alpha&HFF&}steam {\alpha&HFF&}and
+Dialogue: 1,0:00:52.86,0:00:52.96,Hi,,0,0,0,,{\alpha&HFF&}releasing {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}its{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}stored {\alpha&HFF&}steam {\alpha&HFF&}and
+Dialogue: 1,0:00:53.06,0:00:53.48,Hi,,0,0,0,,{\alpha&HFF&}releasing {\alpha&HFF&}its {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}stored{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}steam {\alpha&HFF&}and
+Dialogue: 1,0:00:53.64,0:00:54.06,Hi,,0,0,0,,{\alpha&HFF&}releasing {\alpha&HFF&}its {\alpha&HFF&}stored {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}steam{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}and
+Dialogue: 1,0:00:54.14,0:00:54.22,Hi,,0,0,0,,{\alpha&HFF&}releasing {\alpha&HFF&}its {\alpha&HFF&}stored {\alpha&HFF&}steam {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&}
 Dialogue: 0,0:00:54.36,0:00:56.31,Base,,0,0,0,,starch in a delicious burst.
-Dialogue: 1,0:00:54.36,0:00:54.76,Box,,0,0,0,,{\an7\pos(68,322)\p1\1c&H0000FF&}m 12 0 l 180 0 b 186 0 192 6 192 12 l 192 60 b 192 66 186 72 180 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:54.36,0:00:54.76,Word,,0,0,0,,{\an7\pos(86,332)}starch
-Dialogue: 1,0:00:54.84,0:00:54.90,Box,,0,0,0,,{\an7\pos(238,322)\p1\1c&H0000FF&}m 12 0 l 70 0 b 76 0 82 6 82 12 l 82 60 b 82 66 76 72 70 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:54.84,0:00:54.90,Word,,0,0,0,,{\an7\pos(256,332)}in
-Dialogue: 1,0:00:54.96,0:00:54.98,Box,,0,0,0,,{\an7\pos(298,322)\p1\1c&H0000FF&}m 12 0 l 53 0 b 59 0 65 6 65 12 l 65 60 b 65 66 59 72 53 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:54.96,0:00:54.98,Word,,0,0,0,,{\an7\pos(316,332)}a
-Dialogue: 1,0:00:55.06,0:00:55.58,Box,,0,0,0,,{\an7\pos(341,322)\p1\1c&H0000FF&}m 12 0 l 249 0 b 255 0 261 6 261 12 l 261 60 b 261 66 255 72 249 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:55.06,0:00:55.58,Word,,0,0,0,,{\an7\pos(359,332)}delicious
-Dialogue: 1,0:00:55.68,0:00:56.31,Box,,0,0,0,,{\an7\pos(580,322)\p1\1c&H0000FF&}m 12 0 l 168 0 b 174 0 180 6 180 12 l 180 60 b 180 66 174 72 168 72 l 12 72 b 6 72 0 66 0 60 l 0 12 b 0 6 6 0 12 0{\p0}
-Dialogue: 2,0:00:55.68,0:00:56.31,Word,,0,0,0,,{\an7\pos(598,332)}burst.
+Dialogue: 1,0:00:54.36,0:00:54.76,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}starch{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&HFF&}delicious {\alpha&HFF&}burst.
+Dialogue: 1,0:00:54.84,0:00:54.90,Hi,,0,0,0,,{\alpha&HFF&}starch {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}in{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}delicious {\alpha&HFF&}burst.
+Dialogue: 1,0:00:54.96,0:00:54.98,Hi,,0,0,0,,{\alpha&HFF&}starch {\alpha&HFF&}in {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}delicious {\alpha&HFF&}burst.
+Dialogue: 1,0:00:55.06,0:00:55.58,Hi,,0,0,0,,{\alpha&HFF&}starch {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}delicious{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}burst.
+Dialogue: 1,0:00:55.68,0:00:56.31,Hi,,0,0,0,,{\alpha&HFF&}starch {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&HFF&}delicious {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}burst.{\fscx100\fscy100\alpha&HFF&}
