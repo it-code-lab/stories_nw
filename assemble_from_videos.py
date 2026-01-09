@@ -9,6 +9,7 @@ import tempfile
 import os
 import subprocess
 import shlex
+import tempfile, os
 
 def _escape_drawtext(s: str) -> str:
     # For Windows paths in filtergraphs: 
@@ -91,9 +92,17 @@ def _make_title_card_ffmpeg(
     fade_out = fade_in
     fade_out_start = max(dur - fade_out, 0.0)
 
+    # write title to a UTF-8 file (FFmpeg reads it correctly)
+    tmp_txt = os.path.join(tempfile.gettempdir(), f"title_{os.getpid()}.txt")
+    with open(tmp_txt, "w", encoding="utf-8") as f:
+        f.write(title)
+
+    # escape only for *paths* inside filtergraph
+    ff_txt = tmp_txt.replace("\\", "/").replace(":", "\\:")
+
     vf = (
         f"drawtext=fontfile='{ff_font}':"
-        f"text='{safe_title}':"
+        f"textfile='{ff_txt}':"
         f"fontsize={int(fontsize)}:"
         f"fontcolor={fontcolor}:"
         f"x=(w-text_w)/2:y=(h-text_h)/2:"
@@ -116,6 +125,12 @@ def _make_title_card_ffmpeg(
     print("▶ Title card cmd:", " ".join(cmd))
     subprocess.run(cmd, check=True)
 
+    # (optional cleanup at end)
+    try:
+        os.remove(tmp_txt)
+    except:
+        pass
+    
 def _ffmpeg_concat_reencode(
     plan,
     out_path: str,
@@ -1156,6 +1171,91 @@ def assemble_videos_new(
     print(f"[OK] Saved: {output_path}")
     return output_path
 
+def _find_videos_with_manifest(video_folder: str) -> list[str]:
+    """
+    Manifest-driven video ordering.
+    If order.txt or order.xlsx exists:
+      - ONLY files listed in manifest are merged
+      - Extra files in folder are ignored
+      - Missing listed files cause a hard error
+    Otherwise:
+      - Fall back to sorted auto-discovery
+    """
+    import os
+    from glob import glob
+
+    txt_path = os.path.join(video_folder, "order.txt")
+    xlsx_path = os.path.join(video_folder, "order.xlsx")
+
+    def resolve(name: str) -> str:
+        name = name.strip().strip('"').strip("'")
+        if not name:
+            return ""
+        if name.startswith("#") or name.startswith("//"):
+            return ""
+        p = name if os.path.isabs(name) else os.path.join(video_folder, name)
+        return os.path.abspath(p)
+
+    # ------------------------
+    # order.txt (highest priority)
+    # ------------------------
+    if os.path.isfile(txt_path):
+        ordered = []
+        with open(txt_path, "r", encoding="utf-8") as f:
+            for line in f:
+                p = resolve(line)
+                if not p:
+                    continue
+                if not os.path.isfile(p):
+                    raise RuntimeError(f"[ORDER ERROR] Missing file listed in order.txt: {p}")
+                ordered.append(p)
+
+        if not ordered:
+            raise RuntimeError("order.txt exists but contains no valid video entries.")
+
+        print(f"[INFO] Using order.txt with {len(ordered)} videos. Unlisted files will be skipped.")
+        return ordered
+
+    # ------------------------
+    # order.xlsx
+    # ------------------------
+    if os.path.isfile(xlsx_path):
+        from openpyxl import load_workbook
+        wb = load_workbook(xlsx_path, data_only=True)
+        ws = wb.active
+
+        ordered = []
+        for row in ws.iter_rows(min_row=1, max_col=1, values_only=True):
+            val = row[0]
+            if val is None:
+                continue
+            p = resolve(str(val))
+            if not p:
+                continue
+            if not os.path.isfile(p):
+                raise RuntimeError(f"[ORDER ERROR] Missing file listed in order.xlsx: {p}")
+            ordered.append(p)
+
+        if not ordered:
+            raise RuntimeError("order.xlsx exists but column A contains no valid filenames.")
+
+        print(f"[INFO] Using order.xlsx with {len(ordered)} videos. Unlisted files will be skipped.")
+        return ordered
+
+    # ------------------------
+    # Fallback: auto-discovery
+    # ------------------------
+    video_exts = ("*.mp4", "*.mov", "*.mkv", "*.webm")
+    files = []
+    for e in video_exts:
+        files.extend(glob(os.path.join(video_folder, e)))
+
+    if not files:
+        raise RuntimeError(f"No video files found in {video_folder}")
+
+    print("[INFO] No order file found. Using alphabetical order.")
+    return [os.path.abspath(p) for p in sorted(files)]
+
 # --------------------------
 # Main assembly
 # --------------------------
@@ -1183,6 +1283,10 @@ def assemble_videos(
     clear_folder("edit_vid_output")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
+    if os.path.isfile(os.path.join(video_folder, "order.txt")) or \
+    os.path.isfile(os.path.join(video_folder, "order.xlsx")):
+        shuffle = False
+
     breathing_mode = "none"
 
     if add_titles or add_transitions:
@@ -1191,7 +1295,9 @@ def assemble_videos(
         breathing_mode="title_card"
 
     # Collect videos
-    video_paths = _find_videos(video_folder)
+    # video_paths = _find_videos(video_folder)
+    video_paths = _find_videos_with_manifest(video_folder)
+
     if shuffle and len(video_paths) > 1:
         random.shuffle(video_paths)
 
@@ -1228,7 +1334,8 @@ def assemble_videos(
         title_box_alpha = 0.35
         title_box_border = 40
         title_fade_sec = 0.25
-        title_fontfile = "C:/Windows/Fonts/arial.ttf"       
+        # title_fontfile = "C:/Windows/Fonts/arial.ttf"    
+        title_fontfile = "C:/Windows/Fonts/mangal.ttf"   
         title_text_color = "white"
         breathing_sec = 5
 

@@ -458,10 +458,13 @@ if __name__ == "__main__":
 
 
 # Running the script
+# 
+# venv_whisperx\Scripts\activate
+# 
 # English
 # python whisperx_captions.py --video input.mp4 --language en
 
-# Hindi - DOES NOT WORK WELL
+# Hindi - *****DOES NOT WORK WELL****
 # python whisperx_captions.py --video input.mp4 --language hi
 
 # Auto Language Detect - Takes more time and processing
