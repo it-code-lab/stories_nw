@@ -29,6 +29,15 @@ import hashlib
 # GLOBAL CONFIG (edit here)
 # =========================
 
+# =========================
+# RETRY CONFIG
+# =========================
+
+ENABLE_RETRY = True        # <--- main flag
+MAX_RETRY_ATTEMPTS = 5     # max retries per run
+RETRY_SLEEP_SECONDS = 10  # pause between retries
+
+# =========================
 RUN_MODE = "videos"   # "images" or "videos"
 
 EXCEL_FILE  = r"media_jobs.xlsx"
@@ -825,46 +834,56 @@ async def main_async_videos():
     if dupes:
         raise RuntimeError(f"Duplicate Chrome profiles in ACCOUNTS: {dupes}")
 
-    # read Excel rows (prompt + empty image_path)
-    all_rows = read_jobs_from_excel_for_videos()
-    if not all_rows:
-        print("No rows need videos.")
-        return
+    attempt = 1
 
-    # optional shuffle
-    if SHUFFLE_PROMPTS:
-        random.shuffle(all_rows)
+    while True:
+        print(f"\n🎬 VIDEO PASS — Attempt {attempt}")   
+        # read Excel rows (prompt + empty image_path)
+        all_rows = read_jobs_from_excel_for_videos()
+        if not all_rows:
+            print("No rows need videos.")
+            return
 
-    # partition rows per account:
-    # if account_id present in Excel, bind to that account; else round-robin
-    rows_per_account: Dict[str, List[Dict]] = {a["id"]: [] for a in META_ACCOUNTS}
-    free_rows = []
-    for r in all_rows:
-        acct = r.get("account_id", "")
-        if acct and acct in rows_per_account:
-            rows_per_account[acct].append(r)
-        else:
-            free_rows.append(r)
-    # round-robin free rows
-    acc_ids = list(rows_per_account.keys())
-    k = 0
-    for r in free_rows:
-        rows_per_account[acc_ids[k % len(acc_ids)]].append(r)
-        k += 1
+        # optional shuffle
+        if SHUFFLE_PROMPTS:
+            random.shuffle(all_rows)
 
-    # prune empties and limit per account if desired
-    jobs = []
-    for acc in META_ACCOUNTS:
-        bucket = rows_per_account[acc["id"]]
-        if MAX_META_VID_PROMPTS_PER_ACCOUNT:
-            bucket = bucket[:MAX_META_VID_PROMPTS_PER_ACCOUNT]
-        if bucket:
-            jobs.append((acc, bucket))
+        # partition rows per account:
+        # if account_id present in Excel, bind to that account; else round-robin
+        rows_per_account: Dict[str, List[Dict]] = {a["id"]: [] for a in META_ACCOUNTS}
+        free_rows = []
+        for r in all_rows:
+            acct = r.get("account_id", "")
+            if acct and acct in rows_per_account:
+                rows_per_account[acct].append(r)
+            else:
+                free_rows.append(r)
+        # round-robin free rows
+        acc_ids = list(rows_per_account.keys())
+        k = 0
+        for r in free_rows:
+            rows_per_account[acc_ids[k % len(acc_ids)]].append(r)
+            k += 1
 
-    async with async_playwright() as pw:
-        await asyncio.gather(*[run_account_videos(pw, acc, bucket) for acc, bucket in jobs])
+        # prune empties and limit per account if desired
+        jobs = []
+        for acc in META_ACCOUNTS:
+            bucket = rows_per_account[acc["id"]]
+            if MAX_META_VID_PROMPTS_PER_ACCOUNT:
+                bucket = bucket[:MAX_META_VID_PROMPTS_PER_ACCOUNT]
+            if bucket:
+                jobs.append((acc, bucket))
 
+        async with async_playwright() as pw:
+            await asyncio.gather(*[run_account_videos(pw, acc, bucket) for acc, bucket in jobs])
 
+        if not ENABLE_RETRY or attempt >= MAX_RETRY_ATTEMPTS:
+            print("⛔ Video retries exhausted.")
+            return
+        
+        attempt += 1
+        print(f"🔁 Retrying remaining video jobs in {RETRY_SLEEP_SECONDS}s...")
+        await asyncio.sleep(RETRY_SLEEP_SECONDS)
 
 async def main_async_images():
     # refuse duplicate profiles
@@ -873,44 +892,59 @@ async def main_async_images():
     if dupes:
         raise RuntimeError(f"Duplicate Chrome profiles in ACCOUNTS: {dupes}")
 
-    # read Excel rows (prompt + empty image_path)
-    all_rows = read_jobs_from_excel_for_images()
-    if not all_rows:
-        print("No rows need images.")
-        return
+    attempt = 1
 
-    # optional shuffle
-    if SHUFFLE_PROMPTS:
-        random.shuffle(all_rows)
+    while True:
+        print(f"\n🖼️ IMAGE PASS — Attempt {attempt}")
+        
+        # read Excel rows (prompt + empty image_path)
+        all_rows = read_jobs_from_excel_for_images()
+        if not all_rows:
+            print("No rows need images.")
+            return
 
-    # partition rows per account:
-    # if account_id present in Excel, bind to that account; else round-robin
-    rows_per_account: Dict[str, List[Dict]] = {a["id"]: [] for a in ACCOUNTS}
-    free_rows = []
-    for r in all_rows:
-        acct = r.get("account_id", "")
-        if acct and acct in rows_per_account:
-            rows_per_account[acct].append(r)
-        else:
-            free_rows.append(r)
-    # round-robin free rows
-    acc_ids = list(rows_per_account.keys())
-    k = 0
-    for r in free_rows:
-        rows_per_account[acc_ids[k % len(acc_ids)]].append(r)
-        k += 1
+        # optional shuffle
+        if SHUFFLE_PROMPTS:
+            random.shuffle(all_rows)
 
-    # prune empties and limit per account if desired
-    jobs = []
-    for acc in ACCOUNTS:
-        bucket = rows_per_account[acc["id"]]
-        if MAX_GGL_IMG_PROMPTS_PER_ACCOUNT:
-            bucket = bucket[:MAX_GGL_IMG_PROMPTS_PER_ACCOUNT]
-        if bucket:
-            jobs.append((acc, bucket))
+        # partition rows per account:
+        # if account_id present in Excel, bind to that account; else round-robin
+        rows_per_account: Dict[str, List[Dict]] = {a["id"]: [] for a in ACCOUNTS}
+        free_rows = []
+        for r in all_rows:
+            acct = r.get("account_id", "")
+            if acct and acct in rows_per_account:
+                rows_per_account[acct].append(r)
+            else:
+                free_rows.append(r)
+        # round-robin free rows
+        acc_ids = list(rows_per_account.keys())
+        k = 0
+        for r in free_rows:
+            rows_per_account[acc_ids[k % len(acc_ids)]].append(r)
+            k += 1
 
-    async with async_playwright() as pw:
-        await asyncio.gather(*[run_account_images(pw, acc, bucket) for acc, bucket in jobs])
+        # prune empties and limit per account if desired
+        jobs = []
+        for acc in ACCOUNTS:
+            bucket = rows_per_account[acc["id"]]
+            if MAX_GGL_IMG_PROMPTS_PER_ACCOUNT:
+                bucket = bucket[:MAX_GGL_IMG_PROMPTS_PER_ACCOUNT]
+            if bucket:
+                jobs.append((acc, bucket))
+
+        async with async_playwright() as pw:
+            await asyncio.gather(*[run_account_images(pw, acc, bucket) for acc, bucket in jobs])
+
+
+        if not ENABLE_RETRY or attempt >= MAX_RETRY_ATTEMPTS:
+            print("⛔ Image retries exhausted.")
+            return
+        
+        attempt += 1
+        print(f"🔁 Retrying remaining image jobs in {RETRY_SLEEP_SECONDS}s...")
+        await asyncio.sleep(RETRY_SLEEP_SECONDS)
+
 
 def createImages():
     asyncio.run(main_async_images())
