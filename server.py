@@ -5,6 +5,7 @@ import subprocess, json, math
 from flask_cors import CORS
 import os
 import traceback
+import contentplanner_worker as cpw
 
 import openpyxl  # to print detailed error info
 from build_coloring_app_manifest import build_coloring_manifest
@@ -149,6 +150,30 @@ def upload_media():
         return "unsupported type", 400
 
     return jsonify({"url": f"/uploads/{safe}", "type": t})
+
+@app.post("/planner/populate_images_excel")
+def planner_populate_images_excel():
+    channel = (request.form.get("youtube_channel_name") or "").strip()
+    if not channel:
+        return jsonify({"ok": False, "message": "youtube_channel_name required"}), 400
+    res = cpw.populate_image_jobs_excel_for_channel(channel)
+    return jsonify(res)
+
+@app.post("/planner/populate_heygen_excel")
+def planner_populate_heygen_excel():
+    channel = (request.form.get("youtube_channel_name") or "").strip()
+    if not channel:
+        return jsonify({"ok": False, "message": "youtube_channel_name required"}), 400
+    res = cpw.populate_heygen_submit_excel_for_channel(channel)
+    return jsonify(res)
+
+@app.post("/planner/populate_upload_excel")
+def planner_populate_upload_excel():
+    channel = (request.form.get("youtube_channel_name") or "").strip()
+    if not channel:
+        return jsonify({"ok": False, "message": "youtube_channel_name required"}), 400
+    res = cpw.populate_upload_excel_for_channel(channel)
+    return jsonify(res)
 
 @app.get("/uploads/<path:fn>")
 def uploads(fn):

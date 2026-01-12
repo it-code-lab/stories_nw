@@ -1438,6 +1438,27 @@
         <button type="submit">Polish Audio</button>
         <div id="polishAudioResult" class="infoBox" style="display:none;"></div>
     </form>
+    <br>
+    <form id="contentPlannerExcelForm">
+    <h2 style="background:#e0e7ff;">Content Planner → Excel Export</h2>
+
+    <label>YouTube Channel Name</label>
+    <input type="text" id="cpChannelName" placeholder="e.g., Cash Flow Hacks" required />
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" id="btnImages">Populate Image Jobs Excel</button>
+        <button type="button" id="btnHeygen">Populate HeyGen Submit Excel</button>
+        <button type="button" id="btnUploads">Populate Upload Excel</button>
+    </div>
+
+    <pre id="cpResult" style="margin-top:12px; background:#111827; color:#e5e7eb; padding:10px; border-radius:8px; white-space:pre-wrap;"></pre>
+
+    <div class="infoBox">
+        - Images: writes <b>media_jobs.xlsx</b><br/>
+        - HeyGen: clears and fills <b>heygen_submit_videos.xlsx</b> from row 10 onward<br/>
+        - Upload: clears and fills <b>master_shorts_uploader_data.xlsx</b> from row 80 onward
+    </div>
+    </form>
 
     <br>
     <form id="createImagesForm">
@@ -2419,6 +2440,51 @@ ${JSON.stringify(meta, null, 2)}
                 }
             });
         })();
+    </script>
+    <script>
+    async function postForm(url, dataObj) {
+    const body = new URLSearchParams(dataObj);
+    const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body
+    });
+    const txt = await resp.text();
+    try { return JSON.parse(txt); } catch { return { ok: resp.ok, message: txt }; }
+    }
+
+    function getChannel() {
+    return (document.getElementById("cpChannelName").value || "").trim();
+    }
+
+    function setResult(obj) {
+    document.getElementById("cpResult").textContent =
+        typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
+    }
+
+    document.getElementById("btnImages").addEventListener("click", async () => {
+    const channel = getChannel();
+    if (!channel) return setResult("Please enter YouTube Channel Name.");
+    setResult("Working...");
+    const res = await postForm("/planner/populate_images_excel", { youtube_channel_name: channel });
+    setResult(res);
+    });
+
+    document.getElementById("btnHeygen").addEventListener("click", async () => {
+    const channel = getChannel();
+    if (!channel) return setResult("Please enter YouTube Channel Name.");
+    setResult("Working...");
+    const res = await postForm("/planner/populate_heygen_excel", { youtube_channel_name: channel });
+    setResult(res);
+    });
+
+    document.getElementById("btnUploads").addEventListener("click", async () => {
+    const channel = getChannel();
+    if (!channel) return setResult("Please enter YouTube Channel Name.");
+    setResult("Working...");
+    const res = await postForm("/planner/populate_upload_excel", { youtube_channel_name: channel });
+    setResult(res);
+    });
     </script>
 
     <script>
