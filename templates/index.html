@@ -1080,8 +1080,22 @@
     <br>
     <form id="addBGToHeyGenVideos">
         <h2 style="background:#ffe4b5;">Add Background to HeyGen Videos in bulk</h2>
-        <a href="add_heygen_backgrounds" target="_blank">Add background to Heygen Videos</a>
-        <div class="infoBox"> Videos and backgrounds info is provided through heygen_bulk_bg.xlsx. By default it uses portrait size. Update render_bulk_bg() on server.py if need to change</div>
+        <div class="infoBox"> Videos and backgrounds info is provided through heygen_bulk_bg.xlsx.</div>
+
+        <label>Orientation:</label>
+        <select name="orientation">
+            <option value="landscape">landscape</option>
+            <option value="portrait">portrait</option>
+        </select>
+
+        <label>Scale background:</label>
+        <select name="scale_bg">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
+        <button type="submit">Process Videos</button>
+        <!-- <a href="add_heygen_backgrounds" target="_blank">Add background to Heygen Videos</a> -->
+        <pre id="addBGToHeyGenVideosResult"></pre>
     </form>
 
     <br>    
@@ -1431,9 +1445,7 @@
         <button type="submit">Run Image Jobs</button>
         
 
-        <div class="infoBox" style="margin-top:8px;">
-            Be default 5 retries will be attempted.
-        </div>
+
         <pre id="createImagesResult"></pre>
     </form>
     <br>
@@ -1472,7 +1484,7 @@
         
 
         <div class="infoBox" style="margin-top:8px;">
-            Be default 5 retries will be attempted.
+            By default 5 retries will be attempted.
         </div>
         <pre id="createVideosResult"></pre>
 
@@ -3501,6 +3513,7 @@ ${JSON.stringify(meta, null, 2)}
         runTask("createVideosForm", "/create_videos", "createVideosResult");
         runTask("createVectorImagesForm", "/create_vector_images", "createVectorImagesResult");
         runTask("removeBordersForm", "/remove_borders", "removeBordersResult");
+        runTask("addBGToHeyGenVideos", "/add_heygen_backgrounds", "addBGToHeyGenVideosResult");
 
     </script>
     <script>

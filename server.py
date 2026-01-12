@@ -174,7 +174,7 @@ def _resolve_path(p: str) -> Path:
     return pp if pp.is_absolute() else (BASE_DIR / pp).resolve()
 
 @app.post("/render_bulk_bg")
-def render_bulk_bg():
+def render_bulk_bg(orientation="", scale_bg="yes"):
     """
     Reads BASE_DIR/heygen_bulk_bg.xlsx with columns:
       - heygen_video : path to HeyGen mp4
@@ -190,7 +190,11 @@ def render_bulk_bg():
         if not excel_path.exists():
             return jsonify({"ok": False, "error": f"Missing Excel: {excel_path}"}), 400
 
-        out_res = request.form.get("outRes", "1080x1920")
+        if orientation.lower() not in ("landscape", "portrait"):
+             out_res = request.form.get("outRes", "1080x1920")
+        else:
+            out_res = "1920x1080" if orientation.lower() == "landscape" else "1080x1920"
+
         chroma_key = "0x00FF00"  # HeyGen green export
 
         wb = openpyxl.load_workbook(excel_path)
@@ -273,7 +277,8 @@ def render_bulk_bg():
                 background=bg_video,
                 heygen=heygen_path,
                 out_path=final_out,
-                chroma_key_hex=chroma_key if chroma_key else None
+                chroma_key_hex=chroma_key if chroma_key else None,
+                scaled_layout=(scale_bg.lower() != "no"),
             )
 
             ws.cell(row=r, column=status_col).value = "success"
@@ -1537,11 +1542,13 @@ def trigger_heygen_bulk_shorts():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.get('/add_heygen_backgrounds')
+@app.post('/add_heygen_backgrounds')
 def add_heygen_backgrounds():
     """Add HeyGen backgrounds to the system."""
     try:
-        render_bulk_bg()
+        orientation = request.form.get('orientation', 'landscape')
+        scaleBG = request.form.get('scale_bg', 'yes')
+        render_bulk_bg(orientation, scaleBG)
         return jsonify({"ok": True, "message": "HeyGen backgrounds added successfully."})
     except Exception as e:
         import traceback

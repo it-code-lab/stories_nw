@@ -25,6 +25,8 @@ from playwright.async_api import async_playwright, BrowserContext, Page, expect
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 import hashlib
+
+from contentplanner_worker import db_report_image
 # =========================
 # GLOBAL CONFIG (edit here)
 # =========================
@@ -278,8 +280,10 @@ def read_jobs_from_excel_for_images() -> List[Dict]:
         prompt = (ws.cell(i, h["prompt"]).value or "").strip()
         img    = (ws.cell(i, h["image_path"]).value or "").strip()
         acct   = (ws.cell(i, h["account_id"]).value or "").strip()
+        section_id = int(ws.cell(i, h.get("section_id")).value or 0) if "section_id" in h else 0
+        image_name = (ws.cell(i, h.get("image_name")).value or "").strip() if "image_name" in h else ""
         if prompt and not img:
-            rows.append({"row": i, "prompt": prompt, "account_id": acct})
+            rows.append({"row": i, "prompt": prompt, "account_id": acct, "section_id": section_id, "image_name": image_name})
     save_wb_with_retry(wb, EXCEL_FILE)  # in case we added headers
     wb.close()
     return rows
@@ -367,7 +371,7 @@ async def ensure_logged_in(page: Page, post_login_selector: str, site_name: str)
     print(f"[{site_name}] Waiting for post-login marker: {post_login_selector}")
     await page.wait_for_selector(post_login_selector, timeout=120_000)
 
-async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path) -> Path:
+async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path, image_name: str = "") -> Path:
     """
     Uses selectors:
     - Prompt textbox role name: 'Enter a prompt to generate an'
@@ -420,7 +424,13 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path) -> Pa
     # Candidate: first new item (append behavior)
     candidate = gallery_items.nth(before_cnt)
     # out_path = out_dir / f"{safe_basename(prompt)}.png"
-    out_path = out_dir / safe_basename(prompt, "png")
+    
+    # If Image name is blank, use safe_basename(prompt)
+    if image_name.strip():
+        out_path = out_dir / f"{safe_basename(image_name, 'png')}"
+    else:
+        out_path = out_dir / safe_basename(prompt, "png")
+
 
 
     # Try large-view modal and proper download
@@ -718,15 +728,21 @@ async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
     for job in jobs:
         row_idx = job["row"]
         prompt  = job["prompt"]
+        image_name = job.get("image_name","")
+        section_id = job.get("section_id", 0)
         try:
-            img_path = await generate_image_google_ai(page, prompt, out_dir)
+            img_path = await generate_image_google_ai(page, prompt, out_dir, image_name)
             write_image_result(row_idx, str(Path(img_path).resolve()), account_id_used=account["id"], status="ok")
+            if section_id:
+                db_report_image(section_id, ok=True, image_path=img_path)
             print(f"[{account['id']}] Row {row_idx} -> {img_path}")
             await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
             await asyncio.sleep(10)
             print("Waited 10 seconds before generating next image")
         except Exception as e:
             write_image_result(row_idx, "", account_id_used=account["id"], status=f"error: {e}")
+            if section_id:
+                db_report_image(section_id, ok=False, error=str(e))
             print(f"[{account['id']}] Row {row_idx} ERROR: {e}")
 
     await ctx.close()
@@ -893,7 +909,7 @@ async def main_async_images():
         raise RuntimeError(f"Duplicate Chrome profiles in ACCOUNTS: {dupes}")
 
     attempt = 1
-
+    ENABLE_RETRY = False # Set to False to disable retries for images
     while True:
         print(f"\n🖼️ IMAGE PASS — Attempt {attempt}")
         

@@ -59,7 +59,44 @@ def concat_scenes(scene_paths: list[Path], out_path: Path):
     cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy", str(out_path)]
     run(cmd)
 
-def merge_with_heygen(background: Path, heygen: Path, out_path: Path, chroma_key_hex: str | None = None):
+def probe_resolution(path: Path) -> tuple[int, int]:
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=p=0:s=x",
+        str(path)
+    ]
+    out = subprocess.check_output(cmd).decode("utf-8").strip()
+    w, h = map(int, out.split("x"))
+    return w, h
+
+def merge_with_heygen(background: Path, heygen: Path, out_path: Path, chroma_key_hex: str | None = None, scaled_layout: bool = True):
+    # Dynamic settings based on orientation
+
+    # Detect resolution automatically
+    w, h = probe_resolution(heygen)
+    is_portrait = h > w
+
+    if is_portrait:
+        res = "1080:1920"
+        # Background video scales to full width, placed at top
+        vid_w = "iw"
+        overlay_pos = "0:200" # Shifted down slightly from the very top
+        border_cfg = "white@0.0" # Usually no border looks better in portrait stacks
+        office_img = "images/heygen_avtar_bg_port.png" 
+    else:
+        res = "1920:1080"
+        vid_w = "iw*0.65"
+        overlay_pos = "W-w-60:60" # Top right
+        border_cfg = "white@0.9"
+        office_img = "images/heygen_avtar_bg_landscape.png" 
+
+    # Audio Filter Chain: 
+    # 1. loudnorm: Normalizes to -16 LUFS (industry standard)
+    # 2. volume: Optional extra boost (1.2 = +20%) to ensure it's punchy
+    audio_filt = "loudnorm=I=-16:TP=-1.5:LRA=11,volume=1.2"
+
     if chroma_key_hex:
         # Replace HeyGen background (if HeyGen exported with solid chroma key color)
         # Captions/Avatar remain unchanged because we DON'T scale HeyGen layer.
@@ -69,22 +106,39 @@ def merge_with_heygen(background: Path, heygen: Path, out_path: Path, chroma_key
         #     f"[0:v][fg]overlay=0:0:format=auto[v]"
         # )
         filt = (
-            f"[1:v]colorkey={chroma_key_hex}:0.14:0.06,"
-            f"format=rgba,"
-            f"despill=green:0.8"
-            f"[fg];"
-            f"[0:v][fg]overlay=0:0:format=auto[v]"
+            # 1. Prepare Content Video
+            f"[0:v]scale={vid_w}:-1,pad=iw+12:ih+12:6:6:{border_cfg}[vid_framed];"
+            
+            # # 2. Prepare Studio Background (Office)
+            # f"[2:v]scale={res}:force_original_aspect_ratio=increase,crop={res},boxblur=15[studio];"
+
+            # Simplified: Scale to fill screen and crop excess, but no extra blur
+            f"[2:v]scale={res.replace(':', 'x')}:force_original_aspect_ratio=increase,crop={res}[studio];"
+
+            # 3. Key the Avatar
+            f"[1:v]colorkey={chroma_key_hex}:0.14:0.06,format=rgba,despill=green:0.8[avatar];"
+            
+            # 4. Final Composition
+            f"[studio][vid_framed]overlay={overlay_pos}[temp];"
+            f"[temp][avatar]overlay=0:H-h:format=auto[v]" # Avatar anchored to bottom
         )
+
+        
 
         cmd = [
             "ffmpeg", "-y",
             "-i", str(background),
             "-i", str(heygen),
-            "-filter_complex", filt,
+            "-i", office_img, 
+            "-filter_complex", filt if scaled_layout else "[1:v]colorkey=...[v]",
             "-map", "[v]",
-            "-map", "1:a?",
-            "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
-            "-c:a", "aac", "-b:a", "192k",
+            "-map", "1:a?",           # Select audio from HeyGen video
+            "-af", audio_filt,        # Apply the normalization and boost
+            "-c:v", "libx264", 
+            "-crf", "18", 
+            "-preset", "veryfast",
+            "-c:a", "aac", 
+            "-b:a", "192k",
             "-shortest",
             str(out_path)
         ]
