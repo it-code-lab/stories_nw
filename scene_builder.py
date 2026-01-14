@@ -68,7 +68,7 @@ def detect_chroma_by_green_ratio(
             "-ss", f"{ss:.3f}",
             "-t", f"{sample_window_s:.3f}",
             "-i", str(video),
-            "-vf", f"fps={fps:.6f},scale={w}:{h}",
+            "-vf", f"fps={fps:.6f},scale={w}:{h},format=rgb24",
             "-frames:v", str(max_frames),
             "-pix_fmt", "rgb24",
             "-f", "rawvideo",
@@ -87,11 +87,22 @@ def detect_chroma_by_green_ratio(
         if have_np:
             import numpy as np
             arr = np.frombuffer(raw[: n_frames * frame_size], dtype=np.uint8)
+
+            # arr = arr.reshape((n_frames, h, w, 3)).astype(np.int16)  # R,G,B
+            # r = arr[..., 0]
+            # g = arr[..., 1]
+            # b = arr[..., 2]
+            # dist_sq = (r - target_r) ** 2 + (g - target_g) ** 2 + (b - target_b) ** 2
+
             arr = arr.reshape((n_frames, h, w, 3)).astype(np.int16)  # R,G,B
-            r = arr[..., 0]
-            g = arr[..., 1]
-            b = arr[..., 2]
-            dist_sq = (r - target_r) ** 2 + (g - target_g) ** 2 + (b - target_b) ** 2
+            r = arr[..., 0].astype(np.int32)
+            g = arr[..., 1].astype(np.int32)
+            b = arr[..., 2].astype(np.int32)
+            dr = r - target_r
+            dg = g - target_g
+            db = b - target_b
+            dist_sq = dr*dr + dg*dg + db*db
+
             mask = (dist_sq <= (dist_threshold ** 2)) | ((g >= min_g) & (r <= max_r) & (b <= max_b))
             total_green += int(mask.sum())
             total_px += int(mask.size)
