@@ -1054,7 +1054,28 @@
         (Opens in new tab)
     </form>
 
+    <br>
+    <form id="contentPlannerExcelForm">
+    <h2 style="background:#e0e7ff;">HeyGen content Planner → Excel Export</h2>
 
+    <label>YouTube Channel Name</label>
+    <input type="text" id="cpChannelName" placeholder="e.g., Cash Flow Hacks" required />
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" id="btnImages">Populate Image Jobs Excel</button>
+        <button type="button" id="btnHeygen">Populate HeyGen Submit Excel</button>
+        <button type="button" id="btnUploads">Populate Upload Excel</button>
+        <button type="button" id="btnOrder">Populate Order Excel</button>
+    </div>
+
+    <pre id="cpResult" style="margin-top:12px; background:#111827; color:#e5e7eb; padding:10px; border-radius:8px; white-space:pre-wrap;"></pre>
+
+    <div class="infoBox">
+        - Images: writes <b>media_jobs.xlsx</b><br/>
+        - HeyGen: clears and fills <b>heygen_submit_videos.xlsx</b> from row 10 onward<br/>
+        - Upload: clears and fills <b>master_shorts_uploader_data.xlsx</b> from row 80 onward
+    </div>
+    </form>
 
     <br>
 
@@ -1443,28 +1464,7 @@
         <button type="submit">Polish Audio</button>
         <div id="polishAudioResult" class="infoBox" style="display:none;"></div>
     </form>
-    <br>
-    <form id="contentPlannerExcelForm">
-    <h2 style="background:#e0e7ff;">Content Planner → Excel Export</h2>
 
-    <label>YouTube Channel Name</label>
-    <input type="text" id="cpChannelName" placeholder="e.g., Cash Flow Hacks" required />
-
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button type="button" id="btnImages">Populate Image Jobs Excel</button>
-        <button type="button" id="btnHeygen">Populate HeyGen Submit Excel</button>
-        <button type="button" id="btnUploads">Populate Upload Excel</button>
-        <button type="button" id="btnOrder">Populate Order Excel</button>
-    </div>
-
-    <pre id="cpResult" style="margin-top:12px; background:#111827; color:#e5e7eb; padding:10px; border-radius:8px; white-space:pre-wrap;"></pre>
-
-    <div class="infoBox">
-        - Images: writes <b>media_jobs.xlsx</b><br/>
-        - HeyGen: clears and fills <b>heygen_submit_videos.xlsx</b> from row 10 onward<br/>
-        - Upload: clears and fills <b>master_shorts_uploader_data.xlsx</b> from row 80 onward
-    </div>
-    </form>
 
     <br>
     <form id="createImagesForm">

@@ -179,6 +179,15 @@ META_ACCOUNTS: List[Dict[str, str]] = [
 def ensure_dir(p: str | Path):
     Path(p).mkdir(parents=True, exist_ok=True)
 
+def safe_filename_nohash(name: str, ext: str = "png", maxlen: int = 180) -> str:
+    raw = (name or "").strip()
+    base = re.sub(r"[^\w\-]+", "_", raw).strip("_").rstrip(" .")
+    if not base:
+        base = "asset"
+    base = base[:maxlen].rstrip(" .")
+    return f"{base}.{ext}"
+
+
 def safe_basename(name: str, ext: str = "png", idx: int | None = None, maxlen: int = 70) -> str:
     """
     Windows-safe filename:
@@ -427,7 +436,9 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path, image
     
     # If Image name is blank, use safe_basename(prompt)
     if image_name.strip():
-        out_path = out_dir / f"{safe_basename(image_name, 'png')}"
+        # out_path = out_dir / f"{safe_basename(image_name, 'png')}"
+        out_path = out_dir / safe_filename_nohash(image_name, "png")
+
     else:
         out_path = out_dir / safe_basename(prompt, "png")
 
