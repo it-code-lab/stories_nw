@@ -183,6 +183,15 @@ def planner_populate_order_excel():
         return jsonify({"ok": False, "message": "youtube_channel_name required"}), 400
     return cpw.populate_section_order_excel_from_db(channel)
 
+
+@app.post("/planner/populate_heygen_bulk_bg_excel")
+def populate_heygen_bulk_bg_excel():
+    channel = (request.form.get("youtube_channel_name") or "").strip()
+    if not channel:
+        return jsonify({"ok": False, "message": "youtube_channel_name required"}), 400
+    return cpw.populate_heygen_bulk_bg_excel_from_db(channel)
+
+
 @app.get("/uploads/<path:fn>")
 def uploads(fn):
     return send_from_directory(str(UPLOADS_DIR), fn)

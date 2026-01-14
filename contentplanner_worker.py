@@ -69,6 +69,7 @@ UPLOADER_REQUIRED_COLS = [
 SECTION_ORDER_REQUIRED_COLS = ["filename","title"]
 SECTION_ORDER_START_ROW = 2  # clear & paste from row 2 onward
 
+HEYGEN_BULK_BG_FILE = "heygen_bulk_bg.xlsx"
 # =============================
 # Low-level HTTP helpers
 # =============================
@@ -289,6 +290,19 @@ def ensure_section_order_file_columns(ws) -> Dict[str, int]:
 
     return header_map
 
+def ensure_heygen_bulk_bg_file_columns(ws) -> Dict[str, int]:
+    headers = [c.value for c in ws[1]]
+    headers = [h if h is not None else "" for h in headers]
+    header_map = {h: i + 1 for i, h in enumerate(headers) if h}
+
+    for col in ["heygen_video","bg","status"]:
+        if col not in header_map:
+            ws.cell(row=1, column=len(headers) + 1, value=col)
+            headers.append(col)
+            header_map[col] = len(headers)
+
+    return header_map
+
 def clear_uploader_from_row(ws, header_map: Dict[str, int], start_row: int):
     max_row = ws.max_row
     max_col = max(header_map.values()) if header_map else ws.max_column
@@ -394,6 +408,48 @@ def populate_section_order_excel_from_db(youtube_channel_name: str, only_due_now
         "count": len(items),
         "message": f"Wrote {len(items)} upload row(s) into {SECTION_ORDER_FILE} starting at row {SECTION_ORDER_START_ROW} (cleared old rows from {SECTION_ORDER_START_ROW}+)."
     }
+
+
+def populate_heygen_bulk_bg_excel_from_db(youtube_channel_name: str, only_due_now: bool = False) -> Dict[str, Any]:
+    topic_id = resolve_topic_id_by_channel(youtube_channel_name)
+    items = fetch_ordered_section_title_rows(topic_id=topic_id, only_due_now=only_due_now, limit=5000)
+
+    if not items:
+        return {"ok": True, "count": 0, "message": "No rows found for this channel."}
+
+    wb = load_workbook(HEYGEN_BULK_BG_FILE)
+    ws = wb.active
+
+    header_map = ensure_heygen_bulk_bg_file_columns(ws)
+
+    # Clear from row 80 onward
+    clear_uploader_from_row(ws, header_map, 2)
+
+    row_idx = 2
+
+    for it in items:
+        # story_title = it.get("story_title") or ""
+
+        # Append .mp4 if not present        
+        filename = it.get("file_name") or ""
+        if filename and not filename.lower().endswith(".mp4"):
+            filename += ".mp4"
+
+        # append "heygen_downloads/" prefix
+        ws.cell(row=row_idx, column=header_map["heygen_video"], value="heygen_downloads/" + filename)
+
+
+        ws.cell(row=row_idx, column=header_map["bg"], value="downloads/" +filename)
+
+        row_idx += 1
+
+    wb.save(HEYGEN_BULK_BG_FILE)
+    return {
+        "ok": True,
+        "count": len(items),
+        "message": f"Wrote {len(items)} upload row(s) into {HEYGEN_BULK_BG_FILE} starting at row 2 (cleared old rows from 2+)."
+    }
+
 
 # =============================
 # CLI (optional)

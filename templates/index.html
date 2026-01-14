@@ -1062,9 +1062,10 @@
     <input type="text" id="cpChannelName" placeholder="e.g., Cash Flow Hacks" required />
 
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button type="button" id="btnImages">Populate Image Jobs Excel</button>
-        <button type="button" id="btnHeygen">Populate HeyGen Submit Excel</button>
-        <button type="button" id="btnUploads">Populate Upload Excel</button>
+        <button type="button" id="btnImages">Populate Image Jobs Excel - media_jobs.xlsx</button>
+        <button type="button" id="btnHeygen">Populate HeyGen Submit Excel - heygen_submit_videos.xlsx</button>
+        <button type="button" id="btnMergeHeygen">Populate HeyGen Merge Excel - heygen_bulk_bg.xlsx</button>
+        <button type="button" id="btnUploads">Populate Upload Excel - master_shorts_uploader_data.xlsx</button>
         <button type="button" id="btnOrder">Populate Order Excel</button>
     </div>
 
@@ -2500,6 +2501,14 @@ ${JSON.stringify(meta, null, 2)}
     const res = await postForm("/planner/populate_order_excel", { youtube_channel_name: channel });
     setResult(res);
     });    
+
+    document.getElementById("btnMergeHeygen").addEventListener("click", async () => {
+    const channel = getChannel();
+    if (!channel) return setResult("Please enter YouTube Channel Name.");
+    setResult("Working...");
+    const res = await postForm("/planner/populate_heygen_bulk_bg_excel", { youtube_channel_name: channel });
+    setResult(res);
+    });   
     </script>
 
     <script>
