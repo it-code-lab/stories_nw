@@ -58,6 +58,7 @@ HEYGEN_REQUIRED_COLS = [
 
 # Uploader master excel
 UPLOADER_MASTER_FILE = "master_shorts_uploader_data.xlsx"
+SECTION_ORDER_FILE = r"edit_vid_input/order.xlsx"
 UPLOADER_START_ROW = 80  # clear & paste from row 80 onward
 UPLOADER_REQUIRED_COLS = [
     "media_file", "yt_title", "yt_description", "youtube_status", "youTubeChannel",
@@ -65,6 +66,8 @@ UPLOADER_REQUIRED_COLS = [
     "section_id",  # useful for DB linkage
 ]
 
+SECTION_ORDER_REQUIRED_COLS = ["filename","title"]
+SECTION_ORDER_START_ROW = 2  # clear & paste from row 2 onward
 
 # =============================
 # Low-level HTTP helpers
@@ -118,7 +121,13 @@ def fetch_scheduled_rows(topic_id: int, only_due_now: bool = False, limit: int =
     )
     return data.get("items", [])
 
-
+def fetch_ordered_section_title_rows(topic_id: int, only_due_now: bool = False, limit: int = 5000) -> List[dict]:
+    # expects /api/worker_fetch_ordered_section_title_rows.php
+    data = _get_json(
+        "/api/worker_fetch_ordered_section_title_rows.php",
+        {"topic_id": topic_id, "only_due_now": 1 if only_due_now else 0, "limit": limit},
+    )
+    return data.get("items", [])
 # =============================
 # Excel helpers
 # =============================
@@ -267,6 +276,18 @@ def ensure_uploader_columns(ws) -> Dict[str, int]:
 
     return header_map
 
+def ensure_section_order_file_columns(ws) -> Dict[str, int]:
+    headers = [c.value for c in ws[1]]
+    headers = [h if h is not None else "" for h in headers]
+    header_map = {h: i + 1 for i, h in enumerate(headers) if h}
+
+    for col in SECTION_ORDER_REQUIRED_COLS:
+        if col not in header_map:
+            ws.cell(row=1, column=len(headers) + 1, value=col)
+            headers.append(col)
+            header_map[col] = len(headers)
+
+    return header_map
 
 def clear_uploader_from_row(ws, header_map: Dict[str, int], start_row: int):
     max_row = ws.max_row
@@ -337,6 +358,42 @@ def populate_upload_excel_for_channel(youtube_channel_name: str, only_due_now: b
         "message": f"Wrote {len(items)} upload row(s) into {UPLOADER_MASTER_FILE} starting at row {UPLOADER_START_ROW} (cleared old rows from {UPLOADER_START_ROW}+)."
     }
 
+def populate_section_order_excel_from_db(youtube_channel_name: str, only_due_now: bool = False) -> Dict[str, Any]:
+    topic_id = resolve_topic_id_by_channel(youtube_channel_name)
+    items = fetch_ordered_section_title_rows(topic_id=topic_id, only_due_now=only_due_now, limit=5000)
+
+    if not items:
+        return {"ok": True, "count": 0, "message": "No rows found for this channel."}
+
+    wb = load_workbook(SECTION_ORDER_FILE)
+    ws = wb.active
+
+    header_map = ensure_section_order_file_columns(ws)
+
+    # Clear from row 80 onward
+    clear_uploader_from_row(ws, header_map, SECTION_ORDER_START_ROW)
+
+    row_idx = SECTION_ORDER_START_ROW
+
+    for it in items:
+        story_title = it.get("story_title") or ""
+
+        # Append .mp4 if not present        
+        filename = it.get("file_name") or ""
+        if filename and not filename.lower().endswith(".mp4"):
+            filename += ".mp4"
+
+        ws.cell(row=row_idx, column=header_map["filename"], value=filename)
+        ws.cell(row=row_idx, column=header_map["title"], value=story_title)
+
+        row_idx += 1
+
+    wb.save(SECTION_ORDER_FILE)
+    return {
+        "ok": True,
+        "count": len(items),
+        "message": f"Wrote {len(items)} upload row(s) into {SECTION_ORDER_FILE} starting at row {SECTION_ORDER_START_ROW} (cleared old rows from {SECTION_ORDER_START_ROW}+)."
+    }
 
 # =============================
 # CLI (optional)

@@ -43,6 +43,7 @@ from coloring_animation import _create_coloring_animation, _create_coloring_anim
 from sketch_core import build_sketch_from_pil
 from PIL import Image
 from scene_builder import probe_duration, make_scene, merge_with_heygen
+from assemble_from_videos import assemble_videos, assemble_videos_by_titles_if_present
 
 from media_audio import (
     extract_audio_from_video,
@@ -175,6 +176,13 @@ def planner_populate_upload_excel():
     res = cpw.populate_upload_excel_for_channel(channel)
     return jsonify(res)
 
+@app.post("/planner/populate_order_excel")
+def planner_populate_order_excel():
+    channel = (request.form.get("youtube_channel_name") or "").strip()
+    if not channel:
+        return jsonify({"ok": False, "message": "youtube_channel_name required"}), 400
+    return cpw.populate_section_order_excel_from_db(channel)
+
 @app.get("/uploads/<path:fn>")
 def uploads(fn):
     return send_from_directory(str(UPLOADS_DIR), fn)
@@ -298,12 +306,16 @@ def render_bulk_bg(orientation="", scale_bg="yes"):
             final_out = (OUT_DIR / f"{heygen_path.stem}{heygen_path.suffix}").resolve()
 
             # merge: captions + avatar remain exactly as HeyGen because we don't scale HeyGen layer
+
             merge_with_heygen(
                 background=bg_video,
                 heygen=heygen_path,
                 out_path=final_out,
-                chroma_key_hex=chroma_key if chroma_key else None,
+                chroma_key_hex=None,  # <-- let the script decide
                 scaled_layout=(scale_bg.lower() != "no"),
+                auto_detect_chroma=True,
+                chroma_detect_hex="0x00FF00",
+                chroma_ratio_threshold=0.12,
             )
 
             ws.cell(row=r, column=status_col).value = "success"
@@ -2655,7 +2667,6 @@ def run_sunotovideogenerator():
             shutil.copy(os.path.join("edit_vid_output", filename), os.path.join("edit_vid_input", filename))
 
         print("*** Processing request sunotovideogenerator: Assembling clips to make video song")
-        from assemble_from_videos import assemble_videos
         assemble_videos(
             video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
             audio_folder="edit_vid_audio",
@@ -2746,7 +2757,7 @@ def run_sunonimagetovideogenerator():
             shutil.copy(os.path.join("edit_vid_output", filename), os.path.join("edit_vid_input", filename))
 
         print("*** Processing request sunonimagetovideogenerator: Assembling clips to make video song")
-        from assemble_from_videos import assemble_videos
+
         assemble_videos(
             video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
             audio_folder="edit_vid_audio",
@@ -2915,13 +2926,35 @@ def assemble_clips_to_make_video_song():
         title_sec = float(request.form.get('title_sec', 2.0))
         transition_sec = float(request.form.get('transition_sec', 0.5))
 
+        # --- NEW: If order.xlsx has a Title column (B), build one output per story group (no bg audio) ---
+        group_outputs = assemble_videos_by_titles_if_present(
+            video_folder="edit_vid_input",
+            output_dir="edit_vid_output",
+            fps=30,
+            prefer_ffmpeg_concat=True,
+            keep_video_audio=(keep_video_audio == 'yes'),
+            video_volume=video_volume,
+            bg_volume=bg_volume,
+            add_titles=add_titles,
+            title_sec=title_sec,
+            add_transitions=add_transitions,
+            transition_sec=transition_sec
+        )
+
+        if group_outputs:
+            return jsonify({
+                "ok": True,
+                "mode": "story_groups",
+                "outputs": group_outputs
+            }), 200
+
 
         # ---- Derive output filename from first input video ----
         first_video = sorted(video_files)[0]  # deterministic
         base_name = os.path.basename(first_video)  # e.g. my_clip_01.mp4
         output_video_path = os.path.join("edit_vid_output", base_name)
 
-        from assemble_from_videos import assemble_videos
+
         assemble_videos(
             video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
             audio_folder="edit_vid_audio",

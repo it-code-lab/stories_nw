@@ -411,7 +411,12 @@
         <div class="infoBox">If audio is not present in edit_vid_audio, only merge of clips in edit_vid_input will be
             done</div>
 
-        <div class="infoBox">Use order.txt or order.xlsx in the edit_vid_input folder to specify video order</div>
+        <div class="infoBox">
+        Use order.txt or order.xlsx in edit_vid_input to specify clip order.
+        <br>
+        If order.xlsx has a <b>Title</b> column (B), the server will output <b>one merged video per Title group</b>.
+        </div>
+
         <label>Copy video and audio files for captions generations</label>
         <select name="copyforcaption" id="copyforcaption">
             <option value="no">no</option>
@@ -1449,6 +1454,7 @@
         <button type="button" id="btnImages">Populate Image Jobs Excel</button>
         <button type="button" id="btnHeygen">Populate HeyGen Submit Excel</button>
         <button type="button" id="btnUploads">Populate Upload Excel</button>
+        <button type="button" id="btnOrder">Populate Order Excel</button>
     </div>
 
     <pre id="cpResult" style="margin-top:12px; background:#111827; color:#e5e7eb; padding:10px; border-radius:8px; white-space:pre-wrap;"></pre>
@@ -2485,6 +2491,15 @@ ${JSON.stringify(meta, null, 2)}
     const res = await postForm("/planner/populate_upload_excel", { youtube_channel_name: channel });
     setResult(res);
     });
+
+
+    document.getElementById("btnOrder").addEventListener("click", async () => {
+    const channel = getChannel();
+    if (!channel) return setResult("Please enter YouTube Channel Name.");
+    setResult("Working...");
+    const res = await postForm("/planner/populate_order_excel", { youtube_channel_name: channel });
+    setResult(res);
+    });    
     </script>
 
     <script>

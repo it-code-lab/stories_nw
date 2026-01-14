@@ -26,7 +26,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 import hashlib
 
-from contentplanner_worker import db_report_image
+# from contentplanner_worker import db_report_image
 # =========================
 # GLOBAL CONFIG (edit here)
 # =========================
@@ -733,16 +733,16 @@ async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
         try:
             img_path = await generate_image_google_ai(page, prompt, out_dir, image_name)
             write_image_result(row_idx, str(Path(img_path).resolve()), account_id_used=account["id"], status="ok")
-            if section_id:
-                db_report_image(section_id, ok=True, image_path=img_path)
+            # if section_id:
+            #     db_report_image(section_id, ok=True, image_path=img_path)
             print(f"[{account['id']}] Row {row_idx} -> {img_path}")
             await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
             await asyncio.sleep(10)
             print("Waited 10 seconds before generating next image")
         except Exception as e:
             write_image_result(row_idx, "", account_id_used=account["id"], status=f"error: {e}")
-            if section_id:
-                db_report_image(section_id, ok=False, error=str(e))
+            # if section_id:
+            #     db_report_image(section_id, ok=False, error=str(e))
             print(f"[{account['id']}] Row {row_idx} ERROR: {e}")
 
     await ctx.close()

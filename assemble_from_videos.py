@@ -1174,6 +1174,117 @@ def assemble_videos_new(
 def _find_videos_with_manifest(video_folder: str) -> list[str]:
     """
     Manifest-driven video ordering.
+
+    If order.txt or order.xlsx exists:
+      - ONLY files listed in the manifest are merged
+      - Extra files in the folder are ignored
+      - Missing listed files are **skipped with a warning** (no hard error)
+
+    Otherwise:
+      - Fall back to sorted auto-discovery
+    """
+    import os
+    from glob import glob
+
+    txt_path = os.path.join(video_folder, "order.txt")
+    xlsx_path = os.path.join(video_folder, "order.xlsx")
+
+    def resolve(name: str) -> str:
+        name = (name or "").strip().strip('"').strip("'")
+        if not name:
+            return ""
+        if name.startswith("#") or name.startswith("//"):
+            return ""
+        p = name if os.path.isabs(name) else os.path.join(video_folder, name)
+        return os.path.abspath(p)
+
+    # ------------------------
+    # order.txt (highest priority)
+    # ------------------------
+    if os.path.isfile(txt_path):
+        ordered: list[str] = []
+        missing: list[tuple[int, str, str]] = []  # (line_no, raw_value, resolved_path)
+
+        with open(txt_path, "r", encoding="utf-8") as f:
+            for line_no, line in enumerate(f, start=1):
+                raw = line.strip()
+                p = resolve(raw)
+                if not p:
+                    continue
+                if os.path.isfile(p):
+                    ordered.append(p)
+                else:
+                    missing.append((line_no, raw, p))
+
+        if missing:
+            print(f"[WARN] order.txt listed {len(missing)} missing file(s). They will be skipped.")
+            for (ln, raw, p) in missing[:10]:
+                print(f"       - line {ln}: '{raw}' -> NOT FOUND ({p})")
+            if len(missing) > 10:
+                print(f"       - ... {len(missing) - 10} more missing entries")
+
+        if not ordered:
+            raise RuntimeError("order.txt exists but none of the listed files were found on disk.")
+
+        print(f"[INFO] Using order.txt with {len(ordered)} videos. Unlisted files will be skipped.")
+        return ordered
+
+    # ------------------------
+    # order.xlsx
+    # ------------------------
+    if os.path.isfile(xlsx_path):
+        from openpyxl import load_workbook
+
+        wb = load_workbook(xlsx_path, data_only=True)
+        ws = wb.active
+
+        ordered: list[str] = []
+        missing: list[tuple[int, str, str]] = []  # (row_no, raw_value, resolved_path)
+
+        for row_no, row in enumerate(ws.iter_rows(min_row=1, max_col=1, values_only=True), start=1):
+            val = row[0]
+            if val is None:
+                continue
+            raw = str(val).strip()
+            p = resolve(raw)
+            if not p:
+                continue
+            if os.path.isfile(p):
+                ordered.append(p)
+            else:
+                missing.append((row_no, raw, p))
+
+        if missing:
+            print(f"[WARN] order.xlsx listed {len(missing)} missing file(s). They will be skipped.")
+            for (rn, raw, p) in missing[:10]:
+                print(f"       - row {rn}: '{raw}' -> NOT FOUND ({p})")
+            if len(missing) > 10:
+                print(f"       - ... {len(missing) - 10} more missing entries")
+
+        if not ordered:
+            raise RuntimeError("order.xlsx exists but column A contains no filenames that exist on disk.")
+
+        print(f"[INFO] Using order.xlsx with {len(ordered)} videos. Unlisted files will be skipped.")
+        return ordered
+
+    # ------------------------
+    # Fallback: auto-discovery
+    # ------------------------
+    video_exts = ("*.mp4", "*.mov", "*.mkv", "*.webm")
+    files: list[str] = []
+    for e in video_exts:
+        files.extend(glob(os.path.join(video_folder, e)))
+
+    if not files:
+        raise RuntimeError(f"No video files found in {video_folder}")
+
+    print("[INFO] No order file found. Using alphabetical order.")
+    return [os.path.abspath(p) for p in sorted(files)]
+
+
+def _find_videos_with_manifest_working(video_folder: str) -> list[str]:
+    """
+    Manifest-driven video ordering.
     If order.txt or order.xlsx exists:
       - ONLY files listed in manifest are merged
       - Extra files in folder are ignored
@@ -1206,8 +1317,11 @@ def _find_videos_with_manifest(video_folder: str) -> list[str]:
                 p = resolve(line)
                 if not p:
                     continue
+                # if not os.path.isfile(p):
+                #     raise RuntimeError(f"[ORDER ERROR] Missing file listed in order.txt: {p}")
                 if not os.path.isfile(p):
-                    raise RuntimeError(f"[ORDER ERROR] Missing file listed in order.txt: {p}")
+                    print(f"[WARN] order.txt references missing file, skipping: {p}")
+                    continue
                 ordered.append(p)
 
         if not ordered:
@@ -1232,8 +1346,12 @@ def _find_videos_with_manifest(video_folder: str) -> list[str]:
             p = resolve(str(val))
             if not p:
                 continue
+            # if not os.path.isfile(p):
+            #     raise RuntimeError(f"[ORDER ERROR] Missing file listed in order.xlsx: {p}")
+
             if not os.path.isfile(p):
-                raise RuntimeError(f"[ORDER ERROR] Missing file listed in order.xlsx: {p}")
+                print(f"[WARN] order.xlsx references missing file, skipping: {p}")
+                continue
             ordered.append(p)
 
         if not ordered:
@@ -1256,6 +1374,144 @@ def _find_videos_with_manifest(video_folder: str) -> list[str]:
     print("[INFO] No order file found. Using alphabetical order.")
     return [os.path.abspath(p) for p in sorted(files)]
 
+
+
+def _safe_out_name(title: str, max_len: int = 120) -> str:
+    title = (title or "").strip()
+    if not title:
+        title = "story"
+    # Windows-safe filename
+    title = re.sub(r'[\\/:*?"<>|]+', "", title)
+    title = re.sub(r"\s+", " ", title).strip()
+    # Keep unicode letters/digits/_/-/space
+    title = re.sub(r"[^\w\s\-]+", "", title, flags=re.UNICODE)
+    title = re.sub(r"\s+", "-", title).strip("-_")
+    return (title[:max_len].rstrip("-_")) or "story"
+
+def _read_order_xlsx_story_groups(video_folder: str):
+    """
+    order.xlsx:
+      Col A = filename
+      Col B = title (story name)
+    A change in title starts a new story group.
+    """
+    from openpyxl import load_workbook
+
+    xlsx_path = os.path.join(video_folder, "order.xlsx")
+    if not os.path.isfile(xlsx_path):
+        return []
+
+    wb = load_workbook(xlsx_path, data_only=True)
+    ws = wb.active
+
+    # Read first two columns
+    rows = list(ws.iter_rows(min_row=1, max_col=2, values_only=True))
+    if not rows:
+        return []
+
+    # Skip header if present
+    a0 = (str(rows[0][0]).strip().lower() if rows[0][0] else "")
+    b0 = (str(rows[0][1]).strip().lower() if len(rows[0]) > 1 and rows[0][1] else "")
+    start_idx = 2 if (a0 in ("file", "filename", "video") and b0 in ("title", "story", "group")) else 1
+
+    def resolve(name: str) -> str:
+        name = (name or "").strip()
+        if not name or name.startswith("#") or name.startswith("//"):
+            return ""
+        p = name if os.path.isabs(name) else os.path.join(video_folder, name)
+        return os.path.abspath(p)
+
+    groups = []
+    current_title = None
+    current_files = []
+
+    for (a, b) in rows[start_idx - 1 :]:
+        if a is None:
+            continue
+        fp = resolve(str(a))
+        if not fp:
+            continue
+
+        title = (str(b).strip() if b is not None else "")
+        if not title and current_title:
+            title = current_title
+        if not title:
+            title = "story"
+
+        if title != current_title and current_files:
+            groups.append((current_title, current_files))
+            current_files = []
+
+        current_title = title
+
+        if not os.path.isfile(fp):
+            print(f"[WARN] order.xlsx story row references missing file, skipping: {fp}")
+            continue
+
+        current_files.append(fp)
+
+    if current_files:
+        groups.append((current_title, current_files))
+
+    # Only treat as "story mode" if at least one non-empty title exists in col B
+    any_title = any((r[1] is not None and str(r[1]).strip()) for r in rows[start_idx - 1 :])
+    return groups if any_title else []
+
+def assemble_videos_by_titles_if_present(
+    video_folder: str,
+    output_dir: str = "edit_vid_output",
+    fps: int = 30,
+    prefer_ffmpeg_concat: bool = True,
+    keep_video_audio: bool = False,
+    video_volume: float = 0.4,
+    bg_volume: float = 1.0,
+    add_titles: bool = False,
+    title_sec: float = 2.0,
+    add_transitions: bool = False,
+    transition_sec: float = 0.5,
+):
+    """
+    If order.xlsx has a Title column (B), produce one output per story group.
+    IMPORTANT: This runs with use_bg_audio=False (no bg audio).
+    Returns list of output paths, or [] if no title groups detected.
+    """
+    groups = _read_order_xlsx_story_groups(video_folder)
+    if not groups:
+        return []
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    outputs = []
+    for (title, files) in groups:
+        base = _safe_out_name(title)
+        out_path = os.path.join(output_dir, f"{base}.mp4")
+        i = 2
+        while os.path.exists(out_path):
+            out_path = os.path.join(output_dir, f"{base}_{i:02d}.mp4")
+            i += 1
+
+        assemble_videos(
+            video_folder=video_folder,
+            audio_folder="edit_vid_audio",  # ignored since use_bg_audio=False
+            output_path=out_path,
+            fps=fps,
+            shuffle=False,
+            prefer_ffmpeg_concat=prefer_ffmpeg_concat,
+            keep_video_audio=keep_video_audio,
+            video_volume=video_volume,
+            bg_volume=bg_volume,
+            add_titles=add_titles,
+            title_sec=title_sec,
+            add_transitions=add_transitions,
+            transition_sec=transition_sec,
+            clear_output_dir=False,
+            use_bg_audio=False,
+            video_paths_override=files,
+        )
+        outputs.append(out_path)
+
+    return outputs
+
 # --------------------------
 # Main assembly
 # --------------------------
@@ -1273,14 +1529,22 @@ def assemble_videos(
     title_sec: float = 2.0,
     add_transitions: bool = False,
     transition_sec: float = 0.5,
+    clear_output_dir: bool = False,
+    use_bg_audio: bool = True,
+    video_paths_override: list[str] | None = None,    
 ):
     """
     If bg audio exists -> match bg-audio duration (existing behavior).
     If bg audio is missing/empty -> just merge the clips (still supports ffmpeg concat fallback).
     """
 
+    # print("Received assemble_videos Arguments:", locals())
+    # clear_folder("edit_vid_output")
+    # os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
     print("Received assemble_videos Arguments:", locals())
-    clear_folder("edit_vid_output")
+    if clear_output_dir:
+        clear_folder("edit_vid_output")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     if os.path.isfile(os.path.join(video_folder, "order.txt")) or \
@@ -1296,13 +1560,19 @@ def assemble_videos(
 
     # Collect videos
     # video_paths = _find_videos(video_folder)
-    video_paths = _find_videos_with_manifest(video_folder)
+    # video_paths = _find_videos_with_manifest(video_folder)
+
+    video_paths = video_paths_override or _find_videos_with_manifest(video_folder)
+
 
     if shuffle and len(video_paths) > 1:
         random.shuffle(video_paths)
 
     # Try to load bg audio (optional now)
-    audio_path = _try_find_audio(audio_folder)
+    # audio_path = _try_find_audio(audio_folder)
+    audio_path = _try_find_audio(audio_folder) if use_bg_audio else None
+
+
     audio = None
     audio_duration = None
 
