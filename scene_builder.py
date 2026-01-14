@@ -225,8 +225,10 @@ def merge_with_heygen(
     else:
         res = "1920:1080"
         content_w_chroma = "iw*0.65"
-        content_w_pip = "iw*0.42"
-        overlay_pos = "W-w-60:60"
+        content_w_pip = "iw*0.55"
+        # overlay_pos = "W-w-60:60"
+        overlay_pos_chroma = "W-w-60:60" # keep as-is for chroma layout
+        overlay_pos_pip    = "W-w-10:10" # move PiP more to the right
         border_cfg = "white@0.9"
         office_img = "images/heygen_avtar_bg_landscape.png"
 
@@ -251,7 +253,7 @@ def merge_with_heygen(
             f"[0:v]scale={content_w_chroma}:-1,pad=iw+12:ih+12:6:6:{border_cfg}[vid_framed];"
             f"[2:v]scale={res.replace(':', 'x')}:force_original_aspect_ratio=increase,crop={res}[studio];"
             f"[1:v]colorkey={chroma_key_hex}:0.14:0.06,format=rgba,despill=green:0.8[avatar];"
-            f"[studio][vid_framed]overlay={overlay_pos}[temp];"
+            f"[studio][vid_framed]overlay={overlay_pos_chroma}[temp];"
             f"[temp][avatar]overlay=0:H-h:format=auto[v]"
         )
 
@@ -279,7 +281,7 @@ def merge_with_heygen(
         filt = (
             f"[0:v]scale={content_w_pip}:-1,pad=iw+12:ih+12:6:6:{border_cfg}[pip];"
             f"[1:v]scale={res}:force_original_aspect_ratio=increase,crop={res}[base];"
-            f"[base][pip]overlay={overlay_pos}:format=auto[v]"
+            f"[base][pip]overlay={overlay_pos_pip}:format=auto[v]"
         )
         cmd = [
             "ffmpeg", "-y",
