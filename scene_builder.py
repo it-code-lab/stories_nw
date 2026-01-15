@@ -195,6 +195,24 @@ def probe_resolution(path: Path) -> tuple[int, int]:
     w, h = map(int, out.split("x"))
     return w, h
 
+def probe_has_audio(path: Path) -> bool:
+    """
+    Returns True if the file has at least one audio stream.
+    (Avoids ffmpeg errors when applying -af but there is no audio.)
+    """
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "a",
+        "-show_entries", "stream=index",
+        "-of", "csv=p=0",
+        str(path),
+    ]
+    try:
+        out = subprocess.check_output(cmd).decode("utf-8").strip()
+        return bool(out)
+    except Exception:
+        return False
+    
 def merge_with_heygen(
     background: Path,
     heygen: Path,
@@ -233,6 +251,7 @@ def merge_with_heygen(
         office_img = "images/heygen_avtar_bg_landscape.png"
 
     audio_filt = "loudnorm=I=-16:TP=-1.5:LRA=11,volume=1.2"
+    heygen_has_audio = probe_has_audio(heygen)
 
     # Auto-detect chroma if requested (and if not explicitly provided)
     if auto_detect_chroma and not chroma_key_hex:
@@ -245,6 +264,31 @@ def merge_with_heygen(
         if has_key:
             chroma_key_hex = chroma_detect_hex
 
+    # ---------------------------------------------------------
+    # NON-CHROMA MODE  missing background => use HeyGen only
+    # (still apply audio enhancement if audio exists)
+    # ---------------------------------------------------------
+    if not chroma_key_hex and (not background.exists()):
+        print(f"NON_CHROMA: background missing, using HeyGen only: {background}")
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", str(heygen),
+            "-map", "0:v:0",
+            "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
+        ]
+        if heygen_has_audio:
+            cmd += [
+                "-map", "0:a?",
+                "-af", audio_filt,
+                "-c:a", "aac", "-b:a", "192k",
+            ]
+        cmd += [
+            "-shortest",
+            str(out_path),
+        ]
+        run(cmd)
+        return
+    
     # --------------------------
     # CHROMA MODE → use office_img
     # --------------------------
@@ -264,13 +308,13 @@ def merge_with_heygen(
             "-i", office_img,
             "-filter_complex", filt,
             "-map", "[v]",
-            "-map", "1:a?",
-            "-af", audio_filt,
             "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
-            "-c:a", "aac", "-b:a", "192k",
             "-shortest",
             str(out_path)
         ]
+        if heygen_has_audio:
+            cmd += ["-map", "1:a?", "-af", audio_filt, "-c:a", "aac", "-b:a", "192k"]
+
         run(cmd)
         return
 
@@ -289,12 +333,13 @@ def merge_with_heygen(
             "-i", str(heygen),
             "-filter_complex", filt,
             "-map", "[v]",
-            "-map", "1:a?",
             "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
-            "-c:a", "aac", "-b:a", "192k",
             "-shortest",
             str(out_path)
         ]
+        if heygen_has_audio:
+           cmd += ["-map", "1:a?", "-af", audio_filt, "-c:a", "aac", "-b:a", "192k"]
+
         run(cmd)
         return
 
@@ -305,12 +350,13 @@ def merge_with_heygen(
         "-i", str(heygen),
         "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto[v]",
         "-map", "[v]",
-        "-map", "1:a?",
         "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
-        "-c:a", "aac", "-b:a", "192k",
         "-shortest",
         str(out_path)
     ]
+    if heygen_has_audio:
+        cmd += ["-map", "1:a?", "-af", audio_filt, "-c:a", "aac", "-b:a", "192k"]
+
     run(cmd)
 
 

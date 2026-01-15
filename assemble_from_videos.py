@@ -763,6 +763,71 @@ def _infer_title_from_path(p: str) -> str:
     name = re.sub(r"\s+", " ", name).strip()
     return name or base
 
+def _try_load_section_titles_from_order_xlsx(video_folder: str) -> dict:
+    """
+    If order.xlsx exists (commonly under edit_vid_input), return:
+      { "<clip_basename>.mp4": "Section Title" }
+    """
+    # Try a few common locations
+    candidates = [
+        os.path.join(video_folder, "order.xlsx"),
+        os.path.join(video_folder, "edit_vid_input", "order.xlsx"),
+        os.path.join(os.path.dirname(video_folder), "edit_vid_input", "order.xlsx"),
+        os.path.join("edit_vid_input", "order.xlsx"),
+    ]
+    order_path = next((p for p in candidates if os.path.isfile(p)), None)
+    if not order_path:
+        return {}
+
+    try:
+        from openpyxl import load_workbook
+    except Exception:
+        print("[Warn] openpyxl not available; ignoring order.xlsx for section titles.")
+        return {}
+
+    def _norm_header(h) -> str:
+        h = (h or "")
+        if not isinstance(h, str):
+            h = str(h)
+        h = h.strip().lower()
+        return re.sub(r"[\s_]+", "", h)  # "section_title" -> "sectiontitle"
+
+    try:
+        wb = load_workbook(order_path, data_only=True)
+        ws = wb.active
+
+        # Find header columns
+        filename_col = None
+        section_title_col = None
+        for c in range(1, ws.max_column + 1):
+            hv = ws.cell(row=1, column=c).value
+            nh = _norm_header(hv)
+            if nh == "filename":
+                filename_col = c
+            elif nh == "sectiontitle":
+                section_title_col = c
+
+        if not filename_col or not section_title_col:
+            print(f"[Warn] order.xlsx found but missing headers: filename/section_title ({order_path})")
+            return {}
+
+        mapping = {}
+        for r in range(2, ws.max_row + 1):
+            fn = ws.cell(row=r, column=filename_col).value
+            st = ws.cell(row=r, column=section_title_col).value
+            if not fn or not st:
+                continue
+            fn_key = os.path.basename(str(fn)).strip()
+            st_val = str(st).strip()
+            if fn_key and st_val:
+                mapping[fn_key] = st_val
+
+        print(f"[Info] Loaded {len(mapping)} section titles from: {order_path}")
+        return mapping
+
+    except Exception as e:
+        print(f"[Warn] Failed reading order.xlsx ({order_path}): {e}")
+        return {}
 
 
 def _run_cmd(cmd):
@@ -948,10 +1013,19 @@ def assemble_videos_new(
         temp_dir = os.path.join(os.path.dirname(output_path) or ".", "__tmp_titlecards")
         os.makedirs(temp_dir, exist_ok=True)
 
+        section_title_map = _try_load_section_titles_from_order_xlsx(video_folder)
+
         segments = [video_paths[0]]
         for i in range(1, len(video_paths)):
             next_clip = video_paths[i]
-            next_title = _infer_title_from_path(next_clip)
+            
+            # next_title = _infer_title_from_path(next_clip)
+
+            # Prefer section_title from order.xlsx (if present), else fallback to filename inference
+            base = os.path.basename(next_clip)
+            next_title = section_title_map.get(base) or _infer_title_from_path(next_clip)
+
+
             card_path = os.path.join(temp_dir, f"title_{i:03d}.mp4")
 
             _make_title_card_ffmpeg(
