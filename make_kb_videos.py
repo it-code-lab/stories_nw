@@ -259,7 +259,7 @@ def export_kb_videos(input_folder, out_folder,
                      zoom_start=1.05, zoom_end=1.15, fps=30):
     os.makedirs(out_folder, exist_ok=True)
     print("Received export_kb_videos Arguments:", locals())
-    clear_folder(out_folder)
+    # clear_folder(out_folder)
 
     exts = ("*.jpg","*.jpeg","*.png","*.webp")
     images = []

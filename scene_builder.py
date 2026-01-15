@@ -238,6 +238,8 @@ def merge_with_heygen(
         content_w_chroma = "iw"
         content_w_pip = "iw*0.96"
         overlay_pos = "0:200"
+        overlay_pos_chroma = "0:200"
+        overlay_pos_pip = "0:200"
         border_cfg = "white@0.0"
         office_img = "images/heygen_avtar_bg_port.png"
     else:
@@ -309,11 +311,11 @@ def merge_with_heygen(
             "-filter_complex", filt,
             "-map", "[v]",
             "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
-            "-shortest",
-            str(out_path)
         ]
         if heygen_has_audio:
             cmd += ["-map", "1:a?", "-af", audio_filt, "-c:a", "aac", "-b:a", "192k"]
+
+        cmd += ["-shortest", str(out_path)]
 
         run(cmd)
         return
@@ -334,11 +336,11 @@ def merge_with_heygen(
             "-filter_complex", filt,
             "-map", "[v]",
             "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
-            "-shortest",
-            str(out_path)
         ]
         if heygen_has_audio:
            cmd += ["-map", "1:a?", "-af", audio_filt, "-c:a", "aac", "-b:a", "192k"]
+
+        cmd += ["-shortest", str(out_path)]
 
         run(cmd)
         return
@@ -351,11 +353,11 @@ def merge_with_heygen(
         "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto[v]",
         "-map", "[v]",
         "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
-        "-shortest",
-        str(out_path)
     ]
     if heygen_has_audio:
         cmd += ["-map", "1:a?", "-af", audio_filt, "-c:a", "aac", "-b:a", "192k"]
+
+    cmd += ["-shortest", str(out_path)]
 
     run(cmd)
 
