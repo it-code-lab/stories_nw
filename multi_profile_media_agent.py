@@ -437,7 +437,8 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path, image
     # If Image name is blank, use safe_basename(prompt)
     if image_name.strip():
         # out_path = out_dir / f"{safe_basename(image_name, 'png')}"
-        out_path = out_dir / safe_filename_nohash(image_name, "png")
+        # out_path = out_dir / safe_filename_nohash(image_name, "png")
+        out_path = out_dir / f"{image_name}.png"
 
     else:
         out_path = out_dir / safe_basename(prompt, "png")
