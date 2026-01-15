@@ -29,7 +29,9 @@ from typing import Dict, Any, List, Optional
 
 import requests
 from openpyxl import Workbook, load_workbook
+import re
 
+from assemble_from_videos import _safe_out_name   
 
 # =============================
 # Config
@@ -330,13 +332,15 @@ def populate_upload_excel_for_channel(youtube_channel_name: str, only_due_now: b
 
     for it in items:
         section_id = it.get("section_id", "")
-
+        image_name = it.get("image_name") or ""
         # Optional: if you have final_video_path in API, it will be filled automatically
-        media_file = (it.get("final_video_path") or "")
-        if not media_file:
-            # If your final videos are named by image_name and stored in a known folder,
-            # you can build the path here. Otherwise leave blank and fill later.
-            media_file = ""
+        # media_file = (it.get("final_video_path") or "")
+        # if not media_file:
+        #     # If your final videos are named by image_name and stored in a known folder,
+        #     # you can build the path here. Otherwise leave blank and fill later.
+        #     media_file = ""
+
+        media_file = "out/" + image_name + ".mp4"
 
         story_title = it.get("story_title") or ""
         story_desc = it.get("story_description") or ""
@@ -370,6 +374,95 @@ def populate_upload_excel_for_channel(youtube_channel_name: str, only_due_now: b
         "ok": True,
         "count": len(items),
         "message": f"Wrote {len(items)} upload row(s) into {UPLOADER_MASTER_FILE} starting at row {UPLOADER_START_ROW} (cleared old rows from {UPLOADER_START_ROW}+)."
+    }
+
+
+def _safe_out_name(title: str, max_len: int = 120) -> str:
+    title = (title or "").strip()
+    if not title:
+        title = "story"
+    # Windows-safe filename
+    title = re.sub(r'[\\/:*?"<>|]+', "", title)
+    title = re.sub(r"\s+", " ", title).strip()
+    # Keep unicode letters/digits/_/-/space
+    title = re.sub(r"[^\w\s\-]+", "", title, flags=re.UNICODE)
+    title = re.sub(r"\s+", "-", title).strip("-_")
+    return (title[:max_len].rstrip("-_")) or "story"
+
+
+def populate_upload_excel_long_for_channel(youtube_channel_name: str, only_due_now: bool = False) -> Dict[str, Any]:
+    topic_id = resolve_topic_id_by_channel(youtube_channel_name)
+    items = fetch_scheduled_rows(topic_id=topic_id, only_due_now=only_due_now, limit=5000)
+
+    if not items:
+        return {"ok": True, "count": 0, "message": "No scheduled rows found for this channel."}
+
+    wb = load_workbook(UPLOADER_MASTER_FILE)
+    ws = wb.active
+
+    header_map = ensure_uploader_columns(ws)
+
+    # Clear from row 80 onward
+    clear_uploader_from_row(ws, header_map, UPLOADER_START_ROW)
+
+    row_idx = UPLOADER_START_ROW
+    seen = set()
+    written = 0
+    skipped_dupes = 0
+
+    for it in items:
+        # section_id = it.get("section_id", "")
+
+        # Optional: if you have final_video_path in API, it will be filled automatically
+        # media_file = (it.get("final_video_path") or "")
+        # if not media_file:
+        #     # If your final videos are named by image_name and stored in a known folder,
+        #     # you can build the path here. Otherwise leave blank and fill later.
+        #     media_file = ""
+
+        story_title = it.get("story_title") or ""
+        safe_name = _safe_out_name(story_title)
+        dedupe_key = it.get("story_id") or it.get("story_key") or safe_name
+
+        if not dedupe_key:
+            # Nothing to dedupe on; skip (or choose a different fallback)
+            continue
+
+        if dedupe_key in seen:
+            skipped_dupes += 1
+            continue
+        seen.add(dedupe_key)
+
+        media_file = f"edit_vid_output/{safe_name}.mp4"
+
+        story_desc = (it.get("story_description") or "").strip()
+        playlist = it.get("youtube_playlist_name") or ""
+        scheduled_at = it.get("scheduled_at") or ""
+        youTubeChannel = it.get("youtube_channel_name") or youtube_channel_name
+
+        ws.cell(row=row_idx, column=header_map["media_type"], value="video")
+        ws.cell(row=row_idx, column=header_map["future"], value="")
+        ws.cell(row=row_idx, column=header_map["youtube_status"], value="")
+        ws.cell(row=row_idx, column=header_map["youTubeChannel"], value=youTubeChannel)
+
+        ws.cell(row=row_idx, column=header_map["media_file"], value=media_file)
+        ws.cell(row=row_idx, column=header_map["yt_title"], value=story_title)
+        ws.cell(row=row_idx, column=header_map["yt_description"], value=story_desc)
+        ws.cell(row=row_idx, column=header_map["yt_playlist"], value=playlist)
+        ws.cell(row=row_idx, column=header_map["yt_schedule_date"], value=format_schedule_date(scheduled_at))
+        ws.cell(row=row_idx, column=header_map["yt_tags"], value="")
+
+        row_idx += 1
+        written += 1
+
+    wb.save(UPLOADER_MASTER_FILE)
+    return {
+        "ok": True,
+        "count": written,
+        "message": (
+            f"Wrote {written} unique upload row(s) into {UPLOADER_MASTER_FILE} starting at row {UPLOADER_START_ROW} "
+            f"(skipped {skipped_dupes} duplicate item(s); cleared old rows from {UPLOADER_START_ROW}+)."
+        )
     }
 
 def populate_section_order_excel_from_db(youtube_channel_name: str, only_due_now: bool = False) -> Dict[str, Any]:

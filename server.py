@@ -176,6 +176,14 @@ def planner_populate_upload_excel():
     res = cpw.populate_upload_excel_for_channel(channel)
     return jsonify(res)
 
+@app.post("/planner/populate_upload_excel_long")
+def planner_populate_upload_excel_long():
+    channel = (request.form.get("youtube_channel_name") or "").strip()
+    if not channel:
+        return jsonify({"ok": False, "message": "youtube_channel_name required"}), 400
+    res = cpw.populate_upload_excel_long_for_channel(channel)
+    return jsonify(res)
+
 @app.post("/planner/populate_order_excel")
 def planner_populate_order_excel():
     channel = (request.form.get("youtube_channel_name") or "").strip()
@@ -216,7 +224,7 @@ def _resolve_path(p: str) -> Path:
     return pp if pp.is_absolute() else (BASE_DIR / pp).resolve()
 
 @app.post("/render_bulk_bg")
-def render_bulk_bg(orientation="", scale_bg="yes"):
+def render_bulk_bg(orientation="", scale_bg="yes", copy_as_is=True):
     """
     Reads BASE_DIR/heygen_bulk_bg.xlsx with columns:
       - heygen_video : path to HeyGen mp4
@@ -279,10 +287,41 @@ def render_bulk_bg(orientation="", scale_bg="yes"):
                 })
                 continue
 
-            if not heygen_raw or not bg_raw:
+            if status_val and str(status_val).strip().lower() == "success (copied as is)":
+                results.append({
+                    "row": r,
+                    "ok": True,
+                    "skipped": True,
+                    "reason": "already processed"
+                })
+                continue
+
+            if not heygen_raw and not bg_raw:
                 continue
 
             heygen_path = _resolve_path(str(heygen_raw))
+
+            if not heygen_path.exists():
+                results.append({"row": r, "ok": False, "error": f"HeyGen not found: {heygen_path}"})
+                ws.cell(row=r, column=status_col).value = "HeyGen video not found"
+                wb.save(excel_path)   # ✅ save immediately (important)
+                continue
+
+            if not bg_raw:
+                if not copy_as_is:
+                    results.append({"row": r, "ok": False, "error": f"BG not found: {bg_raw}"})
+                    ws.cell(row=r, column=status_col).value = "BG asset not found"
+                    wb.save(excel_path)   # ✅ save immediately (important)
+                    continue
+                else:
+                    bg_asset = None
+                    # copy HeyGen as is 
+                    final_out = (OUT_DIR / f"{heygen_path.stem}{heygen_path.suffix}").resolve()
+                    shutil.copy2(heygen_path, final_out)
+                    ws.cell(row=r, column=status_col).value = "success (copied as is)"
+                    wb.save(excel_path)   # ✅ save immediately (important)
+                    continue
+
             bg_asset = _resolve_path(str(bg_raw))
 
             if bg_asset.suffix.lower() == ".mp4" and not bg_asset.exists():
@@ -290,11 +329,7 @@ def render_bulk_bg(orientation="", scale_bg="yes"):
                 if png_fallback.exists():
                     bg_asset = png_fallback  # use the png instead
 
-            if not heygen_path.exists():
-                results.append({"row": r, "ok": False, "error": f"HeyGen not found: {heygen_path}"})
-                ws.cell(row=r, column=status_col).value = "HeyGen video not found"
-                wb.save(excel_path)   # ✅ save immediately (important)
-                continue
+
             if not bg_asset.exists():
                 results.append({"row": r, "ok": False, "error": f"BG not found: {bg_asset}"})
                 ws.cell(row=r, column=status_col).value = "BG asset not found"
@@ -1594,7 +1629,8 @@ def add_heygen_backgrounds():
     try:
         orientation = request.form.get('orientation', 'landscape')
         scaleBG = request.form.get('scale_bg', 'yes')
-        render_bulk_bg(orientation, scaleBG)
+        copy_as_is = request.form.get('copy_asis', 'yes') == 'yes'
+        render_bulk_bg(orientation, scaleBG, copy_as_is)
         return jsonify({"ok": True, "message": "HeyGen backgrounds added successfully."})
     except Exception as e:
         import traceback

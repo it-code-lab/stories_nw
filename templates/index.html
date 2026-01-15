@@ -443,6 +443,8 @@
             <option value="no">no</option>
             <option value="yes">yes</option>
         </select>
+
+
         <!--
         <label>Title duration (seconds)</label>
         <input type="number" name="title_sec" id="title_sec" value="2.0" step="0.1" min="0.5" max="10">
@@ -1065,7 +1067,10 @@
         <button type="button" id="btnImages">Populate Image Jobs Excel - media_jobs.xlsx</button>
         <button type="button" id="btnHeygen">Populate HeyGen Submit Excel - heygen_submit_videos.xlsx</button>
         <button type="button" id="btnMergeHeygen">Populate HeyGen Merge Excel - heygen_bulk_bg.xlsx</button>
-        <button type="button" id="btnUploads">Populate Upload Excel - master_shorts_uploader_data.xlsx</button>
+        <button type="button" id="btnUploadsLong">Populate LongForm Upload - master_shorts_uploader_data.xlsx</button>
+
+        <button type="button" id="btnUploads">Populate Shorts Upload - master_shorts_uploader_data.xlsx</button>
+
         <button type="button" id="btnOrder">Populate Order Excel</button>
     </div>
 
@@ -1120,6 +1125,13 @@
             <option value="no">no</option>
             <option value="yes">yes</option>
         </select>
+
+        <label>Copy video as is when background is missing</label>
+        <select name="copy_asis" id="copy_asis">
+            <option value="yes">yes</option>
+            <option value="no">no</option>
+        </select>        
+
         <button type="submit">Process Videos</button>
         <!-- <a href="add_heygen_backgrounds" target="_blank">Add background to Heygen Videos</a> -->
         <pre id="addBGToHeyGenVideosResult"></pre>
@@ -2490,6 +2502,14 @@ ${JSON.stringify(meta, null, 2)}
     if (!channel) return setResult("Please enter YouTube Channel Name.");
     setResult("Working...");
     const res = await postForm("/planner/populate_upload_excel", { youtube_channel_name: channel });
+    setResult(res);
+    });
+
+    document.getElementById("btnUploadsLong").addEventListener("click", async () => {
+    const channel = getChannel();
+    if (!channel) return setResult("Please enter YouTube Channel Name.");
+    setResult("Working...");
+    const res = await postForm("/planner/populate_upload_excel_long", { youtube_channel_name: channel });
     setResult(res);
     });
 
