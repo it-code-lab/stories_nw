@@ -66,7 +66,7 @@ UPLOADER_REQUIRED_COLS = [
     "section_id",  # useful for DB linkage
 ]
 
-SECTION_ORDER_REQUIRED_COLS = ["filename","title"]
+SECTION_ORDER_REQUIRED_COLS = ["filename","title","section_title"]
 SECTION_ORDER_START_ROW = 2  # clear & paste from row 2 onward
 
 HEYGEN_BULK_BG_FILE = "heygen_bulk_bg.xlsx"
@@ -397,8 +397,11 @@ def populate_section_order_excel_from_db(youtube_channel_name: str, only_due_now
         if filename and not filename.lower().endswith(".mp4"):
             filename += ".mp4"
 
+        section_title = it.get("section_title") or ""
+        
         ws.cell(row=row_idx, column=header_map["filename"], value=filename)
         ws.cell(row=row_idx, column=header_map["title"], value=story_title)
+        ws.cell(row=row_idx, column=header_map["section_title"], value=section_title)
 
         row_idx += 1
 
