@@ -226,9 +226,12 @@ def merge_with_heygen(
 ):
     """
     Modes:
-      - If chroma is used in HeyGen: key avatar/captions and composite over office_img.
-      - If chroma is NOT used: keep HeyGen untouched and put `background` as PiP (scene-in-scene).
+    - If chroma is used in HeyGen (has_key=True): key the green background and overlay HeyGen over a FULL-SCREEN background video/image.
+        * Prefer `background` as the background; if it's missing, fall back to `office_img`.
+        * No PiP is used in this mode.
+    - If chroma is NOT used (has_key=False): keep HeyGen untouched and put `background` as PiP (scene-in-scene).
     """
+
 
     w, h = probe_resolution(heygen)
     is_portrait = h > w
@@ -254,6 +257,8 @@ def merge_with_heygen(
 
     audio_filt = "loudnorm=I=-16:TP=-1.5:LRA=11,volume=1.2"
     heygen_has_audio = probe_has_audio(heygen)
+
+    has_key = bool(chroma_key_hex)  # True when chroma is explicitly provided
 
     # Auto-detect chroma if requested (and if not explicitly provided)
     if auto_detect_chroma and not chroma_key_hex:
@@ -294,23 +299,26 @@ def merge_with_heygen(
         run(cmd)
         return
     
-    # --------------------------
-    # CHROMA MODE → use office_img
-    # --------------------------
+    # -----------------------------------------------------------------
+    # CHROMA MODE (has_key=True)
+    #   - Use `background` as the FULL background (no PiP)
+    #   - If background is missing, fall back to office_img as background
+    # -----------------------------------------------------------------
     if chroma_key_hex:
+        bg_path = background if background.exists() else Path(office_img)
+        if not background.exists():
+            print(f"CHROMA: background missing, using office_img as background: {office_img}")
+
         filt = (
-            f"[0:v]scale={content_w_chroma}:-1,pad=iw+12:ih+12:6:6:{border_cfg}[vid_framed];"
-            f"[2:v]scale={res.replace(':', 'x')}:force_original_aspect_ratio=increase,crop={res}[studio];"
-            f"[1:v]colorkey={chroma_key_hex}:0.14:0.06,format=rgba,despill=green:0.8[avatar];"
-            f"[studio][vid_framed]overlay={overlay_pos_chroma}[temp];"
-            f"[temp][avatar]overlay=0:H-h:format=auto[v]"
+            f"[0:v]scale={res.replace(':', 'x')}:force_original_aspect_ratio=increase,crop={res}[bg];"
+            f"[1:v]colorkey={chroma_key_hex}:0.14:0.06,format=rgba,despill=green:0.8[fg];"
+            f"[bg][fg]overlay=0:0:format=auto:eof_action=repeat[v]"
         )
 
         cmd = [
             "ffmpeg", "-y",
-            "-i", str(background),
+            "-i", str(bg_path),
             "-i", str(heygen),
-            "-i", office_img,
             "-filter_complex", filt,
             "-map", "[v]",
             "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
@@ -319,7 +327,6 @@ def merge_with_heygen(
             cmd += ["-map", "1:a?", "-af", audio_filt, "-c:a", "aac", "-b:a", "192k"]
 
         cmd += ["-shortest", str(out_path)]
-
         run(cmd)
         return
 
