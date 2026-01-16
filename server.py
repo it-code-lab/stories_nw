@@ -2963,6 +2963,30 @@ def assemble_clips_to_make_video_song():
                 "hint":  "Add at least one of: .mp4, .mov, .mkv, .avi, .webm, .m4v"
             }), 400
 
+
+        # --- NEW: Validate min duration (>= 4s) for every input video ---
+        MIN_SEC = 4.0
+        EPS = 0.02  # tiny tolerance for rounding/metadata quirks
+
+        too_short = []
+        for vp in video_files:
+            dur = probe_duration(os.path.join("edit_vid_input", vp))
+            if dur + EPS < MIN_SEC:
+                too_short.append({
+                    "file": os.path.basename(vp),
+                    "duration_sec": round(dur, 3),
+                })
+
+        if too_short:
+            print(f"❌ One or more input videos are shorter than {MIN_SEC:.0f} seconds:", too_short)
+            return jsonify({
+                "error": f"❌ One or more input videos are shorter than {MIN_SEC:.0f} seconds.",
+                "min_seconds": MIN_SEC,
+                "files": too_short,
+                "hint": "Replace/extend these clips (or remove them) so every clip is at least 4 seconds."
+            }), 400
+        
+
         keep_video_audio = request.form.get('keep_video_audio','no')
         video_volume = float(request.form.get('video_volume',0.3))
         bg_volume = float(request.form.get('bg_volume',1.0))

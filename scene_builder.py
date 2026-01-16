@@ -265,6 +265,9 @@ def merge_with_heygen(
         print(f"CHROMA_DETECT {heygen.name}: has_key={has_key} green_ratio={ratio:.3f}")
         if has_key:
             chroma_key_hex = chroma_detect_hex
+            scaled_layout = False  # use chroma layout
+        else:
+            scaled_layout = True  # force PiP mode if no chroma detected
 
     # ---------------------------------------------------------
     # NON-CHROMA MODE  missing background => use HeyGen only

@@ -377,7 +377,7 @@ def populate_upload_excel_for_channel(youtube_channel_name: str, only_due_now: b
     }
 
 
-def _safe_out_name(title: str, max_len: int = 120) -> str:
+def _safe_out_name_duplicate(title: str, max_len: int = 120) -> str:
     title = (title or "").strip()
     if not title:
         title = "story"

@@ -11,6 +11,67 @@ import subprocess
 import shlex
 import tempfile, os
 
+import re
+import unicodedata
+
+_FORBIDDEN_WIN = re.compile(r'[<>:"/\\|?*\x00-\x1F]')  # forbidden + control chars
+_WS = re.compile(r"\s+")
+
+_RESERVED = {
+    "CON", "PRN", "AUX", "NUL",
+    *(f"COM{i}" for i in range(1, 10)),
+    *(f"LPT{i}" for i in range(1, 10)),
+}
+
+def _safe_out_name(title: str, max_len: int = 120) -> str:
+    title = (title or "").strip() or "story"
+
+    # Important for Hindi: keep combined characters properly
+    title = unicodedata.normalize("NFC", title)
+
+    # Remove only Windows-forbidden characters
+    title = _FORBIDDEN_WIN.sub("", title)
+
+    # Keep: Letters (L), Marks (M) like "्", Numbers (N), plus space/_/-
+    kept = []
+    for ch in title:
+        cat0 = unicodedata.category(ch)[0]
+        if ch in " _-":
+            kept.append(ch)
+        elif cat0 in ("L", "M", "N"):
+            kept.append(ch)
+        # else drop punctuation/symbols/emojis
+    title = "".join(kept)
+
+    # Normalize whitespace -> hyphen (optional)
+    title = _WS.sub(" ", title).strip()
+    title = title.replace(" ", "-").strip("-_.")
+
+    # Windows also dislikes trailing dot/space
+    title = title.rstrip(" .")
+
+    if not title:
+        title = "story"
+
+    # Avoid reserved device names
+    if title.split(".")[0].upper() in _RESERVED:
+        title = "_" + title
+
+    return (title[:max_len].rstrip("-_. ")) or "story"
+
+
+def _safe_out_name_old_working(title: str, max_len: int = 120) -> str:
+    title = (title or "").strip()
+    if not title:
+        title = "story"
+    # Windows-safe filename
+    title = re.sub(r'[\\/:*?"<>|]+', "", title)
+    title = re.sub(r"\s+", " ", title).strip()
+    # Keep unicode letters/digits/_/-/space
+    title = re.sub(r"[^\w\s\-]+", "", title, flags=re.UNICODE)
+    title = re.sub(r"\s+", "-", title).strip("-_")
+    return (title[:max_len].rstrip("-_")) or "story"
+
 def _escape_drawtext(s: str) -> str:
     # For Windows paths in filtergraphs: 
     # 1. Replace backslash with 4 backslashes (for FFmpeg's nested parsing)
@@ -1450,17 +1511,7 @@ def _find_videos_with_manifest_working(video_folder: str) -> list[str]:
 
 
 
-def _safe_out_name(title: str, max_len: int = 120) -> str:
-    title = (title or "").strip()
-    if not title:
-        title = "story"
-    # Windows-safe filename
-    title = re.sub(r'[\\/:*?"<>|]+', "", title)
-    title = re.sub(r"\s+", " ", title).strip()
-    # Keep unicode letters/digits/_/-/space
-    title = re.sub(r"[^\w\s\-]+", "", title, flags=re.UNICODE)
-    title = re.sub(r"\s+", "-", title).strip("-_")
-    return (title[:max_len].rstrip("-_")) or "story"
+
 
 def _read_order_xlsx_story_groups(video_folder: str):
     """
