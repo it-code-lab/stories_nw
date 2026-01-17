@@ -174,15 +174,6 @@ META_ACCOUNTS: List[Dict[str, str]] = [
         "meta_url":   "https://www.meta.ai/media/?nr=1",
     },
 ]
-
-
-CHATGPT_ACCOUNT = {
-    "id": "chatgpt_primary",
-    "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 4",
-    "out": r"downloads",
-    "url": "https://chatgpt.com/images/",
-}
-
 # ======== Helpers ========
 
 def ensure_dir(p: str | Path):
@@ -195,19 +186,6 @@ def safe_filename_nohash(name: str, ext: str = "png", maxlen: int = 180) -> str:
         base = "asset"
     base = base[:maxlen].rstrip(" .")
     return f"{base}.{ext}"
-
-def split_image_jobs(rows):
-    chatgpt_jobs = []
-    google_jobs = []
-
-    for r in rows:
-        provider = (r.get("image_provider") or "").lower()
-        if provider == "chatgpt":
-            chatgpt_jobs.append(r)
-        else:
-            google_jobs.append(r)
-
-    return chatgpt_jobs, google_jobs
 
 
 def safe_basename(name: str, ext: str = "png", idx: int | None = None, maxlen: int = 70) -> str:
@@ -294,17 +272,6 @@ def colmap_from_headers(ws) -> Dict[str, int]:
             header[str(cell.value).strip().lower()] = j
     return header
 
-def safe_move_and_overwrite(src: Path, dest: Path):
-    """Moves a file, overwriting the destination if it exists."""
-    try:
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        if dest.exists():
-            dest.unlink() # Delete existing file
-        shutil.move(str(src), str(dest))
-    except Exception as e:
-        print(f"Error moving {src} to {dest}: {e}")
-        raise
-
 def read_jobs_from_excel_for_images() -> List[Dict]:
     """Rows needing image generation: prompt set AND image_path empty."""
     wb = open_wb_with_retry(EXCEL_FILE)
@@ -324,23 +291,8 @@ def read_jobs_from_excel_for_images() -> List[Dict]:
         acct   = (ws.cell(i, h["account_id"]).value or "").strip()
         section_id = int(ws.cell(i, h.get("section_id")).value or 0) if "section_id" in h else 0
         image_name = (ws.cell(i, h.get("image_name")).value or "").strip() if "image_name" in h else ""
-
-        # image_provider = (ws.cell(i, h.get("image_provider")).value or "").strip().lower()
-
-        col_idx = h.get("image_provider")
-        image_provider = (ws.cell(i, col_idx).value or "").strip().lower() if col_idx else ""
-        image_orientation = (ws.cell(i, h.get("image_orientation")).value or "").strip().lower()
-
         if prompt and not img:
-            rows.append({
-                "row": i, 
-                "prompt": prompt, 
-                "account_id": acct, 
-                "section_id": section_id, 
-                "image_name": image_name,
-                "image_provider": image_provider,          # NEW
-                "image_orientation": image_orientation,    # NEW                
-                })
+            rows.append({"row": i, "prompt": prompt, "account_id": acct, "section_id": section_id, "image_name": image_name})
     save_wb_with_retry(wb, EXCEL_FILE)  # in case we added headers
     wb.close()
     return rows
@@ -363,7 +315,6 @@ def read_jobs_from_excel_for_videos() -> List[Dict]:
         vout  = (ws.cell(i, h["video_path"]).value or "").strip()
         vcmd  = (ws.cell(i, h["video_cmd"]).value or "").strip()
         acct       = (ws.cell(i, h["account_id"]).value or "").strip()
-
         if image_path and not vout:
             rows.append({
                 "row": i,
@@ -509,9 +460,7 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path, image
 
         dest = out_path.with_name(out_path.name)
         src = await dl.path()
-        # shutil.move(src, dest)
-        safe_move_and_overwrite(Path(src), dest)
-
+        shutil.move(src, dest)
 
         # close modal if present
         try:
@@ -559,217 +508,6 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path, image
                 return out_path
             await candidate.screenshot(path=str(out_path))
             return out_path
-
-
-def apply_image_orientation(prompt: str, orientation: str | None) -> str:
-    """
-    Injects size/aspect hints into the prompt.
-    ChatGPT Images responds best to descriptive ratios, not exact pixels.
-    """
-    if not orientation:
-        return prompt
-
-    orientation = orientation.lower().strip()
-
-    if orientation == "portrait":
-        suffix = " -- vertical portrait orientation, 2:3 aspect ratio"
-    elif orientation == "landscape":
-        suffix = " -- horizontal landscape orientation, 16:9 aspect ratio"
-    elif orientation == "square":
-        suffix = " -- square composition, 1:1 aspect ratio"
-    else:
-        return prompt
-
-    return f"{prompt.rstrip('.')}.{suffix}"
-
-async def generate_image_router(
-    *,
-    page: Page,
-    job: dict,
-    out_dir: Path
-) -> Path:
-    """
-    Routes image generation to ChatGPT Images or Google AI
-    based on Excel flag.
-    """
-
-    provider = job.get("image_provider", "").lower()
-    prompt = job["prompt"]
-    image_name = job.get("image_name", "")
-    orientation = job.get("image_orientation", "")
-
-    # Inject orientation hint
-    final_prompt = apply_image_orientation(prompt, orientation)
-
-    if provider == "chatgpt":
-        return await generate_consistent_image_chatgpt(
-            page=page,
-            prompt=final_prompt,
-            out_dir=out_dir,
-            image_name=image_name or safe_basename(prompt, "png").replace(".png", "")
-        )
-
-    # Default (existing behavior)
-    return await generate_image_google_ai(
-        page=page,
-        prompt=final_prompt,
-        out_dir=out_dir,
-        image_name=image_name
-    )
-
-
-async def generate_consistent_image_chatgpt(
-    page: Page,
-    prompt: str,
-    out_dir: Path,
-    image_name: str
-) -> Path:
-    """
-    Generates an image in the SAME ChatGPT Images conversation
-    and downloads ONLY the newly created image.
-    """
-
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    # 1) Build a robust locator (CSS is often more stable than role+name here)
-    dl_all = page.locator('button[aria-label="Download this image"]')
-    dl_visible = page.locator('button[aria-label="Download this image"]:visible')
-
-    # Debug counts (optional, but super helpful)
-    before_all = await dl_all.count()
-    before_vis = await dl_visible.count()
-    print(f"[ChatGPT Images] Download buttons before prompt: all={before_all}, visible={before_vis}")
-
-    # Stamp everything currently present
-    stamp = f"seen-{uuid.uuid4().hex}"
-    await page.evaluate(
-        """(stamp) => {
-            document
-            .querySelectorAll('button[aria-label="Download this image"]')
-            .forEach(b => b.setAttribute('data-stamp', stamp));
-        }""",
-        stamp
-    )
-
-    # 2) Enter prompt
-    prompt_box = page.get_by_role("paragraph")
-    await expect(prompt_box).to_be_visible(timeout=30_000)
-    await prompt_box.click()
-    await page.keyboard.type(prompt, delay=10)
-    print(f"[ChatGPT Images] Prompt entered.")
-
-    # 3) Send
-    send_btn = page.get_by_test_id("send-button")
-    # await expect(send_btn).to_be_enabled()
-    await send_btn.click()
-    print(f"[ChatGPT Images] Prompt sent, waiting for new image...")
-
-    # 4) Wait for a NEW (unstamped) download button
-    new_dl = page.locator(
-        f'button[aria-label="Download this image"]:not([data-stamp="{stamp}"])'
-    )
-
-    for _ in range(240):
-        if await new_dl.count() > 0:
-            break
-        await asyncio.sleep(1)
-
-    if await new_dl.count() == 0:
-        raise RuntimeError("No new image appeared")
-
-    # 5) Use the newest unstamped button
-    newest_button = new_dl.last
-    await expect(newest_button).to_be_visible(timeout=30_000)
-
-    # 6) Download ONLY this image
-    async with page.expect_download(timeout=60_000) as dl_info:
-        await newest_button.click()
-
-    download = await dl_info.value
-    tmp_path = await download.path()
-
-    # 7) Save with safe name
-    final_path = out_dir / f"{image_name}.png"
-    i = 1
-    while final_path.exists():
-        final_path = out_dir / f"{image_name}_{i}.png"
-        i += 1
-
-    # shutil.move(tmp_path, final_path)
-    safe_move_and_overwrite(Path(tmp_path), final_path)
-    print(f"[ChatGPT Images] Saved: {final_path}")
-
-    return final_path
-
-
-async def generate_consistent_image_chatgpt_working_exp_for1(
-    page: Page,
-    prompt: str,
-    out_dir: Path,
-    image_name: str
-) -> Path:
-    """
-    Generates an image in the SAME ChatGPT Images conversation
-    and downloads ONLY the newly created image.
-    """
-
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    # 1) Count existing download buttons
-    download_buttons = page.get_by_role("button", name="Download this image")
-    before_count = await download_buttons.count()
-
-    print(f"[ChatGPT Images] Existing download buttons before new image prompt: {before_count}")
-
-    # 2) Enter prompt
-    prompt_box = page.get_by_role("paragraph")
-    await expect(prompt_box).to_be_visible(timeout=30_000)
-    await prompt_box.click()
-    await page.keyboard.type(prompt, delay=10)
-    print(f"[ChatGPT Images] Prompt entered.")
-
-    # 3) Send
-    send_btn = page.get_by_test_id("send-button")
-    # await expect(send_btn).to_be_enabled()
-    await send_btn.click()
-    print(f"[ChatGPT Images] Prompt sent, waiting for new image...")
-
-    # 4) Wait for NEW image to appear
-    async def new_image_ready():
-        return await download_buttons.count() > before_count
-
-    for _ in range(240):  # up to 4 minutes
-        if await new_image_ready():
-            break
-        await asyncio.sleep(1)
-
-    after_count = await download_buttons.count()
-    if after_count <= before_count:
-        raise RuntimeError("No new image appeared")
-
-    # 5) Select newest download button
-    newest_button = download_buttons.nth(after_count - 1)
-    await expect(newest_button).to_be_visible()
-
-    # 6) Download ONLY this image
-    async with page.expect_download(timeout=60_000) as dl_info:
-        await newest_button.click()
-
-    download = await dl_info.value
-    tmp_path = await download.path()
-
-    # 7) Save with safe name
-    final_path = out_dir / f"{image_name}.png"
-    i = 1
-    while final_path.exists():
-        final_path = out_dir / f"{image_name}_{i}.png"
-        i += 1
-
-    # shutil.move(tmp_path, final_path)
-    safe_move_and_overwrite(Path(tmp_path), final_path)
-    print(f"[ChatGPT Images] Saved: {final_path}")
-
-    return final_path
 
 
 async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_dir: Path, url) -> Path:
@@ -948,8 +686,7 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
 
     dl = await dl_info.value
     src_path = await dl.path()
-    # shutil.move(src_path, out_path)
-    safe_move_and_overwrite(Path(src_path), out_path)
+    shutil.move(src_path, out_path)
 
     # # Try to close any overlay
     # for sel in [
@@ -1006,13 +743,7 @@ async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
         image_name = job.get("image_name","")
         section_id = job.get("section_id", 0)
         try:
-            # img_path = await generate_image_google_ai(page, prompt, out_dir, image_name)
-            img_path = await generate_image_router(
-                page=page,
-                job=job,
-                out_dir=out_dir
-            )
-
+            img_path = await generate_image_google_ai(page, prompt, out_dir, image_name)
             write_image_result(row_idx, str(Path(img_path).resolve()), account_id_used=account["id"], status="ok")
             # if section_id:
             #     db_report_image(section_id, ok=True, image_path=img_path)
@@ -1182,69 +913,6 @@ async def main_async_videos():
         print(f"🔁 Retrying remaining video jobs in {RETRY_SLEEP_SECONDS}s...")
         await asyncio.sleep(RETRY_SLEEP_SECONDS)
 
-async def run_chatgpt_images(pw, jobs: list[dict]):
-    """
-    Runs ALL ChatGPT image jobs sequentially
-    in ONE persistent browser context.
-    """
-
-    account = CHATGPT_ACCOUNT
-    out_dir = Path(account["out"])
-    ensure_dir(out_dir)
-
-    browser_type = getattr(pw, BROWSER_NAME)
-
-    ctx = await browser_type.launch_persistent_context(
-        user_data_dir=account["profile"],
-        headless=HEADLESS,
-        executable_path=CHROME_EXECUTABLE,
-        device_scale_factor=DEVICE_SCALE_FACTOR,
-        accept_downloads=True,
-        args=[
-            "--disable-blink-features=AutomationControlled",
-            "--start-maximized",
-        ],
-    )
-
-    page = await ctx.new_page()
-    await page.add_init_script(
-        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-    )
-
-    # Open ChatGPT Images ONCE
-    await page.goto(account["url"], wait_until="networkidle")
-    # await asyncio.sleep(505)
-    for job in jobs:
-        row_idx = job["row"]
-
-        try:
-            img_path = await generate_image_router(
-                page=page,
-                job=job,
-                out_dir=out_dir
-            )
-            write_image_result(
-                row_idx,
-                str(Path(img_path).resolve()),
-                account_id_used=account["id"],
-                status="ok"
-            )
-
-            print(f"[ChatGPT] Row {row_idx} -> {img_path}")
-            await asyncio.sleep(8)  # polite delay
-
-        except Exception as e:
-            write_image_result(
-                row_idx,
-                "",
-                account_id_used=account["id"],
-                status=f"error: {e}"
-            )
-            print(f"[ChatGPT] Row {row_idx} ERROR: {e}")
-
-    await ctx.close()
-
-
 async def main_async_images():
     # refuse duplicate profiles
     profiles = [acc["profile"] for acc in ACCOUNTS]
@@ -1259,62 +927,42 @@ async def main_async_images():
         
         # read Excel rows (prompt + empty image_path)
         all_rows = read_jobs_from_excel_for_images()
-        chatgpt_rows, google_rows = split_image_jobs(all_rows)
+        if not all_rows:
+            print("No rows need images.")
+            return
 
-        # if not google_rows:
-        #     print("No rows need images.")
-        #     return
+        # optional shuffle
+        if SHUFFLE_PROMPTS:
+            random.shuffle(all_rows)
 
-        # # optional shuffle
-        # if SHUFFLE_PROMPTS:
-        #     random.shuffle(google_rows)
+        # partition rows per account:
+        # if account_id present in Excel, bind to that account; else round-robin
+        rows_per_account: Dict[str, List[Dict]] = {a["id"]: [] for a in ACCOUNTS}
+        free_rows = []
+        for r in all_rows:
+            acct = r.get("account_id", "")
+            if acct and acct in rows_per_account:
+                rows_per_account[acct].append(r)
+            else:
+                free_rows.append(r)
+        # round-robin free rows
+        acc_ids = list(rows_per_account.keys())
+        k = 0
+        for r in free_rows:
+            rows_per_account[acc_ids[k % len(acc_ids)]].append(r)
+            k += 1
 
-        # # partition rows per account:
-        # # if account_id present in Excel, bind to that account; else round-robin
-        # rows_per_account: Dict[str, List[Dict]] = {a["id"]: [] for a in ACCOUNTS}
-        # free_rows = []
-        # for r in google_rows:
-        #     acct = r.get("account_id", "")
-        #     if acct and acct in rows_per_account:
-        #         rows_per_account[acct].append(r)
-        #     else:
-        #         free_rows.append(r)
-        # # round-robin free rows
-        # acc_ids = list(rows_per_account.keys())
-        # k = 0
-        # for r in free_rows:
-        #     rows_per_account[acc_ids[k % len(acc_ids)]].append(r)
-        #     k += 1
-
-        # # prune empties and limit per account if desired
-        # jobs = []
-        # for acc in ACCOUNTS:
-        #     bucket = rows_per_account[acc["id"]]
-        #     if MAX_GGL_IMG_PROMPTS_PER_ACCOUNT:
-        #         bucket = bucket[:MAX_GGL_IMG_PROMPTS_PER_ACCOUNT]
-        #     if bucket:
-        #         jobs.append((acc, bucket))
-
-        # async with async_playwright() as pw:
-        #     await asyncio.gather(*[run_account_images(pw, acc, bucket) for acc, bucket in jobs])
+        # prune empties and limit per account if desired
+        jobs = []
+        for acc in ACCOUNTS:
+            bucket = rows_per_account[acc["id"]]
+            if MAX_GGL_IMG_PROMPTS_PER_ACCOUNT:
+                bucket = bucket[:MAX_GGL_IMG_PROMPTS_PER_ACCOUNT]
+            if bucket:
+                jobs.append((acc, bucket))
 
         async with async_playwright() as pw:
-
-            tasks = []
-
-            # Google AI → parallel, multi-profile
-            if google_rows:
-                google_jobs = partition_rows_by_account(google_rows, ACCOUNTS)
-                tasks.extend(
-                    run_account_images(pw, acc, bucket)
-                    for acc, bucket in google_jobs
-                )
-
-            # ChatGPT Images → SINGLE profile, sequential
-            if chatgpt_rows:
-                tasks.append(run_chatgpt_images(pw, chatgpt_rows))
-
-            await asyncio.gather(*tasks)
+            await asyncio.gather(*[run_account_images(pw, acc, bucket) for acc, bucket in jobs])
 
 
         if not ENABLE_RETRY or attempt >= MAX_RETRY_ATTEMPTS:
@@ -1325,65 +973,6 @@ async def main_async_images():
         print(f"🔁 Retrying remaining image jobs in {RETRY_SLEEP_SECONDS}s...")
         await asyncio.sleep(RETRY_SLEEP_SECONDS)
 
-
-from typing import Dict, List, Tuple
-
-
-def partition_rows_by_account(
-    rows: List[dict],
-    accounts: List[dict],
-    max_per_account: int | None = None
-) -> List[Tuple[dict, List[dict]]]:
-    """
-    Partitions Excel job rows across accounts.
-
-    Rules:
-    1) If row.account_id matches an account, it is pinned there
-    2) Remaining rows are distributed round-robin
-    3) Optional max_per_account cap is enforced
-    4) Empty buckets are omitted
-
-    Returns:
-        List of (account, [rows]) tuples
-    """
-
-    # Initialize buckets
-    rows_per_account: Dict[str, List[dict]] = {
-        acc["id"]: [] for acc in accounts
-    }
-
-    free_rows = []
-
-    # Pass 1: pinned rows
-    for row in rows:
-        acct = (row.get("account_id") or "").strip()
-        if acct and acct in rows_per_account:
-            rows_per_account[acct].append(row)
-        else:
-            free_rows.append(row)
-
-    # Pass 2: round-robin free rows
-    acc_ids = [acc["id"] for acc in accounts]
-    idx = 0
-
-    for row in free_rows:
-        target_id = acc_ids[idx % len(acc_ids)]
-        rows_per_account[target_id].append(row)
-        idx += 1
-
-    # Pass 3: apply max cap and emit result
-    result: List[Tuple[dict, List[dict]]] = []
-
-    for acc in accounts:
-        bucket = rows_per_account[acc["id"]]
-
-        if max_per_account is not None:
-            bucket = bucket[:max_per_account]
-
-        if bucket:
-            result.append((acc, bucket))
-
-    return result
 
 def createImages():
     asyncio.run(main_async_images())

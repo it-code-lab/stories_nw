@@ -173,7 +173,7 @@ def format_schedule_date(dt_str: str) -> str:
 # =============================
 # 1) Populate Image Jobs Excel
 # =============================
-def write_image_jobs_excel(items: List[dict]) -> None:
+def write_image_jobs_excel(items: List[dict], image_provider: str = "", image_orientation: str = "") -> None:
     wb = Workbook()
     ws = wb.active
     ws.title = SHEET_NAME
@@ -181,7 +181,7 @@ def write_image_jobs_excel(items: List[dict]) -> None:
     # Matches your image creation excel expectations + adds section_id + image_name
     headers = [
         "prompt", "account_id", "image_path", "video_cmd", "video_path", "status",
-        "account_id_1", "account_id_2", "section_id", "image_name"
+        "account_id_1", "account_id_2", "section_id", "image_name","image_orientation","image_provider"
     ]
     ws.append(headers)
 
@@ -193,19 +193,21 @@ def write_image_jobs_excel(items: List[dict]) -> None:
             "", "", "", "", "",
             it.get("section_id", ""),
             it.get("image_name", ""),
+            image_orientation,
+            image_provider,
         ])
 
     wb.save(EXCEL_FILE)
 
 
-def populate_image_jobs_excel_for_channel(youtube_channel_name: str) -> Dict[str, Any]:
+def populate_image_jobs_excel_for_channel(youtube_channel_name: str, image_provider: str = "", image_orientation: str = "") -> Dict[str, Any]:
     topic_id = resolve_topic_id_by_channel(youtube_channel_name)
     items = fetch_image_jobs(topic_id=topic_id, limit=5000)
 
     if not items:
         return {"ok": True, "count": 0, "message": "No image jobs found (image_status=generating)."}
 
-    write_image_jobs_excel(items)
+    write_image_jobs_excel(items, image_provider=image_provider, image_orientation=image_orientation)
     return {"ok": True, "count": len(items), "message": f"Wrote {len(items)} image job(s) to {EXCEL_FILE.resolve()}."}
 
 

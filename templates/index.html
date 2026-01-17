@@ -1061,7 +1061,32 @@
     <h2 style="background:#e0e7ff;">HeyGen content Planner → Excel Export</h2>
 
     <label>YouTube Channel Name</label>
-    <input type="text" id="cpChannelName" placeholder="e.g., Cash Flow Hacks" required />
+    <!-- <input type="text" id="cpChannelName" placeholder="e.g., Cash Flow Hacks" required /> -->
+
+    <select name="cpChannelName" id="cpChannelName" required>
+        <option value="BhaktiSagar">BhaktiSagar</option>
+        <option value="Curious Pod">Curious Pod</option>
+        <option value="Cash Flow Hacks">Cash Flow Hacks</option>
+        <option value="Creative Cubs">Creative Cubs</option>
+        <option value="Easy Learning">Easy Learning</option>        
+        <option value="English Story World">English Story World</option>
+        <option value="Peachy Canvas">Peachy Canvas</option>
+        <option value="PeachyBeats">PeachyBeats</option>
+        <option value="Tech Point">Tech Point</option>
+        <option value="Whispers of Fear">Whispers of Fear</option>
+    </select>
+
+    <label>Image Provider:</label>
+    <select name="image_provider" id="image_provider">
+        <option value="chatgpt">chatgpt</option>
+        <option value="google-ai">google-ai</option>
+    </select>
+
+    <label>Orientation:</label>
+    <select name="image_orientation" id="image_orientation">
+        <option value="landscape">landscape</option>
+        <option value="portrait">portrait</option>
+    </select>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <button type="button" id="btnImages">Populate Image Jobs Excel - media_jobs.xlsx</button>
@@ -2483,9 +2508,13 @@ ${JSON.stringify(meta, null, 2)}
 
     document.getElementById("btnImages").addEventListener("click", async () => {
     const channel = getChannel();
+    
+    image_provider = document.getElementById("image_provider").value;
+    image_orientation = document.getElementById("image_orientation").value;
+
     if (!channel) return setResult("Please enter YouTube Channel Name.");
     setResult("Working...");
-    const res = await postForm("/planner/populate_images_excel", { youtube_channel_name: channel });
+    const res = await postForm("/planner/populate_images_excel", { youtube_channel_name: channel, image_provider: image_provider, image_orientation: image_orientation });
     setResult(res);
     });
 

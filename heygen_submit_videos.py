@@ -61,8 +61,55 @@ def click_story_editor(page):
             pass
     raise RuntimeError("Story editor not found")
 
+def wait_for_script_processing(page):
+    # This searches for the duration indicator (e.g., "00:15") 
+    # and waits for it to not be "00:00"
+    try:
+        # Adjust the selector based on the actual duration element in the HeyGen UI
+        duration_locator = page.locator("text=/\\d{2}:\\d{2}/").first
+        duration_locator.wait_for(state="visible", timeout=10000)
+        print("Script processed: Duration detected.")
+    except:
+        print("Warning: Could not confirm duration update.")
 
 def fill_story(page, text):
+
+    for locator in [
+        lambda: page.get_by_text("text", exact=True),
+        lambda: page.locator("[contenteditable='true']").first,
+        lambda: page.locator("textarea").first,
+    ]:
+        try:
+            el = locator()
+            el.wait_for(state="visible", timeout=10_000)
+            el.click()
+            
+            page.wait_for_timeout(1000)
+            page.keyboard.press("ControlOrMeta+A")
+            page.keyboard.press("Backspace")
+            # page.keyboard.insert_text(text)
+            # Type with a 20ms delay between keys
+            el.type(text, delay=20)
+            
+            # NEW: Press Tab to "blur" the field and trigger an update event
+            page.keyboard.press("Tab") 
+            page.wait_for_timeout(2000) 
+            
+            # NEW: Click a neutral area of the UI to ensure focus is lost
+            page.mouse.click(0, 0) 
+            
+            # Wait longer for the "Script processing" or "Preview" to update
+            page.wait_for_timeout(8000)
+
+            return
+        except Exception:
+            pass
+    raise RuntimeError("Story editor not found")
+
+
+
+
+def fill_story_Jan16_working(page, text):
     click_story_editor(page)
     page.wait_for_timeout(1000)
     page.keyboard.press("ControlOrMeta+A")
@@ -110,18 +157,89 @@ def ensure_logged_in(page, context, target_url: str, storage_state_path: str):
 
 
 def submit_one(page, context, url, text, name):
+
+    MAX_RETRIES = 3
+    
+    for attempt in range(1, MAX_RETRIES + 1):
+
+        page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+
+        ensure_logged_in(page, context, url, STORAGE_STATE)
+
+        duration_loc = page.locator("span.tw-text-textDisable").last
+        old_duration = duration_loc.inner_text() if duration_loc.is_visible() else "00:00"
+
+        fill_story(page, text)
+        page.wait_for_timeout(1000)
+
+        print("Waiting for HeyGen to process script...")
+        try:
+            page.wait_for_function(
+                """(oldVal) => {
+                    const spans = document.querySelectorAll('span.tw-text-textDisable');
+                    if (spans.length < 2) return false;
+                    const totalDuration = spans[1].innerText; // Grab the second span
+                    return totalDuration !== oldVal && totalDuration !== '00:00';
+                }""",
+                old_duration,
+                timeout=30000 # Give it up to 30s for long scripts
+            )
+
+            print(f"✅ Script processed! ")
+            # If we reach here, validation passed. Proceed to finish.
+            click_generate(page)
+            page.wait_for_timeout(1000)  # wait a bit for UI to update
+            rename_video(page, name)
+            page.wait_for_timeout(1000)
+
+            click_submit(page)
+            page.wait_for_timeout(1000)
+            return # Exit the function successfully
+
+        except Exception:
+            print(f"   ⚠️ Attempt {attempt} failed: Duration didn't update.")
+            if attempt == MAX_RETRIES:
+                raise RuntimeError("Failed to process story after maximum retries.")
+            print("   Re-trying...")
+            page.wait_for_timeout(2000)
+
+
+
+def submit_one_Jan16_working(page, context, url, text, name):
     page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
 
     ensure_logged_in(page, context, url, STORAGE_STATE)
 
+    duration_loc = page.locator("span.tw-text-textDisable").last
+    old_duration = duration_loc.inner_text() if duration_loc.is_visible() else "00:00"
+
     fill_story(page, text)
     page.wait_for_timeout(1000)
+
+    print("Waiting for HeyGen to process script...")
+    try:
+        page.wait_for_function(
+            """(oldVal) => {
+                const spans = document.querySelectorAll('span.tw-text-textDisable');
+                if (spans.length < 2) return false;
+                const totalDuration = spans[1].innerText; // Grab the second span
+                return totalDuration !== oldVal && totalDuration !== '00:00';
+            }""",
+            old_duration,
+            timeout=30000 # Give it up to 30s for long scripts
+        )
+
+        print(f"✅ Script processed! ")
+    except Exception:
+        print("⚠️ Timeout: Duration didn't update. HeyGen might be slow or script is identical.")
+
     click_generate(page)
     page.wait_for_timeout(1000)  # wait a bit for UI to update
     rename_video(page, name)
     page.wait_for_timeout(1000)
-    click_submit(page)
 
+    click_submit(page)
+    page.wait_for_timeout(1000)
 
 
 def ensure_storage_state(p):

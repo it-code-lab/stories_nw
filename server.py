@@ -155,9 +155,12 @@ def upload_media():
 @app.post("/planner/populate_images_excel")
 def planner_populate_images_excel():
     channel = (request.form.get("youtube_channel_name") or "").strip()
+    image_provider = (request.form.get("image_provider") or "").strip()
+    image_orientation = (request.form.get("image_orientation") or "").strip()
+
     if not channel:
         return jsonify({"ok": False, "message": "youtube_channel_name required"}), 400
-    res = cpw.populate_image_jobs_excel_for_channel(channel)
+    res = cpw.populate_image_jobs_excel_for_channel(channel, image_provider=image_provider, image_orientation=image_orientation)
     return jsonify(res)
 
 @app.post("/planner/populate_heygen_excel")
