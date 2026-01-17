@@ -656,6 +656,12 @@ async def generate_consistent_image_chatgpt(
     await expect(prompt_box).to_be_visible(timeout=30_000)
     await prompt_box.click()
     await page.keyboard.type(prompt, delay=10)
+
+    # prompt_box = page.locator('textarea#prompt-textarea, [contenteditable="true"][role="textbox"]').first
+    # await prompt_box.wait_for(state="visible", timeout=30_000)
+    # await prompt_box.click()
+    # await prompt_box.fill(prompt)
+
     print(f"[ChatGPT Images] Prompt entered.")
 
     # 3) Send
@@ -1214,7 +1220,7 @@ async def run_chatgpt_images(pw, jobs: list[dict]):
     # Open ChatGPT Images ONCE
     await page.goto(account["url"], wait_until="networkidle")
     # await asyncio.sleep(505)
-    for job in jobs:
+    for idx, job in enumerate(jobs, start=1):
         row_idx = job["row"]
 
         try:
@@ -1231,7 +1237,9 @@ async def run_chatgpt_images(pw, jobs: list[dict]):
             )
 
             print(f"[ChatGPT] Row {row_idx} -> {img_path}")
-            await asyncio.sleep(8)  # polite delay
+            # await asyncio.sleep(8)  # polite delay
+            # 45–75s between images + jitter
+            # await asyncio.sleep(random.uniform(45, 75))
 
         except Exception as e:
             write_image_result(
@@ -1241,7 +1249,20 @@ async def run_chatgpt_images(pw, jobs: list[dict]):
                 status=f"error: {e}"
             )
             print(f"[ChatGPT] Row {row_idx} ERROR: {e}")
-
+        finally:
+            # long cooldown every 10 images
+            if idx % 50 == 0:
+                print("Taking 6-10 mins break after 50 img...")
+                await asyncio.sleep(random.uniform(6*60, 10*60))   # 6–10 minutes   
+                await page.goto(account["url"], wait_until="domcontentloaded", timeout=120_000)
+                # wait for the prompt box to be ready again
+                #await page.locator('textarea#prompt-textarea, [contenteditable="true"][role="textbox"]').first.wait_for(timeout=60_000)       
+            if idx % 10 == 0:
+                print("Taking 5 mins break after 10 img...")
+                await asyncio.sleep(300)  # 5 minutes   
+            else:
+                print("Taking 45-75s break before next image...")
+                await asyncio.sleep(random.uniform(45, 75))
     await ctx.close()
 
 
