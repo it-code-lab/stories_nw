@@ -417,7 +417,7 @@ def load_youtube_rows_from_master(excel_file):
 
     headers, header_map, _ = ensure_youtube_status_columns(ws, headers)
 
-    required = ["media_file", "yt_title", "yt_description", "youtube_status","youTubeChannel"]
+    required = ["media_file", "yt_title", "yt_description", "youtube_status","youTubeChannel","avatar_img","size"]
     for r in required:
         if r not in header_map:
             raise Exception(f"Missing column: {r}")
@@ -431,6 +431,8 @@ def load_youtube_rows_from_master(excel_file):
         youTubeChannel = ws.cell(row=row_idx, column=header_map["youTubeChannel"]).value
         youTubePlaylist = ws.cell(row=row_idx, column=header_map["yt_playlist"]).value
         youTubeScheduleDate = ws.cell(row=row_idx, column=header_map.get("yt_schedule_date", 0)).value
+        avatar_img = ws.cell(row=row_idx, column=header_map.get("avatar_img")).value
+        size = ws.cell(row=row_idx, column=header_map.get("size")).value
         
         if not youTubeChannel:
             continue
@@ -464,6 +466,8 @@ def load_youtube_rows_from_master(excel_file):
             "made_for_kids": False,
             "youtube_channel_name": youTubeChannel,
             "youtube_schedule_date": youTubeScheduleDate,
+            "avatar_img": avatar_img,
+            "size": size,
 
         })
 
@@ -523,12 +527,24 @@ def upload_shorts_from_master_file():
             media = row["media_file"]
             
             avatar_img = row.get("avatar_img")
+            size = row.get("size", "portrait").lower()
+
             if avatar_img and os.path.exists(avatar_img):
+                # If row["youtube_title"] contains :, split into title and subhead
+                title_parts = row["youtube_title"].split(":", 1)
+                if len(title_parts) == 2:
+                    title_text = title_parts[0].strip()
+                    subhead_text = title_parts[1].strip()
+                else:
+                    title_text = row["youtube_title"]
+                    subhead_text = ""
+                    
                 print(f"Using avatar image for thumbnail: {avatar_img}")
                 create_youtube_thumbnail(
                     base_image_path=f"avatar_thumbnails/{avatar_img}.png",
                     json_template_path=f"avatar_thumbnails/{avatar_img}_thumbnail.json",
-                    title_text=row["youtube_title"],
+                    title_text=title_text,
+                    subhead_text=subhead_text,
                     output_name="avatar_thumbnails/final_thumbnail.jpg"
                 )
                 thumbnail_path = "avatar_thumbnails/final_thumbnail.jpg"
@@ -552,7 +568,7 @@ def upload_shorts_from_master_file():
                     "video_path": media,
                     "made_for_kids": False,
                     "youtube_channel_name": row["youtube_channel_name"],
-                    "size": "portrait",
+                    "size": size,
                     "schedule_date": row.get("youtube_schedule_date"),
                     "thumbnail_path": thumbnail_path,
                 }

@@ -1358,7 +1358,7 @@ if __name__ == "__main__":
     create_youtube_thumbnail(
         base_image_path="avatar_thumbnails/female_1.png",
         json_template_path="avatar_thumbnails/female_1_thumbnail.json",
-        title_text="Automate Your Money",
-        subhead_text="Bills, Savings, and Goals on Autopilot",
+        title_text="Build a Budget That Actually Sticks (Simple 3-Step System)",
+        subhead_text="",
         output_name="avatar_thumbnails/final_thumbnail.jpg"
     )
