@@ -617,7 +617,126 @@ async def generate_image_router(
         image_name=image_name
     )
 
+async def _click_if_visible(locator, *, timeout=1500) -> bool:
+    try:
+        if await locator.count() == 0:
+            return False
+        el = locator.first
+        await el.wait_for(state="visible", timeout=timeout)
+        try:
+            await el.click(timeout=timeout)
+        except Exception:
+            await el.click(timeout=timeout, force=True)
+        return True
+    except Exception:
+        return False
 
+async def handle_new_chatgpt_ui(page: Page, ui_stamp: str) -> bool:
+    """
+    Handles ChatGPT UI overlays that block the download button.
+    Bypasses visibility checks because these elements are often 
+    physically off-screen or 'hidden' until focused.
+    """
+
+    # 1. Target the 'Image 1 is better' / Feedback buttons
+    # We look for the specific text or the button structure
+    feedback_btn = page.locator('button.btn-secondary').filter(
+        has_text=re.compile(r"Image \d+( is better)?", re.I)
+    ).first
+
+    if await feedback_btn.count() > 0:
+        try:
+            # Use JS click to bypass 'visibility' and 'intercepted click' checks
+            await feedback_btn.evaluate("el => el.click()")
+            print("[ChatGPT Images] Clicked feedback button via JS")
+            return True
+        except Exception:
+            pass
+
+    # 2. Target the 'Skip to content' link
+    # This element is usually at translate-y-[-100lvh] (off-screen)
+    skip_link = page.locator('a[data-skip-to-content][href="#main"]').first
+    
+    if await skip_link.count() > 0:
+        try:
+            # Forcing a click on an off-screen element requires JS
+            await skip_link.evaluate("el => el.click()")
+            print("[ChatGPT Images] Clicked skip-to-content via JS")
+            return True
+        except Exception:
+            pass
+
+    return False
+
+async def handle_new_chatgpt_ui_old2(page: Page, ui_stamp: str) -> bool:
+    """
+    Clicks NEW (unstamped) UI that sometimes appears after sending prompt:
+    - 'Image 1 is better' / 'Image 2 is better' feedback buttons
+    - 'Skip to content' link (hidden off-screen usually)
+    Returns True if it clicked something.
+    """
+
+    # 1. Handle Feedback Buttons (Standard visibility logic works here)
+    feedback_btn = page.locator(
+        f'button.btn.btn-secondary:not([data-ui-stamp="{ui_stamp}"])'
+    ).filter(has_text=re.compile(r"\bImage\s*\d+(\s+is\s+better)?\b", re.I))
+
+    if await _click_if_visible(feedback_btn, timeout=2000):
+        print("[ChatGPT Images] Clicked feedback UI")
+        return True
+
+    # 2. Handle Skip Link (Modified Logic)
+    # The CSS class '-translate-y-[-100lvh]' makes this element effectively "invisible" 
+    # to Playwright's strict checks unless focused.
+    skip_link = page.locator(
+        f'a[data-skip-to-content][href="#main"]:not([data-ui-stamp="{ui_stamp}"])'
+    )
+    
+    # Check count only, do NOT wait for visibility
+    if await skip_link.count() > 0:
+        try:
+            # Option A: The most robust way for off-screen links is executing JS directly
+            await skip_link.first.evaluate("el => el.click()")
+            
+            # Option B: Alternatively, bring it into view via focus, then click
+            # await skip_link.first.focus() 
+            # await skip_link.first.click()
+
+            print("[ChatGPT Images] Clicked skip-to-content")
+            return True
+        except Exception:
+            # If interaction fails, just ignore it so we don't crash the run
+            pass
+
+    return False
+
+async def handle_new_chatgpt_ui_old(page: Page, ui_stamp: str) -> bool:
+    """
+    Clicks NEW (unstamped) UI that sometimes appears after sending prompt:
+    - 'Image 1 is better' / 'Image 2 is better' feedback buttons
+    - 'Skip to content' link (rare / usually focus-only)
+    Returns True if it clicked something.
+    """
+
+    # NEW feedback buttons (robust: match either "is better" OR just "Image 1"/"Image 2")
+    feedback_btn = page.locator(
+        f'button.btn.btn-secondary:not([data-ui-stamp="{ui_stamp}"])'
+    ).filter(has_text=re.compile(r"\bImage\s*\d+(\s+is\s+better)?\b", re.I))
+
+    if await _click_if_visible(feedback_btn, timeout=2000):
+        print("[ChatGPT Images] Clicked feedback UI")
+        return True
+
+    # NEW skip-to-content link
+    skip_link = page.locator(
+        f'a[data-skip-to-content][href="#main"]:not([data-ui-stamp="{ui_stamp}"])'
+    )
+    if await _click_if_visible(skip_link, timeout=1000):
+        print("[ChatGPT Images] Clicked skip-to-content")
+        return True
+
+    return False
+    
 async def generate_consistent_image_chatgpt(
     page: Page,
     prompt: str,
@@ -651,6 +770,19 @@ async def generate_consistent_image_chatgpt(
         stamp
     )
 
+    # Stamp any existing "popup UI" elements BEFORE sending prompt
+    ui_stamp = f"ui-seen-{uuid.uuid4().hex}"
+    await page.evaluate(
+        """(stamp) => {
+            const nodes = [
+            ...document.querySelectorAll('a[data-skip-to-content][href="#main"]'),
+            ...document.querySelectorAll('button.btn.btn-secondary')
+            ];
+            nodes.forEach(n => n.setAttribute('data-ui-stamp', stamp));
+        }""",
+        ui_stamp
+    )
+
     # 2) Enter prompt
     prompt_box = page.get_by_role("paragraph")
     await expect(prompt_box).to_be_visible(timeout=30_000)
@@ -675,7 +807,10 @@ async def generate_consistent_image_chatgpt(
         f'button[aria-label="Download this image"]:not([data-stamp="{stamp}"])'
     )
 
+    await handle_new_chatgpt_ui(page, ui_stamp)
+
     for _ in range(240):
+        await handle_new_chatgpt_ui(page, ui_stamp)
         if await new_dl.count() > 0:
             break
         await asyncio.sleep(1)
@@ -1252,14 +1387,14 @@ async def run_chatgpt_images(pw, jobs: list[dict]):
         finally:
             # long cooldown every 10 images
             if idx % 50 == 0:
-                print("Taking 6-10 mins break after 50 img...")
-                await asyncio.sleep(random.uniform(6*60, 10*60))   # 6–10 minutes   
+                print("Taking 30 mins break after 50 img...")
+                await asyncio.sleep(random.uniform(30*60, 31*60))   # 30–31 minutes   
                 await page.goto(account["url"], wait_until="domcontentloaded", timeout=120_000)
                 # wait for the prompt box to be ready again
                 #await page.locator('textarea#prompt-textarea, [contenteditable="true"][role="textbox"]').first.wait_for(timeout=60_000)       
             if idx % 10 == 0:
-                print("Taking 5 mins break after 10 img...")
-                await asyncio.sleep(300)  # 5 minutes   
+                print("Taking 10 mins break after 10 img...")
+                await asyncio.sleep(600)  # 10 minutes   
             else:
                 print("Taking 45-75s break before next image...")
                 await asyncio.sleep(random.uniform(45, 75))

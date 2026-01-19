@@ -61,6 +61,30 @@ def click_story_editor(page):
             pass
     raise RuntimeError("Story editor not found")
 
+def click_story_editor_n_enter_text(page, text):
+    for locator in [
+        lambda: page.locator("[contenteditable='true']").first,
+        lambda: page.get_by_text("text", exact=True),        
+        lambda: page.locator("textarea").first,
+    ]:
+        try:
+            print("Trying locator...")
+            el = locator()
+            el.wait_for(state="visible", timeout=10_000)
+            el.click()
+
+
+            page.wait_for_timeout(1000)
+            page.keyboard.press("ControlOrMeta+A")
+            page.keyboard.press("Backspace")
+            el.type(text, delay=20)
+            page.keyboard.press("Tab") 
+            page.wait_for_timeout(2000) 
+            return
+        except Exception:
+            pass
+    raise RuntimeError("Story editor not found")
+
 def wait_for_script_processing(page):
     # This searches for the duration indicator (e.g., "00:15") 
     # and waits for it to not be "00:00"
@@ -72,7 +96,7 @@ def wait_for_script_processing(page):
     except:
         print("Warning: Could not confirm duration update.")
 
-def fill_story(page, text):
+def fill_story_new(page, text):
 
     for locator in [
         lambda: page.get_by_text("text", exact=True),
@@ -107,6 +131,11 @@ def fill_story(page, text):
     raise RuntimeError("Story editor not found")
 
 
+
+def fill_story(page, text):
+    click_story_editor_n_enter_text(page, text)
+
+    # page.wait_for_timeout(10000)
 
 
 def fill_story_Jan16_working(page, text):
@@ -156,7 +185,7 @@ def ensure_logged_in(page, context, target_url: str, storage_state_path: str):
         page.goto(target_url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
 
 
-def submit_one(page, context, url, text, name):
+def submit_one_new(page, context, url, text, name):
 
     MAX_RETRIES = 3
     
@@ -205,33 +234,33 @@ def submit_one(page, context, url, text, name):
 
 
 
-def submit_one_Jan16_working(page, context, url, text, name):
+def submit_one(page, context, url, text, name):
     page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
 
     ensure_logged_in(page, context, url, STORAGE_STATE)
 
-    duration_loc = page.locator("span.tw-text-textDisable").last
-    old_duration = duration_loc.inner_text() if duration_loc.is_visible() else "00:00"
+    # duration_loc = page.locator("span.tw-text-textDisable").last
+    # old_duration = duration_loc.inner_text() if duration_loc.is_visible() else "00:00"
 
     fill_story(page, text)
     page.wait_for_timeout(1000)
 
-    print("Waiting for HeyGen to process script...")
-    try:
-        page.wait_for_function(
-            """(oldVal) => {
-                const spans = document.querySelectorAll('span.tw-text-textDisable');
-                if (spans.length < 2) return false;
-                const totalDuration = spans[1].innerText; // Grab the second span
-                return totalDuration !== oldVal && totalDuration !== '00:00';
-            }""",
-            old_duration,
-            timeout=30000 # Give it up to 30s for long scripts
-        )
+    # print("Waiting for HeyGen to process script...")
+    # try:
+    #     page.wait_for_function(
+    #         """(oldVal) => {
+    #             const spans = document.querySelectorAll('span.tw-text-textDisable');
+    #             if (spans.length < 2) return false;
+    #             const totalDuration = spans[1].innerText; // Grab the second span
+    #             return totalDuration !== oldVal && totalDuration !== '00:00';
+    #         }""",
+    #         old_duration,
+    #         timeout=30000 # Give it up to 30s for long scripts
+    #     )
 
-        print(f"✅ Script processed! ")
-    except Exception:
-        print("⚠️ Timeout: Duration didn't update. HeyGen might be slow or script is identical.")
+    #     print(f"✅ Script processed! ")
+    # except Exception:
+    #     print("⚠️ Timeout: Duration didn't update. HeyGen might be slow or script is identical.")
 
     click_generate(page)
     page.wait_for_timeout(1000)  # wait a bit for UI to update

@@ -8,7 +8,9 @@ from datetime import datetime
 from playwright.sync_api import sync_playwright
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-import traceback  # to print detailed error info
+import traceback
+
+from pin_overlay_batch import create_youtube_thumbnail  # to print detailed error info
 
 # DND - To Run
 # python youtube_uploader.py
@@ -520,6 +522,19 @@ def upload_shorts_from_master_file():
             # media =  os.path.join("pinterest_uploads", row["media_file"])
             media = row["media_file"]
             
+            avatar_img = row.get("avatar_img")
+            if avatar_img and os.path.exists(avatar_img):
+                print(f"Using avatar image for thumbnail: {avatar_img}")
+                create_youtube_thumbnail(
+                    base_image_path=f"avatar_thumbnails/{avatar_img}.png",
+                    json_template_path=f"avatar_thumbnails/{avatar_img}_thumbnail.json",
+                    title_text=row["youtube_title"],
+                    output_name="avatar_thumbnails/final_thumbnail.jpg"
+                )
+                thumbnail_path = "avatar_thumbnails/final_thumbnail.jpg"
+            else:
+                print("No valid avatar image found, proceeding without it.")
+                thumbnail_path = "";
 
             print(f"\n=== Uploading to YouTube: {media} ===")
 
@@ -539,6 +554,7 @@ def upload_shorts_from_master_file():
                     "youtube_channel_name": row["youtube_channel_name"],
                     "size": "portrait",
                     "schedule_date": row.get("youtube_schedule_date"),
+                    "thumbnail_path": thumbnail_path,
                 }
 
                 url = upload_video(page, video_info)

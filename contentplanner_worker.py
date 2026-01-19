@@ -65,7 +65,7 @@ UPLOADER_START_ROW = 80  # clear & paste from row 80 onward
 UPLOADER_REQUIRED_COLS = [
     "media_file", "yt_title", "yt_description", "youtube_status", "youTubeChannel",
     "media_type", "future", "yt_playlist", "yt_schedule_date", "yt_tags",
-    "section_id",  # useful for DB linkage
+    "section_id", "avatar_img",  # useful for DB linkage
 ]
 
 SECTION_ORDER_REQUIRED_COLS = ["filename","title","section_title"]
@@ -314,7 +314,7 @@ def clear_uploader_from_row(ws, header_map: Dict[str, int], start_row: int):
         for c in range(1, max_col + 1):
             ws.cell(row=r, column=c).value = None
 
-
+# Used for shorts 
 def populate_upload_excel_for_channel(youtube_channel_name: str, only_due_now: bool = False) -> Dict[str, Any]:
     topic_id = resolve_topic_id_by_channel(youtube_channel_name)
     items = fetch_scheduled_rows(topic_id=topic_id, only_due_now=only_due_now, limit=5000)
@@ -344,10 +344,10 @@ def populate_upload_excel_for_channel(youtube_channel_name: str, only_due_now: b
 
         media_file = "out/" + image_name + ".mp4"
 
-        story_title = it.get("story_title") or ""
-        story_desc = it.get("story_description") or ""
+        story_title = it.get("section_title") or ""
+        story_desc = it.get("section_text") or ""
         section_title = it.get("section_title") or ""
-        section_desc = it.get("section_description") or ""
+        section_desc = it.get("section_text") or ""
         playlist = it.get("youtube_playlist_name") or ""
         scheduled_at = it.get("scheduled_at") or ""
 
@@ -441,6 +441,7 @@ def populate_upload_excel_long_for_channel(youtube_channel_name: str, only_due_n
         playlist = it.get("youtube_playlist_name") or ""
         scheduled_at = it.get("scheduled_at") or ""
         youTubeChannel = it.get("youtube_channel_name") or youtube_channel_name
+        avatar_img = it.get("avatar_img") or ""
 
         ws.cell(row=row_idx, column=header_map["media_type"], value="video")
         ws.cell(row=row_idx, column=header_map["future"], value="")
@@ -451,6 +452,7 @@ def populate_upload_excel_long_for_channel(youtube_channel_name: str, only_due_n
         ws.cell(row=row_idx, column=header_map["yt_title"], value=story_title)
         ws.cell(row=row_idx, column=header_map["yt_description"], value=story_desc)
         ws.cell(row=row_idx, column=header_map["yt_playlist"], value=playlist)
+        ws.cell(row=row_idx, column=header_map["avatar_img"], value=avatar_img)
         ws.cell(row=row_idx, column=header_map["yt_schedule_date"], value=format_schedule_date(scheduled_at))
         ws.cell(row=row_idx, column=header_map["yt_tags"], value="")
 

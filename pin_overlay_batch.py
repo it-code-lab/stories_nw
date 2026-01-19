@@ -517,7 +517,16 @@ def render_overlay_png(project: Dict[str, Any], out_png: Path, fonts_dir: Path) 
             total_h = lh_px * len(lines)
 
             # vertical center inside text box
-            cur_y = ty0 + max(0, (th - total_h) // 2)
+            # cur_y = ty0 + max(0, (th - total_h) // 2)
+
+            # AFTER:
+            valign = (style.get("valign") or "center").lower()  # "top" | "center" | "bottom"
+            if valign == "top":
+                cur_y = ty0
+            elif valign == "bottom":
+                cur_y = ty0 + max(0, th - total_h)
+            else:
+                cur_y = ty0 + max(0, (th - total_h) // 2)
 
             for line in lines:
                 line_w = int(draw.textlength(line, font=font))
@@ -592,6 +601,43 @@ def render_overlay_png(project: Dict[str, Any], out_png: Path, fonts_dir: Path) 
     overlay.save(out_png, "PNG")
     return (W, H)
 
+def _lock_title_subhead_gap(project: dict, gap_px: int = 18,
+                           headline_name: str = "headline", subhead_name: str = "subhead") -> dict:
+    fmt = project.get("format") or {}
+    H = int(fmt.get("h", 720))
+
+    headline = None
+    subhead = None
+    for ly in project.get("layers", []):
+        if ly.get("type") != "text":
+            continue
+        nm = (ly.get("name") or "").lower()
+        if nm == headline_name.lower():
+            headline = ly
+        elif nm == subhead_name.lower():
+            subhead = ly
+
+    if not headline or not subhead:
+        return project
+
+    hb = headline.get("box") or {}
+    sb = subhead.get("box") or {}
+
+    head_h = float(hb.get("h", 0)) * H
+    sub_y  = float(sb.get("y", 0)) * H
+
+    # Make headline box bottom = subhead top - gap
+    new_head_y_px = (sub_y - gap_px) - head_h
+    new_head_y = max(0.0, min(new_head_y_px / H, 1.0 - float(hb.get("h", 0))))
+
+    hb["y"] = new_head_y
+    headline["box"] = hb
+
+    # Use valigns so text sticks to edges (not centered)
+    headline.setdefault("style", {})["valign"] = "bottom"
+    subhead.setdefault("style", {})["valign"] = "top"
+
+    return project
 
 def render_image_pin(bg_path: Path, project: Dict[str, Any], out_path: Path, fonts_dir: Path):
     fmt = project.get("format") or {}
@@ -973,6 +1019,143 @@ def _append_master_log(master_excel: Path, records: List[Dict[str, Any]]):
 
     wb.save(master_excel)
 
+def _resolve_template_relative_assets(project: Dict[str, Any], template_dir: Path) -> Dict[str, Any]:
+    """Resolve relative image-layer paths (imgSrc) relative to the JSON template folder."""
+    for ly in project.get("layers", []):
+        if ly.get("type") != "image":
+            continue
+
+        img_src = (ly.get("imgSrc") or "").strip()
+        if not img_src:
+            continue
+
+        p = Path(img_src)
+        if p.is_absolute():
+            continue
+
+        abs_p = (template_dir / p).resolve()
+        if abs_p.exists():
+            ly["imgSrc"] = str(abs_p)
+
+    return project
+
+
+def create_youtube_thumbnail(
+    *,
+    base_image_path: str,
+    json_template_path: str,
+    title_text: str,
+    output_name: str,
+    subhead_text: str = "",
+    logo_path: Optional[str] = None,
+    fonts_dir: str = "fonts",
+) -> Path:
+    """
+    Create a YouTube thumbnail image using an overlay JSON template.
+
+    - title_text overrides a layer named 'headline' if present,
+      otherwise it overrides the first text layer (fallback).
+    """
+
+    template_path = Path(json_template_path)
+    if not template_path.exists():
+        raise FileNotFoundError(f"Template JSON not found: {template_path}")
+    template_dir = template_path.parent.resolve()
+
+    bg_path = Path(base_image_path)
+    if not bg_path.exists():
+        alt = (template_dir / bg_path).resolve()
+        if alt.exists():
+            bg_path = alt
+        else:
+            raise FileNotFoundError(f"Base image not found: {bg_path}")
+
+    out_path = Path(output_name)
+    if not out_path.is_absolute():
+        out_path = out_path.resolve()
+    ensure_dir(out_path.parent)
+
+    fonts_dir_path = Path(fonts_dir)
+    if not fonts_dir_path.is_absolute() and not fonts_dir_path.exists():
+        alt = (template_dir / fonts_dir_path).resolve()
+        if alt.exists():
+            fonts_dir_path = alt
+        else:
+            fonts_dir_path = fonts_dir_path.resolve()
+
+    logo_p: Optional[Path] = None
+    if logo_path:
+        lp = Path(logo_path)
+        if not lp.exists():
+            alt = (template_dir / lp).resolve()
+            if alt.exists():
+                lp = alt
+        if lp.exists():
+            logo_p = lp.resolve()
+
+    project = load_project_json(template_path)
+    project = apply_text_overrides(project, headline=title_text, subhead=subhead_text, logo_path=logo_p)
+    project = _lock_title_subhead_gap(project, gap_px=18)
+    project = _resolve_template_relative_assets(project, template_dir)
+
+    render_image_pin(bg_path, project, out_path, fonts_dir_path)
+    return out_path
+
+def create_youtube_thumbnail_old(base_image_path, json_template_path, title_text, output_name):
+    """
+    Creates a thumbnail by overlaying text on an image based on a JSON template.
+    """
+    # 1. Load Template and Background
+    with open(json_template_path, 'r', encoding='utf-8') as f:
+        project = json.load(f)
+    
+    bg = Image.open(base_image_path).convert("RGBA")
+    W, H = _as_int(project.get("format", {}).get("w", 1280)), _as_int(project.get("format", {}).get("h", 720))
+    
+    # Resize background to template size if necessary
+    bg = bg.resize((W, H), Image.Resampling.LANCZOS)
+    
+    # 2. Create Overlay Layer
+    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    
+    # 3. Process Layers from JSON
+    for ly in project.get("layers", []):
+        if ly.get("type") == "text":
+            # Override text with your provided title_text if the layer is named 'headline'
+            # or just use the first text layer found.
+            text = title_text if ly.get("name") == "headline" or ly.get("name") == "subhead" else ly.get("text", "")
+            
+            box = ly.get("box", {})
+            style = ly.get("style", {})
+            
+            # Calculate pixel positions
+            tx = int(_as_float(box.get("x")) * W)
+            ty = int(_as_float(box.get("y")) * H)
+            tw = int(_as_float(box.get("w")) * W)
+            th = int(_as_float(box.get("h")) * H)
+
+            # Load Font (Defaults to Arial if font file not found)
+            try:
+                font_size = _as_int(style.get("fontSize", 60))
+                # Update path to where your .ttf files are located
+                font = ImageFont.truetype("arial.ttf", font_size) 
+            except:
+                font = ImageFont.load_default()
+
+            # Apply Styles
+            fill_color = _hex_to_rgba(style.get("fill", "#FFFFFF"))
+            
+            # Draw Text (Simple implementation - fits text in the box)
+            # For complex wrapping/alignment, you can import the _wrap_text 
+            # and _fit_font_size functions from your original script.
+            draw.text((tx, ty), text.upper() if style.get("uppercase") else text, font=font, fill=fill_color)
+
+    # 4. Merge and Save
+    final = Image.alpha_composite(bg, overlay).convert("RGB")
+    final.save(output_name, "JPEG", quality=95)
+    print(f"Thumbnail saved as: {output_name}")
+
 
 def batch_render_from_folder(
     folder: Path,
@@ -1169,3 +1352,13 @@ def batch_render_from_folder(
         "master_excel": str(master_excel),
         "sample": created[:3]
     }
+
+# --- EXAMPLE USAGE ---
+if __name__ == "__main__":
+    create_youtube_thumbnail(
+        base_image_path="avatar_thumbnails/female_1.png",
+        json_template_path="avatar_thumbnails/female_1_thumbnail.json",
+        title_text="Automate Your Money",
+        subhead_text="Bills, Savings, and Goals on Autopilot",
+        output_name="avatar_thumbnails/final_thumbnail.jpg"
+    )
