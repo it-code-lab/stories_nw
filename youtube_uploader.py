@@ -527,18 +527,34 @@ def upload_shorts_from_master_file():
             media = row["media_file"]
             
             avatar_img = row.get("avatar_img")
-            size = row.get("size", "portrait").lower()
-
-            if avatar_img and os.path.exists(avatar_img):
+            size = (row.get("size") or "").lower()
+            print(f"Processing row {row['row_idx']}: media={media}, avatar_img={avatar_img}, size={size}")
+            if avatar_img :
                 # If row["youtube_title"] contains :, split into title and subhead
                 title_parts = row["youtube_title"].split(":", 1)
                 if len(title_parts) == 2:
                     title_text = title_parts[0].strip()
                     subhead_text = title_parts[1].strip()
                 else:
-                    title_text = row["youtube_title"]
-                    subhead_text = ""
-                    
+                    # If row["youtube_title"] contains title_text (subtext), split them using ()
+                    title_parts = row["youtube_title"].split("(", 1)
+                    if len(title_parts) == 2:
+                        title_text = title_parts[0].strip()
+                        subhead_text = title_parts[1].strip().rstrip(")")
+                    else:
+                        title_text = row["youtube_title"]
+                        subhead_text = ""
+
+
+                # # If row["youtube_title"] contains title_text (subtext), split them using ()
+                # title_parts = row["youtube_title"].split("(", 1)
+                # if len(title_parts) == 2:
+                #     title_text = title_parts[0].strip()
+                #     subhead_text = title_parts[1].strip().rstrip(")")
+                # else:
+                #     title_text = row["youtube_title"]
+                #     subhead_text = ""
+
                 print(f"Using avatar image for thumbnail: {avatar_img}")
                 create_youtube_thumbnail(
                     base_image_path=f"avatar_thumbnails/{avatar_img}.png",
