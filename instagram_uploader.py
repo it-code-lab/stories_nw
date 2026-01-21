@@ -83,7 +83,7 @@ def load_rows_from_excel():
         if status_val == "success":
             continue
 
-        title = (rec.get("pin_title") or "").strip()
+        title = (rec.get("ig_caption") or "").strip()
         if not media_file or not title:
             continue
 

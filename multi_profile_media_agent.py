@@ -784,9 +784,18 @@ async def generate_consistent_image_chatgpt(
     )
 
     # 2) Enter prompt
+
     prompt_box = page.get_by_role("paragraph")
     await expect(prompt_box).to_be_visible(timeout=30_000)
     await prompt_box.click()
+
+    # scope to the composer form that contains the send button
+    # send_btn = page.get_by_test_id("send-button")
+    # composer = send_btn.locator("xpath=ancestor::form[1]")
+    # prompt_box = composer.locator("#prompt-textarea[contenteditable='true']").first
+    # await expect(prompt_box).to_be_visible(timeout=30_000)
+    # await prompt_box.click()
+
     await page.keyboard.type(prompt, delay=10)
 
     # prompt_box = page.locator('textarea#prompt-textarea, [contenteditable="true"][role="textbox"]').first
@@ -816,7 +825,11 @@ async def generate_consistent_image_chatgpt(
         await asyncio.sleep(1)
 
     if await new_dl.count() == 0:
-        raise RuntimeError("No new image appeared")
+        # raise RuntimeError("No new image appeared")
+        print("[ChatGPT Images] No new image appeared, reloading page and retrying...")
+        account = CHATGPT_ACCOUNT
+        await page.goto(account["url"], wait_until="networkidle")        
+        raise RuntimeError("No new image appeared reloaded page")
 
     # 5) Use the newest unstamped button
     newest_button = new_dl.last
@@ -1009,7 +1022,7 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
         box = page.get_by_role("textbox", name="Ask anything...")
 
         await expect(box).to_be_visible(timeout=20_000)
-        await box.fill(prompt or "Animate this image smoothly with parallax camera move.")
+        await box.fill(prompt or "Animate this image smoothly with camera move.")
     except Exception as e:
         raise RuntimeError(f"Could not set the animation description: {e}")
 
