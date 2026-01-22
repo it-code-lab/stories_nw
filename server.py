@@ -2968,7 +2968,7 @@ def assemble_clips_to_make_video_song():
 
 
         # --- NEW: Validate min duration (>= 4s) for every input video ---
-        MIN_SEC = 4.0
+        MIN_SEC = 2.0
         EPS = 0.02  # tiny tolerance for rounding/metadata quirks
 
         too_short = []

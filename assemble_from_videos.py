@@ -14,6 +14,8 @@ import tempfile, os
 import re
 import unicodedata
 
+from make_kb_videos import ken_burns_clip
+
 _FORBIDDEN_WIN = re.compile(r'[<>:"/\\|?*\x00-\x1F]')  # forbidden + control chars
 _WS = re.compile(r"\s+")
 
@@ -191,8 +193,98 @@ def _make_title_card_ffmpeg(
         os.remove(tmp_txt)
     except:
         pass
-    
+
 def _ffmpeg_concat_reencode(
+    plan,
+    out_path: str,
+    fps: int,
+    w: int,
+    h: int,
+    keep_audio: bool,
+    crf: int = 18,
+    preset: str = "veryfast",
+):
+    """
+    Concatenate clips via FFmpeg filter concat.
+    plan items: (path, full_d, use_d)
+
+    - If use_d < full_d: trims to use_d.
+    - If use_d > full_d: extends LAST FRAME to reach use_d (and pads audio if kept).
+    """
+    if not _bin_exists("ffmpeg"):
+        raise RuntimeError("ffmpeg not found in PATH; cannot concatenate with re-encode.")
+
+    tiny = 0.02
+    n = len(plan)
+    if n == 0:
+        raise RuntimeError("Concat plan is empty.")
+
+    cmd = ["ffmpeg", "-y"]
+
+    # Do NOT use input-level -t (we need to support extending)
+    for (p, _full_d, _use_d) in plan:
+        cmd += ["-i", p]
+
+    fc = []
+    v_in = []
+
+    for i, (_p, full_d, use_d) in enumerate(plan):
+        full_d = float(full_d or 0.0)
+        use_d = float(use_d or 0.0)
+        if use_d <= tiny:
+            raise RuntimeError(f"Invalid segment duration: {use_d} for file={_p}")
+
+        extra = max(0.0, use_d - full_d)
+
+        # Video: normalize PTS, extend last frame if needed, then trim to exact duration
+        vchain = f"[{i}:v]setpts=PTS-STARTPTS"
+        if extra > tiny:
+            vchain += f",tpad=stop_mode=clone:stop_duration={extra:.3f}"
+        vchain += (
+            f",trim=duration={use_d:.3f},setpts=PTS-STARTPTS,"
+            f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
+            f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,"
+            f"setsar=1,format=yuv420p"
+            f"[v{i}]"
+        )
+        fc.append(vchain)
+        v_in.append(f"[v{i}]")
+
+        # Audio (optional): pad with silence if extended, then trim to exact duration
+        if keep_audio:
+            achain = f"[{i}:a]asetpts=PTS-STARTPTS"
+            if extra > tiny:
+                achain += ",apad"
+            achain += (
+                f",atrim=duration={use_d:.3f},asetpts=PTS-STARTPTS,"
+                f"aformat=sample_rates=48000:channel_layouts=stereo,"
+                f"aresample=48000"
+                f"[a{i}]"
+            )
+            fc.append(achain)
+
+    if keep_audio:
+        interleaved = "".join(f"[v{i}][a{i}]" for i in range(n))
+        fc.append(interleaved + f"concat=n={n}:v=1:a=1[vout][aout]")
+    else:
+        fc.append("".join(v_in) + f"concat=n={n}:v=1:a=0[vout]")
+
+    cmd += ["-filter_complex", ";".join(fc), "-map", "[vout]"]
+    if keep_audio:
+        cmd += ["-map", "[aout]"]
+
+    cmd += ["-r", str(fps), "-c:v", "libx264", "-crf", str(crf), "-preset", preset]
+    if keep_audio:
+        cmd += ["-c:a", "aac", "-b:a", "192k"]
+    else:
+        cmd += ["-an"]
+
+    cmd += [out_path]
+    print("▶ Concat re-encode cmd:", " ".join(cmd))
+    subprocess.run(cmd, check=True)
+
+
+def _ffmpeg_concat_reencode_old_working(
     plan,
     out_path: str,
     fps: int,
@@ -904,6 +996,73 @@ def _run_cmd(cmd):
     if proc.returncode != 0:
         raise RuntimeError(f"Command failed:\n{proc.stdout}")
     return proc.stdout
+
+def _atempo_chain(tempo: float) -> str:
+    """
+    Build atempo chain (ffmpeg atempo supports 0.5..2.0 per filter).
+    For slowing down video by factor F (>1), audio tempo should be 1/F (<1).
+    """
+    tempo = float(tempo)
+    if tempo <= 0:
+        return "atempo=1.0"
+
+    parts = []
+    # Bring tempo into [0.5, 2.0] by multiplying filters.
+    while tempo < 0.5:
+        parts.append("atempo=0.5")
+        tempo /= 0.5
+    while tempo > 2.0:
+        parts.append("atempo=2.0")
+        tempo /= 2.0
+    parts.append(f"atempo={tempo:.6f}")
+    return ",".join(parts)
+
+
+def _make_slowed_clip_to_duration(
+    in_path: str,
+    out_path: str,
+    target_dur: float,
+    fps: int,
+    w: int,
+    h: int,
+    keep_audio: bool
+):
+    """
+    Create a temporary re-encoded clip whose *playback* duration becomes target_dur
+    by slowing down/speeding up (setpts + optional atempo), then trimming to exact duration.
+    """
+    full_d = _ffprobe_duration(in_path) or 0.0
+    if full_d <= 0.02:
+        raise RuntimeError(f"Cannot slow clip with zero duration: {in_path}")
+
+    factor = float(target_dur) / float(full_d)  # >1 => slower, <1 => faster
+    # Guard crazy factors (optional; you can tweak/remove if you want)
+    if factor > 3.0:
+        factor = 3.0  # cap; for larger extension, you may prefer KB tail or freeze/loop
+
+    # Video: change playback speed with setpts, then scale/pad and trim to exact duration
+    v_filter = (
+        f"setpts={factor:.6f}*PTS,"
+        f"fps={fps},"
+        f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
+        f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,"
+        f"setsar=1,format=yuv420p,"
+        f"trim=duration={float(target_dur):.3f},setpts=PTS-STARTPTS"
+    )
+
+    cmd = ["ffmpeg", "-y", "-i", in_path, "-vf", v_filter]
+
+    if keep_audio:
+        # Audio tempo should be inverse of video slowdown factor:
+        # if factor=1.25 (video 25% slower), tempo=0.8
+        tempo = 1.0 / float(factor)
+        a_filter = _atempo_chain(tempo) + f",atrim=duration={float(target_dur):.3f},asetpts=PTS-STARTPTS"
+        cmd += ["-af", a_filter, "-c:a", "aac", "-b:a", "192k"]
+    else:
+        cmd += ["-an"]
+
+    cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "18", out_path]
+    _run_cmd(cmd)
 
 def _make_looped_audio(
     input_audio: str,
@@ -1637,6 +1796,181 @@ def assemble_videos_by_titles_if_present(
 
     return outputs
 
+
+def _parse_duration_seconds(val):
+    """
+    Parse a duration cell into seconds.
+    Supports:
+      - numeric seconds (int/float)
+      - Excel time cells (datetime.time) / timedelta
+      - strings: "SS", "MM:SS", "HH:MM:SS" (last part can have decimals)
+    """
+    if val is None:
+        return None
+
+    try:
+        import datetime as _dt
+        if isinstance(val, _dt.timedelta):
+            sec = val.total_seconds()
+            return float(sec) if sec > 0 else None
+        if isinstance(val, _dt.time):
+            sec = val.hour * 3600 + val.minute * 60 + val.second + (val.microsecond / 1_000_000)
+            return float(sec) if sec > 0 else None
+    except Exception:
+        pass
+
+    if isinstance(val, (int, float)):
+        sec = float(val)
+        return sec if sec > 0 else None
+
+    s = str(val).strip()
+    if not s:
+        return None
+
+    # Plain seconds
+    if re.fullmatch(r"\d+(?:\.\d+)?", s):
+        sec = float(s)
+        return sec if sec > 0 else None
+
+    # MM:SS or HH:MM:SS
+    parts = s.split(":")
+    if 2 <= len(parts) <= 3:
+        try:
+            if len(parts) == 2:
+                mm = int(parts[0])
+                ss = float(parts[1])
+                sec = mm * 60 + ss
+            else:
+                hh = int(parts[0])
+                mm = int(parts[1])
+                ss = float(parts[2])
+                sec = hh * 3600 + mm * 60 + ss
+            return float(sec) if sec > 0 else None
+        except Exception:
+            return None
+
+    return None
+
+
+def _load_duration_overrides_from_order_xlsx(video_folder: str) -> dict:
+    """
+    Reads order.xlsx and returns { basename(filename) : duration_seconds }.
+
+    Looks for columns (case/space insensitive):
+      filename: filename/file/video/clip/path
+      duration: duration/sec/seconds/length/time
+
+    If no header detected, assumes:
+      col A = filename, col B = duration
+    """
+    xlsx_path = os.path.join(video_folder, "order.xlsx")
+    if not os.path.isfile(xlsx_path):
+        return {}
+
+    try:
+        from openpyxl import load_workbook
+    except Exception as e:
+        print(f"[Warn] openpyxl not available; cannot read duration overrides: {e}")
+        return {}
+
+    def _norm(h) -> str:
+        h = "" if h is None else str(h)
+        h = h.strip().lower()
+        return re.sub(r"[\s_]+", "", h)
+
+    filename_keys = {"filename", "file", "video", "clip", "path"}
+    duration_keys = {"duration", "durationsec", "seconds", "sec", "length", "time"}
+
+    try:
+        wb = load_workbook(xlsx_path, data_only=True)
+        ws = wb.active
+
+        # detect header row within first 5 rows
+        header_row = None
+        headers = None
+        max_scan = min(5, ws.max_row)
+        for r in range(1, max_scan + 1):
+            row_vals = [ws.cell(row=r, column=c).value for c in range(1, ws.max_column + 1)]
+            normed = [_norm(v) for v in row_vals]
+            if any(h in duration_keys for h in normed):
+                header_row = r
+                headers = normed
+                break
+
+        if header_row is None:
+            filename_col = 1
+            duration_col = 2
+            data_start = 1
+        else:
+            filename_col = None
+            duration_col = None
+            for i, h in enumerate(headers, start=1):
+                if h in filename_keys and filename_col is None:
+                    filename_col = i
+                if h in duration_keys and duration_col is None:
+                    duration_col = i
+            filename_col = filename_col or 1
+            if not duration_col:
+                return {}
+            data_start = header_row + 1
+
+        mapping = {}
+        for r in range(data_start, ws.max_row + 1):
+            fn = ws.cell(row=r, column=filename_col).value
+            dv = ws.cell(row=r, column=duration_col).value
+            if not fn:
+                continue
+            sec = _parse_duration_seconds(dv)
+            if sec is None:
+                continue
+            key = os.path.basename(str(fn).strip())
+            if key:
+                mapping[key] = float(sec)
+
+        if mapping:
+            print(f"[Info] Loaded {len(mapping)} duration override(s) from: {xlsx_path}")
+        return mapping
+
+    except Exception as e:
+        print(f"[Warn] Failed reading order.xlsx for duration overrides ({xlsx_path}): {e}")
+        return {}
+
+def _extract_last_frame_png(video_path: str, out_png: str):
+    # Grab a frame very near the end. -sseof seeks from end (fast).
+    cmd = [
+        "ffmpeg", "-y",
+        "-sseof", "-0.10",
+        "-i", video_path,
+        "-vframes", "1",
+        "-q:v", "2",
+        out_png
+    ]
+    _run_cmd(cmd)
+
+
+def _make_kenburns_tail_mp4(last_frame_png: str, out_mp4: str, dur: float, w: int, h: int, fps: int):
+    # Reuse your working KB function (copy it into this file OR import it)
+    # Recommended: copy ken_burns_clip_jan10_2026 into assemble_from_videos.py
+    from moviepy.editor import AudioFileClip  # only if needed elsewhere
+    clip = ken_burns_clip(
+        last_frame_png,
+        duration=float(dur),
+        size=(int(w), int(h)),
+        zoom_start=1.01,
+        zoom_end=1.05,
+        pan="auto"
+    )
+    clip.write_videofile(
+        out_mp4,
+        fps=int(fps),
+        codec="libx264",
+        audio=False,
+        preset="veryfast",
+        threads=4
+    )
+    clip.close()
+
+
 # --------------------------
 # Main assembly
 # --------------------------
@@ -1707,6 +2041,19 @@ def assemble_videos(
     else:
         print(f"[Info] No background audio found in '{audio_folder}'. Proceeding with video-only merge.")
 
+
+    # ---- Duration overrides from order.xlsx (if duration column is present) ----
+    duration_override_map = _load_duration_overrides_from_order_xlsx(video_folder)
+    has_duration_overrides = bool(duration_override_map)
+
+    def _target_duration(p: str, full_d: float) -> float:
+        key = os.path.basename(p)
+        v = duration_override_map.get(key)
+        try:
+            v = float(v) if v is not None else None
+        except Exception:
+            v = None
+        return float(v) if v and v > 0 else float(full_d)
 
 
     # -------------------------------------------------------------------------
@@ -1789,7 +2136,8 @@ def assemble_videos(
             d = _ffprobe_duration(p)
             if d <= 0.02:
                 continue
-            plan.append((p, d, d))
+            # plan.append((p, d, d))
+            plan.append((p, d, _target_duration(p, d)))
 
         _ffmpeg_concat_reencode(
             plan=plan,
@@ -1877,6 +2225,225 @@ def assemble_videos(
 
         print(f"[OK] Saved: {output_path}")
         return output_path
+
+
+    # -------------------------------------------------------------------------
+    # Duration override mode (order.xlsx has duration values): build video using overrides,
+    # then (if bg audio exists) loop/trim bg audio to match final video duration.
+    # -------------------------------------------------------------------------
+    if has_duration_overrides and _bin_exists("ffmpeg"):
+        tiny = 0.02
+
+        # We'll track temporary KB assets for cleanup
+        temp_kb_assets = []
+
+        # Probe a real source clip to get stable canvas size BEFORE we generate KB tails
+        probe_src = None
+        for _p in video_paths:
+            _d0 = _ffprobe_duration(_p)
+            if _d0 and _d0 > tiny:
+                probe_src = _p
+                break
+        if not probe_src:
+            if audio:
+                try: audio.close()
+                except: pass
+            raise RuntimeError("All candidate videos are zero-length or unreadable.")
+
+        v0 = _ffprobe_stream_info(probe_src)
+        if not v0:
+            if audio:
+                try: audio.close()
+                except: pass
+            raise RuntimeError(f"Could not ffprobe first usable video: {probe_src}")
+
+        out_w = int(v0.get("width") or 1920)
+        out_h = int(v0.get("height") or 1080)
+
+        # Create KB temp dir once
+        # tmp_dir = os.path.join(os.path.dirname(output_path) or ".", "__tmp_kb_tails")
+        # os.makedirs(tmp_dir, exist_ok=True)
+
+        tmp_dir = os.path.join(os.path.dirname(output_path) or ".", "__tmp_speed")
+        os.makedirs(tmp_dir, exist_ok=True)
+        temp_speed_assets = []
+
+        # Build plan using each video once (in manifest order), applying duration overrides
+        plan = []
+        for p in video_paths:
+            d = _ffprobe_duration(p)
+            if d <= tiny:
+                continue
+            use_d = _target_duration(p, d)
+            if use_d <= tiny:
+                continue
+            # plan.append((p, d, use_d))
+
+            extra = max(0.0, use_d - d)
+            if extra <= 0.02:
+                # normal: trim or keep
+                plan.append((p, d, use_d))
+            else:
+
+                # Create a temp slowed-down version that becomes exactly use_d
+                base = os.path.splitext(os.path.basename(p))[0]
+                idx = len(plan)
+                slowed_mp4 = os.path.join(tmp_dir, f"{idx:04d}_{base}_slow.mp4")
+
+                _make_slowed_clip_to_duration(
+                    in_path=p,
+                    out_path=slowed_mp4,
+                    target_dur=use_d,
+                    fps=fps,
+                    w=out_w,
+                    h=out_h,
+                    keep_audio=keep_video_audio
+                )
+
+                temp_speed_assets.append(slowed_mp4)
+
+                # The slowed clip already matches the requested duration
+                plan.append((slowed_mp4, use_d, use_d))
+
+                # 1) play the full original clip (no freeze extension here)
+                # plan.append((p, d, d))
+
+                # base = os.path.splitext(os.path.basename(p))[0]
+                # last_png = os.path.join(tmp_dir, f"{base}_last.png")
+                # tail_mp4 = os.path.join(tmp_dir, f"{base}_kb_tail.mp4")
+
+                # _extract_last_frame_png(p, last_png)
+                # _make_kenburns_tail_mp4(last_png, tail_mp4, extra, out_w, out_h, fps)
+
+                # temp_kb_assets.extend([last_png, tail_mp4])
+                # plan.append((tail_mp4, extra, extra))
+
+
+        if not plan:
+            if audio:
+                try: audio.close()
+                except: pass
+            raise RuntimeError("All candidate videos are zero-length or unreadable.")
+
+        v0 = _ffprobe_stream_info(plan[0][0])
+        if not v0:
+            if audio:
+                try: audio.close()
+                except: pass
+            raise RuntimeError(f"Could not ffprobe first video: {plan[0][0]}")
+
+        out_w = int(v0.get("width") or 1920)
+        out_h = int(v0.get("height") or 1080)
+
+        tmp_concat = os.path.join(os.path.dirname(output_path) or ".", "__tmp_durconcat.mp4")
+
+        # Build the video with trim/extend behavior
+        _ffmpeg_concat_reencode(
+            plan=plan,
+            out_path=tmp_concat,
+            fps=fps,
+            w=out_w,
+            h=out_h,
+            keep_audio=keep_video_audio,
+        )
+
+        # If no bg audio: finalize
+        if not audio_path:
+            try:
+                if os.path.exists(output_path):
+                    os.remove(output_path)
+                os.replace(tmp_concat, output_path)
+            finally:
+                pass
+            print(f"[OK] Saved: {output_path}")
+            return output_path
+
+        # BG audio exists: loop/trim to match video duration and mux/mix
+        try:
+            if audio:
+                audio.close()
+        except Exception:
+            pass
+
+        vid_dur = _ffprobe_duration(tmp_concat) or sum(u for _, _, u in plan)
+        bg_dur = _ffprobe_duration(audio_path) or 0.0
+
+        if bg_dur <= tiny:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            os.replace(tmp_concat, output_path)
+            print(f"[Warn] BG audio had zero duration. Saved video-only: {output_path}")
+            return output_path
+
+        loops = int(math.ceil(vid_dur / bg_dur)) if bg_dur > 0 else 1
+        tmp_bg = os.path.join(os.path.dirname(output_path) or ".", "__tmp_bg.wav")
+
+        _make_looped_audio(
+            input_audio=audio_path,
+            out_audio=tmp_bg,
+            loops=max(1, loops),
+            target_sec=vid_dur,
+            bg_volume=bg_volume,
+        )
+
+        if keep_video_audio and _has_audio_stream(tmp_concat):
+            cmd = [
+                "ffmpeg", "-y",
+                "-i", tmp_concat,
+                "-i", tmp_bg,
+                "-filter_complex",
+                (
+                    f"[0:a]volume={video_volume}[va];"
+                    f"[1:a]volume=1.0[ba];"
+                    f"[va][ba]amix=inputs=2:duration=first:dropout_transition=0[aout]"
+                ),
+                "-map", "0:v:0",
+                "-map", "[aout]",
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-shortest",
+                output_path
+            ]
+        else:
+            cmd = [
+                "ffmpeg", "-y",
+                "-i", tmp_concat,
+                "-i", tmp_bg,
+                "-map", "0:v:0",
+                "-map", "1:a:0",
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-shortest",
+                output_path
+            ]
+
+        _run_cmd(cmd)
+
+        # Cleanup
+        for p in [tmp_concat, tmp_bg]:
+            try:
+                if os.path.exists(p):
+                    os.remove(p)
+            except:
+                pass
+
+        print(f"[OK] Saved: {output_path}")
+
+        # Cleanup temp KB assets
+        try:
+            for p in temp_kb_assets:
+                if os.path.exists(p):
+                    os.remove(p)
+            # remove temp directory if empty
+            tmp_dir = os.path.join(os.path.dirname(output_path) or ".", "__tmp_kb_tails")
+            if os.path.isdir(tmp_dir) and not os.listdir(tmp_dir):
+                os.rmdir(tmp_dir)
+        except Exception:
+            pass
+
+        return output_path
+
+
     # -------------------------
     # VIDEO-ONLY path (no bg audio)
     # -------------------------
