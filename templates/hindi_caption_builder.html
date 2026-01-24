@@ -243,9 +243,10 @@
           <label>Snap End to Next Start?<br>
             <select id="snapToNext">
               <option value="0" >No</option>
-              <option value="1" selected>Yes (no gap)</option>
+              <option value="1" selected>Yes</option>
             </select>
           </label>
+          <label>Snap gap (s)(**USE 0 FOR DURATION EXPORT**)<br><input type="number" class="num" id="snapGap" value="0.5" step="0.1"></label>
           <label>Frame rate (for rounding)<br>
             <input type="number" class="num" id="fps" value="60">
           </label>
@@ -293,6 +294,8 @@
 
               <button id="exportBtn" class="primary">Export .ass file</button>
               <button id="export" class="primary">Export block → clipboard</button>
+              <button id="exportDurations" class="primary">Export durations (sec) → clipboard</button>
+
             </div>
             <div style="margin-top:8px">
               <label>Export preview</label>
@@ -364,6 +367,19 @@
     $('back10').addEventListener('click', () => vid.currentTime = Math.max(0, vid.currentTime - 1.0));
     $('fwd05').addEventListener('click', () => vid.currentTime = Math.min(vid.duration || 1e9, vid.currentTime + 0.5));
     $('fwd10').addEventListener('click', () => vid.currentTime = Math.min(vid.duration || 1e9, vid.currentTime + 1.0));
+
+    function buildDurationsBlock(decimals = 1) {
+      const ok = rows.filter(r => r.start != null && r.end != null && r.end >= r.start);
+      return ok
+        .map(r => (r.end - r.start).toFixed(decimals))
+        .join('\n');
+    }
+
+    $('exportDurations').addEventListener('click', () => {
+      const text = buildDurationsBlock(1);   // 1 decimal like your sample (10.4, 8.3, ...)
+      $('out').value = text;                // optional: show in preview box
+      navigator.clipboard?.writeText(text).catch(() => { /* not fatal */ });
+    });
 
     function tick() {
       $('timeNow').textContent = fmt(vid.currentTime || 0);
@@ -449,12 +465,15 @@
     function setEnd(i) {
       const fps = +$('fps').value || 60;
       const offs = (+$('offsetEnd').value || 0) / 1000;
+      const snapGapSeconds = (+$('snapGap').value || 0);
+
       rows[i].end = roundToFrame(Math.max(0, (vid.currentTime || 0) + offs), fps);
       if (rows[i].start != null && rows[i].end < rows[i].start) {
         rows[i].end = rows[i].start; // prevent negative
       }
+
       if ($('snapToNext').value === '1' && i < rows.length - 1 ) {
-        rows[i + 1].start = rows[i].end + 0.5;
+        rows[i + 1].start = rows[i].end + snapGapSeconds;
       }
 
       if ($('autoNext').value === '1' && i < rows.length - 1) {
