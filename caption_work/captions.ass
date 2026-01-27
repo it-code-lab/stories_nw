@@ -1,164 +1,423 @@
 [Script Info]
 ScriptType: v4.00+
-PlayResX: 832
-PlayResY: 464
+PlayResX: 464
+PlayResY: 832
 WrapStyle: 2
 ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Base,Montserrat,32,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,1.5,0,1,3.0,0,2,80,80,80,1
-Style: Hi,Montserrat,32,&H0000FFFF,&H0000FFFF,&H00000000,&H00000000,1,0,0,0,100,100,1.5,0,1,3.0,0,2,80,80,80,1
+Style: Base,Montserrat,40,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,1.5,0,1,3.0,0,2,80,80,150,1
+Style: Hi,Montserrat,40,&H0000FFFF,&H0000FFFF,&H00000000,&H00000000,1,0,0,0,100,100,1.5,0,1,3.0,0,2,80,80,150,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:00.48,0:00:02.06,Base,,0,0,0,,You hear the sudden, cheerful
-Dialogue: 1,0:00:00.48,0:00:00.66,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}You{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hear {\alpha&HFF&}the {\alpha&HFF&}sudden, {\alpha&HFF&}cheerful
-Dialogue: 1,0:00:00.70,0:00:00.86,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hear{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}sudden, {\alpha&HFF&}cheerful
-Dialogue: 1,0:00:00.94,0:00:01.04,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&HFF&}hear {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}sudden, {\alpha&HFF&}cheerful
-Dialogue: 1,0:00:01.14,0:00:01.54,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&HFF&}hear {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}sudden,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}cheerful
-Dialogue: 1,0:00:01.68,0:00:02.06,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&HFF&}hear {\alpha&HFF&}the {\alpha&HFF&}sudden, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}cheerful{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:02.14,0:00:03.29,Base,,0,0,0,,pops from a pot of
-Dialogue: 1,0:00:02.14,0:00:02.52,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pops{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}from {\alpha&HFF&}a {\alpha&HFF&}pot {\alpha&HFF&}of
-Dialogue: 1,0:00:02.58,0:00:02.72,Hi,,0,0,0,,{\alpha&HFF&}pops {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}from{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}pot {\alpha&HFF&}of
-Dialogue: 1,0:00:02.76,0:00:02.82,Hi,,0,0,0,,{\alpha&HFF&}pops {\alpha&HFF&}from {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pot {\alpha&HFF&}of
-Dialogue: 1,0:00:02.92,0:00:03.21,Hi,,0,0,0,,{\alpha&HFF&}pops {\alpha&HFF&}from {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pot{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}of
-Dialogue: 1,0:00:03.25,0:00:03.29,Hi,,0,0,0,,{\alpha&HFF&}pops {\alpha&HFF&}from {\alpha&HFF&}a {\alpha&HFF&}pot {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}of{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:03.41,0:00:05.05,Base,,0,0,0,,popcorn kernels as they heat.
-Dialogue: 1,0:00:03.41,0:00:03.89,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}popcorn{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}kernels {\alpha&HFF&}as {\alpha&HFF&}they {\alpha&HFF&}heat.
-Dialogue: 1,0:00:03.95,0:00:04.35,Hi,,0,0,0,,{\alpha&HFF&}popcorn {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}kernels{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}as {\alpha&HFF&}they {\alpha&HFF&}heat.
-Dialogue: 1,0:00:04.45,0:00:04.49,Hi,,0,0,0,,{\alpha&HFF&}popcorn {\alpha&HFF&}kernels {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}as{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}they {\alpha&HFF&}heat.
-Dialogue: 1,0:00:04.55,0:00:04.67,Hi,,0,0,0,,{\alpha&HFF&}popcorn {\alpha&HFF&}kernels {\alpha&HFF&}as {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}they{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}heat.
-Dialogue: 1,0:00:04.75,0:00:05.05,Hi,,0,0,0,,{\alpha&HFF&}popcorn {\alpha&HFF&}kernels {\alpha&HFF&}as {\alpha&HFF&}they {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}heat.{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:05.59,0:00:07.37,Base,,0,0,0,,This isn't just corn expanding,
-Dialogue: 1,0:00:05.59,0:00:05.75,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}This{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}isn't {\alpha&HFF&}just {\alpha&HFF&}corn {\alpha&HFF&}expanding,
-Dialogue: 1,0:00:05.83,0:00:06.07,Hi,,0,0,0,,{\alpha&HFF&}This {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}isn't{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}just {\alpha&HFF&}corn {\alpha&HFF&}expanding,
-Dialogue: 1,0:00:06.13,0:00:06.37,Hi,,0,0,0,,{\alpha&HFF&}This {\alpha&HFF&}isn't {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}just{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}corn {\alpha&HFF&}expanding,
-Dialogue: 1,0:00:06.47,0:00:06.71,Hi,,0,0,0,,{\alpha&HFF&}This {\alpha&HFF&}isn't {\alpha&HFF&}just {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}corn{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}expanding,
-Dialogue: 1,0:00:06.75,0:00:07.37,Hi,,0,0,0,,{\alpha&HFF&}This {\alpha&HFF&}isn't {\alpha&HFF&}just {\alpha&HFF&}corn {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}expanding,{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:07.83,0:00:09.56,Base,,0,0,0,,it's a miniature pressure cooker
-Dialogue: 1,0:00:07.83,0:00:07.93,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}it's{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}miniature {\alpha&HFF&}pressure {\alpha&HFF&}cooker
-Dialogue: 1,0:00:07.99,0:00:08.01,Hi,,0,0,0,,{\alpha&HFF&}it's {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}miniature {\alpha&HFF&}pressure {\alpha&HFF&}cooker
-Dialogue: 1,0:00:08.09,0:00:08.63,Hi,,0,0,0,,{\alpha&HFF&}it's {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}miniature{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pressure {\alpha&HFF&}cooker
-Dialogue: 1,0:00:08.77,0:00:09.13,Hi,,0,0,0,,{\alpha&HFF&}it's {\alpha&HFF&}a {\alpha&HFF&}miniature {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pressure{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}cooker
-Dialogue: 1,0:00:09.23,0:00:09.56,Hi,,0,0,0,,{\alpha&HFF&}it's {\alpha&HFF&}a {\alpha&HFF&}miniature {\alpha&HFF&}pressure {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}cooker{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:09.62,0:00:12.88,Base,,0,0,0,,explosion. Inside each hard kernel
-Dialogue: 1,0:00:09.62,0:00:10.28,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}explosion.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Inside {\alpha&HFF&}each {\alpha&HFF&}hard {\alpha&HFF&}kernel
-Dialogue: 1,0:00:10.32,0:00:11.74,Hi,,0,0,0,,{\alpha&HFF&}explosion. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Inside{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}each {\alpha&HFF&}hard {\alpha&HFF&}kernel
-Dialogue: 1,0:00:11.78,0:00:12.06,Hi,,0,0,0,,{\alpha&HFF&}explosion. {\alpha&HFF&}Inside {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}each{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hard {\alpha&HFF&}kernel
-Dialogue: 1,0:00:12.12,0:00:12.36,Hi,,0,0,0,,{\alpha&HFF&}explosion. {\alpha&HFF&}Inside {\alpha&HFF&}each {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hard{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}kernel
-Dialogue: 1,0:00:12.44,0:00:12.88,Hi,,0,0,0,,{\alpha&HFF&}explosion. {\alpha&HFF&}Inside {\alpha&HFF&}each {\alpha&HFF&}hard {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}kernel{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:13.04,0:00:14.16,Base,,0,0,0,,is a small amount of
-Dialogue: 1,0:00:13.04,0:00:13.10,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}small {\alpha&HFF&}amount {\alpha&HFF&}of
-Dialogue: 1,0:00:13.14,0:00:13.20,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}small {\alpha&HFF&}amount {\alpha&HFF&}of
-Dialogue: 1,0:00:13.32,0:00:13.70,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}small{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}amount {\alpha&HFF&}of
-Dialogue: 1,0:00:13.76,0:00:14.06,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}a {\alpha&HFF&}small {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}amount{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}of
-Dialogue: 1,0:00:14.12,0:00:14.16,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}a {\alpha&HFF&}small {\alpha&HFF&}amount {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}of{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:14.18,0:00:16.06,Base,,0,0,0,,water stored in a soft,
-Dialogue: 1,0:00:14.18,0:00:14.58,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}water{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}stored {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&HFF&}soft,
-Dialogue: 1,0:00:14.72,0:00:15.16,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}stored{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&HFF&}soft,
-Dialogue: 1,0:00:15.20,0:00:15.38,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}stored {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}in{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}soft,
-Dialogue: 1,0:00:15.44,0:00:15.46,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}stored {\alpha&HFF&}in {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}soft,
-Dialogue: 1,0:00:15.58,0:00:16.06,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}stored {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}soft,{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:16.26,0:00:17.23,Base,,0,0,0,,starchy center.
-Dialogue: 1,0:00:16.26,0:00:16.74,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}starchy{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}center.
-Dialogue: 1,0:00:16.84,0:00:17.23,Hi,,0,0,0,,{\alpha&HFF&}starchy {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}center.{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:18.51,0:00:20.07,Base,,0,0,0,,As the kernel heats, this
-Dialogue: 1,0:00:18.51,0:00:18.59,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}As{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&HFF&}heats, {\alpha&HFF&}this
-Dialogue: 1,0:00:18.63,0:00:18.75,Hi,,0,0,0,,{\alpha&HFF&}As {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}kernel {\alpha&HFF&}heats, {\alpha&HFF&}this
-Dialogue: 1,0:00:18.81,0:00:19.17,Hi,,0,0,0,,{\alpha&HFF&}As {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}kernel{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}heats, {\alpha&HFF&}this
-Dialogue: 1,0:00:19.25,0:00:19.63,Hi,,0,0,0,,{\alpha&HFF&}As {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}heats,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}this
-Dialogue: 1,0:00:19.89,0:00:20.07,Hi,,0,0,0,,{\alpha&HFF&}As {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&HFF&}heats, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}this{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:20.19,0:00:21.61,Base,,0,0,0,,water turns to steam,
-Dialogue: 1,0:00:20.19,0:00:20.51,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}water{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}turns {\alpha&HFF&}to {\alpha&HFF&}steam,
-Dialogue: 1,0:00:20.63,0:00:20.97,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}turns{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}to {\alpha&HFF&}steam,
-Dialogue: 1,0:00:21.03,0:00:21.13,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}turns {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}to{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}steam,
-Dialogue: 1,0:00:21.21,0:00:21.61,Hi,,0,0,0,,{\alpha&HFF&}water {\alpha&HFF&}turns {\alpha&HFF&}to {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}steam,{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:22.17,0:00:24.40,Base,,0,0,0,,building immense pressure. The hard
-Dialogue: 1,0:00:22.17,0:00:22.51,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}building{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}immense {\alpha&HFF&}pressure. {\alpha&HFF&}The {\alpha&HFF&}hard
-Dialogue: 1,0:00:22.55,0:00:23.07,Hi,,0,0,0,,{\alpha&HFF&}building {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}immense{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pressure. {\alpha&HFF&}The {\alpha&HFF&}hard
-Dialogue: 1,0:00:23.19,0:00:23.60,Hi,,0,0,0,,{\alpha&HFF&}building {\alpha&HFF&}immense {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pressure.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}The {\alpha&HFF&}hard
-Dialogue: 1,0:00:23.98,0:00:24.08,Hi,,0,0,0,,{\alpha&HFF&}building {\alpha&HFF&}immense {\alpha&HFF&}pressure. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}The{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hard
-Dialogue: 1,0:00:24.14,0:00:24.40,Hi,,0,0,0,,{\alpha&HFF&}building {\alpha&HFF&}immense {\alpha&HFF&}pressure. {\alpha&HFF&}The {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hard{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:24.54,0:00:26.62,Base,,0,0,0,,outer shell, called the pericarp,
-Dialogue: 1,0:00:24.54,0:00:24.78,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}outer{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}shell, {\alpha&HFF&}called {\alpha&HFF&}the {\alpha&HFF&}pericarp,
-Dialogue: 1,0:00:24.84,0:00:25.20,Hi,,0,0,0,,{\alpha&HFF&}outer {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}shell,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}called {\alpha&HFF&}the {\alpha&HFF&}pericarp,
-Dialogue: 1,0:00:25.48,0:00:25.78,Hi,,0,0,0,,{\alpha&HFF&}outer {\alpha&HFF&}shell, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}called{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}pericarp,
-Dialogue: 1,0:00:25.82,0:00:25.96,Hi,,0,0,0,,{\alpha&HFF&}outer {\alpha&HFF&}shell, {\alpha&HFF&}called {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pericarp,
-Dialogue: 1,0:00:26.00,0:00:26.62,Hi,,0,0,0,,{\alpha&HFF&}outer {\alpha&HFF&}shell, {\alpha&HFF&}called {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pericarp,{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:26.98,0:00:28.42,Base,,0,0,0,,is strong enough to contain
-Dialogue: 1,0:00:26.98,0:00:27.06,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}strong {\alpha&HFF&}enough {\alpha&HFF&}to {\alpha&HFF&}contain
-Dialogue: 1,0:00:27.16,0:00:27.52,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}strong{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}enough {\alpha&HFF&}to {\alpha&HFF&}contain
-Dialogue: 1,0:00:27.56,0:00:27.80,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}strong {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}enough{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}to {\alpha&HFF&}contain
-Dialogue: 1,0:00:27.86,0:00:27.94,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}strong {\alpha&HFF&}enough {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}to{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}contain
-Dialogue: 1,0:00:27.98,0:00:28.42,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}strong {\alpha&HFF&}enough {\alpha&HFF&}to {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}contain{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:28.50,0:00:30.44,Base,,0,0,0,,it, until the temperature reaches
-Dialogue: 1,0:00:28.50,0:00:28.72,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}it,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}until {\alpha&HFF&}the {\alpha&HFF&}temperature {\alpha&HFF&}reaches
-Dialogue: 1,0:00:28.99,0:00:29.33,Hi,,0,0,0,,{\alpha&HFF&}it, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}until{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}temperature {\alpha&HFF&}reaches
-Dialogue: 1,0:00:29.35,0:00:29.46,Hi,,0,0,0,,{\alpha&HFF&}it, {\alpha&HFF&}until {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}temperature {\alpha&HFF&}reaches
-Dialogue: 1,0:00:29.50,0:00:30.00,Hi,,0,0,0,,{\alpha&HFF&}it, {\alpha&HFF&}until {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}temperature{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}reaches
-Dialogue: 1,0:00:30.04,0:00:30.44,Hi,,0,0,0,,{\alpha&HFF&}it, {\alpha&HFF&}until {\alpha&HFF&}the {\alpha&HFF&}temperature {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}reaches{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:30.54,0:00:33.52,Base,,0,0,0,,around 180 degrees Celsius. Then,
-Dialogue: 1,0:00:30.54,0:00:30.82,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}around{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}180 {\alpha&HFF&}degrees {\alpha&HFF&}Celsius. {\alpha&HFF&}Then,
-Dialogue: 1,0:00:30.84,0:00:31.10,Hi,,0,0,0,,{\alpha&HFF&}around {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}180{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}degrees {\alpha&HFF&}Celsius. {\alpha&HFF&}Then,
-Dialogue: 1,0:00:31.30,0:00:32.26,Hi,,0,0,0,,{\alpha&HFF&}around {\alpha&HFF&}180 {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}degrees{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Celsius. {\alpha&HFF&}Then,
-Dialogue: 1,0:00:32.34,0:00:32.98,Hi,,0,0,0,,{\alpha&HFF&}around {\alpha&HFF&}180 {\alpha&HFF&}degrees {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Celsius.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Then,
-Dialogue: 1,0:00:33.26,0:00:33.52,Hi,,0,0,0,,{\alpha&HFF&}around {\alpha&HFF&}180 {\alpha&HFF&}degrees {\alpha&HFF&}Celsius. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Then,{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:33.58,0:00:35.80,Base,,0,0,0,,the pressure becomes too great.
-Dialogue: 1,0:00:33.58,0:00:34.12,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pressure {\alpha&HFF&}becomes {\alpha&HFF&}too {\alpha&HFF&}great.
-Dialogue: 1,0:00:34.20,0:00:34.58,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pressure{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}becomes {\alpha&HFF&}too {\alpha&HFF&}great.
-Dialogue: 1,0:00:34.66,0:00:35.10,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}pressure {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}becomes{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}too {\alpha&HFF&}great.
-Dialogue: 1,0:00:35.14,0:00:35.42,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}pressure {\alpha&HFF&}becomes {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}too{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}great.
-Dialogue: 1,0:00:35.50,0:00:35.80,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}pressure {\alpha&HFF&}becomes {\alpha&HFF&}too {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}great.{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:36.48,0:00:39.31,Base,,0,0,0,,The shell\Nruptures catastrophically, and
-Dialogue: 1,0:00:36.48,0:00:36.60,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}The{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}shell\N{\alpha&HFF&}ruptures {\alpha&HFF&}catastrophically, {\alpha&HFF&}and
-Dialogue: 1,0:00:36.68,0:00:36.98,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}shell{\fscx100\fscy100\alpha&HFF&}\N{\alpha&HFF&}ruptures {\alpha&HFF&}catastrophically, {\alpha&HFF&}and
-Dialogue: 1,0:00:37.10,0:00:37.58,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}shell\N{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}ruptures{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}catastrophically, {\alpha&HFF&}and
-Dialogue: 1,0:00:37.72,0:00:38.78,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}shell\N{\alpha&HFF&}ruptures {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}catastrophically,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}and
-Dialogue: 1,0:00:38.83,0:00:39.31,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}shell\N{\alpha&HFF&}ruptures {\alpha&HFF&}catastrophically, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:39.35,0:00:41.75,Base,,0,0,0,,the superheated starch and steam
-Dialogue: 1,0:00:39.35,0:00:39.51,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}superheated {\alpha&HFF&}starch {\alpha&HFF&}and {\alpha&HFF&}steam
-Dialogue: 1,0:00:39.61,0:00:40.41,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}superheated{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}starch {\alpha&HFF&}and {\alpha&HFF&}steam
-Dialogue: 1,0:00:40.53,0:00:40.93,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}superheated {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}starch{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}and {\alpha&HFF&}steam
-Dialogue: 1,0:00:41.07,0:00:41.17,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}superheated {\alpha&HFF&}starch {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}steam
-Dialogue: 1,0:00:41.35,0:00:41.75,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}superheated {\alpha&HFF&}starch {\alpha&HFF&}and {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}steam{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:41.87,0:00:43.95,Base,,0,0,0,,inside instantly expand,
-Dialogue: 1,0:00:41.87,0:00:42.41,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}inside{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}instantly {\alpha&HFF&}expand,
-Dialogue: 1,0:00:42.45,0:00:43.15,Hi,,0,0,0,,{\alpha&HFF&}inside {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}instantly{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}expand,
-Dialogue: 1,0:00:43.27,0:00:43.95,Hi,,0,0,0,,{\alpha&HFF&}inside {\alpha&HFF&}instantly {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}expand,{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:44.55,0:00:46.43,Base,,0,0,0,,turning the kernel inside out
-Dialogue: 1,0:00:44.55,0:00:44.87,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}turning{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&HFF&}inside {\alpha&HFF&}out
-Dialogue: 1,0:00:44.93,0:00:44.99,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}kernel {\alpha&HFF&}inside {\alpha&HFF&}out
-Dialogue: 1,0:00:45.05,0:00:45.37,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}kernel{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}inside {\alpha&HFF&}out
-Dialogue: 1,0:00:45.53,0:00:46.11,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}inside{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}out
-Dialogue: 1,0:00:46.29,0:00:46.43,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&HFF&}the {\alpha&HFF&}kernel {\alpha&HFF&}inside {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}out{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:46.45,0:00:48.00,Base,,0,0,0,,into a fluffy white puff.
-Dialogue: 1,0:00:46.45,0:00:46.74,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}into{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}fluffy {\alpha&HFF&}white {\alpha&HFF&}puff.
-Dialogue: 1,0:00:46.78,0:00:46.84,Hi,,0,0,0,,{\alpha&HFF&}into {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}fluffy {\alpha&HFF&}white {\alpha&HFF&}puff.
-Dialogue: 1,0:00:46.96,0:00:47.32,Hi,,0,0,0,,{\alpha&HFF&}into {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}fluffy{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}white {\alpha&HFF&}puff.
-Dialogue: 1,0:00:47.38,0:00:47.60,Hi,,0,0,0,,{\alpha&HFF&}into {\alpha&HFF&}a {\alpha&HFF&}fluffy {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}white{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}puff.
-Dialogue: 1,0:00:47.68,0:00:48.00,Hi,,0,0,0,,{\alpha&HFF&}into {\alpha&HFF&}a {\alpha&HFF&}fluffy {\alpha&HFF&}white {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}puff.{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:48.82,0:00:50.10,Base,,0,0,0,,Each pop is the sound
-Dialogue: 1,0:00:48.82,0:00:49.00,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Each{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}pop {\alpha&HFF&}is {\alpha&HFF&}the {\alpha&HFF&}sound
-Dialogue: 1,0:00:49.10,0:00:49.36,Hi,,0,0,0,,{\alpha&HFF&}Each {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}pop{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}is {\alpha&HFF&}the {\alpha&HFF&}sound
-Dialogue: 1,0:00:49.46,0:00:49.52,Hi,,0,0,0,,{\alpha&HFF&}Each {\alpha&HFF&}pop {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}sound
-Dialogue: 1,0:00:49.60,0:00:49.68,Hi,,0,0,0,,{\alpha&HFF&}Each {\alpha&HFF&}pop {\alpha&HFF&}is {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}sound
-Dialogue: 1,0:00:49.76,0:00:50.10,Hi,,0,0,0,,{\alpha&HFF&}Each {\alpha&HFF&}pop {\alpha&HFF&}is {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}sound{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:50.14,0:00:51.76,Base,,0,0,0,,of a tiny hole failing,
-Dialogue: 1,0:00:50.14,0:00:50.20,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}of{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}tiny {\alpha&HFF&}hole {\alpha&HFF&}failing,
-Dialogue: 1,0:00:50.22,0:00:50.24,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}tiny {\alpha&HFF&}hole {\alpha&HFF&}failing,
-Dialogue: 1,0:00:50.42,0:00:50.82,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}tiny{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hole {\alpha&HFF&}failing,
-Dialogue: 1,0:00:50.88,0:00:51.12,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&HFF&}a {\alpha&HFF&}tiny {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hole{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}failing,
-Dialogue: 1,0:00:51.24,0:00:51.76,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&HFF&}a {\alpha&HFF&}tiny {\alpha&HFF&}hole {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}failing,{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:52.32,0:00:54.22,Base,,0,0,0,,releasing its stored steam and
-Dialogue: 1,0:00:52.32,0:00:52.78,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}releasing{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}its {\alpha&HFF&}stored {\alpha&HFF&}steam {\alpha&HFF&}and
-Dialogue: 1,0:00:52.86,0:00:52.96,Hi,,0,0,0,,{\alpha&HFF&}releasing {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}its{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}stored {\alpha&HFF&}steam {\alpha&HFF&}and
-Dialogue: 1,0:00:53.06,0:00:53.48,Hi,,0,0,0,,{\alpha&HFF&}releasing {\alpha&HFF&}its {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}stored{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}steam {\alpha&HFF&}and
-Dialogue: 1,0:00:53.64,0:00:54.06,Hi,,0,0,0,,{\alpha&HFF&}releasing {\alpha&HFF&}its {\alpha&HFF&}stored {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}steam{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}and
-Dialogue: 1,0:00:54.14,0:00:54.22,Hi,,0,0,0,,{\alpha&HFF&}releasing {\alpha&HFF&}its {\alpha&HFF&}stored {\alpha&HFF&}steam {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&}
-Dialogue: 0,0:00:54.36,0:00:56.31,Base,,0,0,0,,starch in a delicious burst.
-Dialogue: 1,0:00:54.36,0:00:54.76,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}starch{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&HFF&}delicious {\alpha&HFF&}burst.
-Dialogue: 1,0:00:54.84,0:00:54.90,Hi,,0,0,0,,{\alpha&HFF&}starch {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}in{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}delicious {\alpha&HFF&}burst.
-Dialogue: 1,0:00:54.96,0:00:54.98,Hi,,0,0,0,,{\alpha&HFF&}starch {\alpha&HFF&}in {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}delicious {\alpha&HFF&}burst.
-Dialogue: 1,0:00:55.06,0:00:55.58,Hi,,0,0,0,,{\alpha&HFF&}starch {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}delicious{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}burst.
-Dialogue: 1,0:00:55.68,0:00:56.31,Hi,,0,0,0,,{\alpha&HFF&}starch {\alpha&HFF&}in {\alpha&HFF&}a {\alpha&HFF&}delicious {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}burst.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:00.07,0:00:01.11,Base,,0,0,0,,The city sidewalk
+Dialogue: 1,0:00:00.07,0:00:00.21,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}The{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}city {\alpha&HFF&}sidewalk
+Dialogue: 1,0:00:00.27,0:00:00.57,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}city{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}sidewalk
+Dialogue: 1,0:00:00.63,0:00:01.11,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}city {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}sidewalk{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:01.25,0:00:01.79,Base,,0,0,0,,is a river
+Dialogue: 1,0:00:01.25,0:00:01.31,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}river
+Dialogue: 1,0:00:01.37,0:00:01.41,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}river
+Dialogue: 1,0:00:01.49,0:00:01.79,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}river{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:01.95,0:00:02.93,Base,,0,0,0,,of rushing people.
+Dialogue: 1,0:00:01.95,0:00:02.01,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}of{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}rushing {\alpha&HFF&}people.
+Dialogue: 1,0:00:02.13,0:00:02.49,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}rushing{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}people.
+Dialogue: 1,0:00:02.57,0:00:02.93,Hi,,0,0,0,,{\alpha&HFF&}of {\alpha&HFF&}rushing {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}people.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:03.63,0:00:04.15,Base,,0,0,0,,In the middle
+Dialogue: 1,0:00:03.63,0:00:03.69,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}In{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}middle
+Dialogue: 1,0:00:03.75,0:00:03.83,Hi,,0,0,0,,{\alpha&HFF&}In {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}middle
+Dialogue: 1,0:00:03.89,0:00:04.15,Hi,,0,0,0,,{\alpha&HFF&}In {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}middle{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:04.25,0:00:05.09,Base,,0,0,0,,sits a small
+Dialogue: 1,0:00:04.25,0:00:04.47,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}sits{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}small
+Dialogue: 1,0:00:04.55,0:00:04.57,Hi,,0,0,0,,{\alpha&HFF&}sits {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}small
+Dialogue: 1,0:00:04.69,0:00:05.09,Hi,,0,0,0,,{\alpha&HFF&}sits {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}small{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:05.17,0:00:06.11,Base,,0,0,0,,golden puppy named
+Dialogue: 1,0:00:05.17,0:00:05.49,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}golden{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}puppy {\alpha&HFF&}named
+Dialogue: 1,0:00:05.55,0:00:05.85,Hi,,0,0,0,,{\alpha&HFF&}golden {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}puppy{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}named
+Dialogue: 1,0:00:05.93,0:00:06.11,Hi,,0,0,0,,{\alpha&HFF&}golden {\alpha&HFF&}puppy {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}named{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:06.21,0:00:07.64,Base,,0,0,0,,Benny. He wears
+Dialogue: 1,0:00:06.21,0:00:06.56,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Benny.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}He {\alpha&HFF&}wears
+Dialogue: 1,0:00:06.58,0:00:07.34,Hi,,0,0,0,,{\alpha&HFF&}Benny. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}He{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}wears
+Dialogue: 1,0:00:07.38,0:00:07.64,Hi,,0,0,0,,{\alpha&HFF&}Benny. {\alpha&HFF&}He {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}wears{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:07.72,0:00:08.64,Base,,0,0,0,,a red bandana
+Dialogue: 1,0:00:07.72,0:00:07.74,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}red {\alpha&HFF&}bandana
+Dialogue: 1,0:00:07.82,0:00:08.04,Hi,,0,0,0,,{\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}red{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}bandana
+Dialogue: 1,0:00:08.10,0:00:08.64,Hi,,0,0,0,,{\alpha&HFF&}a {\alpha&HFF&}red {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}bandana{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:08.70,0:00:09.42,Base,,0,0,0,,and trembles with
+Dialogue: 1,0:00:08.70,0:00:08.78,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}trembles {\alpha&HFF&}with
+Dialogue: 1,0:00:08.86,0:00:09.26,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}trembles{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}with
+Dialogue: 1,0:00:09.30,0:00:09.42,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&HFF&}trembles {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}with{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:09.50,0:00:09.84,Base,,0,0,0,,cold.
+Dialogue: 1,0:00:09.50,0:00:09.84,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}cold.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:10.54,0:00:11.18,Base,,0,0,0,,But he won't
+Dialogue: 1,0:00:10.54,0:00:10.66,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}But{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}he {\alpha&HFF&}won't
+Dialogue: 1,0:00:10.72,0:00:10.82,Hi,,0,0,0,,{\alpha&HFF&}But {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}he{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}won't
+Dialogue: 1,0:00:10.86,0:00:11.18,Hi,,0,0,0,,{\alpha&HFF&}But {\alpha&HFF&}he {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}won't{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:11.28,0:00:12.62,Base,,0,0,0,,leave. Between his
+Dialogue: 1,0:00:11.28,0:00:11.62,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}leave.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Between {\alpha&HFF&}his
+Dialogue: 1,0:00:12.08,0:00:12.44,Hi,,0,0,0,,{\alpha&HFF&}leave. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Between{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}his
+Dialogue: 1,0:00:12.50,0:00:12.62,Hi,,0,0,0,,{\alpha&HFF&}leave. {\alpha&HFF&}Between {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:12.70,0:00:13.46,Base,,0,0,0,,paws is a
+Dialogue: 1,0:00:12.70,0:00:13.12,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}paws{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}is {\alpha&HFF&}a
+Dialogue: 1,0:00:13.16,0:00:13.36,Hi,,0,0,0,,{\alpha&HFF&}paws {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a
+Dialogue: 1,0:00:13.44,0:00:13.46,Hi,,0,0,0,,{\alpha&HFF&}paws {\alpha&HFF&}is {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:13.52,0:00:14.65,Base,,0,0,0,,letter someone dropped.
+Dialogue: 1,0:00:13.52,0:00:13.76,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}letter{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}someone {\alpha&HFF&}dropped.
+Dialogue: 1,0:00:13.82,0:00:14.16,Hi,,0,0,0,,{\alpha&HFF&}letter {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}someone{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}dropped.
+Dialogue: 1,0:00:14.22,0:00:14.65,Hi,,0,0,0,,{\alpha&HFF&}letter {\alpha&HFF&}someone {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}dropped.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:15.51,0:00:16.27,Base,,0,0,0,,Benny nudges the
+Dialogue: 1,0:00:15.51,0:00:15.77,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Benny{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}nudges {\alpha&HFF&}the
+Dialogue: 1,0:00:15.83,0:00:16.13,Hi,,0,0,0,,{\alpha&HFF&}Benny {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}nudges{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the
+Dialogue: 1,0:00:16.19,0:00:16.27,Hi,,0,0,0,,{\alpha&HFF&}Benny {\alpha&HFF&}nudges {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:16.35,0:00:17.73,Base,,0,0,0,,envelope toward passing
+Dialogue: 1,0:00:16.35,0:00:16.83,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}envelope{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}toward {\alpha&HFF&}passing
+Dialogue: 1,0:00:16.95,0:00:17.23,Hi,,0,0,0,,{\alpha&HFF&}envelope {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}toward{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}passing
+Dialogue: 1,0:00:17.33,0:00:17.73,Hi,,0,0,0,,{\alpha&HFF&}envelope {\alpha&HFF&}toward {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}passing{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:17.81,0:00:18.39,Base,,0,0,0,,strangers.
+Dialogue: 1,0:00:17.81,0:00:18.39,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}strangers.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:19.57,0:00:20.41,Base,,0,0,0,,But no one
+Dialogue: 1,0:00:19.57,0:00:19.75,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}But{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}no {\alpha&HFF&}one
+Dialogue: 1,0:00:20.09,0:00:20.23,Hi,,0,0,0,,{\alpha&HFF&}But {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}no{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}one
+Dialogue: 1,0:00:20.31,0:00:20.41,Hi,,0,0,0,,{\alpha&HFF&}But {\alpha&HFF&}no {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}one{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:20.49,0:00:20.93,Base,,0,0,0,,stops.
+Dialogue: 1,0:00:20.49,0:00:20.93,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}stops.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:21.72,0:00:22.24,Base,,0,0,0,,No one even
+Dialogue: 1,0:00:21.72,0:00:21.84,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}No{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}one {\alpha&HFF&}even
+Dialogue: 1,0:00:21.90,0:00:22.00,Hi,,0,0,0,,{\alpha&HFF&}No {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}one{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}even
+Dialogue: 1,0:00:22.06,0:00:22.24,Hi,,0,0,0,,{\alpha&HFF&}No {\alpha&HFF&}one {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}even{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:22.26,0:00:22.92,Base,,0,0,0,,looks down.
+Dialogue: 1,0:00:22.26,0:00:22.50,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}looks{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}down.
+Dialogue: 1,0:00:22.60,0:00:22.92,Hi,,0,0,0,,{\alpha&HFF&}looks {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}down.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:23.72,0:00:24.84,Base,,0,0,0,,The sky darkens.
+Dialogue: 1,0:00:23.72,0:00:23.82,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}The{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}sky {\alpha&HFF&}darkens.
+Dialogue: 1,0:00:23.88,0:00:24.18,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}sky{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}darkens.
+Dialogue: 1,0:00:24.24,0:00:24.84,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}sky {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}darkens.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:25.56,0:00:26.54,Base,,0,0,0,,Snow begins to
+Dialogue: 1,0:00:25.56,0:00:25.88,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Snow{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}begins {\alpha&HFF&}to
+Dialogue: 1,0:00:25.98,0:00:26.36,Hi,,0,0,0,,{\alpha&HFF&}Snow {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}begins{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}to
+Dialogue: 1,0:00:26.46,0:00:26.54,Hi,,0,0,0,,{\alpha&HFF&}Snow {\alpha&HFF&}begins {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}to{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:26.62,0:00:27.76,Base,,0,0,0,,fall. The first
+Dialogue: 1,0:00:26.62,0:00:26.90,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}fall.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}The {\alpha&HFF&}first
+Dialogue: 1,0:00:27.26,0:00:27.36,Hi,,0,0,0,,{\alpha&HFF&}fall. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}The{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}first
+Dialogue: 1,0:00:27.42,0:00:27.76,Hi,,0,0,0,,{\alpha&HFF&}fall. {\alpha&HFF&}The {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}first{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:27.88,0:00:28.82,Base,,0,0,0,,flakes threaten the
+Dialogue: 1,0:00:27.88,0:00:28.22,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}flakes{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}threaten {\alpha&HFF&}the
+Dialogue: 1,0:00:28.38,0:00:28.70,Hi,,0,0,0,,{\alpha&HFF&}flakes {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}threaten{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the
+Dialogue: 1,0:00:28.74,0:00:28.82,Hi,,0,0,0,,{\alpha&HFF&}flakes {\alpha&HFF&}threaten {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:28.86,0:00:29.43,Base,,0,0,0,,paper.
+Dialogue: 1,0:00:28.86,0:00:29.43,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}paper.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:30.27,0:00:31.18,Base,,0,0,0,,Benny panics.
+Dialogue: 1,0:00:30.27,0:00:30.61,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Benny{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}panics.
+Dialogue: 1,0:00:30.68,0:00:31.18,Hi,,0,0,0,,{\alpha&HFF&}Benny {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}panics.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:32.02,0:00:32.54,Base,,0,0,0,,He makes a
+Dialogue: 1,0:00:32.02,0:00:32.14,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}He{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}makes {\alpha&HFF&}a
+Dialogue: 1,0:00:32.22,0:00:32.44,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}makes{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a
+Dialogue: 1,0:00:32.52,0:00:32.54,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&HFF&}makes {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:32.60,0:00:32.96,Base,,0,0,0,,choice.
+Dialogue: 1,0:00:32.60,0:00:32.96,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}choice.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:33.98,0:00:34.86,Base,,0,0,0,,He curls his
+Dialogue: 1,0:00:33.98,0:00:34.10,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}He{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}curls {\alpha&HFF&}his
+Dialogue: 1,0:00:34.20,0:00:34.62,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}curls{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}his
+Dialogue: 1,0:00:34.66,0:00:34.86,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&HFF&}curls {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:34.96,0:00:35.94,Base,,0,0,0,,small body over
+Dialogue: 1,0:00:34.96,0:00:35.28,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}small{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}body {\alpha&HFF&}over
+Dialogue: 1,0:00:35.36,0:00:35.66,Hi,,0,0,0,,{\alpha&HFF&}small {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}body{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}over
+Dialogue: 1,0:00:35.80,0:00:35.94,Hi,,0,0,0,,{\alpha&HFF&}small {\alpha&HFF&}body {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}over{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:35.98,0:00:36.66,Base,,0,0,0,,the envelope,
+Dialogue: 1,0:00:35.98,0:00:36.10,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}envelope,
+Dialogue: 1,0:00:36.22,0:00:36.66,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}envelope,{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:37.22,0:00:38.38,Base,,0,0,0,,turning himself into
+Dialogue: 1,0:00:37.22,0:00:37.56,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}turning{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}himself {\alpha&HFF&}into
+Dialogue: 1,0:00:37.62,0:00:38.02,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}himself{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}into
+Dialogue: 1,0:00:38.15,0:00:38.38,Hi,,0,0,0,,{\alpha&HFF&}turning {\alpha&HFF&}himself {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}into{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:38.44,0:00:38.97,Base,,0,0,0,,a shield.
+Dialogue: 1,0:00:38.44,0:00:38.47,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}shield.
+Dialogue: 1,0:00:38.57,0:00:38.97,Hi,,0,0,0,,{\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}shield.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:40.47,0:00:41.43,Base,,0,0,0,,Time passes.
+Dialogue: 1,0:00:40.47,0:00:40.83,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Time{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}passes.
+Dialogue: 1,0:00:40.91,0:00:41.43,Hi,,0,0,0,,{\alpha&HFF&}Time {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}passes.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:42.29,0:00:43.51,Base,,0,0,0,,Snow falls heavier.
+Dialogue: 1,0:00:42.29,0:00:42.63,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Snow{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}falls {\alpha&HFF&}heavier.
+Dialogue: 1,0:00:42.73,0:00:43.03,Hi,,0,0,0,,{\alpha&HFF&}Snow {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}falls{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}heavier.
+Dialogue: 1,0:00:43.11,0:00:43.51,Hi,,0,0,0,,{\alpha&HFF&}Snow {\alpha&HFF&}falls {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}heavier.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:44.61,0:00:45.40,Base,,0,0,0,,Benny becomes a
+Dialogue: 1,0:00:44.61,0:00:44.89,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Benny{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}becomes {\alpha&HFF&}a
+Dialogue: 1,0:00:44.94,0:00:45.36,Hi,,0,0,0,,{\alpha&HFF&}Benny {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}becomes{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a
+Dialogue: 1,0:00:45.38,0:00:45.40,Hi,,0,0,0,,{\alpha&HFF&}Benny {\alpha&HFF&}becomes {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:45.58,0:00:46.40,Base,,0,0,0,,shivering lump of
+Dialogue: 1,0:00:45.58,0:00:46.00,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}shivering{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}lump {\alpha&HFF&}of
+Dialogue: 1,0:00:46.08,0:00:46.28,Hi,,0,0,0,,{\alpha&HFF&}shivering {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}lump{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}of
+Dialogue: 1,0:00:46.34,0:00:46.40,Hi,,0,0,0,,{\alpha&HFF&}shivering {\alpha&HFF&}lump {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}of{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:46.50,0:00:47.84,Base,,0,0,0,,white, with only
+Dialogue: 1,0:00:46.50,0:00:46.80,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}white,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}with {\alpha&HFF&}only
+Dialogue: 1,0:00:47.32,0:00:47.46,Hi,,0,0,0,,{\alpha&HFF&}white, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}with{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}only
+Dialogue: 1,0:00:47.64,0:00:47.84,Hi,,0,0,0,,{\alpha&HFF&}white, {\alpha&HFF&}with {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}only{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:47.92,0:00:48.96,Base,,0,0,0,,his red bandana
+Dialogue: 1,0:00:47.92,0:00:48.04,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}red {\alpha&HFF&}bandana
+Dialogue: 1,0:00:48.16,0:00:48.34,Hi,,0,0,0,,{\alpha&HFF&}his {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}red{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}bandana
+Dialogue: 1,0:00:48.40,0:00:48.96,Hi,,0,0,0,,{\alpha&HFF&}his {\alpha&HFF&}red {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}bandana{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:49.02,0:00:49.38,Base,,0,0,0,,showing.
+Dialogue: 1,0:00:49.02,0:00:49.38,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}showing.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:50.36,0:00:51.34,Base,,0,0,0,,A sound breaks
+Dialogue: 1,0:00:50.36,0:00:50.40,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}A{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}sound {\alpha&HFF&}breaks
+Dialogue: 1,0:00:50.50,0:00:50.92,Hi,,0,0,0,,{\alpha&HFF&}A {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}sound{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}breaks
+Dialogue: 1,0:00:51.04,0:00:51.34,Hi,,0,0,0,,{\alpha&HFF&}A {\alpha&HFF&}sound {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}breaks{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:51.42,0:00:51.90,Base,,0,0,0,,the rhythm.
+Dialogue: 1,0:00:51.42,0:00:51.52,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}rhythm.
+Dialogue: 1,0:00:51.56,0:00:51.90,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}rhythm.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:52.89,0:00:53.29,Base,,0,0,0,,Tap.
+Dialogue: 1,0:00:52.89,0:00:53.29,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Tap.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:55.01,0:00:55.51,Base,,0,0,0,,Drag.
+Dialogue: 1,0:00:55.01,0:00:55.51,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Drag.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:56.57,0:00:56.99,Base,,0,0,0,,Tap.
+Dialogue: 1,0:00:56.57,0:00:56.99,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Tap.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:58.15,0:00:58.83,Base,,0,0,0,,Drag.
+Dialogue: 1,0:00:58.15,0:00:58.83,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Drag.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:00:59.87,0:01:00.98,Base,,0,0,0,,A polished wooden
+Dialogue: 1,0:00:59.87,0:01:00.07,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}A{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}polished {\alpha&HFF&}wooden
+Dialogue: 1,0:01:00.09,0:01:00.60,Hi,,0,0,0,,{\alpha&HFF&}A {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}polished{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}wooden
+Dialogue: 1,0:01:00.68,0:01:00.98,Hi,,0,0,0,,{\alpha&HFF&}A {\alpha&HFF&}polished {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}wooden{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:01.04,0:01:02.18,Base,,0,0,0,,cane plants beside
+Dialogue: 1,0:01:01.04,0:01:01.32,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}cane{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}plants {\alpha&HFF&}beside
+Dialogue: 1,0:01:01.38,0:01:01.72,Hi,,0,0,0,,{\alpha&HFF&}cane {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}plants{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}beside
+Dialogue: 1,0:01:01.80,0:01:02.18,Hi,,0,0,0,,{\alpha&HFF&}cane {\alpha&HFF&}plants {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}beside{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:02.24,0:01:03.02,Base,,0,0,0,,Benny's nose.
+Dialogue: 1,0:01:02.24,0:01:02.58,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Benny's{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}nose.
+Dialogue: 1,0:01:02.66,0:01:03.02,Hi,,0,0,0,,{\alpha&HFF&}Benny's {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}nose.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:04.10,0:01:04.98,Base,,0,0,0,,Arthur looks down.
+Dialogue: 1,0:01:04.10,0:01:04.38,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Arthur{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}looks {\alpha&HFF&}down.
+Dialogue: 1,0:01:04.44,0:01:04.66,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}looks{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}down.
+Dialogue: 1,0:01:04.72,0:01:04.98,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&HFF&}looks {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}down.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:05.58,0:01:05.96,Base,,0,0,0,,He is an
+Dialogue: 1,0:01:05.58,0:01:05.70,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}He{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}is {\alpha&HFF&}an
+Dialogue: 1,0:01:05.78,0:01:05.86,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}an
+Dialogue: 1,0:01:05.92,0:01:05.96,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&HFF&}is {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}an{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:06.14,0:01:06.72,Base,,0,0,0,,old man in
+Dialogue: 1,0:01:06.14,0:01:06.30,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}old{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}man {\alpha&HFF&}in
+Dialogue: 1,0:01:06.36,0:01:06.60,Hi,,0,0,0,,{\alpha&HFF&}old {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}man{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}in
+Dialogue: 1,0:01:06.66,0:01:06.72,Hi,,0,0,0,,{\alpha&HFF&}old {\alpha&HFF&}man {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}in{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:06.76,0:01:07.44,Base,,0,0,0,,a gray coat
+Dialogue: 1,0:01:06.76,0:01:06.80,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}gray {\alpha&HFF&}coat
+Dialogue: 1,0:01:06.86,0:01:07.08,Hi,,0,0,0,,{\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}gray{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}coat
+Dialogue: 1,0:01:07.17,0:01:07.44,Hi,,0,0,0,,{\alpha&HFF&}a {\alpha&HFF&}gray {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}coat{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:07.57,0:01:08.59,Base,,0,0,0,,and thick glasses.
+Dialogue: 1,0:01:07.57,0:01:07.63,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}thick {\alpha&HFF&}glasses.
+Dialogue: 1,0:01:07.67,0:01:07.99,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}thick{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}glasses.
+Dialogue: 1,0:01:08.07,0:01:08.59,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&HFF&}thick {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}glasses.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:09.09,0:01:09.63,Base,,0,0,0,,What have we
+Dialogue: 1,0:01:09.09,0:01:09.25,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}What{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}have {\alpha&HFF&}we
+Dialogue: 1,0:01:09.31,0:01:09.45,Hi,,0,0,0,,{\alpha&HFF&}What {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}have{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}we
+Dialogue: 1,0:01:09.51,0:01:09.63,Hi,,0,0,0,,{\alpha&HFF&}What {\alpha&HFF&}have {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}we{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:09.69,0:01:11.79,Base,,0,0,0,,here? Arthur kneels
+Dialogue: 1,0:01:09.69,0:01:09.93,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}here?{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Arthur {\alpha&HFF&}kneels
+Dialogue: 1,0:01:09.99,0:01:11.43,Hi,,0,0,0,,{\alpha&HFF&}here? {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Arthur{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}kneels
+Dialogue: 1,0:01:11.49,0:01:11.79,Hi,,0,0,0,,{\alpha&HFF&}here? {\alpha&HFF&}Arthur {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}kneels{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:11.87,0:01:13.23,Base,,0,0,0,,slowly, his knees
+Dialogue: 1,0:01:11.87,0:01:12.33,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}slowly,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}his {\alpha&HFF&}knees
+Dialogue: 1,0:01:12.77,0:01:12.91,Hi,,0,0,0,,{\alpha&HFF&}slowly, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}knees
+Dialogue: 1,0:01:12.97,0:01:13.23,Hi,,0,0,0,,{\alpha&HFF&}slowly, {\alpha&HFF&}his {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}knees{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:13.35,0:01:13.82,Base,,0,0,0,,cracking.
+Dialogue: 1,0:01:13.35,0:01:13.82,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}cracking.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:14.90,0:01:15.74,Base,,0,0,0,,He brushes the
+Dialogue: 1,0:01:14.90,0:01:15.00,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}He{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}brushes {\alpha&HFF&}the
+Dialogue: 1,0:01:15.04,0:01:15.54,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}brushes{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the
+Dialogue: 1,0:01:15.58,0:01:15.74,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&HFF&}brushes {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:15.82,0:01:16.84,Base,,0,0,0,,snow off Benny's
+Dialogue: 1,0:01:15.82,0:01:16.12,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}snow{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}off {\alpha&HFF&}Benny's
+Dialogue: 1,0:01:16.28,0:01:16.42,Hi,,0,0,0,,{\alpha&HFF&}snow {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}off{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Benny's
+Dialogue: 1,0:01:16.50,0:01:16.84,Hi,,0,0,0,,{\alpha&HFF&}snow {\alpha&HFF&}off {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Benny's{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:16.92,0:01:17.42,Base,,0,0,0,,back with a
+Dialogue: 1,0:01:16.92,0:01:17.18,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}back{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}with {\alpha&HFF&}a
+Dialogue: 1,0:01:17.26,0:01:17.38,Hi,,0,0,0,,{\alpha&HFF&}back {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}with{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a
+Dialogue: 1,0:01:17.40,0:01:17.42,Hi,,0,0,0,,{\alpha&HFF&}back {\alpha&HFF&}with {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:17.54,0:01:18.30,Base,,0,0,0,,gloved hand.
+Dialogue: 1,0:01:17.54,0:01:17.88,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}gloved{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hand.
+Dialogue: 1,0:01:17.92,0:01:18.30,Hi,,0,0,0,,{\alpha&HFF&}gloved {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hand.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:19.28,0:01:20.10,Base,,0,0,0,,Benny looks up,
+Dialogue: 1,0:01:19.28,0:01:19.54,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Benny{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}looks {\alpha&HFF&}up,
+Dialogue: 1,0:01:19.58,0:01:19.82,Hi,,0,0,0,,{\alpha&HFF&}Benny {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}looks{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}up,
+Dialogue: 1,0:01:20.00,0:01:20.10,Hi,,0,0,0,,{\alpha&HFF&}Benny {\alpha&HFF&}looks {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}up,{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:20.54,0:01:21.71,Base,,0,0,0,,shaking powder from
+Dialogue: 1,0:01:20.54,0:01:20.91,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}shaking{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}powder {\alpha&HFF&}from
+Dialogue: 1,0:01:20.95,0:01:21.49,Hi,,0,0,0,,{\alpha&HFF&}shaking {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}powder{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}from
+Dialogue: 1,0:01:21.55,0:01:21.71,Hi,,0,0,0,,{\alpha&HFF&}shaking {\alpha&HFF&}powder {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}from{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:21.73,0:01:22.33,Base,,0,0,0,,his ears.
+Dialogue: 1,0:01:21.73,0:01:21.89,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}ears.
+Dialogue: 1,0:01:22.05,0:01:22.33,Hi,,0,0,0,,{\alpha&HFF&}his {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}ears.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:23.45,0:01:24.81,Base,,0,0,0,,He stands stiffly,
+Dialogue: 1,0:01:23.45,0:01:23.57,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}He{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}stands {\alpha&HFF&}stiffly,
+Dialogue: 1,0:01:23.71,0:01:24.21,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}stands{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}stiffly,
+Dialogue: 1,0:01:24.29,0:01:24.81,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&HFF&}stands {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}stiffly,{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:25.27,0:01:26.09,Base,,0,0,0,,revealing what he
+Dialogue: 1,0:01:25.27,0:01:25.75,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}revealing{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}what {\alpha&HFF&}he
+Dialogue: 1,0:01:25.81,0:01:25.95,Hi,,0,0,0,,{\alpha&HFF&}revealing {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}what{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}he
+Dialogue: 1,0:01:25.99,0:01:26.09,Hi,,0,0,0,,{\alpha&HFF&}revealing {\alpha&HFF&}what {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}he{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:26.15,0:01:27.94,Base,,0,0,0,,protected. There lies
+Dialogue: 1,0:01:26.15,0:01:26.75,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}protected.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}There {\alpha&HFF&}lies
+Dialogue: 1,0:01:26.77,0:01:27.60,Hi,,0,0,0,,{\alpha&HFF&}protected. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}There{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}lies
+Dialogue: 1,0:01:27.68,0:01:27.94,Hi,,0,0,0,,{\alpha&HFF&}protected. {\alpha&HFF&}There {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}lies{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:27.96,0:01:29.14,Base,,0,0,0,,the blue envelope.
+Dialogue: 1,0:01:27.96,0:01:28.08,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}blue {\alpha&HFF&}envelope.
+Dialogue: 1,0:01:28.14,0:01:28.38,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}blue{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}envelope.
+Dialogue: 1,0:01:28.52,0:01:29.14,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&HFF&}blue {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}envelope.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:29.95,0:01:31.20,Base,,0,0,0,,Perfectly dry.
+Dialogue: 1,0:01:29.95,0:01:30.58,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Perfectly{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}dry.
+Dialogue: 1,0:01:30.68,0:01:31.20,Hi,,0,0,0,,{\alpha&HFF&}Perfectly {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}dry.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:32.00,0:01:33.12,Base,,0,0,0,,Arthur gasps and
+Dialogue: 1,0:01:32.00,0:01:32.32,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Arthur{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}gasps {\alpha&HFF&}and
+Dialogue: 1,0:01:32.34,0:01:32.96,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}gasps{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}and
+Dialogue: 1,0:01:33.04,0:01:33.12,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&HFF&}gasps {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:33.26,0:01:33.74,Base,,0,0,0,,picks it up
+Dialogue: 1,0:01:33.26,0:01:33.50,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}picks{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}it {\alpha&HFF&}up
+Dialogue: 1,0:01:33.56,0:01:33.60,Hi,,0,0,0,,{\alpha&HFF&}picks {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}it{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}up
+Dialogue: 1,0:01:33.68,0:01:33.74,Hi,,0,0,0,,{\alpha&HFF&}picks {\alpha&HFF&}it {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}up{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:33.80,0:01:34.96,Base,,0,0,0,,with trembling hands.
+Dialogue: 1,0:01:33.80,0:01:33.90,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}with{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}trembling {\alpha&HFF&}hands.
+Dialogue: 1,0:01:33.94,0:01:34.48,Hi,,0,0,0,,{\alpha&HFF&}with {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}trembling{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}hands.
+Dialogue: 1,0:01:34.56,0:01:34.96,Hi,,0,0,0,,{\alpha&HFF&}with {\alpha&HFF&}trembling {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}hands.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:35.72,0:01:36.70,Base,,0,0,0,,Arthur stares at
+Dialogue: 1,0:01:35.72,0:01:36.02,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Arthur{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}stares {\alpha&HFF&}at
+Dialogue: 1,0:01:36.06,0:01:36.58,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}stares{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}at
+Dialogue: 1,0:01:36.66,0:01:36.70,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&HFF&}stares {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}at{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:36.74,0:01:37.50,Base,,0,0,0,,the handwriting.
+Dialogue: 1,0:01:36.74,0:01:36.84,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}handwriting.
+Dialogue: 1,0:01:36.88,0:01:37.50,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}handwriting.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:38.49,0:01:39.05,Base,,0,0,0,,It's a letter
+Dialogue: 1,0:01:38.49,0:01:38.63,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}It's{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}letter
+Dialogue: 1,0:01:38.69,0:01:38.71,Hi,,0,0,0,,{\alpha&HFF&}It's {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}a{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}letter
+Dialogue: 1,0:01:38.77,0:01:39.05,Hi,,0,0,0,,{\alpha&HFF&}It's {\alpha&HFF&}a {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}letter{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:39.13,0:01:39.75,Base,,0,0,0,,from his late
+Dialogue: 1,0:01:39.13,0:01:39.29,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}from{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}his {\alpha&HFF&}late
+Dialogue: 1,0:01:39.35,0:01:39.47,Hi,,0,0,0,,{\alpha&HFF&}from {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}late
+Dialogue: 1,0:01:39.57,0:01:39.75,Hi,,0,0,0,,{\alpha&HFF&}from {\alpha&HFF&}his {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}late{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:39.83,0:01:40.17,Base,,0,0,0,,wife.
+Dialogue: 1,0:01:39.83,0:01:40.17,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}wife.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:40.95,0:01:41.43,Base,,0,0,0,,The one he
+Dialogue: 1,0:01:40.95,0:01:41.05,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}The{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}one {\alpha&HFF&}he
+Dialogue: 1,0:01:41.17,0:01:41.27,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}one{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}he
+Dialogue: 1,0:01:41.33,0:01:41.43,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}one {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}he{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:41.51,0:01:42.41,Base,,0,0,0,,thought he'd lost
+Dialogue: 1,0:01:41.51,0:01:41.75,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}thought{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}he'd {\alpha&HFF&}lost
+Dialogue: 1,0:01:41.81,0:01:41.95,Hi,,0,0,0,,{\alpha&HFF&}thought {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}he'd{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}lost
+Dialogue: 1,0:01:42.07,0:01:42.41,Hi,,0,0,0,,{\alpha&HFF&}thought {\alpha&HFF&}he'd {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}lost{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:42.51,0:01:43.05,Base,,0,0,0,,forever.
+Dialogue: 1,0:01:42.51,0:01:43.05,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}forever.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:43.67,0:01:44.40,Base,,0,0,0,,You guarded it,
+Dialogue: 1,0:01:43.67,0:01:43.83,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}You{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}guarded {\alpha&HFF&}it,
+Dialogue: 1,0:01:43.87,0:01:44.23,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}guarded{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}it,
+Dialogue: 1,0:01:44.34,0:01:44.40,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&HFF&}guarded {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}it,{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:44.90,0:01:45.74,Base,,0,0,0,,Arthur whispers.
+Dialogue: 1,0:01:44.90,0:01:45.18,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Arthur{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}whispers.
+Dialogue: 1,0:01:45.24,0:01:45.74,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}whispers.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:46.38,0:01:47.24,Base,,0,0,0,,A tear traces
+Dialogue: 1,0:01:46.38,0:01:46.40,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}A{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}tear {\alpha&HFF&}traces
+Dialogue: 1,0:01:46.48,0:01:46.78,Hi,,0,0,0,,{\alpha&HFF&}A {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}tear{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}traces
+Dialogue: 1,0:01:46.88,0:01:47.24,Hi,,0,0,0,,{\alpha&HFF&}A {\alpha&HFF&}tear {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}traces{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:47.30,0:01:48.00,Base,,0,0,0,,down his wrinkled
+Dialogue: 1,0:01:47.30,0:01:47.48,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}down{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}his {\alpha&HFF&}wrinkled
+Dialogue: 1,0:01:47.54,0:01:47.62,Hi,,0,0,0,,{\alpha&HFF&}down {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}wrinkled
+Dialogue: 1,0:01:47.68,0:01:48.00,Hi,,0,0,0,,{\alpha&HFF&}down {\alpha&HFF&}his {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}wrinkled{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:48.06,0:01:48.38,Base,,0,0,0,,face.
+Dialogue: 1,0:01:48.06,0:01:48.38,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}face.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:49.54,0:01:50.12,Base,,0,0,0,,You didn't know
+Dialogue: 1,0:01:49.54,0:01:49.64,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}You{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}didn't {\alpha&HFF&}know
+Dialogue: 1,0:01:49.68,0:01:49.92,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}didn't{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}know
+Dialogue: 1,0:01:49.96,0:01:50.12,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&HFF&}didn't {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}know{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:50.18,0:01:50.82,Base,,0,0,0,,what it was,
+Dialogue: 1,0:01:50.18,0:01:50.32,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}what{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}it {\alpha&HFF&}was,
+Dialogue: 1,0:01:50.36,0:01:50.42,Hi,,0,0,0,,{\alpha&HFF&}what {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}it{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}was,
+Dialogue: 1,0:01:50.50,0:01:50.82,Hi,,0,0,0,,{\alpha&HFF&}what {\alpha&HFF&}it {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}was,{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:50.98,0:01:51.52,Base,,0,0,0,,but you knew
+Dialogue: 1,0:01:50.98,0:01:51.08,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}but{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}you {\alpha&HFF&}knew
+Dialogue: 1,0:01:51.12,0:01:51.26,Hi,,0,0,0,,{\alpha&HFF&}but {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}you{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}knew
+Dialogue: 1,0:01:51.36,0:01:51.52,Hi,,0,0,0,,{\alpha&HFF&}but {\alpha&HFF&}you {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}knew{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:51.60,0:01:52.19,Base,,0,0,0,,it mattered.
+Dialogue: 1,0:01:51.60,0:01:51.66,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}it{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}mattered.
+Dialogue: 1,0:01:51.74,0:01:52.19,Hi,,0,0,0,,{\alpha&HFF&}it {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}mattered.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:53.19,0:01:54.11,Base,,0,0,0,,Arthur places the
+Dialogue: 1,0:01:53.19,0:01:53.45,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Arthur{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}places {\alpha&HFF&}the
+Dialogue: 1,0:01:53.53,0:01:53.93,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}places{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the
+Dialogue: 1,0:01:53.95,0:01:54.11,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&HFF&}places {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:54.15,0:01:54.97,Base,,0,0,0,,letter over his
+Dialogue: 1,0:01:54.15,0:01:54.43,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}letter{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}over {\alpha&HFF&}his
+Dialogue: 1,0:01:54.57,0:01:54.77,Hi,,0,0,0,,{\alpha&HFF&}letter {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}over{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}his
+Dialogue: 1,0:01:54.83,0:01:54.97,Hi,,0,0,0,,{\alpha&HFF&}letter {\alpha&HFF&}over {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:55.03,0:01:56.09,Base,,0,0,0,,heart. Then he
+Dialogue: 1,0:01:55.03,0:01:55.33,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}heart.{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Then {\alpha&HFF&}he
+Dialogue: 1,0:01:55.81,0:01:55.95,Hi,,0,0,0,,{\alpha&HFF&}heart. {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Then{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}he
+Dialogue: 1,0:01:55.99,0:01:56.09,Hi,,0,0,0,,{\alpha&HFF&}heart. {\alpha&HFF&}Then {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}he{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:56.15,0:01:56.99,Base,,0,0,0,,scoops Benny up
+Dialogue: 1,0:01:56.15,0:01:56.51,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}scoops{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Benny {\alpha&HFF&}up
+Dialogue: 1,0:01:56.59,0:01:56.85,Hi,,0,0,0,,{\alpha&HFF&}scoops {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Benny{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}up
+Dialogue: 1,0:01:56.91,0:01:56.99,Hi,,0,0,0,,{\alpha&HFF&}scoops {\alpha&HFF&}Benny {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}up{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:57.05,0:01:57.87,Base,,0,0,0,,in his arms.
+Dialogue: 1,0:01:57.05,0:01:57.09,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}in{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}his {\alpha&HFF&}arms.
+Dialogue: 1,0:01:57.13,0:01:57.25,Hi,,0,0,0,,{\alpha&HFF&}in {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}arms.
+Dialogue: 1,0:01:57.39,0:01:57.87,Hi,,0,0,0,,{\alpha&HFF&}in {\alpha&HFF&}his {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}arms.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:58.34,0:01:58.98,Base,,0,0,0,,He tucks the
+Dialogue: 1,0:01:58.34,0:01:58.48,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}He{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}tucks {\alpha&HFF&}the
+Dialogue: 1,0:01:58.58,0:01:58.84,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}tucks{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the
+Dialogue: 1,0:01:58.88,0:01:58.98,Hi,,0,0,0,,{\alpha&HFF&}He {\alpha&HFF&}tucks {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:01:59.04,0:02:00.08,Base,,0,0,0,,puppy inside his
+Dialogue: 1,0:01:59.04,0:01:59.34,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}puppy{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}inside {\alpha&HFF&}his
+Dialogue: 1,0:01:59.38,0:01:59.90,Hi,,0,0,0,,{\alpha&HFF&}puppy {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}inside{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}his
+Dialogue: 1,0:01:59.96,0:02:00.08,Hi,,0,0,0,,{\alpha&HFF&}puppy {\alpha&HFF&}inside {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}his{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:00.14,0:02:01.42,Base,,0,0,0,,coat, buttoning it
+Dialogue: 1,0:02:00.14,0:02:00.46,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}coat,{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}buttoning {\alpha&HFF&}it
+Dialogue: 1,0:02:00.86,0:02:01.28,Hi,,0,0,0,,{\alpha&HFF&}coat, {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}buttoning{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}it
+Dialogue: 1,0:02:01.36,0:02:01.42,Hi,,0,0,0,,{\alpha&HFF&}coat, {\alpha&HFF&}buttoning {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}it{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:01.50,0:02:02.53,Base,,0,0,0,,so only Benny's
+Dialogue: 1,0:02:01.50,0:02:01.66,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}so{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}only {\alpha&HFF&}Benny's
+Dialogue: 1,0:02:01.81,0:02:02.05,Hi,,0,0,0,,{\alpha&HFF&}so {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}only{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}Benny's
+Dialogue: 1,0:02:02.15,0:02:02.53,Hi,,0,0,0,,{\alpha&HFF&}so {\alpha&HFF&}only {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Benny's{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:02.59,0:02:03.47,Base,,0,0,0,,golden head and
+Dialogue: 1,0:02:02.59,0:02:03.01,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}golden{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}head {\alpha&HFF&}and
+Dialogue: 1,0:02:03.07,0:02:03.29,Hi,,0,0,0,,{\alpha&HFF&}golden {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}head{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}and
+Dialogue: 1,0:02:03.31,0:02:03.47,Hi,,0,0,0,,{\alpha&HFF&}golden {\alpha&HFF&}head {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}and{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:03.57,0:02:04.69,Base,,0,0,0,,red bandana peek
+Dialogue: 1,0:02:03.57,0:02:03.77,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}red{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}bandana {\alpha&HFF&}peek
+Dialogue: 1,0:02:03.83,0:02:04.43,Hi,,0,0,0,,{\alpha&HFF&}red {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}bandana{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}peek
+Dialogue: 1,0:02:04.47,0:02:04.69,Hi,,0,0,0,,{\alpha&HFF&}red {\alpha&HFF&}bandana {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}peek{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:04.81,0:02:04.97,Base,,0,0,0,,out.
+Dialogue: 1,0:02:04.81,0:02:04.97,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}out.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:06.38,0:02:07.08,Base,,0,0,0,,Let's go home,
+Dialogue: 1,0:02:06.38,0:02:06.58,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Let's{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}go {\alpha&HFF&}home,
+Dialogue: 1,0:02:06.62,0:02:06.76,Hi,,0,0,0,,{\alpha&HFF&}Let's {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}go{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}home,
+Dialogue: 1,0:02:06.80,0:02:07.08,Hi,,0,0,0,,{\alpha&HFF&}Let's {\alpha&HFF&}go {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}home,{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:07.20,0:02:07.84,Base,,0,0,0,,Arthur says.
+Dialogue: 1,0:02:07.20,0:02:07.50,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}Arthur{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}says.
+Dialogue: 1,0:02:07.58,0:02:07.84,Hi,,0,0,0,,{\alpha&HFF&}Arthur {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}says.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:08.86,0:02:09.62,Base,,0,0,0,,They walk away
+Dialogue: 1,0:02:08.86,0:02:09.00,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}They{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}walk {\alpha&HFF&}away
+Dialogue: 1,0:02:09.04,0:02:09.28,Hi,,0,0,0,,{\alpha&HFF&}They {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}walk{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}away
+Dialogue: 1,0:02:09.36,0:02:09.62,Hi,,0,0,0,,{\alpha&HFF&}They {\alpha&HFF&}walk {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}away{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:09.72,0:02:10.58,Base,,0,0,0,,together into the
+Dialogue: 1,0:02:09.72,0:02:10.14,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}together{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}into {\alpha&HFF&}the
+Dialogue: 1,0:02:10.24,0:02:10.43,Hi,,0,0,0,,{\alpha&HFF&}together {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}into{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the
+Dialogue: 1,0:02:10.49,0:02:10.58,Hi,,0,0,0,,{\alpha&HFF&}together {\alpha&HFF&}into {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:10.65,0:02:11.41,Base,,0,0,0,,snowy night.
+Dialogue: 1,0:02:10.65,0:02:11.05,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}snowy{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}night.
+Dialogue: 1,0:02:11.11,0:02:11.41,Hi,,0,0,0,,{\alpha&HFF&}snowy {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}night.{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:12.33,0:02:13.27,Base,,0,0,0,,The snow covers
+Dialogue: 1,0:02:12.33,0:02:12.45,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}The{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}snow {\alpha&HFF&}covers
+Dialogue: 1,0:02:12.51,0:02:12.83,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}snow{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}covers
+Dialogue: 1,0:02:12.95,0:02:13.27,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}snow {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}covers{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:13.31,0:02:13.99,Base,,0,0,0,,their tracks,
+Dialogue: 1,0:02:13.31,0:02:13.47,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}their{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}tracks,
+Dialogue: 1,0:02:13.55,0:02:13.99,Hi,,0,0,0,,{\alpha&HFF&}their {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}tracks,{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:15.01,0:02:15.64,Base,,0,0,0,,but the warmth
+Dialogue: 1,0:02:15.01,0:02:15.12,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}but{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}warmth
+Dialogue: 1,0:02:15.18,0:02:15.28,Hi,,0,0,0,,{\alpha&HFF&}but {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}warmth
+Dialogue: 1,0:02:15.32,0:02:15.64,Hi,,0,0,0,,{\alpha&HFF&}but {\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}warmth{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:15.76,0:02:16.56,Base,,0,0,0,,between them is
+Dialogue: 1,0:02:15.76,0:02:16.18,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}between{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}them {\alpha&HFF&}is
+Dialogue: 1,0:02:16.22,0:02:16.38,Hi,,0,0,0,,{\alpha&HFF&}between {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}them{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}is
+Dialogue: 1,0:02:16.48,0:02:16.56,Hi,,0,0,0,,{\alpha&HFF&}between {\alpha&HFF&}them {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}is{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:16.64,0:02:17.42,Base,,0,0,0,,enough to melt
+Dialogue: 1,0:02:16.64,0:02:16.94,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}enough{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}to {\alpha&HFF&}melt
+Dialogue: 1,0:02:17.00,0:02:17.10,Hi,,0,0,0,,{\alpha&HFF&}enough {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}to{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}melt
+Dialogue: 1,0:02:17.18,0:02:17.42,Hi,,0,0,0,,{\alpha&HFF&}enough {\alpha&HFF&}to {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}melt{\fscx100\fscy100\alpha&HFF&}
+Dialogue: 0,0:02:17.50,0:02:18.16,Base,,0,0,0,,the winter.
+Dialogue: 1,0:02:17.50,0:02:17.60,Hi,,0,0,0,,{\alpha&H00&\c&H0000FFFF\fscx106\fscy106}the{\fscx100\fscy100\alpha&HFF&} {\alpha&HFF&}winter.
+Dialogue: 1,0:02:17.66,0:02:18.16,Hi,,0,0,0,,{\alpha&HFF&}the {\alpha&H00&\c&H0000FFFF\fscx106\fscy106}winter.{\fscx100\fscy100\alpha&HFF&}

@@ -454,7 +454,7 @@ def populate_upload_excel_long_for_channel(youtube_channel_name: str, only_due_n
         ws.cell(row=row_idx, column=header_map["yt_description"], value=story_desc)
         ws.cell(row=row_idx, column=header_map["yt_playlist"], value=playlist)
         ws.cell(row=row_idx, column=header_map["avatar_img"], value=avatar_img)
-        ws.cell(row=row_idx, column=header_map["size"], value="size")
+        ws.cell(row=row_idx, column=header_map["size"], value=size)
         ws.cell(row=row_idx, column=header_map["yt_schedule_date"], value=format_schedule_date(scheduled_at))
         ws.cell(row=row_idx, column=header_map["yt_tags"], value="")
 

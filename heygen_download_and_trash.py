@@ -76,6 +76,16 @@ def click_card_and_wait_for_navigation(page, card, home_url: str) -> bool:
         card.scroll_into_view_if_needed()
         card.click(force=True, position={'x': 100, 'y': 100}) 
 
+        # wait a bit for navigation
+        page.wait_for_timeout(2000)
+
+        # Check if we navigated away from home
+        current_url = page.url
+        if home_url.lower() in current_url.lower():
+            print(f"❌ Still on Home page after clicking card: {title}. Going to wait for change...")
+        else:
+            print(f"✅ Navigated to video page: {title}")
+            return True
         # 3. Wait for the URL to change away from home
         page.wait_for_url(lambda url: "home" not in url.lower(), timeout=10000)
         return True

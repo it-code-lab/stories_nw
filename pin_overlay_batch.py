@@ -1362,3 +1362,11 @@ if __name__ == "__main__":
         subhead_text="Realistic Steps That Don’t Feel Miserable",
         output_name="avatar_thumbnails/final_thumbnail.jpg"
     )
+
+    # create_youtube_thumbnail(
+    #     base_image_path="avatar_thumbnails/pandit_ji.png",
+    #     json_template_path="avatar_thumbnails/pandit_ji_thumbnail.json",
+    #     title_text="वीरभद्र की उत्पत्ति",
+    #     subhead_text="क्रोध नहीं—धर्म की रक्षा का रूप",
+    #     output_name="avatar_thumbnails/final_thumbnail.jpg"
+    # )
