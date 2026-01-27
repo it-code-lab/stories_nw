@@ -190,7 +190,8 @@ def write_image_jobs_excel(items: List[dict], image_provider: str = "", image_or
             it.get("image_prompt", ""),
             "",  # account_id left blank (your script distributes across profiles)
             "",  # image_path blank so script processes it
-            "", "", "", "", "",
+            it.get("video_prompt", ""),  #video_cmd
+            "", "", "", "",
             it.get("section_id", ""),
             it.get("image_name", ""),
             image_orientation,

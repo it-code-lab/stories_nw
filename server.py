@@ -2913,6 +2913,8 @@ def make_kb_video():
         print("Processing request...makekbvideo")
 
         duration = request.form.get('duration',10)
+        output_folder = request.form.get('output_folder', 'edit_vid_output')
+
         if duration == '':
             duration = 10
 
@@ -2924,7 +2926,7 @@ def make_kb_video():
         from make_kb_videos import export_kb_videos
         export_kb_videos(
             input_folder="edit_vid_input",   # folder with images
-            out_folder="edit_vid_output",    # where to save KB clips
+            out_folder=output_folder,    # where to save KB clips
             per_image=int(duration),            # seconds per image
             output_size=video_size,
             zoom_start=1.0, zoom_end=1.05
@@ -2951,7 +2953,8 @@ def assemble_clips_to_make_video_song():
         print("Processing request...asseleclipstomakevideosong")
         #return with error message if edit_vid_input is empty
 
-        video_input_folder = "edit_vid_input"
+        # video_input_folder = "edit_vid_input"
+        video_input_folder = request.form.get('input_folder', 'edit_vid_input')
         copyforcaption = request.form.get('copyforcaption','no')
         # --- Validate inputs up front ---
         if not os.path.isdir(video_input_folder):
@@ -2960,9 +2963,9 @@ def assemble_clips_to_make_video_song():
 
         video_files = _files_with_ext(video_input_folder, VIDEO_EXTS)
         if not video_files:
-            print("❌ No video files found in 'edit_vid_input'.")
+            print("❌ No video files found in {}.", video_input_folder)
             return jsonify({                
-                "error": "❌ No video files found in 'edit_vid_input'.",
+                "error": "❌ No video files found in {}.".format(video_input_folder),
                 "hint":  "Add at least one of: .mp4, .mov, .mkv, .avi, .webm, .m4v"
             }), 400
 
@@ -2973,7 +2976,7 @@ def assemble_clips_to_make_video_song():
 
         too_short = []
         for vp in video_files:
-            dur = probe_duration(os.path.join("edit_vid_input", vp))
+            dur = probe_duration(os.path.join(video_input_folder, vp))
             if dur + EPS < MIN_SEC:
                 too_short.append({
                     "file": os.path.basename(vp),
@@ -2994,13 +2997,19 @@ def assemble_clips_to_make_video_song():
         video_volume = float(request.form.get('video_volume',0.3))
         bg_volume = float(request.form.get('bg_volume',1.0))
         add_titles = request.form.get('add_titles', 'no') == 'yes'
+        input_folder = request.form.get('input_folder', 'edit_vid_input')
+
+        # If input_folder is not edit_vid_input, copy order.xlsx from edit_vid_input to input_folder
+        if input_folder != 'edit_vid_input':
+            shutil.copy('edit_vid_input/order.xlsx', os.path.join(input_folder, 'order.xlsx'))
+
         add_transitions = request.form.get('add_transitions', 'no') == 'yes'
         title_sec = float(request.form.get('title_sec', 2.0))
         transition_sec = float(request.form.get('transition_sec', 0.5))
 
         # --- NEW: If order.xlsx has a Title column (B), build one output per story group (no bg audio) ---
         group_outputs = assemble_videos_by_titles_if_present(
-            video_folder="edit_vid_input",
+            video_folder=input_folder,
             output_dir="edit_vid_output",
             fps=30,
             prefer_ffmpeg_concat=True,
@@ -3028,7 +3037,7 @@ def assemble_clips_to_make_video_song():
 
 
         assemble_videos(
-            video_folder="edit_vid_input",                  # or "edit_vid_output" if you pre-made KB clips
+            video_folder=input_folder,                  # or "edit_vid_output" if you pre-made KB clips
             audio_folder="edit_vid_audio",
             output_path=output_video_path,
             fps=30,

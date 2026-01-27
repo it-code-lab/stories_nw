@@ -417,6 +417,12 @@
         If order.xlsx has a <b>Title</b> column (B), the server will output <b>one merged video per Title group</b>.
         </div>
 
+        <label>Input Folder</label>
+        <select name="input_folder" id="input_folder">
+            <option value="edit_vid_input">edit_vid_input</option>
+            <option value="out">out</option>
+        </select>
+
         <label>Copy video and audio files for captions generations</label>
         <select name="copyforcaption" id="copyforcaption">
             <option value="no">no</option>
@@ -1330,6 +1336,13 @@
 
         <label>Duration of video per image (Seconds):</label>
         <input type="number" name="duration" min="1" max="60" value="20">
+
+        <label>Output Folder</label>
+        <select name="output_folder" id="output_folder">
+            <option value="edit_vid_output">edit_vid_output</option>
+            <option value="downloads">downloads</option>
+        </select>
+
         <button type="submit">Process Images</button>
     </form>
 
@@ -1701,8 +1714,8 @@
 
         <label>Fit method:</label>
         <select name="fit" style="margin-bottom:10px;">
-            <option value="cover">cover (crop to fill frame)</option>
-            <option value="contain" selected>contain (no crop, add padding)</option>
+            <option value="cover" selected>cover (crop to fill frame)</option>
+            <option value="contain" >contain (no crop, add padding)</option>
         </select>
 
         <label>Background (used only with contain):</label>
