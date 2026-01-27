@@ -432,8 +432,11 @@ def load_youtube_rows_from_master(excel_file):
         youTubePlaylist = ws.cell(row=row_idx, column=header_map["yt_playlist"]).value
         youTubeScheduleDate = ws.cell(row=row_idx, column=header_map.get("yt_schedule_date", 0)).value
         avatar_img = ws.cell(row=row_idx, column=header_map.get("avatar_img")).value
-        size = ws.cell(row=row_idx, column=header_map.get("size")).value
+        first_sec_image = ws.cell(row=row_idx, column=header_map.get("first_sec_image")).value
         
+        size = ws.cell(row=row_idx, column=header_map.get("size")).value
+
+
         if not youTubeChannel:
             continue
 
@@ -467,6 +470,7 @@ def load_youtube_rows_from_master(excel_file):
             "youtube_channel_name": youTubeChannel,
             "youtube_schedule_date": youTubeScheduleDate,
             "avatar_img": avatar_img,
+            "first_sec_image": first_sec_image,
             "size": size,
 
         })
@@ -527,6 +531,7 @@ def upload_shorts_from_master_file():
             media = row["media_file"]
             
             avatar_img = row.get("avatar_img")
+            first_sec_image = row.get("first_sec_image")
             size = (row.get("size") or "").lower()
             print(f"Processing row {row['row_idx']}: media={media}, avatar_img={avatar_img}, size={size}")
             if avatar_img :
@@ -545,16 +550,6 @@ def upload_shorts_from_master_file():
                         title_text = row["youtube_title"]
                         subhead_text = ""
 
-
-                # # If row["youtube_title"] contains title_text (subtext), split them using ()
-                # title_parts = row["youtube_title"].split("(", 1)
-                # if len(title_parts) == 2:
-                #     title_text = title_parts[0].strip()
-                #     subhead_text = title_parts[1].strip().rstrip(")")
-                # else:
-                #     title_text = row["youtube_title"]
-                #     subhead_text = ""
-
                 print(f"Using avatar image for thumbnail: {avatar_img}")
                 create_youtube_thumbnail(
                     base_image_path=f"avatar_thumbnails/{avatar_img}.png",
@@ -564,6 +559,31 @@ def upload_shorts_from_master_file():
                     output_name="avatar_thumbnails/final_thumbnail.jpg"
                 )
                 thumbnail_path = "avatar_thumbnails/final_thumbnail.jpg"
+            elif first_sec_image:
+                # If row["youtube_title"] contains :, split into title and subhead
+                title_parts = row["youtube_title"].split(":", 1)
+                if len(title_parts) == 2:
+                    title_text = title_parts[0].strip()
+                    subhead_text = title_parts[1].strip()
+                else:
+                    # If row["youtube_title"] contains title_text (subtext), split them using ()
+                    title_parts = row["youtube_title"].split("(", 1)
+                    if len(title_parts) == 2:
+                        title_text = title_parts[0].strip()
+                        subhead_text = title_parts[1].strip().rstrip(")")
+                    else:
+                        title_text = row["youtube_title"]
+                        subhead_text = ""
+
+                print(f"Using first_sec_image for thumbnail: {first_sec_image}")
+                create_youtube_thumbnail(
+                    base_image_path=f"downloads/{first_sec_image}.png",
+                    json_template_path=f"avatar_thumbnails/generic_thumbnail.json",
+                    title_text=title_text,
+                    subhead_text=subhead_text,
+                    output_name="avatar_thumbnails/final_thumbnail.jpg"
+                )
+                thumbnail_path = "avatar_thumbnails/final_thumbnail.jpg"                
             else:
                 print("No valid avatar image found, proceeding without it.")
                 thumbnail_path = "";
