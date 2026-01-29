@@ -458,8 +458,15 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path, image
             ph.write_bytes(b"")
         return ph
 
-    run_btn = page.get_by_role("button", name="Run", exact=True)
-    await expect(run_btn).to_be_enabled()
+    # run_btn = page.get_by_role("button", name="Run", exact=True)
+    # await expect(run_btn).to_be_enabled()
+    # await run_btn.click()
+
+    # Removing exact=True allows for flexible whitespace handling
+    # run_btn = page.get_by_role("button", name=re.compile(r"^\s*Run\s*$"))
+    # await expect(run_btn).to_be_visible() # Good practice to check visibility too
+    # await expect(run_btn).to_be_enabled()
+    run_btn = page.locator("button.ms-button-primary", has_text="Run")
     await run_btn.click()
 
     await asyncio.sleep(15)
@@ -785,9 +792,58 @@ async def generate_consistent_image_chatgpt(
 
     # 2) Enter prompt
 
-    prompt_box = page.get_by_role("paragraph")
-    await expect(prompt_box).to_be_visible(timeout=30_000)
-    await prompt_box.click()
+    # If paragraph is not found redirect to account["url"]
+
+    try:
+        prompt_box = page.get_by_role("paragraph")
+        await expect(prompt_box).to_be_visible(timeout=10_000)
+        await prompt_box.click()
+    except Exception:
+        account = CHATGPT_ACCOUNT
+        print("[ChatGPT Images] Prompt box not found, reloading page...")
+        await page.goto(account["url"], wait_until="networkidle")
+
+        # 1) Build a robust locator (CSS is often more stable than role+name here)
+        dl_all = page.locator('button[aria-label="Download this image"]')
+        dl_visible = page.locator('button[aria-label="Download this image"]:visible')
+
+        # Debug counts (optional, but super helpful)
+        before_all = await dl_all.count()
+        before_vis = await dl_visible.count()
+        print(f"[ChatGPT Images] Download buttons before prompt: all={before_all}, visible={before_vis}")
+
+        # Stamp everything currently present
+        stamp = f"seen-{uuid.uuid4().hex}"
+        await page.evaluate(
+            """(stamp) => {
+                document
+                .querySelectorAll('button[aria-label="Download this image"]')
+                .forEach(b => b.setAttribute('data-stamp', stamp));
+            }""",
+            stamp
+        )
+
+        # Stamp any existing "popup UI" elements BEFORE sending prompt
+        ui_stamp = f"ui-seen-{uuid.uuid4().hex}"
+        await page.evaluate(
+            """(stamp) => {
+                const nodes = [
+                ...document.querySelectorAll('a[data-skip-to-content][href="#main"]'),
+                ...document.querySelectorAll('button.btn.btn-secondary')
+                ];
+                nodes.forEach(n => n.setAttribute('data-ui-stamp', stamp));
+            }""",
+            ui_stamp
+        )
+
+
+        prompt_box = page.get_by_role("paragraph")
+        await expect(prompt_box).to_be_visible(timeout=10_000)
+        await prompt_box.click()
+        
+    
+
+
 
     # scope to the composer form that contains the send button
     # send_btn = page.get_by_test_id("send-button")
@@ -797,7 +853,7 @@ async def generate_consistent_image_chatgpt(
     # await prompt_box.click()
 
     await page.keyboard.type(prompt, delay=10)
-
+    
     # prompt_box = page.locator('textarea#prompt-textarea, [contenteditable="true"][role="textbox"]').first
     # await prompt_box.wait_for(state="visible", timeout=30_000)
     # await prompt_box.click()
@@ -1153,6 +1209,9 @@ async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
     #DND - Temporary change
     # await page.goto(account["google_url"])
     await page.goto("https://aistudio.google.com/prompts/new_image?model=imagen-4.0-generate-001")
+
+    # Wait for 10 seconds
+    await asyncio.sleep(30)
 
     for job in jobs:
         row_idx = job["row"]

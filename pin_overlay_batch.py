@@ -1358,7 +1358,7 @@ if __name__ == "__main__":
     create_youtube_thumbnail(
         base_image_path="avatar_thumbnails/female_1.png",
         json_template_path="avatar_thumbnails/female_1_thumbnail.json",
-        title_text="Save $1,000 Fast",
+        title_text="Save $1,000 Fast Save $1,000 Fast",
         subhead_text="Realistic Steps That Don’t Feel Miserable",
         output_name="avatar_thumbnails/final_thumbnail.jpg"
     )
@@ -1368,5 +1368,21 @@ if __name__ == "__main__":
     #     json_template_path="avatar_thumbnails/pandit_ji_thumbnail.json",
     #     title_text="वीरभद्र की उत्पत्ति",
     #     subhead_text="क्रोध नहीं—धर्म की रक्षा का रूप",
+    #     output_name="avatar_thumbnails/final_thumbnail.jpg"
+    # )
+
+    # create_youtube_thumbnail(
+    #     base_image_path="avatar_thumbnails/pandit_ji.png",
+    #     json_template_path="avatar_thumbnails/pandit_ji_thumbnail.json",
+    #     title_text="वीरभद्र की उत्पत्ति वीरभद्र की उत्पत्ति कैसे हुई?",
+    #     subhead_text="क्रोध नहीं—धर्म की रक्षा का रूप क्रोध नहीं—धर्म की रक्षा का रूप",
+    #     output_name="avatar_thumbnails/final_thumbnail.jpg"
+    # )
+
+    # create_youtube_thumbnail(
+    #     base_image_path="avatar_thumbnails/pandit_ji.png",
+    #     json_template_path="avatar_thumbnails/pandit_ji_thumbnail.json",
+    #     title_text="Save $1,000 Fast",
+    #     subhead_text="Realistic Steps That Don’t Feel Miserable",
     #     output_name="avatar_thumbnails/final_thumbnail.jpg"
     # )
