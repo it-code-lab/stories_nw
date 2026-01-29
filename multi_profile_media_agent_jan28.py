@@ -10,7 +10,6 @@
 # ------------------------------------------------------------
 
 import asyncio
-import json
 import os
 import random
 import re
@@ -22,47 +21,6 @@ from typing import Dict, List, Optional, Tuple
 import uuid
 from playwright.async_api import async_playwright, BrowserContext, Page, expect
 
-
-async def _wait_for_enter(message: str = "Press Enter to continue...") -> None:
-    """Non-blocking 'input()' for async code."""
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, lambda: input(message))
-
-
-async def bootstrap_profile_logins(pw, account: Dict[str, str]) -> None:
-    """Open a persistent profile and let the user login once. Press Enter to move on."""
-    browser_type = getattr(pw, BROWSER_NAME)
-    print(f"[bootstrap:{account['id']}] Launching profile: {account['profile']}")
-    ctx_kwargs = dict(
-        user_data_dir=account["profile"],
-        headless=HEADLESS,
-        executable_path=CHROME_EXECUTABLE,
-        device_scale_factor=DEVICE_SCALE_FACTOR,
-        args=[
-            "--disable-blink-features=AutomationControlled",
-            "--start-maximized",
-            "--no-default-browser-check",
-            "--no-first-run",
-        ],
-        accept_downloads=True,
-    )
-    ctx: BrowserContext = await browser_type.launch_persistent_context(**ctx_kwargs)
-    page: Page = await ctx.new_page()
-    await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-
-    for site_key in BOOTSTRAP_SITES:
-        url = _get_site_url(account, site_key)
-        if not url:
-            continue
-        print(f"[bootstrap:{account['id']}] Open {site_key}: {url}")
-        try:
-            await page.goto(url)
-        except Exception as e:
-            print(f"[bootstrap:{account['id']}] Failed to open {site_key}: {e}")
-            continue
-        await _wait_for_enter(f"Login if needed for {account['id']} ({site_key}), then press Enter... ")
-
-    await ctx.close()
 # ===== Excel =====
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
@@ -124,41 +82,8 @@ DRY_RUN                 = False
 ACCOUNT_ID1_COL = "account_id_1"   # who generated the image
 ACCOUNT_ID2_COL = "account_id_2"   # who generated the video
 
-# ============ ACCOUNTS / PROFILES ============
-# This script supports MANY isolated login profiles.
-#
-# Recommended approach:
-#   - Create one folder per identity under ./browser_profiles/<profile_dir>
-#   - Run with BOOTSTRAP_LOGIN=True once to login to the sites you need
-#   - After that, sessions persist in those folders.
-#
-# Profiles are loaded from ./profiles.json (created on first run).
-# Each item supports:
-#   {
-#     "id": "gmail_01",
-#     "profile_dir": "gmail_01",              // relative -> ./browser_profiles/gmail_01
-#     "out": "downloads/gmail_01",
-#     "sites": {
-#        "aistudio": "https://aistudio.google.com/",
-#        "meta": "https://www.meta.ai/media/?nr=1",
-#        "claude": "https://claude.ai/",
-#        "grok": "https://x.com/i/grok",
-#        "elevenlabs": "https://elevenlabs.io/app",
-#        "heygen": "https://app.heygen.com/"
-#     }
-#   }
-#
-# Backward-compatible:
-#   - "profile_dir" can also be an ABSOLUTE path to an existing Chrome profile folder
-#   - legacy keys "profile", "google_url", "meta_url" are also accepted
-
-PROFILES_BASE_DIR = Path(__file__).with_name("browser_profiles")
-PROFILES_JSON     = Path(__file__).with_name("profiles.json")
-
-# If profiles.json does not exist yet, we'll write a starter file based on your previous ACCOUNTS list.
-LEGACY_ACCOUNTS: List[Dict[str, str]] = []
-
-LEGACY_ACCOUNTS_old: List[Dict[str, str]] = [
+# ============ ACCOUNTS ============
+ACCOUNTS: List[Dict[str, str]] = [
     # {
     #     "id": "numero_uno", #not worked
     #     "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 1",
@@ -226,124 +151,6 @@ LEGACY_ACCOUNTS_old: List[Dict[str, str]] = [
     # },
 ]
 
-# Bootstrap helper:
-# Set to True to open each profile and let you login once (press Enter in terminal to continue).
-BOOTSTRAP_LOGIN = True
-# Which sites to open during bootstrap (keys from "sites" dict)
-BOOTSTRAP_SITES = ["aistudio", "meta"]
-
-
-def _is_probably_absolute_path(p: str) -> bool:
-    if not p:
-        return False
-    # Windows drive paths like C:\...
-    if re.match(r"^[A-Za-z]:\\", p):
-        return True
-    return Path(p).is_absolute()
-
-
-def _resolve_profile_path(profile_dir: str) -> Path:
-    if _is_probably_absolute_path(profile_dir):
-        return Path(profile_dir)
-    return PROFILES_BASE_DIR / profile_dir
-
-
-def _get_site_url(account: Dict[str, str], key: str, fallback: Optional[str] = None) -> str:
-    sites = account.get("sites") or {}
-    # Back-compat mapping
-    if key == "aistudio":
-        return sites.get("aistudio") or account.get("google_url") or fallback or "https://aistudio.google.com/"
-    if key == "meta":
-        return sites.get("meta") or account.get("meta_url") or fallback or "https://www.meta.ai/media/?nr=1"
-    return sites.get(key) or fallback or ""
-
-
-def load_accounts() -> List[Dict[str, str]]:
-    PROFILES_BASE_DIR.mkdir(parents=True, exist_ok=True)
-
-    if PROFILES_JSON.exists():
-        try:
-            data = json.loads(PROFILES_JSON.read_text(encoding="utf-8"))
-        except Exception as e:
-            raise RuntimeError(f"Failed to parse profiles.json: {e}")
-        if not isinstance(data, list):
-            raise RuntimeError("profiles.json must be a JSON array (list) of profile objects.")
-    else:
-        # Write a starter profiles.json:
-        #  - we keep your existing ABSOLUTE Chrome profile paths so nothing breaks
-        #  - and we also include a template "gmail_01" using a managed folder
-        starter = []
-        for acc in LEGACY_ACCOUNTS:
-            starter.append({
-                "id": acc["id"],
-                "profile_dir": acc["profile"],  # keep existing Chrome profile folder
-                "out": str(Path("downloads") / acc["id"]),
-                "sites": {
-                    "aistudio": acc.get("google_url", "https://aistudio.google.com/"),
-                    "meta": acc.get("meta_url", "https://www.meta.ai/media/?nr=1"),
-                },
-            })
-
-        starter.append({
-            "id": "gmail_01",
-            "profile_dir": "gmail_01",  # will live in ./browser_profiles/gmail_01
-            "out": "downloads/gmail_01",
-            "sites": {
-                "aistudio": "https://aistudio.google.com/",
-                "meta": "https://www.meta.ai/media/?nr=1",
-                "claude": "https://claude.ai/",
-                "grok": "https://x.com/i/grok",
-                "elevenlabs": "https://elevenlabs.io/app",
-                "heygen": "https://app.heygen.com/",
-            },
-        })
-
-        PROFILES_JSON.write_text(json.dumps(starter, indent=2), encoding="utf-8")
-        print(f"[profiles] Created starter profiles.json at: {PROFILES_JSON}")
-        print("[profiles] You can now add 10+ profiles by duplicating the gmail_01 entry and changing id/profile_dir.")
-        data = starter
-
-    accounts: List[Dict[str, str]] = []
-    seen_ids = set()
-    for entry in data:
-        if not isinstance(entry, dict):
-            raise RuntimeError("Each item in profiles.json must be an object/dict.")
-        acc = dict(entry)  # copy
-
-        acc_id = acc.get("id")
-        if not acc_id or not isinstance(acc_id, str):
-            raise RuntimeError("Each profile must have a string 'id'.")
-        if acc_id in seen_ids:
-            raise RuntimeError(f"Duplicate profile id in profiles.json: {acc_id}")
-        seen_ids.add(acc_id)
-
-        profile_dir = acc.get("profile_dir") or acc.get("profile")
-        if not profile_dir:
-            raise RuntimeError(f"Profile '{acc_id}' must include 'profile_dir' (recommended) or legacy 'profile'.")
-
-        profile_path = _resolve_profile_path(str(profile_dir))
-        profile_path.mkdir(parents=True, exist_ok=True)
-        acc["profile"] = str(profile_path)
-
-        # Default output folder per account (recommended)
-        acc["out"] = acc.get("out") or str(Path("downloads") / acc_id)
-
-        # Back-compat: keep google_url/meta_url in sync
-        acc["google_url"] = acc.get("google_url") or _get_site_url(acc, "aistudio", "https://aistudio.google.com/")
-        acc["meta_url"] = acc.get("meta_url") or _get_site_url(acc, "meta", "https://www.meta.ai/media/?nr=1")
-
-        accounts.append(acc)
-
-    # refuse duplicate profile paths (can't open same profile in parallel)
-    profiles = [a["profile"] for a in accounts]
-    dupes = {p for p in profiles if profiles.count(p) > 1}
-    if dupes:
-        raise RuntimeError(f"Duplicate profile folders in profiles.json (one profile can't be reused concurrently): {dupes}")
-
-    return accounts
-
-
-ACCOUNTS: List[Dict[str, str]] = load_accounts()
 META_ACCOUNTS: List[Dict[str, str]] = [
     {
         "id": "mail2sm",
@@ -1397,9 +1204,11 @@ async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
     page: Page = await ctx.new_page()
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-    # open AI Studio once per account
-    aistudio_url = _get_site_url(account, "aistudio", fallback="https://aistudio.google.com/prompts/new_image?model=imagen-4.0-generate-001")
-    await page.goto(aistudio_url)
+    # open Google AI Studio once per account
+
+    #DND - Temporary change
+    # await page.goto(account["google_url"])
+    await page.goto("https://aistudio.google.com/prompts/new_image?model=imagen-4.0-generate-001")
 
     # Wait for 10 seconds
     await asyncio.sleep(30)
@@ -1473,7 +1282,7 @@ async def run_account_videos(pw, account: Dict[str, str], jobs: List[Dict]):
         prompt  = job["video_cmd"]
         imagePath = job["image_path"]
         try:
-            vid_path = await generate_video_meta_ai(page, imagePath, prompt, out_dir, _get_site_url(account, "meta", fallback="https://www.meta.ai/media/?nr=1"))
+            vid_path = await generate_video_meta_ai(page, imagePath, prompt, out_dir,account["meta_url"])
             write_video_result(row_idx, str(Path(vid_path).resolve()), account_id_used=account["id"], status="ok")
             print(f"[{account['id']}] Row {row_idx} -> {vid_path}")
             await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
@@ -1533,7 +1342,7 @@ async def main_async_videos():
     profiles = [acc["profile"] for acc in META_ACCOUNTS]
     dupes = {p for p in profiles if profiles.count(p) > 1}
     if dupes:
-        raise RuntimeError(f"Duplicate profile folders detected (profiles.json): {dupes}")
+        raise RuntimeError(f"Duplicate Chrome profiles in ACCOUNTS: {dupes}")
 
     attempt = 1
 
@@ -1576,13 +1385,6 @@ async def main_async_videos():
                 jobs.append((acc, bucket))
 
         async with async_playwright() as pw:
-
-            # Optional: run once to bootstrap logins for each profile (see BOOTSTRAP_LOGIN/BOOTSTRAP_SITES)
-            if BOOTSTRAP_LOGIN:
-                for acc in ACCOUNTS:
-                    await bootstrap_profile_logins(pw, acc)
-
-
             await asyncio.gather(*[run_account_videos(pw, acc, bucket) for acc, bucket in jobs])
 
         if not ENABLE_RETRY or attempt >= MAX_RETRY_ATTEMPTS:
@@ -1676,7 +1478,7 @@ async def main_async_images():
     profiles = [acc["profile"] for acc in ACCOUNTS]
     dupes = {p for p in profiles if profiles.count(p) > 1}
     if dupes:
-        raise RuntimeError(f"Duplicate profile folders detected (profiles.json): {dupes}")
+        raise RuntimeError(f"Duplicate Chrome profiles in ACCOUNTS: {dupes}")
 
     attempt = 1
     ENABLE_RETRY = False # Set to False to disable retries for images
@@ -1722,16 +1524,9 @@ async def main_async_images():
         #         jobs.append((acc, bucket))
 
         # async with async_playwright() as pw:
-
         #     await asyncio.gather(*[run_account_images(pw, acc, bucket) for acc, bucket in jobs])
 
         async with async_playwright() as pw:
-
-            # Optional: run once to bootstrap logins for each profile (see BOOTSTRAP_LOGIN/BOOTSTRAP_SITES)
-            if BOOTSTRAP_LOGIN:
-                for acc in ACCOUNTS:
-                    await bootstrap_profile_logins(pw, acc)
-
 
             tasks = []
 
@@ -1836,40 +1631,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# -----------------------------------------------------------------------------
-# QUICK REMINDER: Multi-profile setup + usage
-#
-# 1) Profiles are configured in `profiles.json` (auto-created on first run).
-#    - Each profile = one persistent browser identity (cookies/logins saved)
-#    - "profile_dir": stored under ./browser_profiles/<profile_dir>  (managed profiles)
-#    - You can also use an absolute Chrome profile path if you want "legacy" profiles.
-#
-# 2) To add a NEW profile (scalable to 10+):
-#    - Open `profiles.json`
-#    - Duplicate an existing profile block
-#    - Change:
-#        id          -> unique name (e.g., "gmail_11")
-#        profile_dir -> folder name (e.g., "gmail_11")  => creates ./browser_profiles/gmail_11
-#        out         -> optional per-profile downloads folder (recommended)
-#        sites       -> ONLY include services this profile should use (omit others to skip)
-#          Example (AI Studio only):
-#            "sites": { "aistudio": "https://aistudio.google.com/" }
-#
-# 3) Bootstrap logins (login once, saved forever in that profile folder):
-#    - Set BOOTSTRAP_LOGIN = True
-#    - Set BOOTSTRAP_SITES = ["aistudio", "claude", "grok", "elevenlabs", "heygen", "meta"]
-#    - Run the script and login manually when the page opens.
-#    - Press Enter in the terminal to move to the next site/profile.
-#    - The script skips any site not listed in that profile’s "sites".
-#    - After onboarding, set BOOTSTRAP_LOGIN = False for normal runs.
-#
-# 4) Normal runs:
-#    - The script launches the requested profile, reuses saved cookies, and proceeds.
-#    - IMPORTANT: Don’t run the same profile in two sessions at once (profile lock conflicts).
-#
-# 5) Folder notes:
-#    - ./browser_profiles/  => persistent identities (safe to backup)
-#    - ./downloads/<id>/    => per-profile downloads to avoid file collisions
-# -----------------------------------------------------------------------------

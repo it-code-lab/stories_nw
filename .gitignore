@@ -56,3 +56,5 @@ playwright_heygen_profile/*
 venv_whisperx/*
 venv_whisperx\*
 venv_whisperx/Lib/site-packages/isympy.py
+browser_profiles\*
+browser_profiles/*
