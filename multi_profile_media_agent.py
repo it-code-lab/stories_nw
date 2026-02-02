@@ -228,7 +228,7 @@ LEGACY_ACCOUNTS_old: List[Dict[str, str]] = [
 
 # Bootstrap helper:
 # Set to True to open each profile and let you login once (press Enter in terminal to continue).
-BOOTSTRAP_LOGIN = True
+BOOTSTRAP_LOGIN = False
 # Which sites to open during bootstrap (keys from "sites" dict)
 BOOTSTRAP_SITES = ["aistudio", "meta"]
 

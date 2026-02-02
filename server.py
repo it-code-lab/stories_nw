@@ -248,6 +248,11 @@ def render_bulk_bg(orientation="", scale_bg="yes", copy_as_is=True):
         else:
             out_res = "1920x1080" if orientation.lower() == "landscape" else "1080x1920"
 
+
+        work_dir = (OUT_DIR / "bulk_work").resolve()
+        if work_dir.exists():
+            shutil.rmtree(work_dir)
+            
         chroma_key = "0x00FF00"  # HeyGen green export
 
         wb = openpyxl.load_workbook(excel_path)
@@ -343,8 +348,16 @@ def render_bulk_bg(orientation="", scale_bg="yes", copy_as_is=True):
             dur = probe_duration(heygen_path)
 
             # 2) build one full background clip (image loops / video holds last frame)
+            # If work_dir exists then clean it up first
+
             work_dir = (OUT_DIR / "bulk_work").resolve()
+            # if work_dir.exists():
+            #     shutil.rmtree(work_dir)
+
             work_dir.mkdir(exist_ok=True)
+
+
+
             bg_video = work_dir / f"{_safe_name(heygen_path.stem)}__bg.mp4"
 
             make_scene(asset=bg_asset, duration=dur, out_path=bg_video, out_res=out_res)

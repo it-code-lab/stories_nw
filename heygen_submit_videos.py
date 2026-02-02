@@ -9,11 +9,13 @@ EXCEL_FILE = "heygen_submit_videos.xlsx"
 SHEET_NAME = "Sheet1"
 
 STORAGE_STATE = "heygen_state.json"   # <-- from successful login
+# If auto login fails, delete heygen_state.json file to re-login manually.
+
 CHROME_EXECUTABLE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
 HEADLESS = False
 NAV_TIMEOUT = 120_000
-UI_TIMEOUT = 60_000
+UI_TIMEOUT = 160_000
 
 COL_URL = "HeyGen_Template_url"
 COL_TEXT = "story_text"
@@ -68,20 +70,26 @@ def click_story_editor_n_enter_text(page, text):
         lambda: page.locator("textarea").first,
     ]:
         try:
-            print("Trying locator...")
+            
             el = locator()
+            print("Trying locator...{}".format(el))
             el.wait_for(state="visible", timeout=10_000)
             el.click()
 
 
             page.wait_for_timeout(1000)
+            print("Clicked element, now typing...")
             page.keyboard.press("ControlOrMeta+A")
             page.keyboard.press("Backspace")
             el.type(text, delay=20)
+            print(f"Text typed in element {el}")
             page.keyboard.press("Tab") 
+            print("Pressed Tab ")
             page.wait_for_timeout(2000) 
+            print("Waited 2s")
             return
-        except Exception:
+        except Exception as e:
+            print("Locator failed with exception {}".format(e))
             pass
     raise RuntimeError("Story editor not found")
 
