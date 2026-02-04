@@ -983,7 +983,7 @@ def _try_load_section_titles_from_order_xlsx(video_folder: str) -> dict:
         return {}
 
 
-def _run_cmd(cmd):
+def _run_cmd_Feb_01_2026(cmd):
     """Run ffmpeg/ffprobe command with logging."""
     print("▶ FFmpeg cmd:")
     print(" ".join(cmd))
@@ -996,6 +996,38 @@ def _run_cmd(cmd):
     if proc.returncode != 0:
         raise RuntimeError(f"Command failed:\n{proc.stdout}")
     return proc.stdout
+
+def _run_cmd(cmd):
+    """Run ffmpeg/ffprobe command with logging."""
+    print("▶ FFmpeg cmd:")
+    print(" ".join(cmd))
+    proc = subprocess.run(
+        cmd, 
+        stdout=subprocess.PIPE, 
+        stderr=subprocess.STDOUT, 
+        text=True,
+        encoding="utf-8"  # Added this line
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"Command failed:\n{proc.stdout}")
+    return proc.stdout
+
+# def _run_cmd(cmd):
+#     print("▶ FFmpeg cmd:")
+#     print(" ".join(cmd))
+
+#     proc = subprocess.run(
+#         cmd,
+#         stdout=subprocess.PIPE,
+#         stderr=subprocess.STDOUT,
+#         text=False,   # bytes
+#     )
+
+#     out = (proc.stdout or b"").decode("utf-8", errors="replace")
+
+#     if proc.returncode != 0:
+#         raise RuntimeError(f"Command failed:\n{out}")
+#     return out
 
 def _atempo_chain(tempo: float) -> str:
     """
