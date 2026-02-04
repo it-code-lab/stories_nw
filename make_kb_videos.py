@@ -1,9 +1,9 @@
 # make_kb_videos.py
 import os, random
 from glob import glob
-from moviepy.editor import ImageClip, CompositeVideoClip
+from moviepy.editor import ImageClip, CompositeVideoClip, VideoFileClip, vfx
 import numpy as np
-from moviepy.editor import ImageClip, CompositeVideoClip, vfx
+import subprocess
 
 def cover_resize(clip, target_w, target_h):
     """Resize image to fully cover the target canvas (like CSS object-fit: cover)."""
@@ -254,9 +254,26 @@ def ken_burns_clip_DND(img_path, duration, size=(1920,1080),
 
     return CompositeVideoClip([kb], size=size).set_duration(duration)
 
+def _ffprobe_duration(path: str) -> float:
+    """Return duration in seconds using ffprobe (format duration)."""
+    try:
+        out = subprocess.check_output([
+            "ffprobe", "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            path
+        ], universal_newlines=True).strip()
+        return float(out)
+    except Exception:
+        # MoviePy fallback (slower but robust)
+        try:
+            return float(VideoFileClip(path).duration)
+        except Exception:
+            return 0.0
+
 def export_kb_videos(input_folder, out_folder,
                      per_image=10, output_size=(1920,1080),
-                     zoom_start=1.05, zoom_end=1.15, fps=30):
+                     zoom_start=1.05, zoom_end=1.15, fps=30, only_select_images_without_video=False):
     os.makedirs(out_folder, exist_ok=True)
     print("Received export_kb_videos Arguments:", locals())
     # clear_folder(out_folder)
@@ -273,6 +290,21 @@ def export_kb_videos(input_folder, out_folder,
 
     pan_cycle = [ "left", "right", "up", "down" ]  # removed in/out for subtlety
     for idx, img in enumerate(sorted(images)):
+
+        if only_select_images_without_video:
+            base = os.path.splitext(os.path.basename(img))[0]
+            corresponding_video_path = os.path.join("downloads", f"{base}.mp4")
+            if os.path.exists(corresponding_video_path):
+                try:
+                    full_d = _ffprobe_duration(corresponding_video_path) or 0.0
+                    if full_d > 0:
+                        print(f"Skipping (video exists): {corresponding_video_path} with duration {full_d}")
+                        continue
+                    else:
+                        print(f"Duration check failed for {corresponding_video_path}. Proceeding to create KB video.")
+                except Exception as e:
+                    print(f"Duration exception for {corresponding_video_path}: {e}. Proceeding to create KB video.")
+
         pan = pan_cycle[idx % len(pan_cycle)]
         base = os.path.splitext(os.path.basename(img))[0]
         #DND

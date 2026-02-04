@@ -252,7 +252,7 @@ def render_bulk_bg(orientation="", scale_bg="yes", copy_as_is=True):
         work_dir = (OUT_DIR / "bulk_work").resolve()
         if work_dir.exists():
             shutil.rmtree(work_dir)
-            
+
         chroma_key = "0x00FF00"  # HeyGen green export
 
         wb = openpyxl.load_workbook(excel_path)
@@ -2928,6 +2928,8 @@ def make_kb_video():
         duration = request.form.get('duration',10)
         output_folder = request.form.get('output_folder', 'edit_vid_output')
 
+        input_folder = request.form.get('input_folder', 'edit_vid_input')
+        only_select_images_without_video = request.form.get('only_select_images_without_video', 'false') == 'true'  
         if duration == '':
             duration = 10
 
@@ -2938,11 +2940,12 @@ def make_kb_video():
 
         from make_kb_videos import export_kb_videos
         export_kb_videos(
-            input_folder="edit_vid_input",   # folder with images
+            input_folder=input_folder,   # folder with images
             out_folder=output_folder,    # where to save KB clips
             per_image=int(duration),            # seconds per image
             output_size=video_size,
-            zoom_start=1.0, zoom_end=1.05
+            zoom_start=1.0, zoom_end=1.05,
+            only_select_images_without_video=only_select_images_without_video
         )
         return "✅ Ken Burns videos created successfully!", 200
     except Exception as e:
