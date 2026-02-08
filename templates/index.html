@@ -1100,11 +1100,15 @@
 
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <button type="button" id="btnImages">Populate Image Jobs Excel - media_jobs.xlsx</button>
-        <button type="button" id="btnHeygen">Populate HeyGen Submit Excel - heygen_submit_videos.xlsx</button>
-        <button type="button" id="btnMergeHeygen">Populate HeyGen Merge Excel - heygen_bulk_bg.xlsx</button>
-        <button type="button" id="btnUploadsLong">Populate LongForm Upload - master_shorts_uploader_data.xlsx</button>
 
-        <button type="button" id="btnUploads">Populate Shorts Upload - master_shorts_uploader_data.xlsx</button>
+        <button type="button" id="btnHeygen" style="background-color: #155f6c;">Populate HeyGen Submit Excel - heygen_submit_videos.xlsx</button>
+        <button type="button" id="btnHeygenMultipart" style="background-color: #155f6c;">Populate HeyGen Submit Excel Multipart - heygen_submit_videos.xlsx</button>
+
+        <button type="button" id="btnMergeHeygen">Populate HeyGen Merge Excel - heygen_bulk_bg.xlsx</button>
+        
+        <button type="button" id="btnUploadsLong" style="background-color: #155f6c;">Populate LongForm Upload - master_shorts_uploader_data.xlsx</button>
+
+        <button type="button" id="btnUploads" style="background-color: #155f6c;">Populate Shorts Upload - master_shorts_uploader_data.xlsx</button>
 
         <button type="button" id="btnOrder">Populate Order Excel</button>
     </div>
@@ -2555,6 +2559,14 @@ ${JSON.stringify(meta, null, 2)}
     if (!channel) return setResult("Please enter YouTube Channel Name.");
     setResult("Working...");
     const res = await postForm("/planner/populate_heygen_excel", { youtube_channel_name: channel });
+    setResult(res);
+    });
+
+    document.getElementById("btnHeygenMultipart").addEventListener("click", async () => {
+    const channel = getChannel();
+    if (!channel) return setResult("Please enter YouTube Channel Name.");
+    setResult("Working...");
+    const res = await postForm("/planner/populate_heygen_multipart_excel", { youtube_channel_name: channel });
     setResult(res);
     });
 

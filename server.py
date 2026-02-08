@@ -171,6 +171,16 @@ def planner_populate_heygen_excel():
     res = cpw.populate_heygen_submit_excel_for_channel(channel)
     return jsonify(res)
 
+
+@app.post("/planner/populate_heygen_multipart_excel")
+def planner_populate_heygen_multipart_excel():
+    channel = (request.form.get("youtube_channel_name") or "").strip()
+    if not channel:
+        return jsonify({"ok": False, "message": "youtube_channel_name required"}), 400
+    res = cpw.populate_heygen_multipart_excel_for_channel(channel)
+    return jsonify(res)
+
+
 @app.post("/planner/populate_upload_excel")
 def planner_populate_upload_excel():
     channel = (request.form.get("youtube_channel_name") or "").strip()
@@ -2944,8 +2954,7 @@ def make_kb_video():
             out_folder=output_folder,    # where to save KB clips
             per_image=int(duration),            # seconds per image
             output_size=video_size,
-            zoom_start=1.0, zoom_end=1.05,
-            only_select_images_without_video=only_select_images_without_video
+            zoom_start=1.0, zoom_end=1.05
         )
         return "✅ Ken Burns videos created successfully!", 200
     except Exception as e:

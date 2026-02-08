@@ -25,7 +25,7 @@ Before using
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, OrderedDict
 
 import requests
 from openpyxl import Workbook, load_workbook
@@ -265,6 +265,105 @@ def populate_heygen_submit_excel_for_channel(youtube_channel_name: str) -> Dict[
 
     return {"ok": True, "count": len(items), "message": msg}
 
+
+
+def populate_heygen_multipart_excel_for_channel(youtube_channel_name: str) -> Dict[str, Any]:
+    topic_id = resolve_topic_id_by_channel(youtube_channel_name)
+    items = fetch_heygen_submit_jobs(topic_id=topic_id, limit=5000)
+
+    if not items:
+        return {"ok": True, "count": 0, "message": "No eligible rows found for HeyGen submit."}
+
+    # --- 1) Group items by story_id (preserve original order) ---
+    grouped: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+
+    for it in items:
+        story_id = (it.get("story_id") or "").strip()
+        if not story_id:
+            # If a row has no story_id, treat it as its own unique group
+            story_id = f"__missing_story_id__{id(it)}"
+
+        if story_id not in grouped:
+            grouped[story_id] = {
+                "story_id": story_id,
+                "template_url": "",
+                "video_name": "",
+                "story_title": "",
+                "parts": []
+            }
+
+        # pick first non-empty template_url in the group
+        tu = (it.get("template_url") or "").strip()
+        if tu and not grouped[story_id]["template_url"]:
+            grouped[story_id]["template_url"] = tu
+
+        # pick first non-empty story_title in the group
+        st = (it.get("story_title") or "").strip()
+        if st and not grouped[story_id]["story_title"]:
+            grouped[story_id]["story_title"] = st
+
+        # pick first non-empty image_name in the group
+        nm = (it.get("image_name") or "").strip()
+        if nm and not grouped[story_id]["video_name"]:
+            grouped[story_id]["video_name"] = nm
+
+        # collect section_text parts
+        txt = it.get("section_text") or ""
+        txt = txt.strip()
+        if txt:
+            grouped[story_id]["parts"].append(txt)
+
+    # --- 2) Build consolidated rows (one per story_id) ---
+    consolidated_rows = []
+    for g in grouped.values():
+        consolidated_text = " ".join(g["parts"])  # <-- separator between parts
+        consolidated_rows.append({
+            "template_url": g["template_url"],
+            "story_text": consolidated_text,
+            "video_name": g["video_name"],
+            "story_id": g["story_id"],
+            "story_title": g["story_title"],
+        })
+
+    # --- 3) Write to Excel ---
+    wb = load_workbook(HEYGEN_FILE)
+    ws = wb[HEYGEN_SHEET] if HEYGEN_SHEET in wb.sheetnames else wb.active
+
+    colmap = ensure_headers(ws, HEYGEN_REQUIRED_COLS)
+    max_col = max(colmap.values())
+
+    # Clear rows from start row onward
+    clear_rows_from(ws, start_row=HEYGEN_START_ROW, max_col=max_col)
+
+    row = HEYGEN_START_ROW
+    missing_template = 0
+
+    for r in consolidated_rows:
+        template_url = (r.get("template_url") or "").strip()
+        if not template_url:
+            missing_template += 1
+
+        ws.cell(row=row, column=colmap["HeyGen_Template_url"], value=template_url)
+        ws.cell(row=row, column=colmap["story_text"], value=r.get("story_text") or "")
+        ws.cell(row=row, column=colmap["video_name"], value=r.get("story_title") or "")
+
+        # Reset so heygen_submit_videos.py processes it
+        ws.cell(row=row, column=colmap["status"], value="")
+        ws.cell(row=row, column=colmap["message"], value="")
+        ws.cell(row=row, column=colmap["submitted_at"], value="")
+
+        row += 1
+
+    wb.save(HEYGEN_FILE)
+
+    msg = (
+        f"Wrote {len(consolidated_rows)} consolidated HeyGen row(s) into {HEYGEN_FILE} "
+        f"starting at row {HEYGEN_START_ROW} (cleared old rows from {HEYGEN_START_ROW}+)."
+    )
+    if missing_template:
+        msg += f" WARNING: {missing_template} row(s) missing template_url (set story default avatar)."
+
+    return {"ok": True, "count": len(consolidated_rows), "message": msg}
 
 # =============================
 # 3) Populate Upload Excel (row 80+)
