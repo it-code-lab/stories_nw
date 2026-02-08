@@ -329,7 +329,10 @@ def export_kb_videos(input_folder, out_folder,
             preset="veryfast"
         )
         clip.close()
-        os.remove(img)
+
+        if input_folder == "edit_vid_input":
+            print(f"Deleting source image: {img}")
+            os.remove(img)
 
 def clear_folder(folder_path, extensions=None):
     if not os.path.exists(folder_path):

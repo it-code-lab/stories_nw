@@ -351,7 +351,7 @@ META_ACCOUNTS: List[Dict[str, str]] = [
         "out": r"downloads",
         "google_url": "https://aistudio.google.com/prompts/1SHiNmxmlkmYTqHH8wseV4evAegV0pRvH",
         "meta_url":   "https://www.meta.ai/media/?nr=1",
-    },
+    }, 
     {
         "id": "numero_uno",
         "profile": r"C:\Users\mail2\AppData\Local\Google\Chrome\User Data\Profile 3",
@@ -1192,7 +1192,7 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
 
     # await page.goto(url)
     await page.goto("https://www.meta.ai/")
-
+    print(f"[Meta AI] Navigated to Meta AI page.")
     # Ensure absolute paths
     image_path = str(Path(imagePath).resolve())
     ensure_dir(out_dir)
@@ -1230,48 +1230,77 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
     #         pass
 
     # 2) Click "Upload image" and feed the file chooser (prefer file chooser to avoid targeting wrong input)
-    try:
-        async with page.expect_file_chooser(timeout=10_000) as fc_info:
-            await page.get_by_text("Animate my photo", exact=False).click(timeout=3000)
-            # await page.get_by_text("Animate my photo").click(timeout=3000)
-            # await page.get_by_role("button", name="Upload image").click()
-        fc = await fc_info.value
-        await fc.set_files(image_path)
-    except Exception:
-        # Fallback: set first visible file input directly
+    # Define your strategies in the order you want to try them
+    # Each item is a tuple: (Description, Locator)
+
+    strategies = [
+        ("Animate my photo link", page.get_by_text("Animate my photo", exact=False)),
+        ("Animate my photo menuitem", page.get_by_role("menuitem", name="Animate my photo")),
+        ("Create a video from my photo link", page.get_by_text("a video from my photo", exact=False)),
+    ]
+
+    success = False
+
+    # 1. Try the File Chooser strategies
+    for description, locator in strategies:
         try:
-            async with page.expect_file_chooser(timeout=10_000) as fc_info:
-                await page.get_by_text("Create a video from my photo", exact=False).click(timeout=3000)
-                # await page.get_by_text("Create a video from my photo").click(timeout=3000)
-                # await page.get_by_role("button", name="Upload image").click()
+            print(f"Trying: {description}")
+            async with page.expect_file_chooser(timeout=5000) as fc_info:
+                await locator.click(timeout=3000)
+            
             fc = await fc_info.value
             await fc.set_files(image_path)
+            success = True
+            break # Exit loop on success
+        except Exception:
+            continue # Try next strategy
+
+    # 2. Final Fallback (Direct Input) if nothing else worked
+    if not success:
+        try:
+            print("Trying direct file input fallback")
+            await page.set_input_files("input[type='file']", image_path)
+            success = True
         except Exception as e:
-            try:
-                async with page.expect_file_chooser(timeout=10_000) as fc_info:
-                    await page.get_by_role("menuitem", name="Animate my photo").click(timeout=3000)
-                    # await page.get_by_text("Animate my photo").click(timeout=3000)
-                    # await page.get_by_role("button", name="Upload image").click()
-                fc = await fc_info.value
-                await fc.set_files(image_path)
-            except Exception as e:
-                try:
-                    await page.set_input_files("input[type='file']", image_path)
-                except Exception as e:
-                    raise RuntimeError(f"Could not upload image: {e}")
+            raise RuntimeError(f"Could not upload image after all attempts: {e}")
 
     # 3) Fill the animation prompt (textbox labeled "Describe your animation...")
+
+    default_text = prompt or "Animate this image smoothly with camera move."
+
+    # Define input targets: (Description, Locator)
+    input_strategies = [
+        ("Composer Input (Test ID)", page.get_by_test_id("composer-input").and_(page.get_by_role("textbox"))), 
+        ("Describe your animation textbox", page.get_by_role("textbox", name="Describe your animation...")),
+        ("Ask anything textbox", page.get_by_role("textbox", name="Ask anything...")),
+    ]
+ 
+    # 2. Execution
     try:
-        # Focus (some UIs require a paragraph/canvas click first)
+        # Optional: Initial Focus click (swallow error if it fails)
         try:
             await page.get_by_role("paragraph").click(timeout=1500)
         except Exception:
             pass
-        # box = page.get_by_role("textbox", name="Describe your animation...")
-        box = page.get_by_role("textbox", name="Ask anything...")
 
-        await expect(box).to_be_visible(timeout=20_000)
-        await box.fill(prompt or "Animate this image smoothly with camera move.")
+        success = False
+
+        for description, box in input_strategies:
+            try:
+                print(f"Trying: {description}")
+                # Wait for visibility before attempting fill
+                await expect(box).to_be_visible(timeout=5000) 
+                await box.fill(default_text)
+                
+                print(f"Successfully filled prompt via: {description}")
+                success = True
+                break # Exit loop once successful
+            except Exception:
+                continue # Move to the next locator in the list
+
+        if not success:
+            raise RuntimeError("No recognized input boxes were found on the page.")
+
     except Exception as e:
         raise RuntimeError(f"Could not set the animation description: {e}")
 
@@ -1283,71 +1312,194 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
     #    We tag both common patterns:
     #    - ARIA labeled buttons: [role="button"][aria-label="Download media"]
     #    - Any role="button" containing 'download' in its text (fallback)
+    # print(f"Stamping existing download buttons with: {stamp}")
+    # await page.evaluate("""
+    # (stamp) => {
+    # const tag = (btn) => { try { btn.setAttribute('data-stamp', stamp); } catch(_){} };
+    # const byAria = document.querySelectorAll('[role="button"][aria-label="Download media"]');
+    # byAria.forEach(tag);
+
+    # // Fallback: text-based (case-insensitive contains 'download')
+    # const allButtons = document.querySelectorAll('[role="button"]');
+    # allButtons.forEach(b => {
+    #     const t = (b.textContent || '').toLowerCase();
+    #     const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+    #     if (t.includes('download') || aria.includes('download')) tag(b);
+    # });
+    # }
+    # """, stamp)
+
+    # 0) Create a unique stamp
+    stamp = f"seen-{uuid.uuid4().hex}"
+
+    print(f"Stamping existing download buttons with: {stamp}")
+
+    # 1) Execute the improved JavaScript logic
     await page.evaluate("""
     (stamp) => {
-    const tag = (btn) => { try { btn.setAttribute('data-stamp', stamp); } catch(_){} };
-    const byAria = document.querySelectorAll('[role="button"][aria-label="Download media"]');
-    byAria.forEach(tag);
+        const tag = (btn) => { 
+            try { btn.setAttribute('data-stamp', stamp); } catch(_){} 
+        };
 
-    // Fallback: text-based (case-insensitive contains 'download')
-    const allButtons = document.querySelectorAll('[role="button"]');
-    allButtons.forEach(b => {
-        const t = (b.textContent || '').toLowerCase();
-        const aria = (b.getAttribute('aria-label') || '').toLowerCase();
-        if (t.includes('download') || aria.includes('download')) tag(b);
-    });
+        // Use a broader selector: find native <button> AND [role="button"]
+        const allButtons = document.querySelectorAll('button, [role="button"]');
+
+        allButtons.forEach(b => {
+            const text = (b.textContent || '').toLowerCase();
+            const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+            
+            // Match if 'download' appears in text OR the aria-label (catches "Download")
+            if (text.includes('download') || aria.includes('download')) {
+                tag(b);
+            }
+        });
     }
-    """, stamp)
+    """, stamp) 
+
+
+    new_dl = page.locator(
+        f'button[aria-label*="download" i]:not([data-stamp="{stamp}"]), '
+        f'[role="button"][aria-label*="download" i]:not([data-stamp="{stamp}"])'
+    )
 
     # 2) Now click Animate (as you already do)
     #animate_btn = page.get_by_role("button", name="Animate")
-    animate_btn = page.get_by_role("button", name="Animate", exact=True)
+    # animate_btn = page.get_by_role("button", name="Animate", exact=True)
     #animate_btn = page.get_by_role("button", name="Animate").locator(":enabled")
     
-    try:
-        await page.get_by_role("button", name="Send").click()
-    except Exception:
-        await expect(animate_btn).to_be_enabled(timeout=20_000)
-        await animate_btn.click()
+
+    print("Count of download buttons before creating new media:", await new_dl.count())
+
+    # wait 5 seconds
+    await asyncio.sleep(10.0)
+    button_strategies = [
+        # ("Animate button", page.get_by_role("button", name="Animate", exact=False)),
+        ("Animate button (testid)", page.get_by_test_id("composer-animate-button")),
+        ("Send button", page.get_by_role("button", name="Send")),
+        # You can also use the animate_btn variable if defined elsewhere:
+        # ("Animate variable", animate_btn) 
+    ]
+
+    success = False
+
+    # 2. Iterate through buttons
+    for description, btn_locator in button_strategies:
+        try:
+            print(f"Trying: {description}")
+            # Wait for the button to be enabled before clicking
+            await expect(btn_locator).to_be_enabled(timeout=5000)
+            await btn_locator.click()
+            
+            print(f"Successfully clicked: {description}")
+            success = True
+            print("Waiting for rendering to start (50 seconds)...") 
+            await asyncio.sleep(50.0) 
+            break
+        except Exception:
+            continue
+
+    # 3. Final error handling
+    if not success:
+        raise RuntimeError("Could not find an active Send or Animate button.")
 
 
 
     # 3) Wait for a *new* download button that does NOT have our stamp
     #    First prefer the precise ARIA label, then the text fallback.
-    new_dl = page.locator(f'[role="button"][aria-label="Download media"]:not([data-stamp="{stamp}"])')
-    fallback_dl = page.locator(f'[role="button"]:not([data-stamp="{stamp}"])').filter(has_text=re.compile(r'download', re.I))
+    # new_dl = page.locator(f'[role="button"][aria-label="Download media"]:not([data-stamp="{stamp}"])')
+    # fallback_dl = page.locator(f'[role="button"]:not([data-stamp="{stamp}"])').filter(has_text=re.compile(r'download', re.I))
 
-    # Poll up to ~4 minutes for either to appear
-    deadline_seconds = 240
+    # # Poll up to ~4 minutes for either to appear
+    # deadline_seconds = 240
+    # found = False
+    # for _ in range(deadline_seconds):
+    #     if await new_dl.count() > 0:
+    #         found = True
+    #         target_btn = new_dl.first
+    #         break
+    #     if await fallback_dl.count() > 0:
+    #         found = True
+    #         target_btn = fallback_dl.first
+    #         break
+    #     await asyncio.sleep(1.0)
+
+    # if not found:
+    #     raise RuntimeError("Timeout: no new 'Download media' button appeared after Animate.")
+
+    # 3) Wait for a *new* download button that does NOT have our stamp
+    
+    # Case-insensitive aria-label contains "download"
+    # new_dl = page.locator(
+    #     f'button[aria-label*="download" i]:not([data-stamp="{stamp}"]), '
+    #     f'[role="button"][aria-label*="download" i]:not([data-stamp="{stamp}"])'
+    # )
+
+    print("Count of new download buttons with ARIA label:", await new_dl.count())
+
+    # If you still want a "fallback", broaden it a bit (optional)
+    fallback_dl = page.locator(
+        f'[aria-label*="download" i]:not([data-stamp="{stamp}"])'
+    )
+
+    deadline_seconds = 240 
     found = False
+
     for _ in range(deadline_seconds):
         if await new_dl.count() > 0:
-            found = True
+            print("Count of new download buttons with ARIA label:", await new_dl.count())
             target_btn = new_dl.first
-            break
-        if await fallback_dl.count() > 0:
             found = True
-            target_btn = fallback_dl.first
+            print("Found new download button with ARIA label.")
+            # Temporary
+            await asyncio.sleep(5.0)  
             break
-        await asyncio.sleep(1.0)
+
+        if await fallback_dl.count() > 0:
+            print("Count of new fallback download buttons with ARIA label:", await fallback_dl.count())
+            target_btn = fallback_dl.first
+            found = True
+            print("Found new download button with fallback locator.")
+            break
+
+        await asyncio.sleep(1.0) 
 
     if not found:
-        raise RuntimeError("Timeout: no new 'Download media' button appeared after Animate.")
+        raise RuntimeError("Timeout: no new Download button appeared.")
 
+    
     # 4) Click THAT specific new button, bind expect_download to it, and MOVE the file
     await target_btn.scroll_into_view_if_needed()
-    await expect(target_btn).to_be_visible(timeout=15_000)
-    await expect(target_btn).to_be_enabled(timeout=15_000)
 
-    # base = Path(imagePath).resolve().stem
-    # ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # out_path = out_dir / f"{ts}_{base}_meta.mp4"
+    # await expect(target_btn).to_be_visible(timeout=15_000)
+    # await expect(target_btn).to_be_enabled(timeout=15_000)
+
+    # # base = Path(imagePath).resolve().stem
+    # # ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # # out_path = out_dir / f"{ts}_{base}_meta.mp4"
+
+    # base = Path(imagePath).stem
+    # out_path = out_dir / f"{base}.mp4"
+
+    # async with page.expect_download(timeout=90_000) as dl_info:
+    #     await target_btn.click(force=True) 
+
+
+    # Increase the timeout or use a more robust check if the UI is slow
+    # print("Waiting for the download button to be visible and enabled...")
+    # await expect(target_btn).to_be_visible(timeout=15_000)
 
     base = Path(imagePath).stem
     out_path = out_dir / f"{base}.mp4"
 
-    async with page.expect_download(timeout=90_000) as dl_info:
-        await target_btn.click()
+    try:
+        print("Attempting to click the download button...") 
+        async with page.expect_download(timeout=90_000) as dl_info:
+            # force=True is the key here to ignore the canvas overlay
+            await target_btn.click(force=True)
+    except Exception as e:
+        print(f"Standard click failed, trying dispatch_event: {e}")
+        async with page.expect_download(timeout=90_000) as dl_info:
+            await target_btn.dispatch_event('click')
 
     dl = await dl_info.value
     src_path = await dl.path()
@@ -1402,7 +1554,7 @@ async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
     await page.goto(aistudio_url)
 
     # Wait for 10 seconds
-    await asyncio.sleep(30)
+    await asyncio.sleep(60)
 
     for job in jobs:
         row_idx = job["row"]
