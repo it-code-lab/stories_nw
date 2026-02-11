@@ -550,15 +550,17 @@ def upload_shorts_from_master_file():
                         title_text = row["youtube_title"]
                         subhead_text = ""
 
-                print(f"Using avatar image for thumbnail: {avatar_img}")
-                create_youtube_thumbnail(
-                    base_image_path=f"avatar_thumbnails/{avatar_img}.png",
-                    json_template_path=f"avatar_thumbnails/{avatar_img}_thumbnail.json",
-                    title_text=title_text,
-                    subhead_text=subhead_text,
-                    output_name="avatar_thumbnails/final_thumbnail.jpg"
-                )
-                thumbnail_path = "avatar_thumbnails/final_thumbnail.jpg"
+                
+                if size == "landscape":
+                    print(f"Using avatar image for thumbnail: {avatar_img}")
+                    create_youtube_thumbnail(
+                        base_image_path=f"avatar_thumbnails/{avatar_img}.png",
+                        json_template_path=f"avatar_thumbnails/{avatar_img}_thumbnail.json",
+                        title_text=title_text,
+                        subhead_text=subhead_text,
+                        output_name="avatar_thumbnails/final_thumbnail.jpg"
+                    )
+                    thumbnail_path = "avatar_thumbnails/final_thumbnail.jpg"
             elif first_sec_image:
                 # If row["youtube_title"] contains :, split into title and subhead
                 title_parts = row["youtube_title"].split(":", 1)
@@ -574,16 +576,16 @@ def upload_shorts_from_master_file():
                     else:
                         title_text = row["youtube_title"]
                         subhead_text = ""
-
-                print(f"Using first_sec_image for thumbnail: {first_sec_image}")
-                create_youtube_thumbnail(
-                    base_image_path=f"downloads/{first_sec_image}.png",
-                    json_template_path=f"avatar_thumbnails/generic_thumbnail.json",
-                    title_text=title_text,
-                    subhead_text=subhead_text,
-                    output_name="avatar_thumbnails/final_thumbnail.jpg"
-                )
-                thumbnail_path = "avatar_thumbnails/final_thumbnail.jpg"                
+                if size == "landscape":
+                    print(f"Using first_sec_image for thumbnail: {first_sec_image}")
+                    create_youtube_thumbnail(
+                        base_image_path=f"downloads/{first_sec_image}.png",
+                        json_template_path=f"avatar_thumbnails/generic_thumbnail.json",
+                        title_text=title_text,
+                        subhead_text=subhead_text,
+                        output_name="avatar_thumbnails/final_thumbnail.jpg"
+                    )
+                    thumbnail_path = "avatar_thumbnails/final_thumbnail.jpg"                
             else:
                 print("No valid avatar image found, proceeding without it.")
                 thumbnail_path = "";
