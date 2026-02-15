@@ -392,15 +392,18 @@ def safe_filename_nohash(name: str, ext: str = "png", maxlen: int = 180) -> str:
 def split_image_jobs(rows):
     chatgpt_jobs = []
     google_jobs = []
+    grok_jobs = []
 
     for r in rows:
         provider = (r.get("image_provider") or "").lower()
         if provider == "chatgpt":
             chatgpt_jobs.append(r)
+        elif provider == "grok":
+            grok_jobs.append(r)
         else:
             google_jobs.append(r)
 
-    return chatgpt_jobs, google_jobs
+    return chatgpt_jobs, google_jobs, grok_jobs
 
 
 def safe_basename(name: str, ext: str = "png", idx: int | None = None, maxlen: int = 70) -> str:
@@ -622,6 +625,104 @@ async def ensure_logged_in(page: Page, post_login_selector: str, site_name: str)
     print(f"[{site_name}] Waiting for post-login marker: {post_login_selector}")
     await page.wait_for_selector(post_login_selector, timeout=120_000)
 
+# generate_image_grok
+async def generate_image_grok(page: Page, prompt: str, out_dir: Path, image_name: str = "") -> Path:
+    """
+    Uses selectors:
+    - Prompt textbox role name: 'Enter a prompt to generate an'
+    - Run button: role 'button' with exact name 'Run'
+    - Newest gallery item: assumes append; grabs item at old_count index
+    - Large view button label: 'Large view of this image'
+    - Modal download button role name: 'Download'
+    """
+    # Post-login marker: the prompt textbox (adjust if the UI changes)
+    # textbox = page.get_by_role("textbox", name="Enter a prompt to generate an")
+
+    # textbox = page.get_by_role("textbox", name="Enter a prompt")
+    # --- Locators ---
+    textbox = page.get_by_label("Make a video")          # <textarea aria-label="Make a video">
+    video   = page.locator("video#sd-video")             # <video id="sd-video" ... src="...mp4">
+    dl_btn  = page.get_by_role("button", name="Download")  # aria-label="Download"
+
+    # --- Ensure input visible ---
+    await expect(textbox).to_be_visible(timeout=120_000)
+
+    # 1) Capture current video src (may be None/empty if no prior video)
+    before_src = None
+    if await video.count() > 0:
+        before_src = await video.get_attribute("src")
+    print(f"before_src={before_src}")
+
+    # 2) Fill prompt (and trigger generation if needed)
+    await textbox.fill("")   # avoid appending
+    await textbox.fill(prompt)
+
+    # If your UI requires Enter to submit, uncomment:
+    # await textbox.press("Enter")
+
+    # 3) Wait for sd-video to be replaced/updated (src changes to new non-empty value)
+    await page.wait_for_function(
+        """({sel, before}) => {
+            const v = document.querySelector(sel);
+            if (!v) return false;
+            const src = (v.getAttribute('src') || '').trim();
+            if (!src) return false;
+            // Ready when src is non-empty and different from the previous run
+            return src !== ((before || '').trim());
+        }""",
+        arg={"sel": "video#sd-video", "before": before_src or ""},
+        timeout=240_000
+    )
+
+    after_src = await video.get_attribute("src")
+    print(f"after_src={after_src}")
+
+    # (Optional) extra safety: ensure it's actually visible/enabled state
+    await expect(video).to_be_visible(timeout=30_000)
+
+    # 4) Click Download button
+    await expect(dl_btn).to_be_visible(timeout=30_000)
+    # await expect(dl_btn).to_be_enabled(timeout=30_000)
+    
+    # If Image name is blank, use safe_basename(prompt)
+    if image_name.strip():
+        # out_path = out_dir / f"{safe_basename(image_name, 'png')}"
+        # out_path = out_dir / safe_filename_nohash(image_name, "png")
+        out_path = out_dir / f"{image_name}.mp4"
+
+    else:
+        out_path = out_dir / safe_basename(prompt, "mp4")
+
+    # Try large-view modal and proper download
+    try:
+
+        async with page.expect_download(timeout=30_000) as dl_info:
+            await dl_btn.click()
+        dl = await dl_info.value
+
+        # move to final path (avoid duplicate in default download dir)
+        # suggested = dl.suggested_filename or out_path.name
+        # dest = out_path.with_name(suggested)
+
+        dest = out_path.with_name(out_path.name)
+        src = await dl.path()
+        # shutil.move(src, dest)
+        safe_move_and_overwrite(Path(src), dest)
+
+
+        # Optional: quick dimension log (requires Pillow)
+        try:
+            from PIL import Image
+            w, h = Image.open(dest).size
+            print(f"[Google AI] Saved full-size {w}x{h}: {dest}")
+        except Exception:
+            print(f"[Google AI] Saved: {dest}")
+
+        return dest
+    except Exception:
+        print("Download button failed, proceeding with next ...")
+
+
 async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path, image_name: str = "") -> Path:
     """
     Uses selectors:
@@ -632,10 +733,14 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path, image
     - Modal download button role name: 'Download'
     """
     # Post-login marker: the prompt textbox (adjust if the UI changes)
-    textbox = page.get_by_role("textbox", name="Enter a prompt to generate an")
+    # textbox = page.get_by_role("textbox", name="Enter a prompt to generate an")
+
+    textbox = page.get_by_role("textbox", name="Enter a prompt")
     await expect(textbox).to_be_visible(timeout=120_000)
 
-    gallery_items = page.locator("ms-image-generation-gallery-image")
+    # gallery_items = page.locator("ms-image-generation-gallery-image")
+    gallery_items = page.locator("img.loaded-image.ng-star-inserted")
+
     before_cnt = await gallery_items.count()
     print(f"before_cnt = {before_cnt}")
     await textbox.fill(prompt)
@@ -696,7 +801,8 @@ async def generate_image_google_ai(page: Page, prompt: str, out_dir: Path, image
 
     # Try large-view modal and proper download
     try:
-        await candidate.get_by_label("Large view of this image").click()
+        # await candidate.get_by_label("Large view of this image").click()
+        await candidate.get_by_label("View full image").click()
         print("Large view button clicked")
 
         async with page.expect_download(timeout=30_000) as dl_info:
@@ -808,7 +914,13 @@ async def generate_image_router(
             out_dir=out_dir,
             image_name=image_name or safe_basename(prompt, "png").replace(".png", "")
         )
-
+    if provider == "grok":
+        return await generate_image_grok(
+            page=page,
+            prompt=final_prompt,
+            out_dir=out_dir,
+            image_name=image_name or safe_basename(prompt, "png").replace(".png", "")
+        )
     # Default (existing behavior)
     return await generate_image_google_ai(
         page=page,
@@ -1517,12 +1629,8 @@ async def generate_video_meta_ai(page: Page, imagePath: str, prompt: str, out_di
 
     return out_path
 
-        
-# =========================
-# Per-account worker (images pass)
-# =========================
 
-async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
+async def run_grokaccount_images(pw, account: Dict[str, str], jobs: List[Dict]):
     out_dir = Path(account["out"])
     ensure_dir(out_dir)
 
@@ -1550,7 +1658,74 @@ async def run_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
     # open AI Studio once per account
-    aistudio_url = _get_site_url(account, "aistudio", fallback="https://aistudio.google.com/prompts/new_image?model=imagen-4.0-generate-001")
+    aistudio_url = _get_site_url(account, "grok", fallback="https://grok.com/imagine")
+    await page.goto(aistudio_url)
+
+    # Wait for 120 seconds
+    await asyncio.sleep(120)
+
+    for job in jobs:
+        row_idx = job["row"]
+        prompt  = job["prompt"]
+        image_name = job.get("image_name","")
+        section_id = job.get("section_id", 0)
+        try:
+            # img_path = await generate_image_google_ai(page, prompt, out_dir, image_name)
+            img_path = await generate_image_router(
+                page=page,
+                job=job,
+                out_dir=out_dir
+            )
+
+            write_image_result(row_idx, str(Path(img_path).resolve()), account_id_used=account["id"], status="ok")
+            # if section_id:
+            #     db_report_image(section_id, ok=True, image_path=img_path)
+            print(f"[{account['id']}] Row {row_idx} -> {img_path}")
+            await asyncio.sleep(random.uniform(POLITE_MIN_WAIT, POLITE_MAX_WAIT))
+            await asyncio.sleep(10)
+            print("Waited 10 seconds before generating next image")
+        except Exception as e:
+            write_image_result(row_idx, "", account_id_used=account["id"], status=f"error: {e}")
+            # if section_id:
+            #     db_report_image(section_id, ok=False, error=str(e))
+            print(f"[{account['id']}] Row {row_idx} ERROR: {e}")
+
+    await ctx.close()
+    print(f"[{account['id']}] Images pass done.")
+
+# =========================
+# Per-account worker (images pass)
+# =========================
+
+async def run_aistudio_account_images(pw, account: Dict[str, str], jobs: List[Dict]):
+    out_dir = Path(account["out"])
+    ensure_dir(out_dir)
+
+    browser_type = getattr(pw, BROWSER_NAME)
+    print(f"[{account['id']}] Launching with profile: {account['profile']}")
+    ctx_kwargs = dict(
+        user_data_dir=account["profile"],
+        headless=HEADLESS,
+        executable_path=CHROME_EXECUTABLE,
+        device_scale_factor=DEVICE_SCALE_FACTOR,
+        args=[
+            "--disable-blink-features=AutomationControlled",
+            "--start-maximized",
+            "--no-default-browser-check",
+            "--no-first-run",
+        ],
+        accept_downloads=True,
+    )
+    if ISOLATE_DOWNLOADS:
+        ensure_dir(out_dir / "__tmp_downloads")
+        ctx_kwargs["downloads_path"] = str(out_dir / "__tmp_downloads")
+
+    ctx: BrowserContext = await browser_type.launch_persistent_context(**ctx_kwargs)
+    page: Page = await ctx.new_page()
+    await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
+    # open AI Studio once per account
+    aistudio_url = _get_site_url(account, "aistudio", fallback="https://aistudio.google.com/prompts/new_chat?model=gemini-2.5-flash-image")
     await page.goto(aistudio_url)
 
     # Wait for 10 seconds
@@ -1837,7 +2012,7 @@ async def main_async_images():
         
         # read Excel rows (prompt + empty image_path)
         all_rows = read_jobs_from_excel_for_images()
-        chatgpt_rows, google_rows = split_image_jobs(all_rows)
+        chatgpt_rows, google_rows, grok_rows = split_image_jobs(all_rows)
 
         # if not google_rows:
         #     print("No rows need images.")
@@ -1891,10 +2066,16 @@ async def main_async_images():
             if google_rows:
                 google_jobs = partition_rows_by_account(google_rows, ACCOUNTS)
                 tasks.extend(
-                    run_account_images(pw, acc, bucket)
+                    run_aistudio_account_images(pw, acc, bucket)
                     for acc, bucket in google_jobs
                 )
 
+            if grok_rows:
+                grok_jobs = partition_rows_by_account(grok_rows, ACCOUNTS)
+                tasks.extend(
+                    run_grokaccount_images(pw, acc, bucket)
+                    for acc, bucket in grok_jobs
+                )
             # ChatGPT Images → SINGLE profile, sequential
             if chatgpt_rows:
                 tasks.append(run_chatgpt_images(pw, chatgpt_rows))

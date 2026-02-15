@@ -148,12 +148,79 @@ def landing_download(page) -> str:
     try:
         page.get_by_role("button", name="Close").click(timeout=5000)
     except Exception:
-        print("⚠️ Close button not found; continuing...")
-        pass
+        try:
+            # Sometimes the close button might not be a role button, we can try a text click as fallback
+            # page.get_by_text("Close", exact=True).click(timeout=5000)
+            # Finds the button that contains an element with the name "close"
+            page.locator("button").filter(has=page.locator("iconpark-icon[name='close']")).click()
+        except Exception:
+            try:
+                page.keyboard.press("Escape")
+                print("⚠️ Pressed Escape to close dialog.")
+            except Exception:
+                print("⚠️ Close button not found; continuing...")
+                pass
 
     return str(final_path)
 
+
 def open_more_menu_and_trash(page):
+    # Define your "pool" of potential selectors for the button
+    # The most specific selectors should generally go first
+    more_button_selectors = [
+        'button[aria-haspopup="dialog"]:has(iconpark-icon[name="more-vertical"])', # Specific + Icon
+        'button:has(iconpark-icon[name="more-vertical"])',                        # Icon only
+        'button[aria-haspopup="dialog"]',                                         # ARIA standard
+        'button[data-more-btn="true"]',                                           # Old custom attribute
+    ]
+
+    more_btn = None
+
+    # 1. Try to find a valid locator from the set
+    for selector in more_button_selectors:
+        locator = page.locator(selector).last
+        # We use count() > 0 or is_visible() 
+        # Note: If it's a 'hover' menu, is_visible() might be False. 
+        # In that case, we check if it exists in the DOM.
+        if locator.count() > 0:
+            more_btn = locator
+            print(f"✅ Found button using: {selector}") 
+            break
+
+    if not more_btn:
+        raise Exception("❌ Could not find the 'More' menu button with any known selectors.")
+
+    # 2. Execute the interaction
+    # scroll_into_view helps if the item is far down a list
+    more_btn.scroll_into_view_if_needed()
+    # force=True bypasses Playwright's "actionability" checks if the button is obscured
+    print("🔘 Clicking 'More' menu button...")
+    more_btn.click(force=True)
+    
+    # 3. Wait for the menu content (Trash) to be visible
+    # Menus often take a moment to animate/render
+
+    trash_selectors = ["Trash", "Delete", "Remove"]
+    trash_item = None
+
+    # Brief wait to allow the menu DOM to populate
+    page.wait_for_timeout(300) 
+
+    for text in trash_selectors:
+        item = page.get_by_text(text, exact=True).first
+        if item.is_visible():
+            trash_item = item
+            break
+
+    if trash_item:
+        trash_item.click()
+        print("🗑️ Item moved to trash.")
+    else:
+        # Debugging aid: if it fails, print what buttons ARE visible
+        print("⚠️ Menu opened, but 'Trash' label not found.")
+
+
+def open_more_menu_and_trash_old(page):
     print("🔘 Opening 'More' menu...")
     
     # 1. Target the button via its data attribute
