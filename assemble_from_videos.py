@@ -881,7 +881,8 @@ def _assemble_single_video_fast(
         fc = (
             f"[0:a]volume={video_volume}[v0];"
             f"[1:a]volume={bg_volume}[a1];"
-            f"[v0][a1]amix=inputs=2:normalize=1[aout]"
+            f"[v0][a1]amix=inputs=2:duration=shortest:dropout_transition=0:normalize=1[aout]"
+            # f"[v0][a1]amix=inputs=2:normalize=1[aout]"
         )
         cmd = [
             "ffmpeg", "-y",
@@ -2691,7 +2692,8 @@ def assemble_videos(
                     fc = (
                         f"[0:a]volume={video_volume}[v0];"
                         f"[1:a]volume={bg_volume}[a1];"
-                        f"[v0][a1]amix=inputs=2:normalize=1[aout]"
+                        f"[v0][a1]amix=inputs=2:duration=shortest:dropout_transition=0:normalize=1[aout]"
+                        # f"[v0][a1]amix=inputs=2:normalize=1[aout]"
                     )
                     cmd_mux = [
                         "ffmpeg", "-y",
@@ -2868,7 +2870,8 @@ def assemble_videos_old1(
                     fc = (
                         f"[0:a]volume={video_volume}[v0];"
                         f"[1:a]volume={bg_volume}[a1];"
-                        f"[v0][a1]amix=inputs=2:normalize=1[aout]"
+                        f"[v0][a1]amix=inputs=2:duration=shortest:dropout_transition=0:normalize=1[aout]"
+                        # f"[v0][a1]amix=inputs=2:normalize=1[aout]"
                     )
                     cmd_mux = [
                         "ffmpeg", "-y",
