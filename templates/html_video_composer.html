@@ -332,12 +332,12 @@
         }
 
         .frame-9-16 {
-            width: min(100%, 220px);
+            width: min(100%, 420px);
             aspect-ratio: 9 / 16;
         }
 
         .frame-1-1 {
-            width: min(100%, 420px);
+            width: min(100%, 520px);
             aspect-ratio: 1 / 1;
         }
 
@@ -501,7 +501,59 @@
                 max-width: calc(100% - 12%);
             }
         }
-    </style>
+
+.overlay-title,
+.overlay-subtitle,
+.overlay-list .bullet-item {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.animate-title {
+  animation: titleReveal 0.6s ease forwards;
+}
+
+.animate-subtitle {
+  animation: subtitleReveal 0.7s ease forwards;
+}
+
+.animate-bullet {
+  animation: bulletReveal 0.5s ease forwards;
+}
+
+@keyframes titleReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes subtitleReveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bulletReveal {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+</style>
 </head>
 
 <body>
@@ -988,8 +1040,6 @@
 
             const previewSubtitle =
                 scene.subtitle ||
-                scene.body_text ||
-                scene.narration_text ||
                 '';
 
             const previewBullets = scene.bullets || [];
@@ -997,7 +1047,7 @@
             els.previewTitle.textContent = previewTitle;
             els.previewSubtitle.textContent = previewSubtitle;
             els.previewBullets.innerHTML = previewBullets
-                .map(item => `<li>${escapeHtml(item)}</li>`)
+                .map(item => `<li class="bullet-item">${escapeHtml(item)}</li>`)
                 .join('');
 
             if (linkedAsset?.url) {
@@ -1018,6 +1068,25 @@
             }
 
             els.overlayCard.style.textAlign = layout.text_align || 'left';
+
+            els.previewTitle.classList.remove('animate-title');
+            els.previewSubtitle.classList.remove('animate-subtitle');
+
+            void els.previewTitle.offsetWidth;
+            els.previewTitle.classList.add('animate-title');
+
+            if (els.previewSubtitle.textContent.trim()) {
+            void els.previewSubtitle.offsetWidth;
+            els.previewSubtitle.classList.add('animate-subtitle');
+            }
+
+            setTimeout(() => {
+            [...els.previewBullets.querySelectorAll('.bullet-item')].forEach((item, index) => {
+                item.style.animationDelay = `${0.18 + index * 0.14}s`;
+                item.classList.add('animate-bullet');
+            });
+            }, 60);            
+
         }
 
         function getLinkedAsset(scene) {

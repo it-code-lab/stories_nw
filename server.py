@@ -3571,6 +3571,34 @@ class VideoProject:
     warnings: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
+@dataclass
+class SpeechSegment:
+    id: str
+    kind: Literal["title", "subtitle", "bullet", "narration", "quote"]
+    display_text: str
+    speech_text: str
+    show_on_screen: bool = True
+    animation: str = "fade"
+    animation_target: str = "body"
+    order: int = 0
+
+
+@dataclass
+class Scene:
+    id: str
+    scene_type: SceneType
+    title: str = ""
+    subtitle: str = ""
+    bullets: list[str] = field(default_factory=list)
+    body_text: str = ""
+    narration_text: str = ""
+    on_screen_text: list[str] = field(default_factory=list)
+    media_asset_ids: list[str] = field(default_factory=list)
+    layout: SceneLayout = field(default_factory=SceneLayout)
+    timing: SceneTiming = field(default_factory=SceneTiming)
+    notes: list[str] = field(default_factory=list)
+    source_refs: list[str] = field(default_factory=list)
+    speech_segments: list[SpeechSegment] = field(default_factory=list)
 
 THEMES: dict[str, ThemePreset] = {
     "corporate-clean": ThemePreset(
@@ -3633,6 +3661,56 @@ def estimate_duration(narration_text: str, bullets: list[str]) -> float:
     bullet_bonus = max(0, len(bullets) - 1) * 0.8
     return round(max(3.0, words / 2.7 + bullet_bonus), 2)
 
+def build_speech_segments(title: str, bullets: list[str], narration_parts: list[str]) -> list[SpeechSegment]:
+    segments: list[SpeechSegment] = []
+    order = 0
+
+    if compact_ws(title):
+        order += 1
+        segments.append(SpeechSegment(
+            id=str(uuid.uuid4()),
+            kind="title",
+            display_text=compact_ws(title),
+            speech_text=compact_ws(title),
+            show_on_screen=True,
+            animation="titleReveal",
+            animation_target="title",
+            order=order,
+        ))
+
+    clean_bullets = [compact_ws(x) for x in bullets if compact_ws(x)]
+    for i, bullet in enumerate(clean_bullets, start=1):
+        order += 1
+        segments.append(SpeechSegment(
+            id=str(uuid.uuid4()),
+            kind="bullet",
+            display_text=bullet,
+            speech_text=bullet,
+            show_on_screen=True,
+            animation="bulletReveal",
+            animation_target=f"bullet_{i}",
+            order=order,
+        ))
+
+    # narration-only support text that should not appear on screen
+    extra_parts = [compact_ws(x) for x in narration_parts if compact_ws(x)]
+    used = {compact_ws(title), *clean_bullets}
+    for part in extra_parts:
+        if part in used:
+            continue
+        order += 1
+        segments.append(SpeechSegment(
+            id=str(uuid.uuid4()),
+            kind="narration",
+            display_text="",
+            speech_text=part,
+            show_on_screen=False,
+            animation="none",
+            animation_target="none",
+            order=order,
+        ))
+
+    return segments
 
 def build_narration(scene_type: SceneType, title: str, body: str, bullets: list[str]) -> str:
     title = compact_ws(title)
@@ -3716,7 +3794,385 @@ def remove_non_content_blocks(root: Tag) -> None:
         for node in root.select(selector):
             node.decompose()
 
+def extract_strong_lead_text(node: Tag) -> tuple[str, str] | None:
+    strong = node.find("strong")
+    if not strong:
+        return None
+
+    strong_text = compact_ws(strong.get_text(" ", strip=True)).rstrip(":")
+    full_text = compact_ws(node.get_text(" ", strip=True))
+    if not strong_text or not full_text:
+        return None
+
+    remainder = full_text
+    if full_text.startswith(strong_text):
+        remainder = compact_ws(full_text[len(strong_text):].lstrip(": ").strip())
+
+    return strong_text, remainder
+
+
+def is_short_fact_line(text: str) -> bool:
+    if not text:
+        return False
+    if ":" not in text:
+        return False
+    left, right = text.split(":", 1)
+    return len(left.strip()) <= 40 and len(right.strip()) > 0
+
+
+def split_fact_line(text: str) -> tuple[str, str] | None:
+    if not is_short_fact_line(text):
+        return None
+    left, right = text.split(":", 1)
+    return compact_ws(left), compact_ws(right)
+
+
+def build_display_and_narration(title: str, body: str, bullets: list[str]) -> tuple[list[str], str]:
+    display_items = []
+    if title:
+        display_items.append(title)
+    display_items.extend([b for b in bullets if b])
+
+    narration_parts = []
+    if title:
+        narration_parts.append(title)
+    if body:
+        narration_parts.append(body)
+    if bullets:
+        narration_parts.extend(bullets)
+
+    narration = ". ".join([compact_ws(x) for x in narration_parts if compact_ws(x)])
+    return display_items, narration
+
+def finalize_grouped_scene(
+    scenes: list[Scene],
+    warnings: list[str],
+    *,
+    title: str,
+    subtitle: str,
+    bullets: list[str],
+    narration_parts: list[str],
+    scene_type: str = "bullet_points",
+    layout_template: str = "bullet_focus",
+    text_align: str = "left",
+    overlay_position: str = "left",
+) -> None:
+    clean_title = compact_ws(title)
+    clean_subtitle = compact_ws(subtitle)
+    clean_bullets = [compact_ws(x) for x in bullets if compact_ws(x)]
+    clean_narration_parts = [compact_ws(x) for x in narration_parts if compact_ws(x)]
+
+    if not clean_title and not clean_bullets and not clean_narration_parts:
+        return
+
+    narration_text = ". ".join(clean_narration_parts)
+
+    scene = Scene(
+        id=str(uuid.uuid4()),
+        scene_type=scene_type,
+        title=clean_title,
+        subtitle=clean_subtitle,
+        bullets=clean_bullets,
+        body_text="",
+        narration_text=narration_text,
+        on_screen_text=[clean_title, *clean_bullets] if clean_title else clean_bullets[:],
+        source_refs=["grouped"],
+        layout=SceneLayout(
+            template=layout_template,
+            text_align=text_align,
+            overlay_position=overlay_position,
+        ),
+        timing=SceneTiming(reveal_mode="sequential_bullets" if clean_bullets else "all_at_once"),
+    )
+
+    scene.speech_segments = build_speech_segments(
+        title=clean_title,
+        bullets=clean_bullets,
+        narration_parts=clean_narration_parts,
+    )
+
+    if not compact_ws(scene.narration_text):
+        scene.narration_text = build_narration(
+            scene.scene_type,
+            scene.title,
+            scene.body_text,
+            scene.bullets,
+        )
+
+    scene.timing.estimated_duration_sec = estimate_duration(scene.narration_text, scene.bullets)
+
+    if len(scene.narration_text) > 500:
+        scene.notes.append("Narration may be too long for a single scene.")
+        warnings.append(f"Long narration in scene: {scene.title[:60]}")
+
+    if sum(len(x) for x in scene.on_screen_text) > 260:
+        scene.notes.append("Too much text on screen. Consider splitting the scene.")
+
+    scenes.append(scene)
+
+
+def split_bullets_for_scenes(title: str, bullets: list[str], narration_parts: list[str], warnings: list[str], scenes: list[Scene]) -> None:
+    clean_bullets = [compact_ws(x) for x in bullets if compact_ws(x)]
+    clean_narration_parts = [compact_ws(x) for x in narration_parts if compact_ws(x)]
+
+    if not clean_bullets and not clean_narration_parts:
+        return
+
+    if len(clean_bullets) <= 5:
+        finalize_grouped_scene(
+            scenes,
+            warnings,
+            title=title,
+            subtitle="",
+            bullets=clean_bullets,
+            narration_parts=clean_narration_parts,
+        )
+        return
+
+    bullet_chunks = [clean_bullets[i:i + 5] for i in range(0, len(clean_bullets), 5)]
+    narration_chunks = [clean_narration_parts[i:i + 5] for i in range(0, len(clean_narration_parts), 5)]
+
+    for idx, chunk in enumerate(bullet_chunks, start=1):
+        chunk_title = title if idx == 1 else f"{title} ({idx})"
+        finalize_grouped_scene(
+            scenes,
+            warnings,
+            title=chunk_title,
+            subtitle="",
+            bullets=chunk,
+            narration_parts=narration_chunks[idx - 1] if idx - 1 < len(narration_chunks) else chunk,
+        )
+
 def parse_html_to_project(html: str, *, source_type: str, source_value: str, theme_id: str) -> VideoProject:
+    soup = BeautifulSoup(html, "html.parser")
+
+    doc_title = compact_ws(text_from_node(soup.title))
+    root = pick_best_root(soup)
+    remove_non_content_blocks(root)
+
+    block_nodes = root.find_all(
+        ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "blockquote", "img", "pre", "code", "table"],
+        recursive=True
+    )
+
+    scenes: list[Scene] = []
+    assets: list[MediaAsset] = []
+    warnings: list[str] = []
+
+    project_title = doc_title or "HTML Video Project"
+
+    current_heading = ""
+    current_subtitle = ""
+    current_bullets: list[str] = []
+    current_narration_parts: list[str] = []
+    first_heading_seen = False
+
+    def flush_current_scene(is_final: bool = False) -> None:
+        nonlocal current_heading, current_subtitle, current_bullets, current_narration_parts, first_heading_seen
+
+        if not current_heading and not current_bullets and not current_narration_parts:
+            return
+
+        # Only create a heading-only scene if:
+        # 1) it is the first title scene, or
+        # 2) there are visible bullets, or
+        # 3) this is the final flush and we still want to preserve content
+        has_meaningful_narration = any(
+            compact_ws(part) and compact_ws(part) != compact_ws(current_heading)
+            for part in current_narration_parts
+        )
+
+        should_create_scene = bool(current_bullets) or has_meaningful_narration or is_final or (current_heading == project_title)
+
+        if should_create_scene:
+            split_bullets_for_scenes(
+                title=current_heading or "Scene",
+                bullets=current_bullets,
+                narration_parts=current_narration_parts,
+                warnings=warnings,
+                scenes=scenes,
+            )
+
+        current_heading = ""
+        current_subtitle = ""
+        current_bullets = []
+        current_narration_parts = []
+
+    # def flush_current_scene() -> None:
+    #     nonlocal current_heading, current_subtitle, current_bullets, current_narration_parts
+
+    #     if not current_heading and not current_bullets and not current_narration_parts:
+    #         return
+
+    #     split_bullets_for_scenes(
+    #         title=current_heading or "Scene",
+    #         bullets=current_bullets,
+    #         narration_parts=current_narration_parts,
+    #         warnings=warnings,
+    #         scenes=scenes,
+    #     )
+
+    #     if not current_bullets and current_narration_parts:
+    #         finalize_grouped_scene(
+    #             scenes,
+    #             warnings,
+    #             title=current_heading or "Scene",
+    #             subtitle=current_subtitle,
+    #             bullets=[],
+    #             narration_parts=current_narration_parts,
+    #             scene_type="section_header" if current_heading else "paragraph",
+    #             layout_template="section_divider" if current_heading else "text_card",
+    #             text_align="left",
+    #             overlay_position="left" if current_heading else "bottom_card",
+    #         )
+
+    #     current_heading = ""
+    #     current_subtitle = ""
+    #     current_bullets = []
+    #     current_narration_parts = []
+
+    for node in block_nodes:
+        tag = node.name.lower()
+
+        if tag in HEADER_TAGS:
+            flush_current_scene(is_final=False)
+
+            heading = text_from_node(node)
+            if not heading:
+                continue
+
+            current_heading = heading
+            current_subtitle = ""
+            current_bullets = []
+            current_narration_parts = [heading]
+
+            if not first_heading_seen:
+                first_heading_seen = True
+                project_title = heading
+
+            continue
+
+        if tag == "p":
+            text = text_from_node(node)
+            if not text:
+                continue
+
+            strong_pair = extract_strong_lead_text(node)
+            fact_pair = split_fact_line(text)
+
+            if strong_pair:
+                bullet_title, bullet_desc = strong_pair
+                current_bullets.append(bullet_title)
+                current_narration_parts.append(f"{bullet_title}. {bullet_desc}" if bullet_desc else bullet_title)
+                continue
+
+            if fact_pair:
+                fact_label, fact_value = fact_pair
+                bullet_text = f"{fact_label}: {fact_value}"
+                current_bullets.append(bullet_text)
+                current_narration_parts.append(f"{fact_label}. {fact_value}.")
+                continue
+
+            # plain paragraphs go to narration only
+            current_narration_parts.append(text)
+            if not current_heading and not first_heading_seen:
+                current_heading = project_title
+                first_heading_seen = True
+
+            continue
+
+        if tag in {"ul", "ol"}:
+            li_nodes = node.find_all("li", recursive=False)
+
+            for li in li_nodes:
+                pair = extract_strong_lead_text(li)
+                if pair:
+                    bullet_title, bullet_desc = pair
+                    current_bullets.append(bullet_title)
+                    current_narration_parts.append(f"{bullet_title}. {bullet_desc}" if bullet_desc else bullet_title)
+                else:
+                    li_text = text_from_node(li)
+                    if li_text:
+                        current_bullets.append(li_text)
+                        current_narration_parts.append(li_text)
+            continue
+
+        if tag == "blockquote":
+            quote = text_from_node(node)
+            if quote:
+                current_narration_parts.append(quote)
+            continue
+
+        if tag == "img":
+            src = (node.get("src") or "").strip()
+            if not src:
+                continue
+
+            asset_id = str(uuid.uuid4())
+            assets.append(MediaAsset(
+                id=asset_id,
+                kind="image",
+                url=src,
+                title=node.get("alt") or "Image",
+                source="html",
+            ))
+
+            # attach to the most recent grouped scene if possible, else create one
+            if scenes:
+                scenes[-1].media_asset_ids.append(asset_id)
+            else:
+                finalize_grouped_scene(
+                    scenes,
+                    warnings,
+                    title=node.get("alt") or project_title,
+                    subtitle="",
+                    bullets=[],
+                    narration_parts=[node.get("alt") or "Visual reference"],
+                    scene_type="image_focus",
+                    layout_template="image_with_caption",
+                    text_align="left",
+                    overlay_position="bottom_card",
+                )
+                scenes[-1].media_asset_ids.append(asset_id)
+            continue
+
+        if tag in {"pre", "code"}:
+            code_text = text_from_node(node)
+            if code_text:
+                current_narration_parts.append(code_text[:360])
+            continue
+
+        if tag == "table":
+            rows = []
+            for tr in node.find_all("tr"):
+                cols = [text_from_node(td) for td in tr.find_all(["th", "td"])]
+                cols = [c for c in cols if c]
+                if cols:
+                    rows.append(" | ".join(cols))
+
+            if rows:
+                current_narration_parts.extend(rows[:6])
+            continue
+
+    flush_current_scene(is_final=True)
+
+    return VideoProject(
+        id=str(uuid.uuid4()),
+        title=project_title,
+        source_type=source_type,  # type: ignore[arg-type]
+        source_value=source_value,
+        theme_id=theme_id,
+        scenes=scenes,
+        assets=assets,
+        warnings=warnings,
+        metadata={
+            "scene_count": len(scenes),
+            "asset_count": len(assets),
+            "slug": slugify(project_title),
+        },
+    )
+
+def parse_html_to_project_delit(html: str, *, source_type: str, source_value: str, theme_id: str) -> VideoProject:
     soup = BeautifulSoup(html, "html.parser")
 
     doc_title = compact_ws(text_from_node(soup.title))
@@ -3738,7 +4194,14 @@ def parse_html_to_project(html: str, *, source_type: str, source_value: str, the
     project_title = doc_title or "HTML Video Project"
 
     def add_scene(scene: Scene) -> None:
-        scene.narration_text = build_narration(scene.scene_type, scene.title, scene.body_text, scene.bullets)
+        # scene.narration_text = build_narration(scene.scene_type, scene.title, scene.body_text, scene.bullets)
+        if not compact_ws(scene.narration_text):
+            scene.narration_text = build_narration(
+                scene.scene_type,
+                scene.title,
+                scene.body_text,
+                scene.bullets
+            )
         scene.timing.estimated_duration_sec = estimate_duration(scene.narration_text, scene.bullets)
         if len(scene.narration_text) > 500:
             scene.notes.append("Narration may be too long for a single scene.")
@@ -3781,35 +4244,141 @@ def parse_html_to_project(html: str, *, source_type: str, source_value: str, the
             text = text_from_node(node)
             if not text:
                 continue
+
+            strong_pair = extract_strong_lead_text(node)
+            fact_pair = split_fact_line(text)
+
+            if strong_pair:
+                bullet_title, bullet_desc = strong_pair
+                display_items, narration = build_display_and_narration(
+                    title="Key point",
+                    body="",
+                    bullets=[bullet_title]
+                )
+                add_scene(Scene(
+                    id=str(uuid.uuid4()),
+                    scene_type="bullet_points",
+                    title="Key point",
+                    subtitle="",
+                    bullets=[bullet_title],
+                    body_text="",
+                    narration_text=f"{bullet_title}. {bullet_desc}" if bullet_desc else bullet_title,
+                    on_screen_text=display_items,
+                    source_refs=[tag, "strong"],
+                    layout=SceneLayout(template="bullet_focus", text_align="left", overlay_position="left"),
+                    timing=SceneTiming(reveal_mode="sequential_bullets"),
+                ))
+                continue
+
+            if fact_pair:
+                fact_label, fact_value = fact_pair
+                add_scene(Scene(
+                    id=str(uuid.uuid4()),
+                    scene_type="bullet_points",
+                    title="Key fact",
+                    subtitle="",
+                    bullets=[f"{fact_label}: {fact_value}"],
+                    body_text="",
+                    narration_text=f"{fact_label}. {fact_value}.",
+                    on_screen_text=["Key fact", f"{fact_label}: {fact_value}"],
+                    source_refs=[tag, "fact_line"],
+                    layout=SceneLayout(template="bullet_focus", text_align="left", overlay_position="left"),
+                    timing=SceneTiming(reveal_mode="sequential_bullets"),
+                ))
+                continue
+
             add_scene(Scene(
                 id=str(uuid.uuid4()),
                 scene_type="paragraph",
-                body_text=text,
-                on_screen_text=[text],
+                title="",
+                subtitle=text[:140] if len(text) <= 140 else "",
+                body_text="",
+                narration_text=text,
+                on_screen_text=[],
                 source_refs=[tag],
                 layout=SceneLayout(template="text_card", text_align="left", overlay_position="bottom_card"),
             ))
             continue
 
+        # if tag == "p":
+        #     text = text_from_node(node)
+        #     if not text:
+        #         continue
+        #     add_scene(Scene(
+        #         id=str(uuid.uuid4()),
+        #         scene_type="paragraph",
+        #         body_text=text,
+        #         on_screen_text=[text],
+        #         source_refs=[tag],
+        #         layout=SceneLayout(template="text_card", text_align="left", overlay_position="bottom_card"),
+        #     ))
+        #     continue
+
+
         if tag in {"ul", "ol"}:
-            bullets = [text_from_node(li) for li in node.find_all("li", recursive=False)]
-            bullets = [x for x in bullets if x]
-            if not bullets:
+            li_nodes = node.find_all("li", recursive=False)
+            bullet_titles = []
+            bullet_narrations = []
+
+            for li in li_nodes:
+                pair = extract_strong_lead_text(li)
+                if pair:
+                    bullet_title, bullet_desc = pair
+                    bullet_titles.append(bullet_title)
+                    bullet_narrations.append(f"{bullet_title}. {bullet_desc}" if bullet_desc else bullet_title)
+                else:
+                    li_text = text_from_node(li)
+                    if li_text:
+                        bullet_titles.append(li_text)
+                        bullet_narrations.append(li_text)
+
+            bullet_titles = [x for x in bullet_titles if x]
+            bullet_narrations = [x for x in bullet_narrations if x]
+
+            if not bullet_titles:
                 continue
-            chunks = [bullets[i:i + 5] for i in range(0, len(bullets), 5)]
+
+            chunks = [bullet_titles[i:i + 5] for i in range(0, len(bullet_titles), 5)]
+            narration_chunks = [bullet_narrations[i:i + 5] for i in range(0, len(bullet_narrations), 5)]
+
             for idx, chunk in enumerate(chunks, start=1):
                 title = "Key points" if len(chunks) == 1 else f"Key points ({idx})"
+                narration_text = ". ".join(narration_chunks[idx - 1])
+
                 add_scene(Scene(
                     id=str(uuid.uuid4()),
                     scene_type="bullet_points",
                     title=title,
+                    subtitle="",
                     bullets=chunk,
+                    body_text="",
+                    narration_text=narration_text,
                     on_screen_text=[title, *chunk],
                     source_refs=[tag],
                     timing=SceneTiming(reveal_mode="sequential_bullets"),
                     layout=SceneLayout(template="bullet_focus", text_align="left", overlay_position="left"),
                 ))
             continue
+
+        # if tag in {"ul", "ol"}:
+        #     bullets = [text_from_node(li) for li in node.find_all("li", recursive=False)]
+        #     bullets = [x for x in bullets if x]
+        #     if not bullets:
+        #         continue
+        #     chunks = [bullets[i:i + 5] for i in range(0, len(bullets), 5)]
+        #     for idx, chunk in enumerate(chunks, start=1):
+        #         title = "Key points" if len(chunks) == 1 else f"Key points ({idx})"
+        #         add_scene(Scene(
+        #             id=str(uuid.uuid4()),
+        #             scene_type="bullet_points",
+        #             title=title,
+        #             bullets=chunk,
+        #             on_screen_text=[title, *chunk],
+        #             source_refs=[tag],
+        #             timing=SceneTiming(reveal_mode="sequential_bullets"),
+        #             layout=SceneLayout(template="bullet_focus", text_align="left", overlay_position="left"),
+        #         ))
+        #     continue
 
         if tag == "blockquote":
             quote = text_from_node(node)
