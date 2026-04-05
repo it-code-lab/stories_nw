@@ -570,6 +570,8 @@
                 <button class="btn btn-success" id="renderPlanBtn">Build render plan</button>
                 <button class="btn btn-outline" id="speechPlanBtn">Build speech plan</button>
                 <button class="btn btn-success" id="ttsBtn">Generate TTS</button>
+                <button class="btn btn-success" id="renderVideoBtn">Render video</button>
+                <button class="btn btn-danger" id="cleanupBtn">Cleanup all</button>
             </div>
         </div>
 
@@ -801,6 +803,8 @@
         };
 
         const els = {
+            renderVideoBtn: document.getElementById('renderVideoBtn'),
+            cleanupBtn: document.getElementById('cleanupBtn'),
             speechPlanBtn: document.getElementById('speechPlanBtn'),
             ttsBtn: document.getElementById('ttsBtn'),
             themeSelect: document.getElementById('themeSelect'),
@@ -857,6 +861,54 @@
             }
             return data;
         }
+
+
+        async function renderComposerVideo() {
+            if (!state.project) {
+                alert('Create or load a project first.');
+                return;
+            }
+
+            syncCurrentSceneFromForm();
+            await saveProject();
+
+            const data = await api(`/api/projects/${state.project.id}/render-composer-video`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    outRes: state.selectedAspectRatio === '9:16' ? '1080x1920'
+                        : state.selectedAspectRatio === '1:1' ? '1080x1080'
+                        : '1920x1080'
+                }),
+            });
+
+            els.renderPlanOutput.textContent = JSON.stringify(data, null, 2);
+
+            if (data.video_url) {
+                window.open(data.video_url, '_blank');
+            }
+        }    
+
+
+        async function cleanupAllComposerProjects() {
+            const ok = confirm('Delete all HTML Video Composer projects, speech files, and rendered videos?');
+            if (!ok) return;
+
+            const data = await api('/api/projects/cleanup-all', {
+                method: 'POST',
+                body: JSON.stringify({}),
+            });
+
+            state.project = null;
+            state.selectedSceneIndex = -1;
+
+            renderProjectSummary();
+            renderSceneList();
+            renderAssets();
+            renderSelectedScene();
+            els.renderPlanOutput.textContent = JSON.stringify(data, null, 2);
+            alert(data.message || 'Cleanup completed.');
+        }
+
 
         function clearPreviewTimers() {
             (state.previewTimers || []).forEach(id => clearTimeout(id));
@@ -1521,6 +1573,15 @@
             els.ttsBtn.addEventListener('click', async () => {
                 try { await generateTTS(); } catch (e) { alert(e.message); }
             });            
+
+            els.renderVideoBtn.addEventListener('click', async () => {
+                try { await renderComposerVideo(); } catch (e) { alert(e.message); }
+            });
+
+            els.cleanupBtn.addEventListener('click', async () => {
+                try { await cleanupAllComposerProjects(); } catch (e) { alert(e.message); }
+            });
+
             els.loadSampleBtn.addEventListener('click', loadSampleHtml);
             updateFrameAspect();
             await loadThemes();

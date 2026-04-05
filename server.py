@@ -3372,6 +3372,8 @@ def clear_folder(folder_path, extensions=None):
             if not extensions or file.lower().endswith(extensions):
                 os.remove(full_path)
 
+def make_segment_id(scene_index: int, segment_index: int, kind: str) -> str:
+    return f"sc{scene_index}-seg{segment_index}-{kind}"
 
 def clear_old_pages():
     """Delete any existing generated page images."""
@@ -3441,13 +3443,20 @@ from typing import Any, Literal
 
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
-
+from PIL import Image, ImageDraw, ImageFont
 
 BASE_DIR = Path(__file__).resolve().parent
 VID_DATA_DIR = BASE_DIR / "video_composer_data"
 PROJECTS_DIR = VID_DATA_DIR / "projects"
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+COMPOSER_DATA_DIR = BASE_DIR / "video_composer_data"
+COMPOSER_PROJECTS_DIR = COMPOSER_DATA_DIR / "projects"
+COMPOSER_RENDER_DIR = OUT_DIR / "composer_renders"
+COMPOSER_SPEECH_DIR = OUT_DIR / "composer_speech"
 
+COMPOSER_PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+COMPOSER_RENDER_DIR.mkdir(parents=True, exist_ok=True)
+COMPOSER_SPEECH_DIR.mkdir(parents=True, exist_ok=True)
 
 
 SceneType = Literal[
@@ -3636,12 +3645,488 @@ THEMES: dict[str, ThemePreset] = {
     ),
 }
 
+def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
+    """Helper to rebuild speech segments if the user edited the text in the UI."""
+    import re
+    from dataclasses import asdict
+
+    title = scene.get("title", "")
+    bullets = scene.get("bullets", [])
+    narration_text = scene.get("narration_text", "")
+
+    # Split narration safely into sentences
+    parts = [p.strip() for p in re.split(r'(?<=[.!?])\s+', narration_text) if p.strip()]
+    if not parts and narration_text.strip():
+        parts = [narration_text.strip()]
+
+    new_segments = build_speech_segments(
+        title=title,
+        bullets=bullets,
+        narration_parts=parts,
+        scene_index=scene_index
+    )
+    scene["speech_segments"] = [asdict(s) for s in new_segments]
 
 def slugify(text: str) -> str:
     text = (text or "").strip().lower()
     text = re.sub(r"[^a-z0-9]+", "-", text)
     return text.strip("-") or "untitled"
 
+def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    candidates = [
+        "arial.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
+    ]
+    for path in candidates:
+        try:
+            return ImageFont.truetype(path, size)
+        except Exception:
+            pass
+    return ImageFont.load_default()
+
+def render_composer_frame(
+    *,
+    out_path: Path,
+    scene: dict,
+    width: int = 1920,
+    height: int = 1080,
+    visible_bullets: int = 0,
+) -> None:
+    img = Image.new("RGB", (width, height), "#071225")
+    draw = ImageDraw.Draw(img)
+
+    # Background asset if present and image
+    bg_applied = False
+    media_ids = scene.get("media_asset_ids", []) or []
+    project_assets = scene.get("_project_assets", []) or []
+    if media_ids and project_assets:
+        asset_map = {a.get("id"): a for a in project_assets}
+        first_asset = asset_map.get(media_ids[0])
+        if first_asset and first_asset.get("kind") == "image" and first_asset.get("url"):
+            try:
+                bg_url = first_asset["url"]
+                bg_path = _resolve_path(bg_url.replace("/uploads/", "uploads/")) if bg_url.startswith("/uploads/") else _resolve_path(bg_url)
+                if bg_path.exists():
+                    bg = Image.open(bg_path).convert("RGB")
+                    bg = bg.resize((width, height))
+                    img.paste(bg, (0, 0))
+                    overlay = Image.new("RGBA", (width, height), (3, 10, 24, 130))
+                    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+                    draw = ImageDraw.Draw(img)
+                    bg_applied = True
+            except Exception:
+                pass
+
+    if not bg_applied:
+        # subtle gradient fallback
+        for y in range(height):
+            ratio = y / max(1, height - 1)
+            r = int(7 * (1 - ratio) + 14 * ratio)
+            g = int(18 * (1 - ratio) + 28 * ratio)
+            b = int(37 * (1 - ratio) + 58 * ratio)
+            draw.line([(0, y), (width, y)], fill=(r, g, b))
+
+    # Card
+    # card_left = int(width * 0.16)
+    # card_top = int(height * 0.14)
+    # card_right = int(width * 0.84)
+    # card_bottom = int(height * 0.72)
+
+    card_left = int(width * 0.12)
+    card_top = int(height * 0.12)
+    card_right = int(width * 0.88)
+    card_bottom = int(height * 0.62)
+
+    draw.rounded_rectangle(
+        [card_left, card_top, card_right, card_bottom],
+        radius=28,
+        fill=(9, 23, 49, 220),
+        outline=(30, 64, 110),
+        width=2,
+    )
+
+    title = scene.get("title", "")
+    bullets = scene.get("bullets", [])[:visible_bullets]
+
+    title_font = _load_font(56)
+    bullet_font = _load_font(30)
+
+    tx = card_left + 36
+    ty = card_top + 30
+
+    draw.multiline_text(
+        (tx, ty),
+        title,
+        font=title_font,
+        fill=(240, 245, 255),
+        spacing=8,
+    )
+
+    ty += 120
+    for bullet in bullets:
+        bullet_text = f"• {bullet}"
+        draw.multiline_text(
+            (tx, ty),
+            bullet_text,
+            font=bullet_font,
+            fill=(230, 236, 245),
+            spacing=6,
+        )
+        ty += 56
+
+    img.save(out_path)
+
+
+def render_scene_segments_to_video(
+    *,
+    project_id: str,
+    scene: dict,
+    project_assets: list[dict],
+    render_dir: Path,
+    out_res: str = "1920x1080",
+) -> Path:
+    width, height = [int(x) for x in out_res.split("x")]
+    
+    # Use fallback to "id" if "scene_id" isn't present
+    scene_dir = render_dir / _safe_filename(scene.get("scene_id", scene.get("id", "scene")))
+    scene_dir.mkdir(parents=True, exist_ok=True)
+
+    speech_plan = scene.get("speech_plan", {}) or {}
+    segments = speech_plan.get("segments", []) or []
+
+    # FALLBACK: If a scene has no text/segments, hold the frame for the estimated duration
+    if not segments:
+        fallback_dur = scene.get("timing", {}).get("manual_duration_sec")
+        if not fallback_dur:
+            fallback_dur = scene.get("timing", {}).get("estimated_duration_sec", 4.0)
+        segments = [{
+            "id": f"dummy_{uuid.uuid4().hex[:8]}",
+            "kind": "narration",
+            "duration_ms": int(float(fallback_dur) * 1000)
+        }]
+
+    segment_mp4s = []
+    visible_bullets = 0
+
+    for idx, seg in enumerate(segments, start=1):
+        seg_kind = seg.get("kind", "narration")
+        seg_id = seg.get("id") or f"seg_{idx}"
+        audio_path = COMPOSER_SPEECH_DIR / project_id / f"{seg_id}.mp3"
+
+        if seg_kind == "bullet":
+            visible_bullets += 1
+
+        frame_path = scene_dir / f"{idx:03d}_{seg_id}.png"
+        temp_scene = dict(scene)
+        temp_scene["_project_assets"] = project_assets
+        render_composer_frame(
+            out_path=frame_path,
+            scene=temp_scene,
+            width=width,
+            height=height,
+            visible_bullets=visible_bullets,
+        )
+
+        clip_path = scene_dir / f"{idx:03d}_{seg_id}.mp4"
+        duration_sec = max(0.3, float(seg.get("duration_ms", 1000)) / 1000.0)
+
+        # FIX: Explicitly enforce 44.1kHz, Stereo, and square pixels (setsar=1) across ALL clips
+        if audio_path.exists() and audio_path.stat().st_size > 0:
+            _run([
+                "ffmpeg", "-y",
+                "-loop", "1",
+                "-i", str(frame_path),
+                "-i", str(audio_path),
+                "-c:v", "libx264",
+                "-tune", "stillimage",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-ac", "2",           # Force stereo
+                "-ar", "44100",       # Force 44.1kHz
+                "-af", "aresample=async=1:min_hard_comp=0.100:first_pts=0",
+                "-shortest",
+                "-r", "30",
+                "-vf", f"scale={width}:{height},setsar=1", # Force square pixels
+                str(clip_path),
+            ])
+        else:
+            _run([
+                "ffmpeg", "-y",
+                "-loop", "1",
+                "-i", str(frame_path),
+                "-f", "lavfi",
+                "-i", "anullsrc=r=44100:cl=stereo",
+                "-t", str(duration_sec),
+                "-c:v", "libx264",
+                "-tune", "stillimage",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-ac", "2",
+                "-ar", "44100",
+                "-r", "30",
+                "-vf", f"scale={width}:{height},setsar=1",
+                str(clip_path),
+            ])
+
+        segment_mp4s.append(clip_path)
+
+    concat_list = scene_dir / "segments.txt"
+    concat_list.write_text(
+        "\n".join([f"file '{p.as_posix()}'" for p in segment_mp4s]),
+        encoding="utf-8"
+    )
+
+    scene_video = scene_dir / "scene.mp4"
+    _run([
+        "ffmpeg", "-y",
+        "-f", "concat",
+        "-safe", "0",
+        "-i", str(concat_list),
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-ar", "44100",
+        "-ac", "2",
+        str(scene_video),
+    ])
+
+    return scene_video
+
+# def render_scene_segments_to_video(
+#     *,
+#     project_id: str,
+#     scene: dict,
+#     project_assets: list[dict],
+#     render_dir: Path,
+#     out_res: str = "1920x1080",
+# ) -> Path:
+#     width, height = [int(x) for x in out_res.split("x")]
+#     scene_dir = render_dir / _safe_filename(scene.get("scene_id", "scene"))
+#     scene_dir.mkdir(parents=True, exist_ok=True)
+
+#     speech_plan = scene.get("speech_plan", {}) or {}
+#     segments = speech_plan.get("segments", []) or []
+#     title = scene.get("title", "")
+#     bullets = scene.get("bullets", []) or []
+
+#     segment_mp4s = []
+
+#     visible_bullets = 0
+#     for idx, seg in enumerate(segments, start=1):
+#         seg_kind = seg.get("kind", "narration")
+#         seg_id = seg.get("id") or f"seg_{idx}"
+#         audio_path = COMPOSER_SPEECH_DIR / project_id / f"{seg_id}.mp3"
+
+#         # visible state
+#         if seg_kind == "bullet":
+#             visible_bullets += 1
+
+#         frame_path = scene_dir / f"{idx:03d}_{seg_id}.png"
+#         temp_scene = dict(scene)
+#         temp_scene["_project_assets"] = project_assets
+#         render_composer_frame(
+#             out_path=frame_path,
+#             scene=temp_scene,
+#             width=width,
+#             height=height,
+#             visible_bullets=visible_bullets,
+#         )
+
+#         clip_path = scene_dir / f"{idx:03d}_{seg_id}.mp4"
+
+#         duration_sec = max(0.3, float(seg.get("duration_ms", 1000)) / 1000.0)
+
+#         if audio_path.exists():
+#             _run([
+#                 "ffmpeg", "-y",
+#                 "-loop", "1",
+#                 "-i", str(frame_path),
+#                 "-i", str(audio_path),
+#                 "-c:v", "libx264",
+#                 "-tune", "stillimage",
+#                 "-pix_fmt", "yuv420p",
+#                 "-c:a", "aac",
+#                 "-af", "aresample=async=1:min_hard_comp=0.100:first_pts=0",
+#                 "-shortest",
+#                 "-r", "30",
+#                 "-vf", f"scale={width}:{height}",
+#                 str(clip_path),
+#             ])
+#         else:
+#             _run([
+#                 "ffmpeg", "-y",
+#                 "-loop", "1",
+#                 "-i", str(frame_path),
+#                 "-f", "lavfi",
+#                 "-i", f"anullsrc=r=44100:cl=stereo",
+#                 "-t", str(duration_sec),
+#                 "-c:v", "libx264",
+#                 "-tune", "stillimage",
+#                 "-pix_fmt", "yuv420p",
+#                 "-c:a", "aac",
+#                 "-r", "30",
+#                 "-vf", f"scale={width}:{height}",
+#                 str(clip_path),
+#             ])
+
+#         segment_mp4s.append(clip_path)
+
+#     concat_list = scene_dir / "segments.txt"
+#     concat_list.write_text(
+#         "\n".join([f"file '{p.as_posix()}'" for p in segment_mp4s]),
+#         encoding="utf-8"
+#     )
+
+#     scene_video = scene_dir / "scene.mp4"
+#     # _run([
+#     #     "ffmpeg", "-y",
+#     #     "-f", "concat",
+#     #     "-safe", "0",
+#     #     "-i", str(concat_list),
+#     #     "-c", "copy",
+#     #     str(scene_video),
+#     # ])
+
+#     _run([
+#         "ffmpeg", "-y",
+#         "-f", "concat",
+#         "-safe", "0",
+#         "-i", str(concat_list),
+#         "-c:v", "libx264",
+#         "-pix_fmt", "yuv420p",
+#         "-c:a", "aac",
+#         "-ar", "44100",
+#         "-ac", "2",
+#         str(scene_video),
+#     ])
+
+
+#     return scene_video
+
+@app.post("/api/projects/cleanup-all")
+def cleanup_all_composer_projects():
+    removed = {
+        "projects": 0,
+        "speech_dirs": 0,
+        "render_dirs": 0,
+    }
+
+    if COMPOSER_PROJECTS_DIR.exists():
+        for p in COMPOSER_PROJECTS_DIR.glob("*.json"):
+            p.unlink(missing_ok=True)
+            removed["projects"] += 1
+
+    if COMPOSER_SPEECH_DIR.exists():
+        for p in COMPOSER_SPEECH_DIR.iterdir():
+            if p.is_dir():
+                shutil.rmtree(p, ignore_errors=True)
+                removed["speech_dirs"] += 1
+
+    if COMPOSER_RENDER_DIR.exists():
+        for p in COMPOSER_RENDER_DIR.iterdir():
+            if p.is_dir():
+                shutil.rmtree(p, ignore_errors=True)
+                removed["render_dirs"] += 1
+
+    return jsonify({
+        "ok": True,
+        "message": "All composer projects and generated files were removed.",
+        "removed": removed,
+    })
+
+
+@app.post("/api/projects/<project_id>/render-composer-video")
+def render_composer_video(project_id: str):
+    try:
+        project = load_project(project_id)
+    except FileNotFoundError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 404
+
+    out_res = request.get_json(silent=True) or {}
+    out_res = out_res.get("outRes", "1920x1080")
+
+    render_root = COMPOSER_RENDER_DIR / project_id
+    if render_root.exists():
+        shutil.rmtree(render_root)
+    render_root.mkdir(parents=True, exist_ok=True)
+
+    project_assets = project.get("assets", []) or []
+    scene_videos = []
+
+    for scene in project.get("scenes", []):
+        scene_video = render_scene_segments_to_video(
+            project_id=project_id,
+            scene=scene,
+            project_assets=project_assets,
+            render_dir=render_root,
+            out_res=out_res,
+        )
+        scene_videos.append(scene_video)
+
+    if not scene_videos:
+        return jsonify({"ok": False, "error": "No scene videos were created."}), 400
+
+    concat_list = render_root / "all_scenes.txt"
+    concat_list.write_text(
+        "\n".join([f"file '{p.as_posix()}'" for p in scene_videos]),
+        encoding="utf-8"
+    )
+
+    final_video = render_root / "final_composer_video.mp4"
+    # _run([
+    #     "ffmpeg", "-y",
+    #     "-f", "concat",
+    #     "-safe", "0",
+    #     "-i", str(concat_list),
+    #     "-c", "copy",
+    #     str(final_video),
+    # ])
+
+    _run([
+        "ffmpeg", "-y",
+        "-f", "concat",
+        "-safe", "0",
+        "-i", str(concat_list),
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-ar", "44100",
+        "-ac", "2",
+        str(final_video),
+    ])
+
+    return jsonify({
+        "ok": True,
+        "project_id": project_id,
+        "video_path": str(final_video),
+        "video_url": f"/composer-renders/{project_id}/final_composer_video.mp4",
+    })
+
+
+@app.get("/composer-renders/<path:fn>")
+def composer_renders(fn):
+    return send_from_directory(str(COMPOSER_RENDER_DIR), fn)
+
+
+
+def _duration_via_ffprobe(path: Path) -> float:
+    _ensure_ffmpeg()
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(path),
+    ]
+    out = subprocess.check_output(cmd, text=True).strip()
+    return float(out)
+
+def _run(cmd: list[str]) -> None:
+    subprocess.run(cmd, check=True)
+
+def _safe_filename(text: str) -> str:
+    text = re.sub(r"[^a-zA-Z0-9._-]+", "_", (text or "").strip())
+    return text[:120] or "item"
 
 def compact_ws(text: str) -> str:
     return re.sub(r"\s+", " ", (text or "").strip())
@@ -3661,56 +4146,107 @@ def estimate_duration(narration_text: str, bullets: list[str]) -> float:
     bullet_bonus = max(0, len(bullets) - 1) * 0.8
     return round(max(3.0, words / 2.7 + bullet_bonus), 2)
 
-def build_speech_segments(title: str, bullets: list[str], narration_parts: list[str]) -> list[SpeechSegment]:
+
+def build_speech_segments(title: str, bullets: list[str], narration_parts: list[str], scene_index: int) -> list[SpeechSegment]:
     segments: list[SpeechSegment] = []
-    order = 0
+    segment_index = 0
 
     if compact_ws(title):
-        order += 1
+        segment_index += 1
         segments.append(SpeechSegment(
-            id=str(uuid.uuid4()),
+            id=make_segment_id(scene_index, segment_index, "title"),
             kind="title",
             display_text=compact_ws(title),
             speech_text=compact_ws(title),
             show_on_screen=True,
             animation="titleReveal",
             animation_target="title",
-            order=order,
+            order=segment_index,
         ))
 
     clean_bullets = [compact_ws(x) for x in bullets if compact_ws(x)]
     for i, bullet in enumerate(clean_bullets, start=1):
-        order += 1
+        segment_index += 1
         segments.append(SpeechSegment(
-            id=str(uuid.uuid4()),
+            id=make_segment_id(scene_index, segment_index, f"bullet{i}"),
             kind="bullet",
             display_text=bullet,
             speech_text=bullet,
             show_on_screen=True,
             animation="bulletReveal",
             animation_target=f"bullet_{i}",
-            order=order,
+            order=segment_index,
         ))
 
-    # narration-only support text that should not appear on screen
-    extra_parts = [compact_ws(x) for x in narration_parts if compact_ws(x)]
     used = {compact_ws(title), *clean_bullets}
-    for part in extra_parts:
+    for part in [compact_ws(x) for x in narration_parts if compact_ws(x)]:
         if part in used:
             continue
-        order += 1
+        segment_index += 1
         segments.append(SpeechSegment(
-            id=str(uuid.uuid4()),
+            id=make_segment_id(scene_index, segment_index, "narration"),
             kind="narration",
             display_text="",
             speech_text=part,
             show_on_screen=False,
             animation="none",
             animation_target="none",
-            order=order,
+            order=segment_index,
         ))
 
     return segments
+
+
+# def build_speech_segments(title: str, bullets: list[str], narration_parts: list[str]) -> list[SpeechSegment]:
+#     segments: list[SpeechSegment] = []
+#     order = 0
+
+#     if compact_ws(title):
+#         order += 1
+#         segments.append(SpeechSegment(
+#             id=str(uuid.uuid4()),
+#             kind="title",
+#             display_text=compact_ws(title),
+#             speech_text=compact_ws(title),
+#             show_on_screen=True,
+#             animation="titleReveal",
+#             animation_target="title",
+#             order=order,
+#         ))
+
+#     clean_bullets = [compact_ws(x) for x in bullets if compact_ws(x)]
+#     for i, bullet in enumerate(clean_bullets, start=1):
+#         order += 1
+#         segments.append(SpeechSegment(
+#             id=str(uuid.uuid4()),
+#             kind="bullet",
+#             display_text=bullet,
+#             speech_text=bullet,
+#             show_on_screen=True,
+#             animation="bulletReveal",
+#             animation_target=f"bullet_{i}",
+#             order=order,
+#         ))
+
+#     # narration-only support text that should not appear on screen
+#     extra_parts = [compact_ws(x) for x in narration_parts if compact_ws(x)]
+#     used = {compact_ws(title), *clean_bullets}
+#     for part in extra_parts:
+#         if part in used:
+#             continue
+#         order += 1
+#         segments.append(SpeechSegment(
+#             id=str(uuid.uuid4()),
+#             kind="narration",
+#             display_text="",
+#             speech_text=part,
+#             show_on_screen=False,
+#             animation="none",
+#             animation_target="none",
+#             order=order,
+#         ))
+
+#     return segments
 
 def build_narration(scene_type: SceneType, title: str, body: str, bullets: list[str]) -> str:
     title = compact_ws(title)
@@ -3885,11 +4421,19 @@ def finalize_grouped_scene(
         timing=SceneTiming(reveal_mode="sequential_bullets" if clean_bullets else "all_at_once"),
     )
 
+    scene_index = len(scenes) + 1
     scene.speech_segments = build_speech_segments(
         title=clean_title,
         bullets=clean_bullets,
         narration_parts=clean_narration_parts,
+        scene_index=scene_index,
     )
+
+    # scene.speech_segments = build_speech_segments(
+    #     title=clean_title,
+    #     bullets=clean_bullets,
+    #     narration_parts=clean_narration_parts,
+    # )
 
     if not compact_ws(scene.narration_text):
         scene.narration_text = build_narration(
@@ -4765,7 +5309,8 @@ def synthesize_project_speech(project_id: str):
     engine = narration_cfg.get("engine", "google")
     gender = narration_cfg.get("gender", "Male")
 
-    for scene in project.get("scenes", []):
+    for idx, scene in enumerate(project.get("scenes", []), start=1):
+        # _rebuild_scene_speech_segments(scene, idx)
         speech_segments = scene.get("speech_segments", []) or []
 
         for seg in speech_segments:
@@ -4815,7 +5360,8 @@ def update_project_speech_plan(project_id: str):
     scenes = project.get("scenes", [])
     updated_scenes = []
 
-    for scene in scenes:
+    for idx, scene in enumerate(scenes, start=1):
+        # _rebuild_scene_speech_segments(scene, idx)
         speech_segments = scene.get("speech_segments", []) or []
         speech_plan = build_scene_speech_plan(
             speech_segments=speech_segments,
