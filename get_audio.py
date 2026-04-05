@@ -206,6 +206,7 @@ def get_audio_file(text, audio_file_name, tts_engine="google", language="english
         str: Path to the generated audio file.
     """
 
+    print("✅ Received Arguments:", locals())
     # For english-india, hi-IN voices pronouce names better so those are used
 
     voice_configs = {

@@ -4761,8 +4761,9 @@ def synthesize_project_speech(project_id: str):
 
     narration_cfg = project.get("narration", {}) or {}
     voice = narration_cfg.get("voice", "alloy")
-    language = narration_cfg.get("language", "en")
-    engine = narration_cfg.get("engine", "tts")
+    language = narration_cfg.get("language", "english")
+    engine = narration_cfg.get("engine", "google")
+    gender = narration_cfg.get("gender", "Male")
 
     for scene in project.get("scenes", []):
         speech_segments = scene.get("speech_segments", []) or []
@@ -4773,11 +4774,15 @@ def synthesize_project_speech(project_id: str):
                 continue
 
             seg_id = seg.get("id") or str(uuid.uuid4())
-            audio_path = speech_root / f"{seg_id}.mp3"
-
+            audio_file_name = f"{seg_id}.mp3"
+            audio_path = speech_root / audio_file_name
+            
             # ADAPT THIS LINE to your existing get_audio_file() signature
             # Example idea only:
-            # get_audio_file(text=speech_text, output_file=str(audio_path), language=language, voice=voice, tts_engine=engine)
+            get_audio_file(text=speech_text, audio_file_name=audio_file_name, tts_engine="google", language="english", gender="Male")
+
+            # Copy audio_file_name file to speech_root
+            shutil.move(audio_file_name, audio_path)
 
             if not audio_path.exists():
                 return jsonify({
