@@ -1,3 +1,4 @@
+from __future__ import annotations
 import shutil
 from time import time
 from flask import Flask, request, jsonify, render_template, send_from_directory, abort, url_for
@@ -44,6 +45,18 @@ from sketch_core import build_sketch_from_pil
 from PIL import Image
 from scene_builder import probe_duration, make_scene, merge_with_heygen
 from assemble_from_videos import assemble_videos, assemble_videos_by_titles_if_present
+
+############################
+# Imports added for HTML to video maker
+
+# from __future__ import annotations
+
+# from dataclasses import asdict, dataclass, field
+# from typing import Any, Literal
+
+# import requests
+# from bs4 import BeautifulSoup, NavigableString, Tag
+############################
 
 from media_audio import (
     extract_audio_from_video,
@@ -3416,6 +3429,662 @@ def upload_pdf():
         return jsonify({"success": False, "error": "No pages generated."}), 500
 
     return jsonify({"success": True, "pages": page_urls})
+
+####################################################
+# START: HTML to video maker enhancements/changes
+####################################################
+
+# from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+from typing import Any, Literal
+
+import requests
+from bs4 import BeautifulSoup, NavigableString, Tag
+
+
+BASE_DIR = Path(__file__).resolve().parent
+VID_DATA_DIR = BASE_DIR / "video_composer_data"
+PROJECTS_DIR = VID_DATA_DIR / "projects"
+PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+
+SceneType = Literal[
+    "title",
+    "section_header",
+    "bullet_points",
+    "paragraph",
+    "quote",
+    "image_focus",
+    "code",
+    "table",
+    "recap",
+]
+
+
+@dataclass
+class ThemePreset:
+    id: str
+    name: str
+    description: str
+    font_heading: str
+    font_body: str
+    palette: dict[str, str]
+    motion_style: str
+    layout_density: str
+    caption_style: str
+
+
+@dataclass
+class MediaAsset:
+    id: str
+    kind: Literal["image", "video", "audio"]
+    url: str | None = None
+    local_path: str | None = None
+    title: str | None = None
+    source: str = "user"
+    fit_mode: Literal["cover", "contain", "smart_crop"] = "cover"
+    focal_point: dict[str, float] | None = None
+
+
+@dataclass
+class NarrationSettings:
+    language: str = "en"
+    voice: str = "alloy"
+    rate: float = 1.0
+    pitch: float = 1.0
+    engine: str = "tts"
+    pause_after_heading_ms: int = 450
+    pause_between_bullets_ms: int = 250
+
+
+@dataclass
+class CaptionSettings:
+    enabled: bool = True
+    mode: Literal["none", "sentence", "phrase", "word_highlight"] = "phrase"
+    max_words_per_line: int = 6
+    position: Literal["bottom", "center", "top"] = "bottom"
+
+
+@dataclass
+class SceneTiming:
+    estimated_duration_sec: float = 4.0
+    manual_duration_sec: float | None = None
+    reveal_mode: Literal["all_at_once", "sequential_bullets", "sentence_step"] = "all_at_once"
+
+
+@dataclass
+class SceneLayout:
+    template: str = "title_top_content_center"
+    text_align: Literal["left", "center", "right"] = "left"
+    overlay_position: Literal[
+        "left",
+        "right",
+        "center",
+        "bottom_card",
+        "top_card",
+    ] = "center"
+    background_dim: float = 0.35
+    background_blur: int = 0
+
+
+@dataclass
+class Scene:
+    id: str
+    scene_type: SceneType
+    title: str = ""
+    subtitle: str = ""
+    bullets: list[str] = field(default_factory=list)
+    body_text: str = ""
+    narration_text: str = ""
+    on_screen_text: list[str] = field(default_factory=list)
+    media_asset_ids: list[str] = field(default_factory=list)
+    layout: SceneLayout = field(default_factory=SceneLayout)
+    timing: SceneTiming = field(default_factory=SceneTiming)
+    notes: list[str] = field(default_factory=list)
+    source_refs: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ProjectSettings:
+    aspect_ratio: Literal["16:9", "9:16", "1:1"] = "16:9"
+    quality_preset: Literal["draft", "standard", "high"] = "standard"
+    auto_split_long_sections: bool = True
+    max_bullets_per_scene: int = 5
+    max_chars_per_scene: int = 320
+    enable_smart_suggestions: bool = True
+
+
+@dataclass
+class VideoProject:
+    id: str
+    title: str
+    source_type: Literal["html", "url", "upload"]
+    source_value: str
+    theme_id: str
+    project_settings: ProjectSettings = field(default_factory=ProjectSettings)
+    narration: NarrationSettings = field(default_factory=NarrationSettings)
+    captions: CaptionSettings = field(default_factory=CaptionSettings)
+    scenes: list[Scene] = field(default_factory=list)
+    assets: list[MediaAsset] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+THEMES: dict[str, ThemePreset] = {
+    "corporate-clean": ThemePreset(
+        id="corporate-clean",
+        name="Corporate Clean",
+        description="Minimal business presentation style with calm motion.",
+        font_heading="Inter",
+        font_body="Inter",
+        palette={"bg": "#0F172A", "card": "#111827", "text": "#F8FAFC", "accent": "#38BDF8"},
+        motion_style="subtle",
+        layout_density="comfortable",
+        caption_style="clean-bottom",
+    ),
+    "youtube-explainer": ThemePreset(
+        id="youtube-explainer",
+        name="YouTube Explainer",
+        description="High-contrast explainer look for engagement-focused videos.",
+        font_heading="Poppins",
+        font_body="Inter",
+        palette={"bg": "#111111", "card": "#1F2937", "text": "#FFFFFF", "accent": "#F59E0B"},
+        motion_style="dynamic",
+        layout_density="medium",
+        caption_style="bold-highlight",
+    ),
+    "premium-dark": ThemePreset(
+        id="premium-dark",
+        name="Premium Dark",
+        description="Cinematic dark layout with elegant cards and slower transitions.",
+        font_heading="Playfair Display",
+        font_body="Inter",
+        palette={"bg": "#030712", "card": "#111827", "text": "#E5E7EB", "accent": "#A78BFA"},
+        motion_style="cinematic",
+        layout_density="airy",
+        caption_style="soft-card",
+    ),
+}
+
+
+def slugify(text: str) -> str:
+    text = (text or "").strip().lower()
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    return text.strip("-") or "untitled"
+
+
+def compact_ws(text: str) -> str:
+    return re.sub(r"\s+", " ", (text or "").strip())
+
+
+def text_from_node(node: Tag | NavigableString | None) -> str:
+    if node is None:
+        return ""
+    if isinstance(node, NavigableString):
+        return compact_ws(str(node))
+    return compact_ws(node.get_text(" ", strip=True))
+
+
+def estimate_duration(narration_text: str, bullets: list[str]) -> float:
+    text = compact_ws(narration_text)
+    words = len(text.split()) if text else 0
+    bullet_bonus = max(0, len(bullets) - 1) * 0.8
+    return round(max(3.0, words / 2.7 + bullet_bonus), 2)
+
+
+def build_narration(scene_type: SceneType, title: str, body: str, bullets: list[str]) -> str:
+    title = compact_ws(title)
+    body = compact_ws(body)
+    bullets = [compact_ws(x) for x in bullets if compact_ws(x)]
+
+    if scene_type == "title":
+        return title
+    if scene_type == "section_header":
+        return title
+    if scene_type == "bullet_points":
+        parts: list[str] = []
+        if title:
+            parts.append(title)
+        parts.extend(bullets)
+        return ". ".join(parts)
+    if body:
+        if title:
+            return f"{title}. {body}"
+        return body
+    return title
+
+
+HEADER_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
+
+def pick_best_root(soup: BeautifulSoup) -> Tag:
+    candidates = []
+
+    # Prefer semantic containers first
+    for node in soup.find_all(["article", "main", "section", "body"]):
+        if not isinstance(node, Tag):
+            continue
+
+        text_len = len(compact_ws(node.get_text(" ", strip=True)))
+        block_count = len(node.find_all(["h1", "h2", "h3", "p", "ul", "ol", "blockquote", "img", "pre", "code", "table"]))
+
+        # Skip containers that are effectively empty
+        if text_len < 40 and block_count == 0:
+            continue
+
+        score = 0
+        if node.name == "article":
+            score += 50
+        elif node.name == "main":
+            score += 40
+        elif node.name == "section":
+            score += 25
+        elif node.name == "body":
+            score += 10
+
+        # Prefer content-rich containers
+        score += min(text_len // 100, 50)
+        score += min(block_count * 3, 40)
+
+        # Prefer likely content classes
+        class_text = " ".join(node.get("class", []))
+        if any(x in class_text for x in ["detail", "content", "article", "post", "main"]):
+            score += 20
+
+        candidates.append((score, node))
+
+    if not candidates:
+        return soup.body or soup
+
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
+
+def remove_non_content_blocks(root: Tag) -> None:
+    selectors = [
+        "header",
+        "nav",
+        "footer",
+        "script",
+        "style",
+        "noscript",
+        ".site-header",
+        ".main-nav",
+    ]
+
+    for selector in selectors:
+        for node in root.select(selector):
+            node.decompose()
+
+def parse_html_to_project(html: str, *, source_type: str, source_value: str, theme_id: str) -> VideoProject:
+    soup = BeautifulSoup(html, "html.parser")
+
+    doc_title = compact_ws(text_from_node(soup.title))
+    # article = soup.find("article") or soup.find("main") or soup.body or soup
+    # block_nodes = article.find_all([*HEADER_TAGS, "p", "ul", "ol", "blockquote", "img", "pre", "code", "table"], recursive=True)
+
+    root = pick_best_root(soup)
+    remove_non_content_blocks(root)
+    
+    block_nodes = root.find_all(
+        ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "blockquote", "img", "pre", "code", "table"],
+        recursive=True
+    )
+
+    scenes: list[Scene] = []
+    assets: list[MediaAsset] = []
+    warnings: list[str] = []
+
+    project_title = doc_title or "HTML Video Project"
+
+    def add_scene(scene: Scene) -> None:
+        scene.narration_text = build_narration(scene.scene_type, scene.title, scene.body_text, scene.bullets)
+        scene.timing.estimated_duration_sec = estimate_duration(scene.narration_text, scene.bullets)
+        if len(scene.narration_text) > 500:
+            scene.notes.append("Narration may be too long for a single scene.")
+            warnings.append(f"Long narration in scene: {scene.title[:60]}")
+        if sum(len(x) for x in scene.on_screen_text) > 260:
+            scene.notes.append("Too much text on screen. Consider splitting the scene.")
+        scenes.append(scene)
+
+    first_title_used = False
+
+    for node in block_nodes:
+        tag = node.name.lower()
+        if tag in HEADER_TAGS:
+            heading = text_from_node(node)
+            if not heading:
+                continue
+            if not first_title_used:
+                first_title_used = True
+                project_title = heading
+                add_scene(Scene(
+                    id=str(uuid.uuid4()),
+                    scene_type="title",
+                    title=heading,
+                    on_screen_text=[heading],
+                    source_refs=[tag],
+                    layout=SceneLayout(template="hero_centered", text_align="center", overlay_position="center"),
+                ))
+            else:
+                add_scene(Scene(
+                    id=str(uuid.uuid4()),
+                    scene_type="section_header",
+                    title=heading,
+                    on_screen_text=[heading],
+                    source_refs=[tag],
+                    layout=SceneLayout(template="section_divider", text_align="left", overlay_position="left"),
+                ))
+            continue
+
+        if tag == "p":
+            text = text_from_node(node)
+            if not text:
+                continue
+            add_scene(Scene(
+                id=str(uuid.uuid4()),
+                scene_type="paragraph",
+                body_text=text,
+                on_screen_text=[text],
+                source_refs=[tag],
+                layout=SceneLayout(template="text_card", text_align="left", overlay_position="bottom_card"),
+            ))
+            continue
+
+        if tag in {"ul", "ol"}:
+            bullets = [text_from_node(li) for li in node.find_all("li", recursive=False)]
+            bullets = [x for x in bullets if x]
+            if not bullets:
+                continue
+            chunks = [bullets[i:i + 5] for i in range(0, len(bullets), 5)]
+            for idx, chunk in enumerate(chunks, start=1):
+                title = "Key points" if len(chunks) == 1 else f"Key points ({idx})"
+                add_scene(Scene(
+                    id=str(uuid.uuid4()),
+                    scene_type="bullet_points",
+                    title=title,
+                    bullets=chunk,
+                    on_screen_text=[title, *chunk],
+                    source_refs=[tag],
+                    timing=SceneTiming(reveal_mode="sequential_bullets"),
+                    layout=SceneLayout(template="bullet_focus", text_align="left", overlay_position="left"),
+                ))
+            continue
+
+        if tag == "blockquote":
+            quote = text_from_node(node)
+            if not quote:
+                continue
+            add_scene(Scene(
+                id=str(uuid.uuid4()),
+                scene_type="quote",
+                body_text=quote,
+                on_screen_text=[quote],
+                source_refs=[tag],
+                layout=SceneLayout(template="quote_spotlight", text_align="center", overlay_position="center"),
+            ))
+            continue
+
+        if tag == "img":
+            src = (node.get("src") or "").strip()
+            if not src:
+                continue
+            asset_id = str(uuid.uuid4())
+            assets.append(MediaAsset(
+                id=asset_id,
+                kind="image",
+                url=src,
+                title=node.get("alt") or "Image",
+                source="html",
+            ))
+            add_scene(Scene(
+                id=str(uuid.uuid4()),
+                scene_type="image_focus",
+                title=node.get("alt") or "Visual",
+                on_screen_text=[node.get("alt") or "Visual"],
+                media_asset_ids=[asset_id],
+                source_refs=[tag],
+                layout=SceneLayout(template="image_with_caption", text_align="left", overlay_position="bottom_card"),
+            ))
+            continue
+
+        if tag in {"pre", "code"}:
+            code_text = text_from_node(node)
+            if not code_text:
+                continue
+            snippet = code_text[:360]
+            add_scene(Scene(
+                id=str(uuid.uuid4()),
+                scene_type="code",
+                title="Code example",
+                body_text=snippet,
+                on_screen_text=["Code example", snippet],
+                source_refs=[tag],
+                layout=SceneLayout(template="code_panel", text_align="left", overlay_position="center"),
+            ))
+            continue
+
+        if tag == "table":
+            rows = []
+            for tr in node.find_all("tr"):
+                cols = [text_from_node(td) for td in tr.find_all(["th", "td"])]
+                cols = [c for c in cols if c]
+                if cols:
+                    rows.append(" | ".join(cols))
+            if not rows:
+                continue
+            preview = rows[:6]
+            add_scene(Scene(
+                id=str(uuid.uuid4()),
+                scene_type="table",
+                title="Table",
+                body_text="\n".join(preview),
+                on_screen_text=["Table", *preview[:4]],
+                source_refs=[tag],
+                layout=SceneLayout(template="table_card", text_align="left", overlay_position="center"),
+            ))
+
+    if not scenes:
+        warnings.append("No supported content blocks were found in the HTML.")
+
+    recap_points = []
+    for scene in scenes:
+        if scene.scene_type == "section_header" and scene.title:
+            recap_points.append(scene.title)
+        if len(recap_points) == 4:
+            break
+    if recap_points:
+        add_scene(Scene(
+            id=str(uuid.uuid4()),
+            scene_type="recap",
+            title="Recap",
+            bullets=recap_points,
+            on_screen_text=["Recap", *recap_points],
+            layout=SceneLayout(template="bullet_focus", text_align="left", overlay_position="right"),
+            timing=SceneTiming(reveal_mode="sequential_bullets"),
+        ))
+
+    return VideoProject(
+        id=str(uuid.uuid4()),
+        title=project_title,
+        source_type=source_type,  # type: ignore[arg-type]
+        source_value=source_value,
+        theme_id=theme_id,
+        scenes=scenes,
+        assets=assets,
+        warnings=warnings,
+        metadata={
+            "scene_count": len(scenes),
+            "asset_count": len(assets),
+            "slug": slugify(project_title),
+        },
+    )
+
+
+def project_path(project_id: str) -> Path:
+    return PROJECTS_DIR / f"{project_id}.json"
+
+
+def save_project(project: VideoProject) -> None:
+    project_path(project.id).write_text(json.dumps(asdict(project), indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def load_project(project_id: str) -> dict[str, Any]:
+    path = project_path(project_id)
+    if not path.exists():
+        raise FileNotFoundError(f"Project not found: {project_id}")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.get("/api/themes")
+def get_themes():
+    return jsonify({"themes": [asdict(theme) for theme in THEMES.values()]})
+
+
+@app.post("/api/projects/from-html")
+def create_project_from_html():
+    data = request.get_json(force=True)
+    html = (data.get("html") or "").strip()
+    if not html:
+        return jsonify({"ok": False, "error": "Missing 'html'"}), 400
+
+    theme_id = data.get("theme_id") or "corporate-clean"
+    if theme_id not in THEMES:
+        return jsonify({"ok": False, "error": f"Unknown theme_id: {theme_id}"}), 400
+
+    source_value = data.get("source_value") or "inline-html"
+    project = parse_html_to_project(
+        html,
+        source_type="html",
+        source_value=source_value,
+        theme_id=theme_id,
+    )
+    save_project(project)
+    return jsonify({"ok": True, "project": asdict(project)})
+
+
+@app.post("/api/projects/from-url")
+def create_project_from_url():
+    data = request.get_json(force=True)
+    url = (data.get("url") or "").strip()
+    if not url:
+        return jsonify({"ok": False, "error": "Missing 'url'"}), 400
+
+    theme_id = data.get("theme_id") or "corporate-clean"
+    if theme_id not in THEMES:
+        return jsonify({"ok": False, "error": f"Unknown theme_id: {theme_id}"}), 400
+
+    try:
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Failed to fetch URL: {exc}"}), 400
+
+    project = parse_html_to_project(
+        response.text,
+        source_type="url",
+        source_value=url,
+        theme_id=theme_id,
+    )
+    save_project(project)
+    return jsonify({"ok": True, "project": asdict(project)})
+
+
+@app.get("/api/projects/<project_id>")
+def get_project(project_id: str):
+    try:
+        return jsonify({"ok": True, "project": load_project(project_id)})
+    except FileNotFoundError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 404
+
+
+@app.put("/api/projects/<project_id>")
+def update_project(project_id: str):
+    data = request.get_json(force=True)
+    try:
+        current = load_project(project_id)
+    except FileNotFoundError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 404
+
+    allowed_top_level = {
+        "title",
+        "theme_id",
+        "project_settings",
+        "narration",
+        "captions",
+        "scenes",
+        "assets",
+        "warnings",
+        "metadata",
+    }
+    for key in allowed_top_level:
+        if key in data:
+            current[key] = data[key]
+
+    project_path(project_id).write_text(json.dumps(current, indent=2, ensure_ascii=False), encoding="utf-8")
+    return jsonify({"ok": True, "project": current})
+
+
+@app.post("/api/projects/<project_id>/render-plan")
+def build_render_plan(project_id: str):
+    try:
+        project = load_project(project_id)
+    except FileNotFoundError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 404
+
+    scenes = project.get("scenes", [])
+    total_estimated = 0.0
+    render_scenes = []
+
+    for idx, scene in enumerate(scenes, start=1):
+        timing = scene.get("timing", {})
+        scene_duration = timing.get("manual_duration_sec") or timing.get("estimated_duration_sec") or 4.0
+        total_estimated += float(scene_duration)
+        render_scenes.append({
+            "index": idx,
+            "scene_id": scene.get("id"),
+            "scene_type": scene.get("scene_type"),
+            "duration_sec": scene_duration,
+            "layout": scene.get("layout", {}).get("template"),
+            "narration_text": scene.get("narration_text", ""),
+            "on_screen_text": scene.get("on_screen_text", []),
+            "media_asset_ids": scene.get("media_asset_ids", []),
+            "reveal_mode": timing.get("reveal_mode", "all_at_once"),
+        })
+
+    return jsonify({
+        "ok": True,
+        "project_id": project_id,
+        "theme": THEMES.get(project.get("theme_id", "corporate-clean")).__dict__ if project.get("theme_id", "corporate-clean") in THEMES else None,
+        "total_estimated_duration_sec": round(total_estimated, 2),
+        "render_scenes": render_scenes,
+    })
+
+
+@app.get("/api/projects")
+def list_projects():
+    items = []
+    for path in sorted(PROJECTS_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            items.append({
+                "id": data.get("id"),
+                "title": data.get("title"),
+                "theme_id": data.get("theme_id"),
+                "scene_count": len(data.get("scenes", [])),
+                "source_type": data.get("source_type"),
+                "source_value": data.get("source_value"),
+            })
+        except Exception:
+            continue
+    return jsonify({"ok": True, "projects": items})
+
+@app.get("/html-video-composer")
+def html_video_composer():
+    return render_template("html_video_composer.html")
+####################################################
+# END: HTML to video maker enhancements/changes
+####################################################
 
 if __name__ == '__main__':
     # app.run(debug=True, port=5000)
