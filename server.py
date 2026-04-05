@@ -4593,7 +4593,6 @@ def update_project(project_id: str):
     project_path(project_id).write_text(json.dumps(current, indent=2, ensure_ascii=False), encoding="utf-8")
     return jsonify({"ok": True, "project": current})
 
-
 @app.post("/api/projects/<project_id>/render-plan")
 def build_render_plan(project_id: str):
     try:
@@ -4606,19 +4605,34 @@ def build_render_plan(project_id: str):
     render_scenes = []
 
     for idx, scene in enumerate(scenes, start=1):
-        timing = scene.get("timing", {})
-        scene_duration = timing.get("manual_duration_sec") or timing.get("estimated_duration_sec") or 4.0
-        total_estimated += float(scene_duration)
+        speech_segments = scene.get("speech_segments", []) or []
+        timing = scene.get("timing", {}) or {}
+
+        speech_plan = build_scene_speech_plan(
+            speech_segments=speech_segments,
+            pause_after_title_ms=450,
+            pause_between_segments_ms=200,
+            outro_hold_ms=500,
+        )
+
+        scene_duration = round((speech_plan["total_duration_ms"] or 0) / 1000.0, 2)
+        if timing.get("manual_duration_sec"):
+            scene_duration = float(timing["manual_duration_sec"])
+
+        total_estimated += scene_duration
+
         render_scenes.append({
             "index": idx,
             "scene_id": scene.get("id"),
             "scene_type": scene.get("scene_type"),
-            "duration_sec": scene_duration,
+            "title": scene.get("title", ""),
+            "subtitle": scene.get("subtitle", ""),
+            "bullets": scene.get("bullets", []),
             "layout": scene.get("layout", {}).get("template"),
-            "narration_text": scene.get("narration_text", ""),
-            "on_screen_text": scene.get("on_screen_text", []),
             "media_asset_ids": scene.get("media_asset_ids", []),
-            "reveal_mode": timing.get("reveal_mode", "all_at_once"),
+            "speech_segments": speech_segments,
+            "speech_plan": speech_plan,
+            "duration_sec": scene_duration,
         })
 
     return jsonify({
@@ -4629,6 +4643,192 @@ def build_render_plan(project_id: str):
         "render_scenes": render_scenes,
     })
 
+# @app.post("/api/projects/<project_id>/render-plan")
+# def build_render_plan(project_id: str):
+#     try:
+#         project = load_project(project_id)
+#     except FileNotFoundError as exc:
+#         return jsonify({"ok": False, "error": str(exc)}), 404
+
+#     scenes = project.get("scenes", [])
+#     total_estimated = 0.0
+#     render_scenes = []
+
+#     for idx, scene in enumerate(scenes, start=1):
+#         timing = scene.get("timing", {})
+#         scene_duration = timing.get("manual_duration_sec") or timing.get("estimated_duration_sec") or 4.0
+#         total_estimated += float(scene_duration)
+#         render_scenes.append({
+#             "index": idx,
+#             "scene_id": scene.get("id"),
+#             "scene_type": scene.get("scene_type"),
+#             "duration_sec": scene_duration,
+#             "layout": scene.get("layout", {}).get("template"),
+#             "narration_text": scene.get("narration_text", ""),
+#             "on_screen_text": scene.get("on_screen_text", []),
+#             "media_asset_ids": scene.get("media_asset_ids", []),
+#             "reveal_mode": timing.get("reveal_mode", "all_at_once"),
+#         })
+
+#     return jsonify({
+#         "ok": True,
+#         "project_id": project_id,
+#         "theme": THEMES.get(project.get("theme_id", "corporate-clean")).__dict__ if project.get("theme_id", "corporate-clean") in THEMES else None,
+#         "total_estimated_duration_sec": round(total_estimated, 2),
+#         "render_scenes": render_scenes,
+#     })
+
+def estimate_text_duration_ms(text: str, words_per_minute: int = 145, min_ms: int = 700) -> int:
+    text = compact_ws(text)
+    if not text:
+        return 0
+    words = max(1, len(text.split()))
+    ms = int((words / float(words_per_minute)) * 60_000)
+    return max(min_ms, ms)
+
+
+def build_scene_speech_plan(
+    *,
+    speech_segments: list[dict],
+    pause_after_title_ms: int = 450,
+    pause_between_segments_ms: int = 200,
+    outro_hold_ms: int = 500,
+) -> dict:
+    current_ms = 0
+    segments_out = []
+
+    for idx, seg in enumerate(speech_segments):
+        seg_kind = seg.get("kind", "narration")
+        speech_text = compact_ws(seg.get("speech_text", ""))
+        if not speech_text:
+            continue
+
+        duration_ms = seg.get("audio_duration_ms")
+        if not duration_ms:
+            duration_ms = estimate_text_duration_ms(speech_text)
+
+        start_ms = current_ms
+        end_ms = start_ms + int(duration_ms)
+
+        segments_out.append({
+            "id": seg.get("id") or str(uuid.uuid4()),
+            "kind": seg_kind,
+            "display_text": seg.get("display_text", ""),
+            "speech_text": speech_text,
+            "show_on_screen": bool(seg.get("show_on_screen", True)),
+            "animation": seg.get("animation", "fade"),
+            "animation_target": seg.get("animation_target", "body"),
+            "start_ms": start_ms,
+            "end_ms": end_ms,
+            "duration_ms": int(duration_ms),
+            "order": seg.get("order", idx + 1),
+        })
+
+        current_ms = end_ms
+        if seg_kind == "title":
+            current_ms += pause_after_title_ms
+        else:
+            current_ms += pause_between_segments_ms
+
+    total_duration_ms = current_ms + outro_hold_ms if segments_out else 0
+
+    return {
+        "mode": "sequential",
+        "segments": segments_out,
+        "total_duration_ms": total_duration_ms,
+    }
+
+
+def get_audio_duration_ms(audio_path: Path) -> int:
+    try:
+        return int(_duration_via_ffprobe(audio_path) * 1000)
+    except Exception:
+        try:
+            return int(_duration_via_wave(audio_path) * 1000)
+        except Exception:
+            return 0
+
+
+@app.post("/api/projects/<project_id>/synthesize-speech")
+def synthesize_project_speech(project_id: str):
+    try:
+        project = load_project(project_id)
+    except FileNotFoundError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 404
+
+    speech_root = OUT_DIR / "composer_speech" / project_id
+    speech_root.mkdir(parents=True, exist_ok=True)
+
+    narration_cfg = project.get("narration", {}) or {}
+    voice = narration_cfg.get("voice", "alloy")
+    language = narration_cfg.get("language", "en")
+    engine = narration_cfg.get("engine", "tts")
+
+    for scene in project.get("scenes", []):
+        speech_segments = scene.get("speech_segments", []) or []
+
+        for seg in speech_segments:
+            speech_text = compact_ws(seg.get("speech_text", ""))
+            if not speech_text:
+                continue
+
+            seg_id = seg.get("id") or str(uuid.uuid4())
+            audio_path = speech_root / f"{seg_id}.mp3"
+
+            # ADAPT THIS LINE to your existing get_audio_file() signature
+            # Example idea only:
+            # get_audio_file(text=speech_text, output_file=str(audio_path), language=language, voice=voice, tts_engine=engine)
+
+            if not audio_path.exists():
+                return jsonify({
+                    "ok": False,
+                    "error": "TTS adapter line needs to be connected to your existing get_audio_file() signature."
+                }), 500
+
+            seg["audio_path"] = str(audio_path)
+            seg["audio_duration_ms"] = get_audio_duration_ms(audio_path)
+
+        scene["speech_plan"] = build_scene_speech_plan(
+            speech_segments=speech_segments,
+            pause_after_title_ms=450,
+            pause_between_segments_ms=200,
+            outro_hold_ms=500,
+        )
+        scene["timing"]["estimated_duration_sec"] = round(scene["speech_plan"]["total_duration_ms"] / 1000.0, 2)
+
+    project_path(project_id).write_text(json.dumps(project, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    return jsonify({"ok": True, "project": project})
+
+@app.post("/api/projects/<project_id>/speech-plan")
+def update_project_speech_plan(project_id: str):
+    try:
+        project = load_project(project_id)
+    except FileNotFoundError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 404
+
+    scenes = project.get("scenes", [])
+    updated_scenes = []
+
+    for scene in scenes:
+        speech_segments = scene.get("speech_segments", []) or []
+        speech_plan = build_scene_speech_plan(
+            speech_segments=speech_segments,
+            pause_after_title_ms=450,
+            pause_between_segments_ms=200,
+            outro_hold_ms=500,
+        )
+
+        timing = scene.get("timing", {}) or {}
+        timing["estimated_duration_sec"] = round(speech_plan["total_duration_ms"] / 1000.0, 2)
+        scene["timing"] = timing
+        scene["speech_plan"] = speech_plan
+        updated_scenes.append(scene)
+
+    project["scenes"] = updated_scenes
+    project_path(project_id).write_text(json.dumps(project, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    return jsonify({"ok": True, "project": project})
 
 @app.get("/api/projects")
 def list_projects():

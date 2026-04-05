@@ -361,7 +361,7 @@
             position: absolute;
             left: 6%;
             right: 6%;
-            bottom: 8%;
+            top: 8%;
             background: rgba(15, 23, 42, 0.78);
             border: 1px solid rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(8px);
@@ -568,6 +568,8 @@
                 <button class="btn btn-primary" id="parseBtn">Create project</button>
                 <button class="btn btn-outline" id="saveBtn">Save project</button>
                 <button class="btn btn-success" id="renderPlanBtn">Build render plan</button>
+                <button class="btn btn-outline" id="speechPlanBtn">Build speech plan</button>
+                <button class="btn btn-success" id="ttsBtn">Generate TTS</button>
             </div>
         </div>
 
@@ -788,14 +790,19 @@
     </div>
 
     <script>
+
         const state = {
             themes: [],
             project: null,
             selectedSceneIndex: -1,
             selectedAspectRatio: '16:9',
+            previewTimers: [],
+            previewRunId: 0,
         };
 
         const els = {
+            speechPlanBtn: document.getElementById('speechPlanBtn'),
+            ttsBtn: document.getElementById('ttsBtn'),
             themeSelect: document.getElementById('themeSelect'),
             sourceValue: document.getElementById('sourceValue'),
             htmlInput: document.getElementById('htmlInput'),
@@ -849,6 +856,12 @@
                 throw new Error(data.error || 'Request failed');
             }
             return data;
+        }
+
+        function clearPreviewTimers() {
+            (state.previewTimers || []).forEach(id => clearTimeout(id));
+            state.previewTimers = [];
+            state.previewRunId += 1;
         }
 
         function themeName(themeId) {
@@ -996,6 +1009,9 @@
             const scenes = state.project?.scenes || [];
             const scene = scenes[state.selectedSceneIndex];
 
+            clearPreviewTimers();
+            els.previewBullets.innerHTML = '';
+
             if (!scene) {
                 els.emptyState.classList.remove('hidden');
                 els.editorForm.classList.add('hidden');
@@ -1042,14 +1058,26 @@
                 scene.subtitle ||
                 '';
 
+            // const previewBullets = scene.bullets || [];
+
+            // els.previewTitle.textContent = previewTitle;
+            // els.previewSubtitle.textContent = previewSubtitle;
+            // els.previewBullets.innerHTML = previewBullets
+            //     .map(item => `<li class="bullet-item">${escapeHtml(item)}</li>`)
+            //     .join('');
+
             const previewBullets = scene.bullets || [];
 
             els.previewTitle.textContent = previewTitle;
             els.previewSubtitle.textContent = previewSubtitle;
-            els.previewBullets.innerHTML = previewBullets
-                .map(item => `<li class="bullet-item">${escapeHtml(item)}</li>`)
-                .join('');
 
+            if (scene.speech_plan?.segments?.length) {
+                els.previewBullets.innerHTML = '';
+            } else {
+                els.previewBullets.innerHTML = previewBullets
+                    .map(item => `<li class="bullet-item">${escapeHtml(item)}</li>`)
+                    .join('');
+            }            
             if (linkedAsset?.url) {
                 els.frameBg.style.backgroundImage = `url("${linkedAsset.url.replace(/"/g, '%22')}")`;
             } else {
@@ -1079,6 +1107,10 @@
             void els.previewSubtitle.offsetWidth;
             els.previewSubtitle.classList.add('animate-subtitle');
             }
+
+            if (scene.speech_plan?.segments?.length) {
+                playScenePreviewTimeline(scene);
+            }  
 
             setTimeout(() => {
             [...els.previewBullets.querySelectorAll('.bullet-item')].forEach((item, index) => {
@@ -1181,6 +1213,50 @@
             renderSelectedScene();
         }
 
+        async function buildSpeechPlan() {
+            if (!state.project) {
+                alert('Create or load a project first.');
+                return;
+            }
+            syncCurrentSceneFromForm();
+            await saveProject();
+            const data = await api(`/api/projects/${state.project.id}/speech-plan`, { method: 'POST' });
+            state.project = data.project;
+            renderProjectSummary();
+            renderSceneList();
+            renderSelectedScene();
+            els.renderPlanOutput.textContent = JSON.stringify(
+                (state.project.scenes || []).map(s => ({
+                    title: s.title,
+                    speech_plan: s.speech_plan,
+                })),
+                null,
+                2
+            );
+        }
+
+        async function generateTTS() {
+            if (!state.project) {
+                alert('Create or load a project first.');
+                return;
+            }
+            syncCurrentSceneFromForm();
+            await saveProject();
+            const data = await api(`/api/projects/${state.project.id}/synthesize-speech`, { method: 'POST' });
+            state.project = data.project;
+            renderProjectSummary();
+            renderSceneList();
+            renderSelectedScene();
+            els.renderPlanOutput.textContent = JSON.stringify(
+                (state.project.scenes || []).map(s => ({
+                    title: s.title,
+                    speech_plan: s.speech_plan,
+                    speech_segments: s.speech_segments,
+                })),
+                null,
+                2
+            );
+        }        
         async function loadThemes() {
             const data = await api('/api/themes', { method: 'GET' });
             state.themes = data.themes || [];
@@ -1354,6 +1430,69 @@
       `.trim();
         }
 
+        function playScenePreviewTimeline(scene) {
+            const plan = scene?.speech_plan;
+            if (!plan || !plan.segments) return;
+
+            const runId = state.previewRunId;
+
+            els.previewBullets.innerHTML = '';
+
+            const bulletSegments = plan.segments.filter(
+                seg => seg.kind === 'bullet' && seg.show_on_screen
+            );
+            const titleSegment = plan.segments.find(
+                seg => seg.kind === 'title' && seg.show_on_screen
+            );
+
+            if (titleSegment) {
+                els.previewTitle.textContent = scene.title || titleSegment.display_text || '';
+                void els.previewTitle.offsetWidth;
+                els.previewTitle.classList.add('animate-title');
+            }
+
+            bulletSegments.forEach(seg => {
+                const timerId = setTimeout(() => {
+                    // Ignore stale timers from older preview runs
+                    if (runId !== state.previewRunId) return;
+
+                    const li = document.createElement('li');
+                    li.className = 'bullet-item animate-bullet';
+                    li.textContent = seg.display_text || '';
+                    els.previewBullets.appendChild(li);
+                }, seg.start_ms || 0);
+
+                state.previewTimers.push(timerId);
+            });
+        }        
+
+        // function playScenePreviewTimeline(scene) {
+        //     const plan = scene?.speech_plan;
+        //     if (!plan || !plan.segments) return;
+
+        //     els.previewTitle.classList.remove('animate-title');
+        //     els.previewSubtitle.classList.remove('animate-subtitle');
+        //     els.previewBullets.innerHTML = '';
+
+        //     const bulletSegments = plan.segments.filter(seg => seg.kind === 'bullet' && seg.show_on_screen);
+        //     const titleSegment = plan.segments.find(seg => seg.kind === 'title' && seg.show_on_screen);
+
+        //     if (titleSegment) {
+        //         els.previewTitle.textContent = scene.title || titleSegment.display_text || '';
+        //         void els.previewTitle.offsetWidth;
+        //         els.previewTitle.classList.add('animate-title');
+        //     }
+
+        //     bulletSegments.forEach(seg => {
+        //         setTimeout(() => {
+        //             const li = document.createElement('li');
+        //             li.className = 'bullet-item animate-bullet';
+        //             li.textContent = seg.display_text || '';
+        //             els.previewBullets.appendChild(li);
+        //         }, seg.start_ms);
+        //     });
+        // }
+
         function escapeHtml(text) {
             return String(text || '')
                 .replace(/&/g, '&amp;')
@@ -1374,6 +1513,14 @@
             els.renderPlanBtn.addEventListener('click', async () => {
                 try { await buildRenderPlan(); } catch (e) { alert(e.message); }
             });
+
+            els.speechPlanBtn.addEventListener('click', async () => {
+                try { await buildSpeechPlan(); } catch (e) { alert(e.message); }
+            });
+
+            els.ttsBtn.addEventListener('click', async () => {
+                try { await generateTTS(); } catch (e) { alert(e.message); }
+            });            
             els.loadSampleBtn.addEventListener('click', loadSampleHtml);
             updateFrameAspect();
             await loadThemes();
