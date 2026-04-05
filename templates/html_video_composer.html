@@ -126,7 +126,10 @@
       flex-direction: column;
       overflow: hidden;
     } */
-
+        #inputNScenesList{
+            max-height: calc(100vh - 150px);
+            overflow: auto;
+        }
         .panel-header {
             padding: 14px 16px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.14);
@@ -324,17 +327,17 @@
         }
 
         .frame-16-9 {
-            width: min(100%, 1400px);
+            width: min(100%, 900px);
             aspect-ratio: 16 / 9;
         }
 
         .frame-9-16 {
-            width: min(100%, 620px);
+            width: min(100%, 220px);
             aspect-ratio: 9 / 16;
         }
 
         .frame-1-1 {
-            width: min(100%, 900px);
+            width: min(100%, 420px);
             aspect-ratio: 1 / 1;
         }
 
@@ -517,7 +520,7 @@
         </div>
 
         <div class="layout">
-            <section class="panel">
+            <section id="inputNScenesList" class="panel">
                 <div class="panel-header">
                     <h2>Input & Outline</h2>
                     <span class="badge" id="projectBadge">No project</span>
@@ -552,6 +555,20 @@
             </section>
 
             <section id="previewSec" class="panel">
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="small muted">Title</div>
+                        <div id="statTitle">—</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="small muted">Estimated duration</div>
+                        <div id="statDuration">—</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="small muted">Theme</div>
+                        <div id="statTheme">—</div>
+                    </div>
+                </div>
                 <div class="panel-header">
                     <h2>Preview</h2>
                     <div class="preview-controls">
@@ -563,20 +580,7 @@
                     </div>
                 </div>
                 <div class="panel-body canvas-wrap">
-                    <div class="stats-row">
-                        <div class="stat-card">
-                            <div class="small muted">Title</div>
-                            <div id="statTitle">—</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="small muted">Estimated duration</div>
-                            <div id="statDuration">—</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="small muted">Theme</div>
-                            <div id="statTheme">—</div>
-                        </div>
-                    </div>
+
 
                     <div class="stage">
                         <div class="video-frame frame-16-9" id="videoFrame">
