@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HTML Video Composer</title>
     <style>
+/* Import a clean, professional font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
         :root {
         --bg: #0f172a;
         --panel: #111827;
@@ -48,13 +51,45 @@
             height: 100%;
         }
 
-        body {
+        /* body {
             margin: 0;
             font-family: Inter, Arial, sans-serif;
             background: linear-gradient(180deg, #020617, #0f172a);
             color: var(--text);
+        } */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b); /* Rich gradient background */
+            color: #f8fafc;
+            margin: 0;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
+        h1 {
+            font-weight: 800;
+            font-size: 4rem;
+            letter-spacing: -2px;
+            margin-bottom: 2rem;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Professional drop shadow */
+        }
+
+        .bullet-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .bullet {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            padding-left: 1.5rem;
+            border-left: 6px solid #38bdf8; /* Accent line for visual interest */
+            line-height: 1.4;
+        }        
         .app-shell {
             display: grid;
             grid-template-rows: 72px 1fr;
@@ -70,16 +105,16 @@
             border-bottom: 1px solid rgba(148, 163, 184, 0.18);
             background: rgba(2, 6, 23, 0.85);
             backdrop-filter: blur(12px);
-            position: sticky;
+            /* position: sticky; */
             top: 0;
             z-index: 20;
         }
 
-        .brand h1 {
+        /* .brand h1 {
             margin: 0;
             font-size: 20px;
             font-weight: 700;
-        }
+        } */
 
         .brand p {
             margin: 4px 0 0;
@@ -91,8 +126,9 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            flex-wrap: wrap;
+            /* flex-wrap: wrap; */
             justify-content: flex-end;
+ 
         }
 
         /* .layout {
@@ -200,6 +236,7 @@
             cursor: pointer;
             font-weight: 600;
             transition: 0.18s ease;
+            font-size: x-small;
         }
 
         .btn:hover {
@@ -352,7 +389,7 @@
         .safe-zone {
             position: absolute;
             inset: 6%;
-            border: 1px dashed rgba(255, 255, 255, 0.18);
+            /* border: 1px dashed rgba(255, 255, 255, 0.18); */
             border-radius: 18px;
             pointer-events: none;
         }
@@ -362,9 +399,9 @@
             left: 6%;
             right: 6%;
             top: 8%;
-            background: rgba(15, 23, 42, 0.78);
+            background: rgba(15, 23, 42, 0.38);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(8px);
+            /* backdrop-filter: blur(8px); */
             border-radius: 20px;
             padding: 22px;
             max-width: 72%;
@@ -560,7 +597,7 @@
     <div class="app-shell">
         <div class="topbar">
             <div class="brand">
-                <h1>HTML Video Composer</h1>
+                <h3>HTML Video Composer</h3>
                 <p>Flask-based scene editor for presentation-style video creation</p>
             </div>
             <div class="toolbar">
@@ -611,7 +648,7 @@
             </section>
 
             <section id="previewSec" class="panel">
-                <div class="stats-row">
+                <div class="stats-row" style="display: none;">
                     <div class="stat-card">
                         <div class="small muted">Title</div>
                         <div id="statTitle">—</div>
@@ -761,6 +798,7 @@
                             <div class="input-grid">
                                 <div>
                                     <label for="sceneBgUrl">Background image/video URL</label>
+                                    <div class="small muted">Tip: select a scene and press Ctrl+V to paste a clipboard image as its background.</div>
                                     <input type="url" id="sceneBgUrl" placeholder="https://..." />
                                 </div>
                                 <div class="scene-actions">
@@ -850,6 +888,27 @@
             aspectToggle: document.getElementById('aspectToggle'),
         };
 
+        document.addEventListener('paste', async (event) => {
+            if (!state.project) return;
+            if (state.selectedSceneIndex < 0) return;
+
+            const items = event.clipboardData?.items || [];
+            for (const item of items) {
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    event.preventDefault();
+                    const file = item.getAsFile();
+                    if (!file) return;
+
+                    try {
+                        await uploadClipboardBackground(file);
+                    } catch (e) {
+                        alert(e.message);
+                    }
+                    return;
+                }
+            }
+        });
+
         async function api(path, options = {}) {
             const res = await fetch(path, {
                 headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
@@ -862,6 +921,37 @@
             return data;
         }
 
+        async function uploadClipboardBackground(file) {
+            if (!state.project) {
+                alert('Create or load a project first.');
+                return;
+            }
+
+            const scene = state.project?.scenes?.[state.selectedSceneIndex];
+            if (!scene) {
+                alert('Select a scene first.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file, 'clipboard.png');
+            formData.append('scene_id', scene.id);
+
+            const res = await fetch(`/api/projects/${state.project.id}/paste-background`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (!res.ok || data.ok === false) {
+                throw new Error(data.error || 'Paste upload failed');
+            }
+
+            state.project = data.project;
+            renderAssets();
+            renderSceneList();
+            renderSelectedScene();
+        }        
 
         async function renderComposerVideo() {
             if (!state.project) {

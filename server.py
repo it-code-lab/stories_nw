@@ -3458,6 +3458,18 @@ COMPOSER_PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
 COMPOSER_RENDER_DIR.mkdir(parents=True, exist_ok=True)
 COMPOSER_SPEECH_DIR.mkdir(parents=True, exist_ok=True)
 
+from datetime import datetime
+
+COMPOSER_PROJECT_ROOT = OUT_DIR / "composer_projects-files"
+COMPOSER_PROJECT_ROOT.mkdir(parents=True, exist_ok=True)
+
+def composer_project_dir(project_id: str) -> Path:
+    return COMPOSER_PROJECT_ROOT / project_id
+
+def composer_project_assets_dir(project_id: str) -> Path:
+    p = composer_project_dir(project_id) / "assets"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
 
 SceneType = Literal[
     "title",
@@ -3667,6 +3679,76 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
     )
     scene["speech_segments"] = [asdict(s) for s in new_segments]
 
+@app.post("/api/projects/<project_id>/paste-background")
+def paste_background_for_project(project_id: str):
+    try:
+        project = load_project(project_id)
+    except FileNotFoundError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 404
+
+    file = request.files.get("file")
+    scene_id = (request.form.get("scene_id") or "").strip()
+
+    if not file:
+        return jsonify({"ok": False, "error": "Missing file"}), 400
+    if not scene_id:
+        return jsonify({"ok": False, "error": "Missing scene_id"}), 400
+
+    ext = Path(file.filename or "clipboard.png").suffix.lower() or ".png"
+    if ext not in {".png", ".jpg", ".jpeg", ".webp"}:
+        ext = ".png"
+
+    scene_index = None
+    scene_ref = None
+    for idx, scene in enumerate(project.get("scenes", []), start=1):
+        if scene.get("id") == scene_id:
+            scene_index = idx
+            scene_ref = scene
+            break
+
+    if scene_index is None or scene_ref is None:
+        return jsonify({"ok": False, "error": "Scene not found"}), 404
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    filename = f"sc{scene_index}-bg-{timestamp}{ext}"
+    save_path = composer_project_assets_dir(project_id) / filename
+    file.save(save_path)
+
+    asset_id = f"sc{scene_index}-bg"
+    asset_url = f"/out/composer-project-files/{project_id}/assets/{filename}"
+
+    project_assets = project.get("assets", []) or []
+
+    # remove older scene background asset with same id if present
+    project_assets = [a for a in project_assets if a.get("id") != asset_id]
+
+    new_asset = {
+        "id": asset_id,
+        "kind": "image",
+        "url": asset_url,
+        "local_path": str(save_path),
+        "title": f"Scene {scene_index} background",
+        "source": "clipboard",
+        "fit_mode": "cover",
+        "focal_point": None,
+    }
+    project_assets.append(new_asset)
+    project["assets"] = project_assets
+
+    scene_ref["media_asset_ids"] = [asset_id]
+
+    project_path(project_id).write_text(
+        json.dumps(project, indent=2, ensure_ascii=False),
+        encoding="utf-8"
+    )
+
+    return jsonify({
+        "ok": True,
+        "asset": new_asset,
+        "project": project,
+    })
+
+
 def slugify(text: str) -> str:
     text = (text or "").strip().lower()
     text = re.sub(r"[^a-z0-9]+", "-", text)
@@ -3703,11 +3785,13 @@ def render_composer_frame(
     if media_ids and project_assets:
         asset_map = {a.get("id"): a for a in project_assets}
         first_asset = asset_map.get(media_ids[0])
-        if first_asset and first_asset.get("kind") == "image" and first_asset.get("url"):
+        if first_asset and first_asset.get("kind") == "image":
             try:
-                bg_url = first_asset["url"]
-                bg_path = _resolve_path(bg_url.replace("/uploads/", "uploads/")) if bg_url.startswith("/uploads/") else _resolve_path(bg_url)
-                if bg_path.exists():
+                bg_path = resolve_asset_to_local_file(first_asset)
+                print("DEBUG bg asset:", first_asset)
+                print("DEBUG resolved bg path:", bg_path)
+
+                if bg_path and bg_path.exists():
                     bg = Image.open(bg_path).convert("RGB")
                     bg = bg.resize((width, height))
                     img.paste(bg, (0, 0))
@@ -3715,8 +3799,10 @@ def render_composer_frame(
                     img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
                     draw = ImageDraw.Draw(img)
                     bg_applied = True
-            except Exception:
-                pass
+                else:
+                    print("DEBUG background path missing or unresolved")
+            except Exception as e:
+                print("DEBUG background load failed:", e)
 
     if not bg_applied:
         # subtle gradient fallback
@@ -3733,47 +3819,108 @@ def render_composer_frame(
     # card_right = int(width * 0.84)
     # card_bottom = int(height * 0.72)
 
-    card_left = int(width * 0.12)
-    card_top = int(height * 0.12)
-    card_right = int(width * 0.88)
-    card_bottom = int(height * 0.62)
-
-    draw.rounded_rectangle(
-        [card_left, card_top, card_right, card_bottom],
-        radius=28,
-        fill=(9, 23, 49, 220),
-        outline=(30, 64, 110),
-        width=2,
-    )
-
     title = scene.get("title", "")
     bullets = scene.get("bullets", [])[:visible_bullets]
 
-    title_font = _load_font(56)
-    bullet_font = _load_font(30)
+    # Transparent overlay layers need RGBA
+    base = img.convert("RGBA")
+    overlay_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    odraw = ImageDraw.Draw(overlay_layer)
 
-    tx = card_left + 36
-    ty = card_top + 30
+    # Main heading glass card - closer to preview
+    title_left = int(width * 0.16)
+    title_top = int(height * 0.14)
+    title_right = int(width * 0.84)
+    title_bottom = int(height * 0.34)
 
+    # Bullet glass card - separate box like preview feel
+    bul_left = int(width * 0.16)
+    bul_top = int(height * 0.33)
+    bul_right = int(width * 0.84)
+    bul_bottom = int(height * 0.70)
+
+    # soft shadow
+    odraw.rounded_rectangle(
+        [title_left + 8, title_top + 8, title_right + 8, title_bottom + 8],
+        radius=28,
+        fill=(0, 0, 0, 70),
+    )
+    odraw.rounded_rectangle(
+        [bul_left + 8, bul_top + 8, bul_right + 8, bul_bottom + 8],
+        radius=28,
+        fill=(0, 0, 0, 60),
+    )
+
+    # glass panels
+    odraw.rounded_rectangle(
+        [title_left, title_top, title_right, title_bottom],
+        radius=28,
+        fill=(15, 23, 42, 118),   # semi-transparent
+        outline=(255, 255, 255, 26),
+        width=2,
+    )
+    odraw.rounded_rectangle(
+        [bul_left, bul_top, bul_right, bul_bottom],
+        radius=28,
+        fill=(15, 23, 42, 82),    # more transparent than title card
+        outline=(255, 255, 255, 18),
+        width=1,
+    )
+
+    # subtle top highlight line
+    odraw.rounded_rectangle(
+        [title_left + 28, title_top + 22, title_left + 150, title_top + 28],
+        radius=3,
+        fill=(56, 189, 248, 180),
+    )
+
+    # merge overlay with background
+    img = Image.alpha_composite(base, overlay_layer).convert("RGBA")
+    draw = ImageDraw.Draw(img)
+
+    title_font = _load_font(54)
+    bullet_font = _load_font(28)
+
+    # Title text
+    tx = title_left + 34
+    ty = title_top + 28
     draw.multiline_text(
         (tx, ty),
         title,
         font=title_font,
-        fill=(240, 245, 255),
-        spacing=8,
+        fill=(245, 248, 255, 255),
+        spacing=10,
     )
 
-    ty += 120
+    # Bullets
+    btx = bul_left + 34
+    bty = bul_top + 26
+
     for bullet in bullets:
-        bullet_text = f"• {bullet}"
-        draw.multiline_text(
-            (tx, ty),
-            bullet_text,
+        # bullet row background
+        row_h = 44
+        draw.rounded_rectangle(
+            [btx - 8, bty - 6, bul_right - 34, bty + row_h],
+            radius=10,
+            fill=(255, 255, 255, 10),
+        )
+
+        draw.text(
+            (btx, bty),
+            "•",
             font=bullet_font,
-            fill=(230, 236, 245),
+            fill=(255, 255, 255, 230),
+        )
+        draw.multiline_text(
+            (btx + 24, bty),
+            bullet,
+            font=bullet_font,
+            fill=(230, 236, 245, 245),
             spacing=6,
         )
-        ty += 56
+        bty += 58
+
+    img = img.convert("RGB")
 
     img.save(out_path)
 
@@ -4004,18 +4151,99 @@ def render_scene_segments_to_video(
 
 #     return scene_video
 
+# @app.post("/api/projects/cleanup-all")
+# def cleanup_all_composer_projects():
+#     removed = {
+#         "projects": 0,
+#         "speech_dirs": 0,
+#         "render_dirs": 0,
+#     }
+
+#     if COMPOSER_PROJECTS_DIR.exists():
+#         for p in COMPOSER_PROJECTS_DIR.glob("*.json"):
+#             p.unlink(missing_ok=True)
+#             removed["projects"] += 1
+
+#     if COMPOSER_SPEECH_DIR.exists():
+#         for p in COMPOSER_SPEECH_DIR.iterdir():
+#             if p.is_dir():
+#                 shutil.rmtree(p, ignore_errors=True)
+#                 removed["speech_dirs"] += 1
+
+#     if COMPOSER_RENDER_DIR.exists():
+#         for p in COMPOSER_RENDER_DIR.iterdir():
+#             if p.is_dir():
+#                 shutil.rmtree(p, ignore_errors=True)
+#                 removed["render_dirs"] += 1
+
+#     return jsonify({
+#         "ok": True,
+#         "message": "All composer projects and generated files were removed.",
+#         "removed": removed,
+#     })
+
+
+from io import BytesIO
+
+def resolve_asset_to_local_file(asset: dict) -> Path | None:
+    url = (asset.get("url") or "").strip()
+    if not url:
+        return None
+
+    # Local uploaded file served by Flask
+    if url.startswith("/uploads/"):
+        p = BASE_DIR / url.lstrip("/")
+        return p if p.exists() else None
+
+    # Absolute or relative filesystem path
+    p = _resolve_path(url)
+    if p.exists():
+        return p
+
+    if url.startswith("/out/composer-project-files/"):
+        parts = url.strip("/").split("/")
+        # expected: out / composer-project-files / <project_id> / assets / <filename>
+        if len(parts) >= 5 and parts[0] == "out" and parts[1] == "composer-project-files" and parts[3] == "assets":
+            pid = parts[2]
+            filename = parts[4]
+            p = composer_project_assets_dir(pid) / filename
+            return p if p.exists() else None
+    
+    # Remote image URL
+    if url.startswith("http://") or url.startswith("https://"):
+        tmp_dir = OUT_DIR / "composer_temp_assets"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        ext = os.path.splitext(url.split("?")[0])[1].lower() or ".jpg"
+        tmp_path = tmp_dir / f"{uuid.uuid4().hex}{ext}"
+        try:
+            r = requests.get(url, timeout=20)
+            r.raise_for_status()
+            tmp_path.write_bytes(r.content)
+            return tmp_path
+        except Exception:
+            return None
+
+    return None
+
 @app.post("/api/projects/cleanup-all")
 def cleanup_all_composer_projects():
     removed = {
-        "projects": 0,
+        "project_dirs": 0,
+        "project_jsons": 0,
         "speech_dirs": 0,
         "render_dirs": 0,
     }
 
+    if COMPOSER_PROJECT_ROOT.exists():
+        for p in COMPOSER_PROJECT_ROOT.iterdir():
+            if p.is_dir():
+                shutil.rmtree(p, ignore_errors=True)
+                removed["project_dirs"] += 1
+
     if COMPOSER_PROJECTS_DIR.exists():
         for p in COMPOSER_PROJECTS_DIR.glob("*.json"):
             p.unlink(missing_ok=True)
-            removed["projects"] += 1
+            removed["project_jsons"] += 1
 
     if COMPOSER_SPEECH_DIR.exists():
         for p in COMPOSER_SPEECH_DIR.iterdir():
@@ -4108,7 +4336,9 @@ def render_composer_video(project_id: str):
 def composer_renders(fn):
     return send_from_directory(str(COMPOSER_RENDER_DIR), fn)
 
-
+@app.get("/out/composer-project-files/<path:fn>")
+def composer_project_files(fn):
+    return send_from_directory(str(COMPOSER_PROJECT_ROOT), fn)
 
 def _duration_via_ffprobe(path: Path) -> float:
     _ensure_ffmpeg()
