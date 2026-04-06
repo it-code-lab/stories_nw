@@ -609,6 +609,7 @@
                 <button class="btn btn-success" id="ttsBtn">Generate TTS</button>
                 <button class="btn btn-success" id="renderVideoBtn">Render video</button>
                 <button class="btn btn-danger" id="cleanupBtn">Cleanup all</button>
+                <button class="btn btn-success" id="openPlayerBtn">Open player</button>
             </div>
         </div>
 
@@ -841,6 +842,7 @@
         };
 
         const els = {
+            openPlayerBtn: document.getElementById('openPlayerBtn'),
             renderVideoBtn: document.getElementById('renderVideoBtn'),
             cleanupBtn: document.getElementById('cleanupBtn'),
             speechPlanBtn: document.getElementById('speechPlanBtn'),
@@ -909,6 +911,15 @@
             }
         });
 
+        function openPlayer() {
+        if (!state.project?.id) {
+            alert('Create or load a project first.');
+            return;
+        }
+        window.open(`/html-video-composer/player/${state.project.id}?debug=0`, '_blank');
+        }
+
+        
         async function api(path, options = {}) {
             const res = await fetch(path, {
                 headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
@@ -1672,6 +1683,9 @@
                 try { await cleanupAllComposerProjects(); } catch (e) { alert(e.message); }
             });
 
+            if (els.openPlayerBtn) {
+            els.openPlayerBtn.addEventListener('click', openPlayer);
+            }            
             els.loadSampleBtn.addEventListener('click', loadSampleHtml);
             updateFrameAspect();
             await loadThemes();

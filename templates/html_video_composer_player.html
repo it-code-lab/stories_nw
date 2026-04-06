@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTML Video Composer Player</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+    :root {
+      --bg: #071225;
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #38bdf8;
+      --card: rgba(15, 23, 42, 0.34);
+      --card-strong: rgba(15, 23, 42, 0.52);
+      --line: rgba(255, 255, 255, 0.10);
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #020617;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .player-root {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(180deg, #020617, #071225);
+    }
+
+    .bg-layer,
+    .bg-dim,
+    .scene-fade,
+    .content-wrap {
+      position: absolute;
+      inset: 0;
+    }
+
+    .bg-layer {
+      background: center center / cover no-repeat;
+      transform: scale(1.02);
+      transition: transform 10s ease, opacity 0.8s ease;
+      will-change: transform, opacity;
+    }
+
+    .bg-layer.kenburns {
+      transform: scale(1.08);
+    }
+
+    .bg-dim {
+      background:
+        radial-gradient(circle at top, rgba(56,189,248,0.12), transparent 35%),
+        linear-gradient(180deg, rgba(3, 10, 24, 0.30), rgba(3, 10, 24, 0.58));
+    }
+
+    .scene-fade {
+      background: #020617;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 8;
+    }
+
+    .content-wrap {
+      z-index: 5;
+      padding: 7vh 8vw;
+      display: flex;
+      flex-direction: column;
+      gap: 2.3vh;
+      justify-content: flex-start;
+      align-items: stretch;
+    }
+
+    .glass-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: 28px;
+      opacity: 0;
+      transform: translateY(24px) scale(0.985);
+      will-change: transform, opacity;
+    }
+
+    .title-card {
+      width: min(68vw, 1050px);
+      padding: 34px 40px 28px;
+    }
+
+    .bullet-card {
+      width: min(64vw, 980px);
+      padding: 22px 28px 24px;
+      background: rgba(15, 23, 42, 0.24);
+    }
+
+    .accent-line {
+      width: 132px;
+      height: 7px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #38bdf8, #7dd3fc);
+      margin-bottom: 18px;
+      box-shadow: 0 0 18px rgba(56,189,248,0.35);
+    }
+
+    .scene-title {
+      margin: 0;
+      font-size: clamp(42px, 4.4vw, 74px);
+      line-height: 1.06;
+      letter-spacing: -0.03em;
+      font-weight: 800;
+      text-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .scene-subtitle {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 1.4vw, 24px);
+      line-height: 1.5;
+      opacity: 0;
+    }
+
+    .scene-bullets {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 18px;
+    }
+
+    .scene-bullet {
+      display: grid;
+      grid-template-columns: 16px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 14px 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #eef2ff;
+      font-size: clamp(22px, 2vw, 34px);
+      font-weight: 600;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateX(-18px);
+    }
+
+    .scene-bullet::before {
+      content: '';
+      width: 10px;
+      height: 10px;
+      margin-top: 0.55em;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 18px rgba(56,189,248,0.45);
+      display: block;
+    }
+
+    .show-title {
+      animation: titleReveal 720ms cubic-bezier(.22,.8,.18,1) forwards;
+    }
+
+    .show-subtitle {
+      animation: subtitleReveal 700ms ease forwards;
+    }
+
+    .show-bullet {
+      animation: bulletReveal 560ms cubic-bezier(.22,.8,.18,1) forwards;
+    }
+
+    .fade-out-scene {
+      animation: sceneFadeOut 500ms ease forwards;
+    }
+
+    .fade-in-scene {
+      animation: sceneFadeIn 500ms ease forwards;
+    }
+
+    .player-ui {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 20px;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      pointer-events: none;
+      color: rgba(255,255,255,0.82);
+      font-size: 14px;
+    }
+
+    .progress-wrap {
+      flex: 1;
+      height: 8px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #22d3ee);
+      border-radius: 999px;
+      transition: width 120ms linear;
+    }
+
+    .status-chip {
+      background: rgba(15, 23, 42, 0.48);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+      padding: 8px 12px;
+      backdrop-filter: blur(12px);
+      white-space: nowrap;
+    }
+
+    .debug-panel {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      z-index: 30;
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 13px;
+      max-width: 360px;
+      display: none;
+      white-space: pre-wrap;
+    }
+
+    .debug-panel.show { display: block; }
+
+    @keyframes titleReveal {
+      from { opacity: 0; transform: translateY(28px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes subtitleReveal {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bulletReveal {
+      from { opacity: 0; transform: translateX(-18px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes sceneFadeOut {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes sceneFadeIn {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="playerRoot" class="player-root">
+    <div id="bgLayer" class="bg-layer"></div>
+    <div class="bg-dim"></div>
+    <div id="sceneFade" class="scene-fade"></div>
+
+    <div class="content-wrap">
+      <div id="titleCard" class="glass-card title-card">
+        <div class="accent-line"></div>
+        <h1 id="sceneTitle" class="scene-title"></h1>
+        <p id="sceneSubtitle" class="scene-subtitle"></p>
+      </div>
+
+      <div id="bulletCard" class="glass-card bullet-card">
+        <ul id="sceneBullets" class="scene-bullets"></ul>
+      </div>
+    </div>
+
+    <div class="player-ui">
+      <div id="statusChip" class="status-chip">Paused</div>
+      <div class="progress-wrap"><div id="progressBar" class="progress-bar"></div></div>
+      <div id="sceneChip" class="status-chip">Scene 0 / 0</div>
+    </div>
+
+    <div id="debugPanel" class="debug-panel"></div>
+  </div>
+
+  <audio id="segmentAudio" preload="auto"></audio>
+
+  <script>
+    const PROJECT_ID = {{ project_id|tojson }};
+
+    const player = {
+      playback: null,
+      sceneIndex: 0,
+      isPlaying: false,
+      sceneTimers: [],
+      progressInterval: null,
+      debug: new URLSearchParams(location.search).get('debug') === '1',
+      autoplay: new URLSearchParams(location.search).get('autoplay') === '1',
+    };
+
+    const els = {
+      bgLayer: document.getElementById('bgLayer'),
+      sceneFade: document.getElementById('sceneFade'),
+      titleCard: document.getElementById('titleCard'),
+      bulletCard: document.getElementById('bulletCard'),
+      sceneTitle: document.getElementById('sceneTitle'),
+      sceneSubtitle: document.getElementById('sceneSubtitle'),
+      sceneBullets: document.getElementById('sceneBullets'),
+      statusChip: document.getElementById('statusChip'),
+      sceneChip: document.getElementById('sceneChip'),
+      progressBar: document.getElementById('progressBar'),
+      segmentAudio: document.getElementById('segmentAudio'),
+      debugPanel: document.getElementById('debugPanel'),
+    };
+
+    function clearSceneTimers() {
+      player.sceneTimers.forEach(id => clearTimeout(id));
+      player.sceneTimers = [];
+      if (player.progressInterval) {
+        clearInterval(player.progressInterval);
+        player.progressInterval = null;
+      }
+      els.segmentAudio.pause();
+      els.segmentAudio.currentTime = 0;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function setDebug(text) {
+      if (!player.debug) return;
+      els.debugPanel.classList.add('show');
+      els.debugPanel.textContent = text;
+    }
+
+    async function api(path) {
+      const res = await fetch(path);
+      const data = await res.json();
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.error || 'Request failed');
+      }
+      return data;
+    }
+
+    function assetUrl(asset) {
+      if (!asset || !asset.url) return '';
+      return asset.url;
+    }
+
+    function resetSceneDom(scene) {
+      els.bgLayer.classList.remove('kenburns');
+      els.titleCard.className = 'glass-card title-card';
+      els.bulletCard.className = 'glass-card bullet-card';
+      els.sceneSubtitle.className = 'scene-subtitle';
+
+      els.sceneTitle.textContent = scene.title || '';
+      els.sceneSubtitle.textContent = scene.subtitle || '';
+      els.sceneBullets.innerHTML = '';
+
+      const bg = assetUrl(scene.background_asset);
+      if (bg) {
+        els.bgLayer.style.backgroundImage = `url('${bg.replace(/'/g, "%27")}')`;
+      } else {
+        els.bgLayer.style.backgroundImage = 'linear-gradient(180deg, #071225, #0b1730)';
+      }
+
+      // force reflow for animation restart
+      void els.bgLayer.offsetWidth;
+      els.bgLayer.classList.add('kenburns');
+    }
+
+    function revealTitle() {
+      els.titleCard.classList.remove('show-title');
+      void els.titleCard.offsetWidth;
+      els.titleCard.classList.add('show-title');
+    }
+
+    function revealSubtitle() {
+      if (!els.sceneSubtitle.textContent.trim()) return;
+      els.sceneSubtitle.classList.remove('show-subtitle');
+      void els.sceneSubtitle.offsetWidth;
+      els.sceneSubtitle.classList.add('show-subtitle');
+    }
+
+    function revealBullet(text) {
+      if (!text) return;
+      els.bulletCard.classList.add('show-title');
+      const li = document.createElement('li');
+      li.className = 'scene-bullet';
+      li.innerHTML = `<span>${escapeHtml(text)}</span>`;
+      els.sceneBullets.appendChild(li);
+      void li.offsetWidth;
+      li.classList.add('show-bullet');
+    }
+
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function buildProgress(totalMs) {
+      const started = performance.now();
+      if (player.progressInterval) clearInterval(player.progressInterval);
+      player.progressInterval = setInterval(() => {
+        const elapsed = performance.now() - started;
+        const pct = Math.max(0, Math.min(100, (elapsed / Math.max(1, totalMs)) * 100));
+        els.progressBar.style.width = `${pct}%`;
+        if (pct >= 100) {
+          clearInterval(player.progressInterval);
+          player.progressInterval = null;
+        }
+      }, 80);
+    }
+
+    async function playAudio(url, fallbackMs) {
+      if (!url) {
+        if (fallbackMs > 0) await sleep(fallbackMs);
+        return;
+      }
+
+      els.segmentAudio.src = url;
+      try {
+        await els.segmentAudio.play();
+        await new Promise(resolve => {
+          els.segmentAudio.onended = () => resolve();
+          els.segmentAudio.onerror = () => resolve();
+        });
+      } catch (_) {
+        if (fallbackMs > 0) await sleep(fallbackMs);
+      }
+    }
+
+    async function fadeToNextScene() {
+      els.sceneFade.classList.remove('fade-in-scene');
+      els.sceneFade.classList.add('fade-out-scene');
+      await sleep(420);
+      els.sceneFade.classList.remove('fade-out-scene');
+      els.sceneFade.classList.add('fade-in-scene');
+      await sleep(420);
+      els.sceneFade.classList.remove('fade-in-scene');
+    }
+
+    async function playScene(scene) {
+      clearSceneTimers();
+      resetSceneDom(scene);
+      revealTitle();
+      revealSubtitle();
+
+      els.statusChip.textContent = 'Playing';
+      const totalMs = scene.total_duration_ms || 0;
+      buildProgress(totalMs);
+
+      setDebug(JSON.stringify(scene, null, 2));
+
+      const segments = scene.segments || [];
+      const bulletsAlreadyShown = new Set();
+
+      for (const seg of segments) {
+        if (!player.isPlaying) return;
+
+        if (seg.kind === 'title') {
+          revealTitle();
+        } else if (seg.kind === 'bullet' && seg.display_text && !bulletsAlreadyShown.has(seg.display_text)) {
+          revealBullet(seg.display_text);
+          bulletsAlreadyShown.add(seg.display_text);
+        }
+
+        await playAudio(seg.audio_url, seg.duration_ms || 0);
+      }
+    }
+
+    async function playAllScenes(startIndex = 0) {
+      const scenes = player.playback?.scenes || [];
+      if (!scenes.length) return;
+
+      player.isPlaying = true;
+      for (let i = startIndex; i < scenes.length; i++) {
+        if (!player.isPlaying) return;
+        player.sceneIndex = i;
+        els.sceneChip.textContent = `Scene ${i + 1} / ${scenes.length}`;
+        await playScene(scenes[i]);
+        if (!player.isPlaying) return;
+        if (i < scenes.length - 1) {
+          await fadeToNextScene();
+        }
+      }
+      els.statusChip.textContent = 'Completed';
+      player.isPlaying = false;
+    }
+
+    function stopPlayback() {
+      player.isPlaying = false;
+      clearSceneTimers();
+      els.statusChip.textContent = 'Paused';
+    }
+
+    async function loadPlayback() {
+      const data = await api(`/api/projects/${PROJECT_ID}/playback`);
+      player.playback = data.playback;
+      els.sceneChip.textContent = `Scene 1 / ${player.playback.scenes.length || 0}`;
+      if (player.debug) {
+        els.debugPanel.classList.add('show');
+      }
+      if (player.playback.scenes.length) {
+        resetSceneDom(player.playback.scenes[0]);
+      }
+    }
+
+    document.addEventListener('keydown', async (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (player.isPlaying) {
+          stopPlayback();
+        } else {
+          await playAllScenes(player.sceneIndex || 0);
+        }
+      } else if (e.code === 'ArrowRight') {
+        stopPlayback();
+        const scenes = player.playback?.scenes || [];
+        player.sceneIndex = Math.min((player.sceneIndex || 0) + 1, Math.max(0, scenes.length - 1));
+        if (scenes[player.sceneIndex]) {
+          els.sceneChip.textContent = `Scene ${player.sceneIndex + 1} / ${scenes.length}`;
+          resetSceneDom(scenes[player.sceneIndex]);
+        }
+      } else if (e.code === 'ArrowLeft') {
+        stopPlayback();
+        const scenes = player.playback?.scenes || [];
+        player.sceneIndex = Math.max((player.sceneIndex || 0) - 1, 0);
+        if (scenes[player.sceneIndex]) {
+          els.sceneChip.textContent = `Scene ${player.sceneIndex + 1} / ${scenes.length}`;
+          resetSceneDom(scenes[player.sceneIndex]);
+        }
+      }
+    });
+
+    window.addEventListener('load', async () => {
+      await loadPlayback();
+      if (player.autoplay) {
+        await playAllScenes(0);
+      }
+    });
+  </script>
+</body>
+</html>

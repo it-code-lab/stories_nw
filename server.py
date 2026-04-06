@@ -3748,6 +3748,10 @@ def paste_background_for_project(project_id: str):
         "project": project,
     })
 
+# @app.get("/html-video-composer/player/<project_id>")
+# def html_video_composer_player(project_id: str):
+#     return render_template("html_video_composer_player.html", project_id=project_id)
+
 
 def slugify(text: str) -> str:
     text = (text or "").strip().lower()
@@ -5632,6 +5636,97 @@ def list_projects():
 @app.get("/html-video-composer")
 def html_video_composer():
     return render_template("html_video_composer.html")
+
+
+from flask import render_template, send_from_directory, jsonify
+
+
+def composer_speech_dir(project_id: str) -> Path:
+    return OUT_DIR / "composer_speech" / project_id
+
+
+def build_playback_payload(project: dict) -> dict:
+    assets = project.get("assets", []) or []
+    asset_map = {a.get("id"): a for a in assets if a.get("id")}
+
+    scenes_out = []
+    for scene_index, scene in enumerate(project.get("scenes", []), start=1):
+        media_asset_ids = scene.get("media_asset_ids", []) or []
+        bg_asset = asset_map.get(media_asset_ids[0]) if media_asset_ids else None
+
+        speech_plan = scene.get("speech_plan", {}) or {}
+        segments = speech_plan.get("segments", []) or []
+
+        playback_segments = []
+        total_duration_ms = 0
+        for seg in segments:
+            seg_id = seg.get("id")
+            audio_url = None
+            if seg_id:
+                audio_url = f"/composer-speech/{project.get('id')}/{seg_id}.mp3"
+
+            duration_ms = int(seg.get("duration_ms") or 0)
+            end_ms = int(seg.get("end_ms") or 0)
+            total_duration_ms = max(total_duration_ms, end_ms)
+
+            playback_segments.append({
+                "id": seg_id,
+                "kind": seg.get("kind", "narration"),
+                "display_text": seg.get("display_text", ""),
+                "speech_text": seg.get("speech_text", ""),
+                "show_on_screen": bool(seg.get("show_on_screen", True)),
+                "animation": seg.get("animation", "fade"),
+                "animation_target": seg.get("animation_target", "body"),
+                "start_ms": int(seg.get("start_ms") or 0),
+                "end_ms": end_ms,
+                "duration_ms": duration_ms,
+                "audio_url": audio_url,
+            })
+
+        scenes_out.append({
+            "index": scene_index,
+            "scene_id": scene.get("id"),
+            "scene_type": scene.get("scene_type"),
+            "title": scene.get("title", ""),
+            "subtitle": scene.get("subtitle", ""),
+            "bullets": scene.get("bullets", []),
+            "layout": scene.get("layout", {}),
+            "timing": scene.get("timing", {}),
+            "background_asset": bg_asset,
+            "segments": playback_segments,
+            "total_duration_ms": total_duration_ms,
+        })
+
+    return {
+        "project_id": project.get("id"),
+        "title": project.get("title", "HTML Video Composer Project"),
+        "theme_id": project.get("theme_id", "corporate-clean"),
+        "scenes": scenes_out,
+    }
+
+
+@app.get("/html-video-composer/player/<project_id>")
+def html_video_composer_player(project_id: str):
+    return render_template("html_video_composer_player.html", project_id=project_id)
+
+
+@app.get("/api/projects/<project_id>/playback")
+def get_project_playback(project_id: str):
+    try:
+        project = load_project(project_id)
+    except FileNotFoundError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 404
+
+    return jsonify({
+        "ok": True,
+        "playback": build_playback_payload(project),
+    })
+
+
+@app.get("/composer-speech/<project_id>/<path:filename>")
+def composer_speech_files(project_id: str, filename: str):
+    return send_from_directory(str(composer_speech_dir(project_id)), filename)
+
 ####################################################
 # END: HTML to video maker enhancements/changes
 ####################################################
