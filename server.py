@@ -3443,6 +3443,8 @@ from typing import Any, Literal
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from PIL import Image, ImageDraw, ImageFont
+import hashlib
+
 
 BASE_DIR = Path(__file__).resolve().parent
 VID_DATA_DIR = BASE_DIR / "video_composer_data"
@@ -3461,6 +3463,25 @@ from datetime import datetime
 
 COMPOSER_PROJECT_ROOT = OUT_DIR / "composer_projects-files"
 COMPOSER_PROJECT_ROOT.mkdir(parents=True, exist_ok=True)
+
+
+def make_audio_cache_key(
+    speech_text: str,
+    *,
+    voice: str,
+    language: str,
+    engine: str,
+    gender: str,
+) -> str:
+    payload = {
+        "speech_text": compact_ws(speech_text),
+        "voice": voice,
+        "language": language,
+        "engine": engine,
+        "gender": gender,
+    }
+    raw = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
 
 def composer_project_dir(project_id: str) -> Path:
     return COMPOSER_PROJECT_ROOT / project_id
@@ -3716,7 +3737,7 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
 
     # Title segment
     if title:
-        title_speech = " ".join(parsed["title"]).strip() or title
+        title_speech = " ".join(parsed["title"]).strip() 
         add_segment(
             kind="title",
             display_text=title,
@@ -3726,12 +3747,25 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
             animation_target="title",
         )
 
-    # One segment per bullet, but speech can differ from display
+    # # One segment per bullet, but speech can differ from display
+    # for i, bullet in enumerate(bullets, start=1):
+    #     bullet_speech = " ".join(parsed["bullets"].get(i, [])).strip() or bullet
+    #     add_segment(
+    #         kind="bullet",
+    #         display_text=bullet,
+    #         speech_text=bullet_speech,
+    #         show_on_screen=True,
+    #         animation="bulletReveal",
+    #         animation_target=f"bullet_{i}",
+    #     )
+
     for i, bullet in enumerate(bullets, start=1):
-        bullet_speech = " ".join(parsed["bullets"].get(i, [])).strip() or bullet
+        bullet_speech = " ".join(parsed["bullets"].get(i, [])).strip()
+        bullet_display = merged_short_display_text(bullet, bullet_speech, max_words=10)
+
         add_segment(
             kind="bullet",
-            display_text=bullet,
+            display_text=bullet_display,
             speech_text=bullet_speech,
             show_on_screen=True,
             animation="bulletReveal",
@@ -4551,6 +4585,37 @@ def _duration_via_ffprobe(path: Path) -> float:
     out = subprocess.check_output(cmd, text=True).strip()
     return float(out)
 
+def word_count(text: str) -> int:
+    text = compact_ws(text)
+    return len(text.split()) if text else 0
+
+def fact_display_text(label: str, value: str, max_words: int = 10) -> str:
+    label = compact_ws(label)
+    value = compact_ws(value)
+    full = f"{label}: {value}" if value else label
+    return full if word_count(full) <= max_words else label
+
+def merged_short_display_text(display_text: str, speech_text: str, max_words: int = 10) -> str:
+    display_text = compact_ws(display_text)
+    speech_text = compact_ws(speech_text)
+
+    if not display_text:
+        return speech_text
+    if not speech_text:
+        return display_text
+    if display_text == speech_text:
+        return display_text
+
+    # If spoken text already contains the visible bullet, show the spoken line
+    if display_text.lower() in speech_text.lower() and word_count(speech_text) <= max_words:
+        return speech_text
+
+    merged = f"{display_text} — {speech_text}"
+    if word_count(merged) <= max_words:
+        return merged
+
+    return display_text
+
 def _run(cmd: list[str]) -> None:
     subprocess.run(cmd, check=True)
 
@@ -5041,9 +5106,16 @@ def parse_html_to_project(html: str, *, source_type: str, source_value: str, the
             fact_pair = split_fact_line(text)
 
             if strong_pair:
+                # bullet_title, bullet_desc = strong_pair
+                # current_bullets.append(bullet_title)
+                # current_narration_parts.append(f"{bullet_title}. {bullet_desc}" if bullet_desc else bullet_title)
                 bullet_title, bullet_desc = strong_pair
-                current_bullets.append(bullet_title)
-                current_narration_parts.append(f"{bullet_title}. {bullet_desc}" if bullet_desc else bullet_title)
+                bullet_text = fact_display_text(bullet_title, bullet_desc, max_words=10)
+                narration_text = f"{bullet_title}: {bullet_desc}" if bullet_desc else bullet_title
+
+                current_bullets.append(bullet_text)
+                current_narration_parts.append(narration_text)
+
                 continue
 
             if fact_pair:
@@ -5068,8 +5140,11 @@ def parse_html_to_project(html: str, *, source_type: str, source_value: str, the
                 pair = extract_strong_lead_text(li)
                 if pair:
                     bullet_title, bullet_desc = pair
-                    current_bullets.append(bullet_title)
-                    current_narration_parts.append(f"{bullet_title}. {bullet_desc}" if bullet_desc else bullet_title)
+                    bullet_text = fact_display_text(bullet_title, bullet_desc, max_words=10)
+                    narration_text = f"{bullet_title}: {bullet_desc}" if bullet_desc else bullet_title
+
+                    current_bullets.append(bullet_text)
+                    current_narration_parts.append(narration_text)
                 else:
                     li_text = text_from_node(li)
                     if li_text:
@@ -5701,12 +5776,15 @@ def build_scene_speech_plan(
     for idx, seg in enumerate(speech_segments):
         seg_kind = seg.get("kind", "narration")
         speech_text = compact_ws(seg.get("speech_text", ""))
-        if not speech_text:
+        display_text = compact_ws(seg.get("display_text", ""))
+        timing_text = speech_text or display_text
+
+        if not timing_text:
             continue
 
         duration_ms = seg.get("audio_duration_ms")
         if not duration_ms:
-            duration_ms = estimate_text_duration_ms(speech_text)
+            duration_ms = estimate_text_duration_ms(timing_text)
 
         start_ms = current_ms
         end_ms = start_ms + int(duration_ms)
@@ -5714,7 +5792,7 @@ def build_scene_speech_plan(
         segments_out.append({
             "id": seg.get("id") or str(uuid.uuid4()),
             "kind": seg_kind,
-            "display_text": seg.get("display_text", ""),
+            "display_text": display_text,
             "speech_text": speech_text,
             "show_on_screen": bool(seg.get("show_on_screen", True)),
             "animation": seg.get("animation", "fade"),
@@ -5739,6 +5817,57 @@ def build_scene_speech_plan(
         "total_duration_ms": total_duration_ms,
     }
 
+# def build_scene_speech_plan(
+#     *,
+#     speech_segments: list[dict],
+#     pause_after_title_ms: int = 450,
+#     pause_between_segments_ms: int = 200,
+#     outro_hold_ms: int = 500,
+# ) -> dict:
+#     current_ms = 0
+#     segments_out = []
+
+#     for idx, seg in enumerate(speech_segments):
+#         seg_kind = seg.get("kind", "narration")
+#         speech_text = compact_ws(seg.get("speech_text", ""))
+#         if not speech_text:
+#             continue
+
+#         duration_ms = seg.get("audio_duration_ms")
+#         if not duration_ms:
+#             duration_ms = estimate_text_duration_ms(speech_text)
+
+#         start_ms = current_ms
+#         end_ms = start_ms + int(duration_ms)
+
+#         segments_out.append({
+#             "id": seg.get("id") or str(uuid.uuid4()),
+#             "kind": seg_kind,
+#             "display_text": seg.get("display_text", ""),
+#             "speech_text": speech_text,
+#             "show_on_screen": bool(seg.get("show_on_screen", True)),
+#             "animation": seg.get("animation", "fade"),
+#             "animation_target": seg.get("animation_target", "body"),
+#             "start_ms": start_ms,
+#             "end_ms": end_ms,
+#             "duration_ms": int(duration_ms),
+#             "order": seg.get("order", idx + 1),
+#         })
+
+#         current_ms = end_ms
+#         if seg_kind == "title":
+#             current_ms += pause_after_title_ms
+#         else:
+#             current_ms += pause_between_segments_ms
+
+#     total_duration_ms = current_ms + outro_hold_ms if segments_out else 0
+
+#     return {
+#         "mode": "sequential",
+#         "segments": segments_out,
+#         "total_duration_ms": total_duration_ms,
+#     }
+
 
 def get_audio_duration_ms(audio_path: Path) -> int:
     try:
@@ -5748,6 +5877,64 @@ def get_audio_duration_ms(audio_path: Path) -> int:
             return int(_duration_via_wave(audio_path) * 1000)
         except Exception:
             return 0
+
+
+# @app.post("/api/projects/<project_id>/synthesize-speech")
+# def synthesize_project_speech(project_id: str):
+#     try:
+#         project = load_project(project_id)
+#     except FileNotFoundError as exc:
+#         return jsonify({"ok": False, "error": str(exc)}), 404
+
+#     speech_root = OUT_DIR / "composer_speech" / project_id
+#     speech_root.mkdir(parents=True, exist_ok=True)
+
+#     narration_cfg = project.get("narration", {}) or {}
+#     voice = narration_cfg.get("voice", "alloy")
+#     language = narration_cfg.get("language", "english")
+#     engine = narration_cfg.get("engine", "google")
+#     gender = narration_cfg.get("gender", "Male")
+
+#     for idx, scene in enumerate(project.get("scenes", []), start=1):
+#         _rebuild_scene_speech_segments(scene, idx)
+#         speech_segments = scene.get("speech_segments", []) or []
+
+#         for seg in speech_segments:
+#             speech_text = compact_ws(seg.get("speech_text", ""))
+#             if not speech_text:
+#                 continue
+
+#             seg_id = seg.get("id") or str(uuid.uuid4())
+#             audio_file_name = f"{seg_id}.mp3"
+#             audio_path = speech_root / audio_file_name
+            
+#             # ADAPT THIS LINE to your existing get_audio_file() signature
+#             # Example idea only:
+#             get_audio_file(text=speech_text, audio_file_name=audio_file_name, tts_engine="google", language="english", gender="Male")
+
+#             # Copy audio_file_name file to speech_root
+#             shutil.move(audio_file_name, audio_path)
+
+#             if not audio_path.exists():
+#                 return jsonify({
+#                     "ok": False,
+#                     "error": "TTS adapter line needs to be connected to your existing get_audio_file() signature."
+#                 }), 500
+
+#             seg["audio_path"] = str(audio_path)
+#             seg["audio_duration_ms"] = get_audio_duration_ms(audio_path)
+
+#         scene["speech_plan"] = build_scene_speech_plan(
+#             speech_segments=speech_segments,
+#             pause_after_title_ms=450,
+#             pause_between_segments_ms=200,
+#             outro_hold_ms=500,
+#         )
+#         scene["timing"]["estimated_duration_sec"] = round(scene["speech_plan"]["total_duration_ms"] / 1000.0, 2)
+
+#     project_path(project_id).write_text(json.dumps(project, indent=2, ensure_ascii=False), encoding="utf-8")
+
+#     return jsonify({"ok": True, "project": project})
 
 
 @app.post("/api/projects/<project_id>/synthesize-speech")
@@ -5766,25 +5953,54 @@ def synthesize_project_speech(project_id: str):
     engine = narration_cfg.get("engine", "google")
     gender = narration_cfg.get("gender", "Male")
 
+    meta_path = speech_root / "_audio_meta.json"
+    if meta_path.exists():
+        try:
+            audio_meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except Exception:
+            audio_meta = {}
+    else:
+        audio_meta = {}
+
     for idx, scene in enumerate(project.get("scenes", []), start=1):
         _rebuild_scene_speech_segments(scene, idx)
         speech_segments = scene.get("speech_segments", []) or []
 
         for seg in speech_segments:
             speech_text = compact_ws(seg.get("speech_text", ""))
-            if not speech_text:
-                continue
-
             seg_id = seg.get("id") or str(uuid.uuid4())
             audio_file_name = f"{seg_id}.mp3"
             audio_path = speech_root / audio_file_name
-            
-            # ADAPT THIS LINE to your existing get_audio_file() signature
-            # Example idea only:
-            get_audio_file(text=speech_text, audio_file_name=audio_file_name, tts_engine="google", language="english", gender="Male")
 
-            # Copy audio_file_name file to speech_root
-            shutil.move(audio_file_name, audio_path)
+            # display-only segment: keep timing but do not generate TTS
+            if not speech_text:
+                seg.pop("audio_file", None)
+                seg["audio_duration_ms"] = 0
+                continue
+
+            cache_key = make_audio_cache_key(
+                speech_text,
+                voice=voice,
+                language=language,
+                engine=engine,
+                gender=gender,
+            )
+
+            if audio_path.exists() and audio_meta.get(seg_id) == cache_key:
+                seg["audio_file"] = str(audio_path)
+                seg["audio_duration_ms"] = get_audio_duration_ms(audio_path)
+                continue
+
+            get_audio_file(
+                text=speech_text,
+                audio_file_name=audio_file_name,
+                tts_engine=engine,
+                language=language,
+                gender=gender,
+            )
+
+            if Path(audio_file_name).resolve() != audio_path.resolve():
+                shutil.move(audio_file_name, audio_path)
 
             if not audio_path.exists():
                 return jsonify({
@@ -5792,20 +6008,15 @@ def synthesize_project_speech(project_id: str):
                     "error": "TTS adapter line needs to be connected to your existing get_audio_file() signature."
                 }), 500
 
-            seg["audio_path"] = str(audio_path)
+            seg["audio_file"] = str(audio_path)
             seg["audio_duration_ms"] = get_audio_duration_ms(audio_path)
+            audio_meta[seg_id] = cache_key
 
-        scene["speech_plan"] = build_scene_speech_plan(
-            speech_segments=speech_segments,
-            pause_after_title_ms=450,
-            pause_between_segments_ms=200,
-            outro_hold_ms=500,
-        )
-        scene["timing"]["estimated_duration_sec"] = round(scene["speech_plan"]["total_duration_ms"] / 1000.0, 2)
-
-    project_path(project_id).write_text(json.dumps(project, indent=2, ensure_ascii=False), encoding="utf-8")
+    meta_path.write_text(json.dumps(audio_meta, indent=2), encoding="utf-8")
+    save_project(project_id, project)
 
     return jsonify({"ok": True, "project": project})
+
 
 @app.post("/api/projects/<project_id>/speech-plan")
 def update_project_speech_plan(project_id: str):
