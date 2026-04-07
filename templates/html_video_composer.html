@@ -608,8 +608,9 @@
                 <button class="btn btn-outline" id="speechPlanBtn">Build speech plan</button>
                 <button class="btn btn-success" id="ttsBtn">Generate TTS</button>
                 <button class="btn btn-success" id="renderVideoBtn" style="display: none;">Render video</button>
-                <button class="btn btn-danger" id="cleanupBtn">Cleanup all</button>
+
                 <button class="btn btn-success" id="openPlayerBtn">Open player</button>
+                <button class="btn btn-danger" id="cleanupBtn">Cleanup all</button>
             </div>
         </div>
 
@@ -690,7 +691,11 @@
                     </div>
                 </div>
             </section>
-
+            <div class="section" style="width: 85vw;">
+                <strong>Active scene speech plan</strong>
+                <pre id="activeSceneSpeechOutput"
+                    style="white-space:pre-wrap;background:rgba(2,6,23,0.75);padding:12px;border-radius:14px;border:1px solid rgba(148,163,184,0.12);color:#cbd5e1;min-height:160px;overflow:auto;">Select a scene to inspect its speech plan.</pre>
+            </div>
             <section id="propertiesSec" class="panel right-panel">
                 <div class="panel-header">
                     <h2>Scene Properties</h2>
@@ -842,6 +847,7 @@
         };
 
         const els = {
+            activeSceneSpeechOutput: document.getElementById('activeSceneSpeechOutput'),
             openPlayerBtn: document.getElementById('openPlayerBtn'),
             renderVideoBtn: document.getElementById('renderVideoBtn'),
             cleanupBtn: document.getElementById('cleanupBtn'),
@@ -918,6 +924,26 @@
         }
         window.open(`/html-video-composer/player/${state.project.id}?debug=0`, '_blank');
         }
+
+        function renderActiveSceneSpeechOutput() {
+            const scene = state.project?.scenes?.[state.selectedSceneIndex];
+
+            if (!scene) {
+                els.activeSceneSpeechOutput.textContent = 'Select a scene to inspect its speech plan.';
+                return;
+            }
+
+            els.activeSceneSpeechOutput.textContent = JSON.stringify({
+                scene_index: state.selectedSceneIndex + 1,
+                scene_id: scene.id,
+                title: scene.title,
+                bullets: scene.bullets,
+                narration_text: scene.narration_text,
+                speech_segments: scene.speech_segments || [],
+                speech_plan: scene.speech_plan || null,
+            }, null, 2);
+        }
+
 
         
         async function api(path, options = {}) {
@@ -1228,8 +1254,9 @@
                 els.previewBullets.innerHTML = '';
             } else {
                 els.previewBullets.innerHTML = previewBullets
-                    .map(item => `<li class="bullet-item">${escapeHtml(item)}</li>`)
-                    .join('');
+                .filter(item => item.trim() !== '') // Filters out empty lines ONLY for the visual preview
+                .map(item => `<li class="bullet-item">${escapeHtml(item)}</li>`)
+                .join('');
             }            
             if (linkedAsset?.url) {
                 els.frameBg.style.backgroundImage = `url("${linkedAsset.url.replace(/"/g, '%22')}")`;
@@ -1271,7 +1298,7 @@
                 item.classList.add('animate-bullet');
             });
             }, 60);            
-
+            renderActiveSceneSpeechOutput();
         }
 
         function getLinkedAsset(scene) {
@@ -1305,12 +1332,12 @@
             if (!scene) return;
 
             scene.scene_type = els.sceneType.value;
-            scene.title = els.sceneTitle.value.trim();
-            scene.subtitle = els.sceneSubtitle.value.trim();
-            scene.body_text = els.sceneBody.value.trim();
-            scene.bullets = els.sceneBullets.value.split('\n').map(v => v.trim()).filter(Boolean);
-            scene.narration_text = els.sceneNarration.value.trim();
-            scene.layout = scene.layout || {};
+            scene.title = els.sceneTitle.value; // Removed .trim()
+            scene.subtitle = els.sceneSubtitle.value; // Removed .trim()
+            scene.body_text = els.sceneBody.value; // Removed .trim()            
+            // Kept the split but removed .trim() and .filter() so you can freely type spaces and newlines
+            scene.bullets = els.sceneBullets.value.split('\n');             
+            scene.narration_text = els.sceneNarration.value; // Removed .trim()            scene.layout = scene.layout || {};
             scene.layout.template = els.sceneTemplate.value;
             scene.layout.overlay_position = els.overlayPosition.value;
             scene.layout.text_align = els.textAlign.value;
@@ -1378,6 +1405,7 @@
             renderProjectSummary();
             renderSceneList();
             renderSelectedScene();
+            
             els.renderPlanOutput.textContent = JSON.stringify(
                 (state.project.scenes || []).map(s => ({
                     title: s.title,
@@ -1514,6 +1542,7 @@
             state.project = data.project;
             renderProjectSummary();
             els.renderPlanOutput.textContent = 'Project saved.';
+            renderActiveSceneSpeechOutput();
         }
 
         async function buildRenderPlan() {
