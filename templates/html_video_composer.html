@@ -691,11 +691,7 @@
                     </div>
                 </div>
             </section>
-            <div class="section" style="width: 85vw;">
-                <strong>Active scene speech plan</strong>
-                <pre id="activeSceneSpeechOutput"
-                    style="white-space:pre-wrap;background:rgba(2,6,23,0.75);padding:12px;border-radius:14px;border:1px solid rgba(148,163,184,0.12);color:#cbd5e1;min-height:160px;overflow:auto;">Select a scene to inspect its speech plan.</pre>
-            </div>
+
             <section id="propertiesSec" class="panel right-panel">
                 <div class="panel-header">
                     <h2>Scene Properties</h2>
@@ -706,6 +702,37 @@
                         narration, layout, and background media.</div>
 
                     <div id="editorForm" class="hidden">
+
+
+                        <div class="section">
+                            <div class="input-grid">
+                                <div>
+                                    <label for="sceneTitle">Title</label>
+                                    <input type="text" id="sceneTitle" />
+                                </div>
+                                <div>
+                                    <label for="sceneSubtitle">Subtitle</label>
+                                    <input type="text" id="sceneSubtitle" />
+                                </div>
+                                <div>
+                                    <label for="sceneBody">Body text</label>
+                                    <textarea id="sceneBody"></textarea>
+                                </div>
+                                <div>
+                                    <label for="sceneBullets">Bullet points (one per line)</label>
+                                    <textarea id="sceneBullets"></textarea>
+                                </div>
+                                <div>
+                                    <label for="sceneNarration">Narration text</label>
+                                    <textarea id="sceneNarration"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="section" style="width: 85vw; height: 400px; overflow: auto;">
+                            <strong>Active scene speech plan</strong>
+                            <pre id="activeSceneSpeechOutput"
+                                style="white-space:pre-wrap;background:rgba(2,6,23,0.75);padding:12px;border-radius:14px;border:1px solid rgba(148,163,184,0.12);color:#cbd5e1;min-height:160px;overflow:auto;">Select a scene to inspect its speech plan.</pre>
+                        </div>                        
                         <div class="section">
                             <div class="row-2">
                                 <div>
@@ -737,32 +764,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="section">
-                            <div class="input-grid">
-                                <div>
-                                    <label for="sceneTitle">Title</label>
-                                    <input type="text" id="sceneTitle" />
-                                </div>
-                                <div>
-                                    <label for="sceneSubtitle">Subtitle</label>
-                                    <input type="text" id="sceneSubtitle" />
-                                </div>
-                                <div>
-                                    <label for="sceneBody">Body text</label>
-                                    <textarea id="sceneBody"></textarea>
-                                </div>
-                                <div>
-                                    <label for="sceneBullets">Bullet points (one per line)</label>
-                                    <textarea id="sceneBullets"></textarea>
-                                </div>
-                                <div>
-                                    <label for="sceneNarration">Narration text</label>
-                                    <textarea id="sceneNarration"></textarea>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="section">
                             <div class="row-2">
                                 <div>
