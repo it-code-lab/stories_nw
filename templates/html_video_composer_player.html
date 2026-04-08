@@ -133,7 +133,6 @@
             letter-spacing: -0.03em;
             font-weight: 800;
             text-shadow: var(--text-shadow-strong);
-
         }
 
         .scene-subtitle {
@@ -143,7 +142,6 @@
             line-height: 1;
             opacity: 0;
             text-shadow: var(--text-shadow-soft);
-
         }
 
         .scene-bullets {
@@ -312,7 +310,6 @@
             </div>
         </div>
 
-        
         <div id="sceneB" class="scene-layer">
             <div class="bg-layer"></div>
             <div class="bg-dim"></div>
@@ -337,12 +334,12 @@
         </div>
 
         <div id="debugPanel" class="debug-panel"></div>
-        ```
 
     </div>
 
     <audio id="segmentAudio" preload="auto"></audio>
     <audio id="bgMusicAudio" preload="auto" loop></audio>
+
     <script>
         const PROJECT_ID = {{ project_id| tojson }};
 
@@ -356,7 +353,6 @@
             autoplay: new URLSearchParams(location.search).get('autoplay') === '1',
             activeLayerIndex: 0,
             bgMusicStarted: false,
-
         };
 
         const els = {
@@ -365,7 +361,6 @@
             progressBar: document.getElementById('progressBar'),
             segmentAudio: document.getElementById('segmentAudio'),
             bgMusicAudio: document.getElementById('bgMusicAudio'),
-
             debugPanel: document.getElementById('debugPanel'),
             sceneA: document.getElementById('sceneA'),
             sceneB: document.getElementById('sceneB'),
@@ -430,12 +425,14 @@
         }
 
         function playOneShot(url, volume = 1) {
-            if (!url) return;
+            if (!url) return Promise.resolve();
             try {
                 const a = new Audio(url);
                 a.volume = clampVolume(volume, 1);
-                a.play().catch(() => {});
-            } catch (_) {}
+                return a.play().catch(() => {});
+            } catch (_) {
+                return Promise.resolve();
+            }
         }
 
         function startBackgroundMusic() {
@@ -454,6 +451,7 @@
         }
 
         function stopBackgroundMusic() {
+            if (!els.bgMusicAudio) return;
             els.bgMusicAudio.pause();
             els.bgMusicAudio.currentTime = 0;
             els.bgMusicAudio.removeAttribute('src');
@@ -463,14 +461,13 @@
 
         function playTitleSfx() {
             const audio = getAudioSettings();
-            playOneShot(audio.title_sfx_url, clampVolume(audio.sfx_volume, 0.9));
+            return playOneShot(audio.title_sfx_url, clampVolume(audio.sfx_volume, 0.9));
         }
 
         function playBulletSfx() {
             const audio = getAudioSettings();
-            playOneShot(audio.bullet_sfx_url, clampVolume(audio.sfx_volume, 0.9));
+            return playOneShot(audio.bullet_sfx_url, clampVolume(audio.sfx_volume, 0.9));
         }
-
 
         function getActiveLayer() {
             return player.activeLayerIndex === 0 ? els.sceneA : els.sceneB;
@@ -523,7 +520,6 @@
             void p.titleCard.offsetWidth;
             p.titleCard.classList.add('show-title');
             playTitleSfx();
-
         }
 
         function revealSubtitleOnLayer(layerEl) {
@@ -546,7 +542,6 @@
             void li.offsetWidth;
             li.classList.add('show-bullet');
             playBulletSfx();
-
         }
 
         async function crossfadeToScene(scene) {
@@ -599,9 +594,6 @@
             clearSceneTimers();
 
             const layer = getActiveLayer();
-            revealTitleOnLayer(layer);
-            revealSubtitleOnLayer(layer);
-
             els.statusChip.textContent = 'Playing';
             const totalMs = scene.total_duration_ms || 0;
             buildProgress(totalMs);
@@ -609,21 +601,24 @@
 
             const segments = scene.segments || [];
             const bulletsAlreadyShown = new Set();
-            const hasTitleSegment = segments.some(seg => seg.kind === 'title');
-
-            if (!hasTitleSegment) {
-                revealTitleOnLayer(layer);
-            }
-           
 
             for (const seg of segments) {
                 if (!player.isPlaying) return;
 
                 if (seg.kind === 'title') {
                     revealTitleOnLayer(layer);
-                } else if (seg.kind === 'bullet' && seg.display_text && !bulletsAlreadyShown.has(seg.display_text)) {
-                    revealBulletOnLayer(layer, seg.display_text);
-                    bulletsAlreadyShown.add(seg.display_text);
+                    revealSubtitleOnLayer(layer);
+                    await sleep(Math.max(120, seg.duration_ms || 0));
+                    continue;
+                }
+
+                if (seg.kind === 'bullet') {
+                    if (seg.display_text && !bulletsAlreadyShown.has(seg.display_text)) {
+                        revealBulletOnLayer(layer, seg.display_text);
+                        bulletsAlreadyShown.add(seg.display_text);
+                    }
+                    await sleep(Math.max(120, seg.duration_ms || 0));
+                    continue;
                 }
 
                 await playAudio(seg.audio_url, seg.duration_ms || 0);
@@ -634,10 +629,10 @@
             const scenes = player.playback?.scenes || [];
             if (!scenes.length) return;
 
+            startBackgroundMusic();
             player.isPlaying = true;
             player.sceneIndex = startIndex;
             resetSceneDomOnLayer(getActiveLayer(), scenes[startIndex]);
-            startBackgroundMusic();
 
             for (let i = startIndex; i < scenes.length; i++) {
                 if (!player.isPlaying) return;
@@ -655,7 +650,6 @@
             els.statusChip.textContent = 'Completed';
             player.isPlaying = false;
             stopBackgroundMusic();
-
         }
 
         function stopPlayback() {

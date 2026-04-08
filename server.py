@@ -3678,7 +3678,7 @@ THEMES: dict[str, ThemePreset] = {
 }
 
 def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
-    """Rebuild speech segments from edited UI text, supporting tagged narration."""
+    """Rebuild speech segments from edited UI text, supporting tagged narration in the same order as written."""
     from dataclasses import asdict
 
     title = compact_ws(scene.get("title", ""))
@@ -3687,7 +3687,6 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
 
     parsed = _parse_tagged_narration(narration_text)
 
-    # Fallback to legacy behavior when no tags are used
     if not parsed["has_tags"]:
         parts = _split_sentences(narration_text)
         new_segments = build_speech_segments(
@@ -3712,7 +3711,6 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
 
         segment_index += 1
         seg_id_suffix = kind if kind != "bullet" else animation_target
-
         segments.append({
             "id": make_segment_id(scene_index, segment_index, seg_id_suffix),
             "kind": kind,
@@ -3724,64 +3722,26 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
             "order": segment_index,
         })
 
-    # Optional intro (spoken only)
-    for part in parsed["intro"]:
-        add_segment(
-            kind="narration",
-            display_text="",
-            speech_text=part,
-            show_on_screen=False,
-            animation="none",
-            animation_target="none",
-        )
+    sequence = parsed.get("sequence") or []
+    for item in sequence:
+        bucket = item.get("bucket")
+        idx = item.get("index")
+        parts = item.get("parts") or []
 
-    # Title segment
-    if title:
-        title_speech = " ".join(parsed["title"]).strip() 
-        add_segment(
-            kind="title",
-            display_text=title,
-            speech_text=title_speech,
-            show_on_screen=True,
-            animation="titleReveal",
-            animation_target="title",
-        )
+        if bucket == "title":
+            title_speech = " ".join(parts).strip() or title
+            add_segment("title", title, title_speech, True, "titleReveal", "title")
+        elif bucket == "bullet":
+            bullet_text = bullets[idx - 1] if idx and 0 < idx <= len(bullets) else ""
+            bullet_speech = " ".join(parts).strip() or bullet_text
+            bullet_display = merged_short_display_text(bullet_text, bullet_speech, max_words=10)
+            add_segment("bullet", bullet_display, bullet_speech, True, "bulletReveal", f"bullet_{idx}")
+        else:
+            for part in parts:
+                add_segment("narration", "", part, False, "none", "none")
 
-    # # One segment per bullet, but speech can differ from display
-    # for i, bullet in enumerate(bullets, start=1):
-    #     bullet_speech = " ".join(parsed["bullets"].get(i, [])).strip() or bullet
-    #     add_segment(
-    #         kind="bullet",
-    #         display_text=bullet,
-    #         speech_text=bullet_speech,
-    #         show_on_screen=True,
-    #         animation="bulletReveal",
-    #         animation_target=f"bullet_{i}",
-    #     )
-
-    for i, bullet in enumerate(bullets, start=1):
-        bullet_speech = " ".join(parsed["bullets"].get(i, [])).strip()
-        bullet_display = merged_short_display_text(bullet, bullet_speech, max_words=10)
-
-        add_segment(
-            kind="bullet",
-            display_text=bullet_display,
-            speech_text=bullet_speech,
-            show_on_screen=True,
-            animation="bulletReveal",
-            animation_target=f"bullet_{i}",
-        )
-
-    # Optional outro (spoken only)
-    for part in parsed["outro"]:
-        add_segment(
-            kind="narration",
-            display_text="",
-            speech_text=part,
-            show_on_screen=False,
-            animation="none",
-            animation_target="none",
-        )
+    if title and not any(seg.get("kind") == "title" for seg in segments):
+        add_segment("title", title, title, True, "titleReveal", "title")
 
     scene["speech_segments"] = segments
 
@@ -3939,15 +3899,37 @@ def _parse_tagged_narration(narration_text: str) -> dict:
         "intro": [],
         "title": [],
         "outro": [],
-        "bullets": {},   # 1-based bullet index -> list[str]
+        "bullets": {},
         "has_tags": False,
+        "sequence": [],
     }
 
     if not text:
         return parsed
 
     current_bucket = ("intro", None)
+    current_lines = []
     tag_re = re.compile(r'^\[(TITLE|INTRO|OUTRO|B(\d+))\]\s*(.*)$', re.IGNORECASE)
+
+    def flush_bucket():
+        nonlocal current_lines
+        bucket, idx = current_bucket
+        if not current_lines:
+            return
+        content = compact_ws(" ".join(current_lines))
+        current_lines = []
+        if not content:
+            return
+        parts = _split_sentences(content)
+        if bucket == "bullet":
+            parsed["bullets"].setdefault(idx, []).extend(parts)
+        else:
+            parsed[bucket].extend(parts)
+        parsed["sequence"].append({
+            "bucket": bucket,
+            "index": idx,
+            "parts": parts,
+        })
 
     for raw_line in text.split("\n"):
         line = raw_line.strip()
@@ -3957,6 +3939,7 @@ def _parse_tagged_narration(narration_text: str) -> dict:
         m = tag_re.match(line)
         if m:
             parsed["has_tags"] = True
+            flush_bucket()
             tag_name = m.group(1).upper()
             rest = (m.group(3) or "").strip()
 
@@ -3969,20 +3952,14 @@ def _parse_tagged_narration(narration_text: str) -> dict:
             else:
                 current_bucket = ("bullet", int(m.group(2)))
 
-            if not rest:
-                continue
-            line = rest
+            if rest:
+                current_lines.append(rest)
+            continue
 
-        bucket, idx = current_bucket
-        parts = _split_sentences(line)
+        current_lines.append(line)
 
-        if bucket == "bullet":
-            parsed["bullets"].setdefault(idx, []).extend(parts)
-        else:
-            parsed[bucket].extend(parts)
-
+    flush_bucket()
     return parsed
-
 def slugify(text: str) -> str:
     text = (text or "").strip().lower()
     text = re.sub(r"[^a-z0-9]+", "-", text)
@@ -6100,8 +6077,9 @@ def build_playback_payload(project: dict) -> dict:
         total_duration_ms = 0
         for seg in segments:
             seg_id = seg.get("id")
+            seg_kind = seg.get("kind", "narration")
             audio_url = None
-            if seg_id:
+            if seg_id and seg_kind == "narration":
                 audio_url = f"/composer-speech/{project.get('id')}/{seg_id}.mp3"
 
             duration_ms = int(seg.get("duration_ms") or 0)
@@ -6110,7 +6088,7 @@ def build_playback_payload(project: dict) -> dict:
 
             playback_segments.append({
                 "id": seg_id,
-                "kind": seg.get("kind", "narration"),
+                "kind": seg_kind,
                 "display_text": seg.get("display_text", ""),
                 "speech_text": seg.get("speech_text", ""),
                 "show_on_screen": bool(seg.get("show_on_screen", True)),
@@ -6140,10 +6118,9 @@ def build_playback_payload(project: dict) -> dict:
         "project_id": project.get("id"),
         "title": project.get("title", "HTML Video Composer Project"),
         "theme_id": project.get("theme_id", "corporate-clean"),
-        "project_settings": project.get("project_settings", {}),
+        "project_settings": project.get("project_settings", {}) or {},
         "scenes": scenes_out,
     }
-
 
 
 @app.get("/html-video-composer/player/<project_id>")

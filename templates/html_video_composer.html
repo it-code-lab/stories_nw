@@ -399,8 +399,9 @@
             left: 6%;
             right: 6%;
             top: 8%;
-            background: transparent;
-            border: 0;
+            background: rgba(15, 23, 42, 0.38);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            /* backdrop-filter: blur(8px); */
             border-radius: 20px;
             padding: 22px;
             max-width: 72%;
@@ -543,8 +544,6 @@
 .overlay-list .bullet-item {
   opacity: 0;
   will-change: transform, opacity;
-  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.72), 0 10px 28px rgba(0, 0, 0, 0.62);
-
 }
 
 .animate-title {
@@ -591,6 +590,9 @@
     transform: translateX(0);
   }
 }
+
+.mini-toolbar-row { display:flex; gap:8px; flex-wrap:wrap; }
+.compact-help { margin-top:6px; }
 </style>
 </head>
 
@@ -632,24 +634,16 @@
                                 <label for="sourceValue">Source label</label>
                                 <input type="text" id="sourceValue" placeholder="Example: local html draft" />
                             </div>
-
-                            <div class="row-2">
-                                <div>
-                                    <label for="projectPicker">Previously saved project</label>
-                                    <select id="projectPicker">
-                                        <option value="">Select a saved project</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label>&nbsp;</label>
-                                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                                        <button class="btn btn-outline" id="refreshProjectsBtn" type="button">Refresh projects</button>
-                                        <button class="btn btn-primary" id="loadProjectBtn" type="button">Load selected project</button>
-                                    </div>
+                            <div>
+                                <label for="projectPicker">Previously saved project</label>
+                                <select id="projectPicker">
+                                    <option value="">Select a saved project</option>
+                                </select>
+                                <div class="mini-toolbar-row compact-help">
+                                    <button class="btn btn-outline" id="refreshProjectsBtn" type="button">Refresh projects</button>
+                                    <button class="btn btn-primary" id="loadProjectBtn" type="button">Load selected project</button>
                                 </div>
                             </div>
-
-
                             <div>
                                 <label for="htmlInput">HTML input</label>
                                 <textarea id="htmlInput" placeholder="Paste HTML here"></textarea>
@@ -822,6 +816,36 @@
                         </div>
 
                         <div class="section">
+                            <strong>Player audio</strong>
+                            <div class="row-2" style="margin-top:10px;">
+                                <div>
+                                    <label for="titleSfxUrl">Title sound effect URL</label>
+                                    <input type="url" id="titleSfxUrl" placeholder="/static/sounds/title-whoosh.mp3" />
+                                </div>
+                                <div>
+                                    <label for="bulletSfxUrl">Bullet sound effect URL</label>
+                                    <input type="url" id="bulletSfxUrl" placeholder="/static/sounds/bullet-pop.mp3" />
+                                </div>
+                            </div>
+                            <div class="row-2" style="margin-top:10px;">
+                                <div>
+                                    <label for="bgMusicUrl">Background music URL</label>
+                                    <input type="url" id="bgMusicUrl" placeholder="/static/sounds/background-music.mp3" />
+                                </div>
+                                <div class="row-2">
+                                    <div>
+                                        <label for="sfxVolume">SFX volume (0 to 1)</label>
+                                        <input type="number" id="sfxVolume" min="0" max="1" step="0.05" value="0.9" />
+                                    </div>
+                                    <div>
+                                        <label for="bgMusicVolume">Music volume (0 to 1)</label>
+                                        <input type="number" id="bgMusicVolume" min="0" max="1" step="0.05" value="0.22" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
                             <div class="input-grid">
                                 <div>
                                     <label for="sceneBgUrl">Background image/video URL</label>
@@ -833,34 +857,6 @@
                                     <button class="btn btn-outline" id="duplicateSceneBtn">Duplicate scene</button>
                                     <button class="btn btn-danger" id="deleteSceneBtn">Delete scene</button>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    <div class="section">
-                        <strong>Playback Audio</strong>
-                        <div class="small muted" style="margin:6px 0 12px;">These are project-level settings used by the player for title reveal, bullet reveal, and optional background music.</div>
-                        <div class="row-2">
-                            <div>
-                                <label for="titleSfxUrl">Title sound effect URL/path</label>
-                                <input type="text" id="titleSfxUrl" placeholder="/static/sounds/title-whoosh.mp3" value="/static/sounds/title-whoosh.mp3"/>
-                            </div>
-                            <div>
-                                <label for="bulletSfxUrl">Bullet sound effect URL/path</label>
-                                <input type="text" id="bulletSfxUrl" placeholder="/static/sounds/bullet-pop.mp3" value="/static/sounds/bullet-pop.mp3"/>
-                            </div>
-                            <div>
-                                <label for="bgMusicUrl">Background music URL/path</label>
-                                <input type="text" id="bgMusicUrl" placeholder="/static/sounds/background-music.mp3" value="/static/sounds/background-music.mp3"/>
-                            </div>
-                            <div>
-                                <label for="sfxVolume">SFX volume (0 to 1)</label>
-                                <input type="number" id="sfxVolume" min="0" max="1" step="0.05" value="0.5"/>
-                            </div>
-                            <div>
-                                <label for="bgMusicVolume">Background music volume (0 to 1)</label>
-                                <input type="number" id="bgMusicVolume" min="0" max="1" step="0.05" value="0.1"/>
                             </div>
                         </div>
                     </div>
@@ -905,10 +901,6 @@
             ttsBtn: document.getElementById('ttsBtn'),
             themeSelect: document.getElementById('themeSelect'),
             sourceValue: document.getElementById('sourceValue'),
-            projectPicker: document.getElementById('projectPicker'),
-            refreshProjectsBtn: document.getElementById('refreshProjectsBtn'),
-            loadProjectBtn: document.getElementById('loadProjectBtn'),
-
             htmlInput: document.getElementById('htmlInput'),
             parseBtn: document.getElementById('parseBtn'),
             saveBtn: document.getElementById('saveBtn'),
@@ -948,12 +940,14 @@
             assetCountLabel: document.getElementById('assetCountLabel'),
             renderPlanOutput: document.getElementById('renderPlanOutput'),
             aspectToggle: document.getElementById('aspectToggle'),
+            projectPicker: document.getElementById('projectPicker'),
+            refreshProjectsBtn: document.getElementById('refreshProjectsBtn'),
+            loadProjectBtn: document.getElementById('loadProjectBtn'),
             titleSfxUrl: document.getElementById('titleSfxUrl'),
             bulletSfxUrl: document.getElementById('bulletSfxUrl'),
             bgMusicUrl: document.getElementById('bgMusicUrl'),
             sfxVolume: document.getElementById('sfxVolume'),
             bgMusicVolume: document.getElementById('bgMusicVolume'),
-
         };
 
         document.addEventListener('paste', async (event) => {
@@ -989,31 +983,49 @@
             if (!state.project) return null;
             state.project.project_settings = state.project.project_settings || {};
             state.project.project_settings.audio = state.project.project_settings.audio || {
-                title_sfx_url: '',
-                bullet_sfx_url: '',
-                bg_music_url: '',
-                sfx_volume: 0.5,
-                bg_music_volume: 0.1,
+                title_sfx_url: '/static/sounds/title-whoosh.mp3',
+                bullet_sfx_url: '/static/sounds/bullet-pop.mp3',
+                bg_music_url: '/static/sounds/background-music.mp3',
+                sfx_volume: 0.9,
+                bg_music_volume: 0.22,
             };
             return state.project.project_settings.audio;
         }
 
+        function syncProjectAudioForm() {
+            const audio = ensureProjectAudioSettings();
+            if (!audio) return;
+            if (els.titleSfxUrl) els.titleSfxUrl.value = audio.title_sfx_url || '';
+            if (els.bulletSfxUrl) els.bulletSfxUrl.value = audio.bullet_sfx_url || '';
+            if (els.bgMusicUrl) els.bgMusicUrl.value = audio.bg_music_url || '';
+            if (els.sfxVolume) els.sfxVolume.value = Number.isFinite(Number(audio.sfx_volume)) ? Number(audio.sfx_volume) : 0.9;
+            if (els.bgMusicVolume) els.bgMusicVolume.value = Number.isFinite(Number(audio.bg_music_volume)) ? Number(audio.bg_music_volume) : 0.22;
+        }
+
+        function syncProjectAudioFromForm() {
+            const audio = ensureProjectAudioSettings();
+            if (!audio) return;
+            if (els.titleSfxUrl) audio.title_sfx_url = els.titleSfxUrl.value.trim();
+            if (els.bulletSfxUrl) audio.bullet_sfx_url = els.bulletSfxUrl.value.trim();
+            if (els.bgMusicUrl) audio.bg_music_url = els.bgMusicUrl.value.trim();
+            if (els.sfxVolume) audio.sfx_volume = Number(els.sfxVolume.value || 0.9);
+            if (els.bgMusicVolume) audio.bg_music_volume = Number(els.bgMusicVolume.value || 0.22);
+        }
+
         function formatProjectOptionLabel(project) {
-            const title = (project?.title || 'Untitled project').trim();
-            const sceneCount = Number(project?.scene_count || 0);
-            const source = (project?.source_value || '').trim();
-            const parts = [title, `${sceneCount} scene${sceneCount === 1 ? '' : 's'}`];
-            if (source) parts.push(source);
-            return parts.join(' • ');
+            const title = String(project?.title || 'Untitled project').trim();
+            const sceneCount = Number(project?.scene_count || project?.scenes?.length || 0);
+            const source = String(project?.source_value || '').trim();
+            return [title, `${sceneCount} scene${sceneCount === 1 ? '' : 's'}`, source].filter(Boolean).join(' • ');
         }
 
         function renderProjectPicker(selectedId = '') {
             if (!els.projectPicker) return;
-
             const options = ['<option value="">Select a saved project</option>'];
             for (const project of state.projects) {
-                const isSelected = String(project.id || '') === String(selectedId || '');
-                options.push(`<option value="${escapeHtml(project.id || '')}" ${isSelected ? 'selected' : ''}>${escapeHtml(formatProjectOptionLabel(project))}</option>`);
+                const id = String(project?.id || '');
+                const selected = id === String(selectedId || '') ? ' selected' : '';
+                options.push(`<option value="${escapeHtml(id)}"${selected}>${escapeHtml(formatProjectOptionLabel(project))}</option>`);
             }
             els.projectPicker.innerHTML = options.join('');
         }
@@ -1030,31 +1042,22 @@
                 alert('Please select a saved project first.');
                 return;
             }
-
             const data = await api(`/api/projects/${id}`, { method: 'GET' });
             state.project = data.project;
             state.selectedSceneIndex = state.project?.scenes?.length ? 0 : -1;
-
-            if (state.project?.theme_id && els.themeSelect) {
-                els.themeSelect.value = state.project.theme_id;
-            }
-            els.sourceValue.value = state.project?.source_value || state.project?.title || '';
-
+            ensureProjectAudioSettings();
             renderProjectSummary();
             renderSceneList();
             renderAssets();
-            renderProjectPicker(id);
-
+            syncProjectAudioForm();
             if (state.selectedSceneIndex >= 0) {
                 selectScene(state.selectedSceneIndex);
             } else {
                 renderSelectedScene();
             }
-
-            renderActiveSceneSpeechOutput();
+            if (els.projectPicker) els.projectPicker.value = id;
             els.renderPlanOutput.textContent = 'Project loaded.';
         }
-
 
         function renderActiveSceneSpeechOutput() {
             const scene = state.project?.scenes?.[state.selectedSceneIndex];
@@ -1355,14 +1358,6 @@
             els.sceneDuration.value = timing.manual_duration_sec ?? '';
             els.revealMode.value = timing.reveal_mode || 'all_at_once';
 
-            const audio = ensureProjectAudioSettings() || {};
-            els.titleSfxUrl.value = audio.title_sfx_url || '/static/sounds/title-whoosh.mp3';
-            els.bulletSfxUrl.value = audio.bullet_sfx_url || '/static/sounds/bullet-pop.mp3';
-            els.bgMusicUrl.value = audio.bg_music_url || '/static/sounds/background-music.mp3';
-            els.sfxVolume.value = audio.sfx_volume ?? 0.5;
-            els.bgMusicVolume.value = audio.bg_music_volume ?? 0.1;
-
-
             const linkedAsset = getLinkedAsset(scene);
             els.sceneBgUrl.value = linkedAsset?.url || '';
 
@@ -1436,7 +1431,8 @@
                 item.style.animationDelay = `${0.18 + index * 0.14}s`;
                 item.classList.add('animate-bullet');
             });
-            }, 60);            
+            }, 60);
+            syncProjectAudioForm();
             renderActiveSceneSpeechOutput();
         }
 
@@ -1483,16 +1479,6 @@
             scene.timing = scene.timing || {};
             scene.timing.manual_duration_sec = els.sceneDuration.value ? Number(els.sceneDuration.value) : null;
             scene.timing.reveal_mode = els.revealMode.value;
-
-            const audio = ensureProjectAudioSettings();
-            if (audio) {
-                audio.title_sfx_url = els.titleSfxUrl.value.trim();
-                audio.bullet_sfx_url = els.bulletSfxUrl.value.trim();
-                audio.bg_music_url = els.bgMusicUrl.value.trim();
-                audio.sfx_volume = els.sfxVolume.value === '' ? 0.5 : Number(els.sfxVolume.value);
-                audio.bg_music_volume = els.bgMusicVolume.value === '' ? 0.1 : Number(els.bgMusicVolume.value);
-            }
-
 
             renderSceneList();
             renderProjectSummary();
@@ -1618,6 +1604,8 @@
             renderSceneList();
             renderAssets();
             renderSelectedScene();
+            syncProjectAudioForm();
+            await loadProjectList(state.project?.id || '');
             els.renderPlanOutput.textContent = 'Project created. Build render plan when ready.';
         }
 
@@ -1665,6 +1653,7 @@
 
             state.project = data.project;
             state.selectedSceneIndex = state.project?.scenes?.length ? 0 : -1;
+            ensureProjectAudioSettings();
 
             renderProjectSummary();
             renderSceneList();
@@ -1675,8 +1664,9 @@
             } else {
                 renderSelectedScene();
             }
-            await loadProjectList(state.project?.id || '');
 
+            syncProjectAudioForm();
+            await loadProjectList(state.project?.id || '');
             els.renderPlanOutput.textContent = 'Project created. Build render plan when ready.';
         }
         async function saveProject() {
@@ -1685,14 +1675,16 @@
                 return;
             }
             syncCurrentSceneFromForm();
+            syncProjectAudioFromForm();
             const data = await api(`/api/projects/${state.project.id}`, {
                 method: 'PUT',
                 body: JSON.stringify(state.project),
             });
             state.project = data.project;
+            ensureProjectAudioSettings();
             renderProjectSummary();
+            syncProjectAudioForm();
             await loadProjectList(state.project?.id || '');
-
             els.renderPlanOutput.textContent = 'Project saved.';
             renderActiveSceneSpeechOutput();
         }
@@ -1721,12 +1713,6 @@
                 els.textAlign,
                 els.sceneDuration,
                 els.revealMode,
-                els.titleSfxUrl,
-                els.bulletSfxUrl,
-                els.bgMusicUrl,
-                els.sfxVolume,
-                els.bgMusicVolume,
-
             ].forEach(el => {
                 el.addEventListener('input', syncCurrentSceneFromForm);
                 el.addEventListener('change', syncCurrentSceneFromForm);
@@ -1744,6 +1730,28 @@
                     updateFrameAspect();
                 });
             });
+
+            [els.titleSfxUrl, els.bulletSfxUrl, els.bgMusicUrl, els.sfxVolume, els.bgMusicVolume].forEach(el => {
+                if (!el) return;
+                el.addEventListener('input', syncProjectAudioFromForm);
+                el.addEventListener('change', syncProjectAudioFromForm);
+            });
+
+            if (els.refreshProjectsBtn) {
+                els.refreshProjectsBtn.addEventListener('click', async () => {
+                    try { await loadProjectList(state.project?.id || ''); } catch (e) { alert(e.message); }
+                });
+            }
+            if (els.loadProjectBtn) {
+                els.loadProjectBtn.addEventListener('click', async () => {
+                    try { await loadExistingProject(); } catch (e) { alert(e.message); }
+                });
+            }
+            if (els.projectPicker) {
+                els.projectPicker.addEventListener('dblclick', async () => {
+                    try { await loadExistingProject(); } catch (e) { alert(e.message); }
+                });
+            }
         }
 
         function loadSampleHtml() {
@@ -1876,28 +1884,11 @@
 
             if (els.openPlayerBtn) {
             els.openPlayerBtn.addEventListener('click', openPlayer);
-            }
-            if (els.refreshProjectsBtn) {
-                els.refreshProjectsBtn.addEventListener('click', async () => {
-                    try { await loadProjectList(state.project?.id || ''); } catch (e) { alert(e.message); }
-                });
-            }
-            if (els.loadProjectBtn) {
-                els.loadProjectBtn.addEventListener('click', async () => {
-                    try { await loadExistingProject(); } catch (e) { alert(e.message); }
-                });
-            }
-            if (els.projectPicker) {
-                els.projectPicker.addEventListener('dblclick', async () => {
-                    try { await loadExistingProject(); } catch (e) { alert(e.message); }
-                });
-            }
-           
+            }            
             els.loadSampleBtn.addEventListener('click', loadSampleHtml);
             updateFrameAspect();
             await loadThemes();
             await loadProjectList();
-
         }
 
         init();
