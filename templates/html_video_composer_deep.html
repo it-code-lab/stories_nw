@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudioForge | Video Composer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0c10;
+            color: #eef2ff;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Import Inter font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+
+        /* Compact app shell */
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #0f1117;
+        }
+
+        /* Top bar - tighter */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            height: 56px;
+            background: rgba(18, 22, 32, 0.96);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(72, 85, 106, 0.3);
+            flex-shrink: 0;
+        }
+
+        .logo h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #c084fc, #60a5fa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .logo p {
+            font-size: 0.7rem;
+            color: #7e8a98;
+            margin-top: 2px;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn {
+            background: #1e2433;
+            border: none;
+            color: #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #334155;
+        }
+        .btn-outline:hover { background: #1e293b; border-color: #5b6e8c; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+
+        /* Main layout: 2 columns (left panel compact, right preview large) */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 1px;
+            background: #1a1e2a;
+        }
+
+        /* Left sidebar - compact scenes + project tools */
+        .sidebar {
+            width: 320px;
+            background: #0f1119;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #262b38;
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            padding: 14px 16px;
+            border-bottom: 1px solid #1e2433;
+        }
+
+        .section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #7c8ba0;
+            margin-bottom: 12px;
+        }
+
+        .scene-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .scene-item {
+            background: #131823;
+            border-radius: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.1s;
+        }
+
+        .scene-item.active {
+            background: #1e2a3a;
+            border-color: #3b82f6;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .scene-title-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .scene-meta {
+            font-size: 0.65rem;
+            color: #7e8c9e;
+            margin-top: 6px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .badge {
+            background: #2d3748;
+            padding: 2px 6px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+        }
+
+        /* Right area: preview + inline editor */
+        .preview-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0b0e14;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .aspect-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+            gap: 8px;
+        }
+
+        .aspect-pill {
+            background: #1e2433;
+            border-radius: 40px;
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px;
+        }
+
+        .aspect-btn {
+            background: transparent;
+            border: none;
+            color: #a0afc3;
+            padding: 4px 14px;
+            border-radius: 32px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .aspect-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .video-stage {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at 30% 20%, #131725, #03050a);
+            border-radius: 28px;
+            padding: 20px;
+            border: 1px solid #262d3c;
+            box-shadow: 0 20px 35px -12px black;
+        }
+
+        .video-frame {
+            background: #000000aa;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 40px -12px black;
+            transition: all 0.2s;
+        }
+
+        .frame-16-9 { width: 100%; max-width: 980px; aspect-ratio: 16 / 9; }
+        .frame-9-16 { width: 100%; max-width: 400px; aspect-ratio: 9 / 16; }
+        .frame-1-1 { width: 100%; max-width: 620px; aspect-ratio: 1 / 1; }
+
+        .preview-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .overlay-card-inline {
+            position: absolute;
+            background: rgba(10, 14, 23, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 20px 24px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            max-width: 80%;
+            transition: all 0.2s;
+        }
+
+        .position-left { left: 5%; top: 50%; transform: translateY(-50%); right: auto; max-width: 55%; }
+        .position-right { right: 5%; top: 50%; transform: translateY(-50%); left: auto; max-width: 55%; }
+        .position-center { left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; max-width: 80%; }
+        .position-top_card { left: 5%; top: 6%; right: auto; max-width: 60%; }
+        .position-bottom_card { left: 5%; bottom: 6%; right: auto; max-width: 60%; }
+
+        .inline-editable {
+            cursor: pointer;
+            transition: background 0.1s;
+            border-radius: 8px;
+            padding: 4px 6px;
+            margin: -4px -6px;
+        }
+
+        .inline-editable:hover {
+            background: rgba(59,130,246,0.2);
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+
+        .preview-title {
+            font-size: clamp(1.4rem, 3vw, 2rem);
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .preview-sub {
+            font-size: 0.85rem;
+            color: #cbd5e6;
+            margin-bottom: 16px;
+        }
+
+        .bullets-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bullet-item {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bullet-marker {
+            width: 6px;
+            height: 6px;
+            background: #60a5fa;
+            border-radius: 10px;
+        }
+
+        .edit-icon {
+            opacity: 0.5;
+            margin-left: 8px;
+            font-size: 0.7rem;
+            transition: opacity 0.1s;
+        }
+
+        .inline-editable:hover .edit-icon {
+            opacity: 1;
+        }
+
+        .narration-panel {
+            margin-top: 20px;
+            background: #11161f;
+            border-radius: 20px;
+            padding: 12px 18px;
+            border: 1px solid #262e3c;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .narration-text {
+            font-size: 0.8rem;
+            color: #b9c7dd;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .icon-btn {
+            background: #1e293b;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .asset-strip {
+            margin-top: 16px;
+            font-size: 0.7rem;
+            color: #7e8a98;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .modal-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-card {
+            background: #181e2c;
+            border-radius: 28px;
+            width: 480px;
+            max-width: 90%;
+            padding: 24px;
+            border: 1px solid #334155;
+        }
+        textarea, input {
+            background: #0f1420;
+            border: 1px solid #2d3748;
+            border-radius: 14px;
+            padding: 10px;
+            color: white;
+            width: 100%;
+            font-family: inherit;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        .small-text { font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="top-bar">
+        <div class="logo">
+            <h3>StudioForge</h3>
+            <p>video composer · smart scenes</p>
+        </div>
+        <div class="tool-group">
+            <button class="btn btn-outline" id="loadSampleBtn">📄 Sample HTML</button>
+            <button class="btn btn-primary" id="parseBtn">✨ Create project</button>
+            <button class="btn btn-outline" id="saveBtn">💾 Save</button>
+            <button class="btn btn-success" id="speechPlanBtn">🎙️ Speech plan</button>
+            <button class="btn btn-success" id="ttsBtn">🔊 TTS</button>
+            <button class="btn btn-outline" id="openPlayerBtn">▶️ Player</button>
+            <button class="btn btn-danger" id="cleanupBtn">🗑️ Clean</button>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- LEFT PANEL: COMPACT SCENES & PROJECT INFO -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="section-title">PROJECT</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <select id="projectPicker" style="background:#11161f; border:1px solid #2d3748; border-radius:10px; padding:6px; color:white; font-size:0.7rem; flex:1;"></select>
+                    <button class="btn" id="loadProjectBtn" style="padding:4px 10px;">Load</button>
+                    <button class="btn" id="refreshProjectsBtn" style="padding:4px 10px;">↻</button>
+                </div>
+                <div style="display: flex; gap: 6px; margin-top: 8px;">
+                    <select id="themeSelect" style="flex:1; background:#11161f; border:1px solid #2d3748; border-radius:8px; font-size:0.7rem; padding:6px;"></select>
+                    <input type="text" id="sourceValue" placeholder="source" style="width:100px; font-size:0.7rem;" />
+                </div>
+                <textarea id="htmlInput" placeholder="Paste HTML here..." rows="2" style="margin-top: 12px; font-size:0.7rem;"></textarea>
+            </div>
+
+            <div class="sidebar-section" style="flex:1; overflow-y: auto;">
+                <div class="section-title">SCENES <span id="sceneCountLabel" class="small-text" style="margin-left:8px;">0</span></div>
+                <div id="sceneListContainer" class="scene-list"></div>
+            </div>
+        </div>
+
+        <!-- RIGHT PREVIEW + INLINE EDITING -->
+        <div class="preview-area">
+            <div class="aspect-bar">
+                <div class="aspect-pill" id="aspectToggle">
+                    <button data-value="16:9" class="aspect-btn active">16:9</button>
+                    <button data-value="9:16" class="aspect-btn">9:16</button>
+                    <button data-value="1:1" class="aspect-btn">1:1</button>
+                </div>
+            </div>
+
+            <div class="video-stage">
+                <div class="video-frame frame-16-9" id="videoFrame">
+                    <div class="preview-inner" id="frameBg" style="background-size: cover; background-position: center;">
+                        <div id="overlayCard" class="overlay-card-inline position-center">
+                            <div id="previewTitle" class="preview-title inline-editable" data-field="title">Select a scene</div>
+                            <div id="previewSubtitle" class="preview-sub inline-editable" data-field="subtitle"></div>
+                            <ul id="previewBullets" class="bullets-list"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NARRATION EDITOR BAR (compact) -->
+            <div class="narration-panel">
+                <div class="narration-text" id="narrationPreview">📝 Narration: not set</div>
+                <button class="icon-btn" id="editNarrationBtn">✏️ Edit narration</button>
+                <button class="icon-btn" id="applyBgBtn">🖼️ Set background URL</button>
+                <input type="text" id="sceneBgUrlQuick" placeholder="image/video URL" style="width:160px; font-size:0.7rem;" />
+            </div>
+            <div class="asset-strip" id="assetStrip"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- STATE ----------
+    const state = {
+        themes: [],
+        projects: [],
+        project: null,
+        selectedSceneIndex: -1,
+        selectedAspectRatio: '16:9',
+        activeModal: null,
+    };
+
+    // DOM elements
+    const els = {
+        themeSelect: document.getElementById('themeSelect'),
+        sourceValue: document.getElementById('sourceValue'),
+        htmlInput: document.getElementById('htmlInput'),
+        parseBtn: document.getElementById('parseBtn'),
+        saveBtn: document.getElementById('saveBtn'),
+        speechPlanBtn: document.getElementById('speechPlanBtn'),
+        ttsBtn: document.getElementById('ttsBtn'),
+        loadSampleBtn: document.getElementById('loadSampleBtn'),
+        sceneListContainer: document.getElementById('sceneListContainer'),
+        sceneCountLabel: document.getElementById('sceneCountLabel'),
+        videoFrame: document.getElementById('videoFrame'),
+        frameBg: document.getElementById('frameBg'),
+        overlayCard: document.getElementById('overlayCard'),
+        previewTitle: document.getElementById('previewTitle'),
+        previewSubtitle: document.getElementById('previewSubtitle'),
+        previewBullets: document.getElementById('previewBullets'),
+        projectPicker: document.getElementById('projectPicker'),
+        refreshProjectsBtn: document.getElementById('refreshProjectsBtn'),
+        loadProjectBtn: document.getElementById('loadProjectBtn'),
+        openPlayerBtn: document.getElementById('openPlayerBtn'),
+        cleanupBtn: document.getElementById('cleanupBtn'),
+        editNarrationBtn: document.getElementById('editNarrationBtn'),
+        applyBgBtn: document.getElementById('applyBgBtn'),
+        sceneBgUrlQuick: document.getElementById('sceneBgUrlQuick'),
+        narrationPreview: document.getElementById('narrationPreview'),
+        assetStrip: document.getElementById('assetStrip'),
+        aspectToggle: document.getElementById('aspectToggle'),
+    };
+
+    // Helper: API
+    async function api(path, options = {}) {
+        const res = await fetch(path, {
+            headers: { 'Content-Type': 'application/json' },
+            ...options,
+        });
+        const data = await res.json();
+        if (!res.ok || data.ok === false) throw new Error(data.error || 'API error');
+        return data;
+    }
+
+    function escapeHtml(str) { return String(str || '').replace(/[&<>]/g, function(m){ if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m;}); }
+
+    // Update aspect ratio
+    function updateFrameAspect() {
+        els.videoFrame.classList.remove('frame-16-9', 'frame-9-16', 'frame-1-1');
+        if (state.selectedAspectRatio === '9:16') els.videoFrame.classList.add('frame-9-16');
+        else if (state.selectedAspectRatio === '1:1') els.videoFrame.classList.add('frame-1-1');
+        else els.videoFrame.classList.add('frame-16-9');
+    }
+
+    // Sync current scene from UI (compact inline updates)
+    function syncCurrentSceneFromInline() {
+        const scene = state.project?.scenes?.[state.selectedSceneIndex];
+        if (!scene) return;
+        // title and subtitle are directly edited via inline contenteditable-like but we use modal? We'll handle modals, but also store directly after edit.
+        // For direct sync, we already update via modals. So just re-render preview
+    }
+
+    function getLinkedAsset(scene) {
+        const assetId = scene?.media_asset_ids?.[0];
+        if (!assetId || !state.project?.assets) return null;
+        return state.project.assets.find(a => a.id === assetId);
+    }
+
+    function renderPreview() {
+        const scene = state.project?.scenes?.[state.selectedSceneIndex];
+        if (!scene) {
+            els.previewTitle.innerText = 'No scene selected';
+            els.previewSubtitle.innerText = '';
+            els.previewBullets.innerHTML = '<li class="bullet-item">Create a project or select scene</li>';
+            els.narrationPreview.innerText = '📝 Narration: —';
+            els.frameBg.style.backgroundImage = 'linear-gradient(135deg, #0f172a, #020617)';
+            return;
+        }
+
+        els.previewTitle.innerText = scene.title || 'Untitled scene';
+        els.previewSubtitle.innerText = scene.subtitle || '';
+        const bullets = scene.bullets || [];
+        els.previewBullets.innerHTML = bullets.map(b => `<li class="bullet-item"><span class="bullet-marker"></span>${escapeHtml(b)} <span class="edit-icon">✎</span></li>`).join('');
+        const narration = scene.narration_text || 'No narration text';
+        els.narrationPreview.innerText = `📝 Narration: ${narration.length > 60 ? narration.slice(0,60)+'…' : narration}`;
+
+        const linked = getLinkedAsset(scene);
+        const bgUrl = linked?.url;
+        if (bgUrl) els.frameBg.style.backgroundImage = `url("${bgUrl}")`;
+        else els.frameBg.style.backgroundImage = 'linear-gradient(135deg, #1e293b, #0f172a)';
+
+        // adjust overlay position
+        const layout = scene.layout || {};
+        const pos = layout.overlay_position || 'center';
+        els.overlayCard.classList.remove('position-left', 'position-right', 'position-center', 'position-top_card', 'position-bottom_card');
+        if (pos === 'left') els.overlayCard.classList.add('position-left');
+        else if (pos === 'right') els.overlayCard.classList.add('position-right');
+        else if (pos === 'top_card') els.overlayCard.classList.add('position-top_card');
+        else if (pos === 'bottom_card') els.overlayCard.classList.add('position-bottom_card');
+        else els.overlayCard.classList.add('position-center');
+        els.overlayCard.style.textAlign = layout.text_align || 'left';
+    }
+
+    function renderSceneList() {
+        const scenes = state.project?.scenes || [];
+        els.sceneCountLabel.innerText = scenes.length;
+        if (!scenes.length) {
+            els.sceneListContainer.innerHTML = '<div class="small-text" style="padding:12px;">No scenes. Create project.</div>';
+            return;
+        }
+        els.sceneListContainer.innerHTML = scenes.map((s, idx) => `
+            <div class="scene-item ${state.selectedSceneIndex === idx ? 'active' : ''}" data-index="${idx}">
+                <div class="scene-title-row">
+                    <span>${escapeHtml(s.title || s.scene_type || 'Scene')}</span>
+                    <span class="badge">${idx+1}</span>
+                </div>
+                <div class="scene-meta">${s.scene_type} · ${(s.timing?.manual_duration_sec || s.timing?.estimated_duration_sec || 4)}s</div>
+            </div>
+        `).join('');
+        document.querySelectorAll('.scene-item').forEach(el => {
+            el.addEventListener('click', () => selectScene(parseInt(el.dataset.index)));
+        });
+    }
+
+    function selectScene(idx) {
+        if (!state.project?.scenes?.length) return;
+        state.selectedSceneIndex = Math.min(idx, state.project.scenes.length-1);
+        renderSceneList();
+        renderPreview();
+        renderAssetStrip();
+        if(els.sceneBgUrlQuick) els.sceneBgUrlQuick.value = getLinkedAsset(state.project.scenes[state.selectedSceneIndex])?.url || '';
+    }
+
+    function renderAssetStrip() {
+        const assets = state.project?.assets || [];
+        els.assetStrip.innerHTML = assets.map(a => `<span>🖼️ ${escapeHtml(a.title || 'asset')}</span>`).join('') || '<span>No assets</span>';
+    }
+
+    function openInlineEdit(fieldType) {
+        const scene = state.project?.scenes?.[state.selectedSceneIndex];
+        if (!scene) return;
+        let initialValue = '';
+        if (fieldType === 'title') initialValue = scene.title || '';
+        else if (fieldType === 'subtitle') initialValue = scene.subtitle || '';
+        else if (fieldType === 'bullets') initialValue = (scene.bullets || []).join('\n');
+        else if (fieldType === 'narration') initialValue = scene.narration_text || '';
+
+        const modalDiv = document.createElement('div');
+        modalDiv.className = 'modal-mask';
+        modalDiv.innerHTML = `
+            <div class="modal-card">
+                <h4 style="margin-bottom:12px;">Edit ${fieldType}</h4>
+                <textarea id="modalInput" rows="5" placeholder="Enter ${fieldType}...">${escapeHtml(initialValue)}</textarea>
+                <div class="flex-between">
+                    <button class="btn btn-outline" id="modalCancel">Cancel</button>
+                    <button class="btn btn-primary" id="modalSave">Save</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalDiv);
+        const textarea = modalDiv.querySelector('#modalInput');
+        const saveBtn = modalDiv.querySelector('#modalSave');
+        const cancelBtn = modalDiv.querySelector('#modalCancel');
+        const saveHandler = () => {
+            const newVal = textarea.value;
+            if (fieldType === 'title') scene.title = newVal;
+            else if (fieldType === 'subtitle') scene.subtitle = newVal;
+            else if (fieldType === 'bullets') scene.bullets = newVal.split('\n').filter(l => l.trim() !== '');
+            else if (fieldType === 'narration') scene.narration_text = newVal;
+            renderPreview();
+            renderSceneList();
+            modalDiv.remove();
+        };
+        saveBtn.addEventListener('click', saveHandler);
+        cancelBtn.addEventListener('click', () => modalDiv.remove());
+    }
+
+    // ---------- PROJECT ACTIONS ----------
+    async function createProjectFromHtml() {
+        const html = els.htmlInput.value.trim();
+        if (!html) { alert('Paste HTML first'); return; }
+        const payload = { html, source_value: els.sourceValue.value.trim() || 'inline', theme_id: els.themeSelect.value };
+        const data = await api('/api/projects/from-html', { method: 'POST', body: JSON.stringify(payload) });
+        state.project = data.project;
+        state.selectedSceneIndex = state.project.scenes?.length ? 0 : -1;
+        renderSceneList();
+        renderPreview();
+        renderAssetStrip();
+        await loadProjectList(state.project.id);
+    }
+
+    async function saveProject() {
+        if (!state.project) { alert('No project'); return; }
+        // Sync any pending inline changes (title/subtitle already in scene object)
+        const scene = state.project?.scenes?.[state.selectedSceneIndex];
+        if (scene) {
+            // ensure bullets if edited
+        }
+        await api(`/api/projects/${state.project.id}`, { method: 'PUT', body: JSON.stringify(state.project) });
+        alert('Saved');
+    }
+
+    async function buildSpeechPlan() {
+        if (!state.project) return alert('Create project');
+        await saveProject();
+        const data = await api(`/api/projects/${state.project.id}/speech-plan`, { method: 'POST' });
+        state.project = data.project;
+        renderPreview();
+        alert('Speech plan built');
+    }
+    async function generateTTS() {
+        if (!state.project) return alert('Create project');
+        await saveProject();
+        const data = await api(`/api/projects/${state.project.id}/synthesize-speech`, { method: 'POST' });
+        state.project = data.project;
+        renderPreview();
+        alert('TTS generated');
+    }
+    async function loadProjectList(selectedId = '') {
+        const data = await api('/api/projects', { method: 'GET' });
+        state.projects = data.projects || [];
+        els.projectPicker.innerHTML = '<option value="">Select project</option>' + state.projects.map(p => `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${escapeHtml(p.title || p.id.slice(0,8))} (${p.scene_count || p.scenes?.length || 0} scenes)</option>`).join('');
+    }
+    async function loadExistingProject() {
+        const id = els.projectPicker.value;
+        if (!id) return alert('Select project');
+        const data = await api(`/api/projects/${id}`, { method: 'GET' });
+        state.project = data.project;
+        state.selectedSceneIndex = state.project.scenes?.length ? 0 : -1;
+        renderSceneList();
+        renderPreview();
+        renderAssetStrip();
+    }
+    async function cleanupAll() { if(confirm('Delete all projects?')){ await api('/api/projects/cleanup-all',{method:'POST',body:'{}'}); state.project=null; renderSceneList(); renderPreview(); await loadProjectList(); } }
+    function openPlayer() { if(state.project?.id) window.open(`/html-video-composer/player/${state.project.id}`, '_blank'); else alert('No project'); }
+    function loadSampleHtml() {
+        els.sourceValue.value = 'sample';
+        els.htmlInput.value = `<article><h1>AI Revolution in Content</h1><p>Tools like LLMs change workflows.</p><ul><li>Automate repetitive tasks</li><li>Enhance creativity</li><li>Reduce production time</li></ul><blockquote>Speed meets quality</blockquote></article>`;
+    }
+    async function applyBackground() {
+        const url = els.sceneBgUrlQuick.value.trim();
+        if (!url || !state.project || state.selectedSceneIndex<0) return;
+        const scene = state.project.scenes[state.selectedSceneIndex];
+        let asset = getLinkedAsset(scene);
+        if (asset) asset.url = url;
+        else {
+            const newAsset = { id: crypto.randomUUID(), kind: 'image', url, title: 'Background', source: 'user' };
+            state.project.assets.push(newAsset);
+            scene.media_asset_ids = [newAsset.id];
+        }
+        renderPreview();
+        renderAssetStrip();
+    }
+
+    async function loadThemes() {
+        const data = await api('/api/themes', { method: 'GET' });
+        state.themes = data.themes || [];
+        els.themeSelect.innerHTML = state.themes.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    }
+
+    function attachInlineEditors() {
+        els.previewTitle.addEventListener('click', (e) => { e.stopPropagation(); openInlineEdit('title'); });
+        els.previewSubtitle.addEventListener('click', (e) => { e.stopPropagation(); openInlineEdit('subtitle'); });
+        els.previewBullets.addEventListener('click', (e) => {
+            const li = e.target.closest('.bullet-item');
+            if (li) openInlineEdit('bullets');
+        });
+        els.editNarrationBtn.addEventListener('click', () => openInlineEdit('narration'));
+        els.applyBgBtn.addEventListener('click', applyBackground);
+    }
+
+    function initAspectToggle() {
+        const btns = els.aspectToggle.querySelectorAll('.aspect-btn');
+        btns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.selectedAspectRatio = btn.dataset.value;
+                btns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateFrameAspect();
+            });
+        });
+    }
+
+    async function init() {
+        await loadThemes();
+        await loadProjectList();
+        attachInlineEditors();
+        initAspectToggle();
+        updateFrameAspect();
+        els.parseBtn.addEventListener('click', () => createProjectFromHtml().catch(e=>alert(e.message)));
+        els.saveBtn.addEventListener('click', () => saveProject().catch(e=>alert(e.message)));
+        els.speechPlanBtn.addEventListener('click', () => buildSpeechPlan().catch(e=>alert(e.message)));
+        els.ttsBtn.addEventListener('click', () => generateTTS().catch(e=>alert(e.message)));
+        els.loadSampleBtn.addEventListener('click', loadSampleHtml);
+        els.refreshProjectsBtn.addEventListener('click', () => loadProjectList(state.project?.id));
+        els.loadProjectBtn.addEventListener('click', () => loadExistingProject().catch(e=>alert(e.message)));
+        els.openPlayerBtn.addEventListener('click', openPlayer);
+        els.cleanupBtn.addEventListener('click', cleanupAll);
+        // default empty state
+        renderSceneList();
+        renderPreview();
+    }
+    init();
+</script>
+</body>
+</html>

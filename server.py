@@ -6053,6 +6053,9 @@ def list_projects():
 def html_video_composer():
     return render_template("html_video_composer.html")
 
+@app.get("/html-video-composer_deep")
+def html_video_composer_deep():
+    return render_template("html_video_composer_deep.html")
 
 from flask import render_template, send_from_directory, jsonify
 
