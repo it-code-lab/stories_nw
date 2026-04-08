@@ -5949,9 +5949,14 @@ def synthesize_project_speech(project_id: str):
 
     narration_cfg = project.get("narration", {}) or {}
     voice = narration_cfg.get("voice", "alloy")
-    language = narration_cfg.get("language", "english")
-    engine = narration_cfg.get("engine", "google")
-    gender = narration_cfg.get("gender", "Male")
+
+    # language = narration_cfg.get("language", "english")
+    # engine = narration_cfg.get("engine", "google")
+    # gender = narration_cfg.get("gender", "Male")
+
+    language =  "english"
+    engine =  "google"
+    gender =  "Male"
 
     meta_path = speech_root / "_audio_meta.json"
     if meta_path.exists():
