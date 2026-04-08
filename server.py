@@ -6140,8 +6140,10 @@ def build_playback_payload(project: dict) -> dict:
         "project_id": project.get("id"),
         "title": project.get("title", "HTML Video Composer Project"),
         "theme_id": project.get("theme_id", "corporate-clean"),
+        "project_settings": project.get("project_settings", {}),
         "scenes": scenes_out,
     }
+
 
 
 @app.get("/html-video-composer/player/<project_id>")

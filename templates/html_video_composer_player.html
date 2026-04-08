@@ -19,6 +19,8 @@
             --card-strong: rgba(15, 23, 42, 0.52);
             --line: rgba(255, 255, 255, 0.10);
             --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+            --text-shadow-strong: 0 3px 10px rgba(0, 0, 0, 0.72), 0 10px 28px rgba(0, 0, 0, 0.62);
+            --text-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.6), 0 6px 18px rgba(0, 0, 0, 0.45);
         }
 
         * {
@@ -78,8 +80,8 @@
 
         .bg-dim {
             background:
-                radial-gradient(circle at top, rgba(56, 189, 248, 0.12), transparent 35%),
-                linear-gradient(180deg, rgba(3, 10, 24, 0.30), rgba(3, 10, 24, 0.58));
+                radial-gradient(circle at top, rgba(56, 189, 248, 0.08), transparent 34%),
+                linear-gradient(180deg, rgba(3, 10, 24, 0.14), rgba(3, 10, 24, 0.30));
         }
 
         .content-wrap {
@@ -93,11 +95,11 @@
         }
 
         .glass-card {
-            background: var(--card);
-            border: 1px solid var(--line);
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
             border-radius: 28px;
             opacity: 0;
             transform: translateY(24px) scale(0.985);
@@ -111,8 +113,8 @@
 
         .bullet-card {
             width: 74vw;
-            padding: 12px 14px 14px;
-            background: rgba(15, 23, 42, 0.24);
+            padding: 8px 6px 10px;
+            background: transparent;
         }
 
         .accent-line {
@@ -130,15 +132,18 @@
             line-height: 1.06;
             letter-spacing: -0.03em;
             font-weight: 800;
-            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            text-shadow: var(--text-shadow-strong);
+
         }
 
         .scene-subtitle {
             margin: 14px 0 0;
             color: var(--muted);
-            font-size: clamp(18px, 1.4vw, 24px);
-            line-height: 1.5;
+            font-size: clamp(24px, 2vw, 30px);
+            line-height: 2;
             opacity: 0;
+            text-shadow: var(--text-shadow-soft);
+
         }
 
         .scene-bullets {
@@ -146,31 +151,35 @@
             margin: 0;
             padding: 0;
             display: grid;
-            gap: 18px;
+            gap: 2px;
         }
 
         .scene-bullet {
             display: grid;
             grid-template-columns: 16px 1fr;
-            gap: 10px;
+            gap: 8px;
             align-items: start;
-            padding: 10px 12px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 0;
+            border-radius: 0;
+            background: transparent;
+            border: 0;
             color: #eef2ff;
-            font-size: clamp(18px, 1.5vw, 26px);
+            font-size: clamp(22px, 1.5vw, 26px);
             font-weight: 600;
-            line-height: 1.0;
+            line-height: 1.6;
             opacity: 0;
             transform: translateX(-18px);
+        }
+
+        .scene-bullet > span {
+            text-shadow: var(--text-shadow-strong);
         }
 
         .scene-bullet::before {
             content: '';
             width: 10px;
             height: 10px;
-            margin-top: 0.2em;
+            margin-top: 0.6em;
             border-radius: 50%;
             background: var(--accent);
             box-shadow: 0 0 18px rgba(56, 189, 248, 0.45);
@@ -303,7 +312,7 @@
             </div>
         </div>
 
-        ```
+        
         <div id="sceneB" class="scene-layer">
             <div class="bg-layer"></div>
             <div class="bg-dim"></div>
@@ -333,7 +342,7 @@
     </div>
 
     <audio id="segmentAudio" preload="auto"></audio>
-
+    <audio id="bgMusicAudio" preload="auto" loop></audio>
     <script>
         const PROJECT_ID = {{ project_id| tojson }};
 
@@ -346,6 +355,8 @@
             debug: new URLSearchParams(location.search).get('debug') === '1',
             autoplay: new URLSearchParams(location.search).get('autoplay') === '1',
             activeLayerIndex: 0,
+            bgMusicStarted: false,
+
         };
 
         const els = {
@@ -353,6 +364,8 @@
             sceneChip: document.getElementById('sceneChip'),
             progressBar: document.getElementById('progressBar'),
             segmentAudio: document.getElementById('segmentAudio'),
+            bgMusicAudio: document.getElementById('bgMusicAudio'),
+
             debugPanel: document.getElementById('debugPanel'),
             sceneA: document.getElementById('sceneA'),
             sceneB: document.getElementById('sceneB'),
@@ -398,6 +411,66 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
         }
+
+        function getAudioSettings() {
+            const raw = player.playback?.project_settings?.audio || {};
+            return {
+                title_sfx_url: raw.title_sfx_url || '',
+                bullet_sfx_url: raw.bullet_sfx_url || '',
+                bg_music_url: raw.bg_music_url || '',
+                sfx_volume: Number.isFinite(Number(raw.sfx_volume)) ? Number(raw.sfx_volume) : 0.9,
+                bg_music_volume: Number.isFinite(Number(raw.bg_music_volume)) ? Number(raw.bg_music_volume) : 0.22,
+            };
+        }
+
+        function clampVolume(v, fallback = 1) {
+            const n = Number(v);
+            if (!Number.isFinite(n)) return fallback;
+            return Math.max(0, Math.min(1, n));
+        }
+
+        function playOneShot(url, volume = 1) {
+            if (!url) return;
+            try {
+                const a = new Audio(url);
+                a.volume = clampVolume(volume, 1);
+                a.play().catch(() => {});
+            } catch (_) {}
+        }
+
+        function startBackgroundMusic() {
+            const audio = getAudioSettings();
+            if (!audio.bg_music_url || player.bgMusicStarted) return;
+            els.bgMusicAudio.pause();
+            els.bgMusicAudio.currentTime = 0;
+            els.bgMusicAudio.src = audio.bg_music_url;
+            els.bgMusicAudio.volume = clampVolume(audio.bg_music_volume, 0.22);
+            els.bgMusicAudio.load();
+            els.bgMusicAudio.play().then(() => {
+                player.bgMusicStarted = true;
+            }).catch(() => {
+                player.bgMusicStarted = false;
+            });
+        }
+
+        function stopBackgroundMusic() {
+            els.bgMusicAudio.pause();
+            els.bgMusicAudio.currentTime = 0;
+            els.bgMusicAudio.removeAttribute('src');
+            els.bgMusicAudio.load();
+            player.bgMusicStarted = false;
+        }
+
+        function playTitleSfx() {
+            const audio = getAudioSettings();
+            playOneShot(audio.title_sfx_url, clampVolume(audio.sfx_volume, 0.9));
+        }
+
+        function playBulletSfx() {
+            const audio = getAudioSettings();
+            playOneShot(audio.bullet_sfx_url, clampVolume(audio.sfx_volume, 0.9));
+        }
+
 
         function getActiveLayer() {
             return player.activeLayerIndex === 0 ? els.sceneA : els.sceneB;
@@ -449,6 +522,8 @@
             p.titleCard.classList.remove('show-title');
             void p.titleCard.offsetWidth;
             p.titleCard.classList.add('show-title');
+            playTitleSfx();
+
         }
 
         function revealSubtitleOnLayer(layerEl) {
@@ -470,6 +545,8 @@
 
             void li.offsetWidth;
             li.classList.add('show-bullet');
+            playBulletSfx();
+
         }
 
         async function crossfadeToScene(scene) {
@@ -532,6 +609,12 @@
 
             const segments = scene.segments || [];
             const bulletsAlreadyShown = new Set();
+            const hasTitleSegment = segments.some(seg => seg.kind === 'title');
+
+            if (!hasTitleSegment) {
+                revealTitleOnLayer(layer);
+            }
+           
 
             for (const seg of segments) {
                 if (!player.isPlaying) return;
@@ -554,6 +637,7 @@
             player.isPlaying = true;
             player.sceneIndex = startIndex;
             resetSceneDomOnLayer(getActiveLayer(), scenes[startIndex]);
+            startBackgroundMusic();
 
             for (let i = startIndex; i < scenes.length; i++) {
                 if (!player.isPlaying) return;
@@ -570,11 +654,14 @@
 
             els.statusChip.textContent = 'Completed';
             player.isPlaying = false;
+            stopBackgroundMusic();
+
         }
 
         function stopPlayback() {
             player.isPlaying = false;
             clearSceneTimers();
+            stopBackgroundMusic();
             els.statusChip.textContent = 'Paused';
         }
 
