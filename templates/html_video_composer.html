@@ -386,10 +386,10 @@
                 </div>
                 <div class="panel-body">
                     
-                    <details>
+                    <details-x>
                         <summary>Project Setup</summary>
                         <div class="details-body">
-                            <div class="input-group">
+                            <div class="input-group" style="display: none;">
                                 <label>Theme</label>
                                 <select id="themeSelect"></select>
                             </div>
@@ -406,7 +406,7 @@
                                 <input type="hidden" id="sourceValue" value="inline-html" />
                             </div>
                         </div>
-                    </details>
+                    </details-x>
 
                     <div class="section" style="margin-top: 10px;">
                         <div class="section-title" style="display:flex; justify-content:space-between;">
@@ -457,7 +457,65 @@
                 </div>
                 <div class="panel-body">
                     <div id="emptyState" class="muted small">Select a scene to view properties.</div>
+                    <details>
+                        <summary>Global Audio</summary>
+                        <div class="details-body">
+                            <div class="input-group"><label>BG Music URL</label><input type="url" id="bgMusicUrl" /></div>
+                            <div class="row-2">
+                                <div class="input-group"><label>Title SFX</label><input type="url" id="titleSfxUrl" /></div>
+                                <div class="input-group"><label>Bullet SFX</label><input type="url" id="bulletSfxUrl" /></div>
+                            </div>
+                            <div class="row-2">
+                                <div class="input-group"><label>Music Vol</label><input type="number" id="bgMusicVolume" step="0.05" /></div>
+                                <div class="input-group"><label>SFX Vol</label><input type="number" id="sfxVolume" step="0.05" /></div>
+                            </div>
+                        </div>
+                    </details>
 
+                        <div class="section">
+                            <div class="section-title">Background Media</div>
+                            <div class="input-group">
+                                <input type="url" id="sceneBgUrl" placeholder="Image/Video URL (or Paste)" />
+                                <div style="display:flex; gap:8px; margin-top:8px;">
+                                    <button class="btn btn-outline btn-sm" id="applyBgBtn" style="flex:1">Apply</button>
+                                </div>
+                                <div class="small muted" style="margin-top:4px;">Tip: Focus here & Ctrl+V to paste image.</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Scene Actions</div>
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-outline btn-sm" id="duplicateSceneBtn" style="flex:1">Duplicate</button>
+                                <button class="btn btn-danger btn-sm" id="deleteSceneBtn" style="flex:1">Delete</button>
+                            </div>
+                        </div>
+
+                        <details>
+                            <summary>Raw Content Data</summary>
+                            <div class="details-body">
+                                <div class="input-group"><label>Title</label><input type="text" id="sceneTitle"/></div>
+                                <div class="input-group"><label>Subtitle</label><input type="text" id="sceneSubtitle"/></div>
+                                <div class="input-group"><label>Bullets</label><textarea id="sceneBullets"></textarea></div>
+                                <div class="input-group"><label>Body Text</label><textarea id="sceneBody"></textarea></div>
+                                <div class="input-group"><label>Narration</label><textarea id="sceneNarration"></textarea></div>
+                            </div>
+                        </details>
+
+
+
+
+
+
+                    <details>
+                        <summary>Debug Logs</summary>
+                        <div class="details-body" style="display:flex; flex-direction:column; gap:10px;">
+                            <label>Speech Plan</label>
+                            <pre id="activeSceneSpeechOutput">Select a scene to inspect its speech plan.</pre>
+                            <label>Render Plan Output</label>
+                            <pre id="renderPlanOutput">No render plan yet.</pre>
+                        </div>
+                    </details>
                     <div id="editorForm" class="hidden">
                         
                         <div class="section">
@@ -526,65 +584,9 @@
                                 </div>
                             </div>                            
                         </div>
-
-                        <div class="section">
-                            <div class="section-title">Background Media</div>
-                            <div class="input-group">
-                                <input type="url" id="sceneBgUrl" placeholder="Image/Video URL (or Paste)" />
-                                <div style="display:flex; gap:8px; margin-top:8px;">
-                                    <button class="btn btn-outline btn-sm" id="applyBgBtn" style="flex:1">Apply</button>
-                                </div>
-                                <div class="small muted" style="margin-top:4px;">Tip: Focus here & Ctrl+V to paste image.</div>
-                            </div>
-                        </div>
-
-                        <div class="section">
-                            <div class="section-title">Scene Actions</div>
-                            <div style="display:flex; gap:8px;">
-                                <button class="btn btn-outline btn-sm" id="duplicateSceneBtn" style="flex:1">Duplicate</button>
-                                <button class="btn btn-danger btn-sm" id="deleteSceneBtn" style="flex:1">Delete</button>
-                            </div>
-                        </div>
-
-                        <details>
-                            <summary>Raw Content Data</summary>
-                            <div class="details-body">
-                                <div class="input-group"><label>Title</label><input type="text" id="sceneTitle"/></div>
-                                <div class="input-group"><label>Subtitle</label><input type="text" id="sceneSubtitle"/></div>
-                                <div class="input-group"><label>Bullets</label><textarea id="sceneBullets"></textarea></div>
-                                <div class="input-group"><label>Body Text</label><textarea id="sceneBody"></textarea></div>
-                                <div class="input-group"><label>Narration</label><textarea id="sceneNarration"></textarea></div>
-                            </div>
-                        </details>
                     </div>
 
                     <hr style="border:0; border-top: 1px solid var(--border); margin: 20px 0;" />
-
-                    <details>
-                        <summary>Global Audio</summary>
-                        <div class="details-body">
-                            <div class="input-group"><label>BG Music URL</label><input type="url" id="bgMusicUrl" /></div>
-                            <div class="row-2">
-                                <div class="input-group"><label>Title SFX</label><input type="url" id="titleSfxUrl" /></div>
-                                <div class="input-group"><label>Bullet SFX</label><input type="url" id="bulletSfxUrl" /></div>
-                            </div>
-                            <div class="row-2">
-                                <div class="input-group"><label>Music Vol</label><input type="number" id="bgMusicVolume" step="0.05" /></div>
-                                <div class="input-group"><label>SFX Vol</label><input type="number" id="sfxVolume" step="0.05" /></div>
-                            </div>
-                        </div>
-                    </details>
-
-                    <details>
-                        <summary>Debug Logs</summary>
-                        <div class="details-body" style="display:flex; flex-direction:column; gap:10px;">
-                            <label>Speech Plan</label>
-                            <pre id="activeSceneSpeechOutput">Select a scene to inspect its speech plan.</pre>
-                            <label>Render Plan Output</label>
-                            <pre id="renderPlanOutput">No render plan yet.</pre>
-                        </div>
-                    </details>
-
                 </div>
             </section>
         </div>
