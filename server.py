@@ -3679,15 +3679,60 @@ THEMES: dict[str, ThemePreset] = {
     ),
 }
 
+def _get_existing_segment_display_map(scene: dict) -> dict:
+    speech_segments = scene.get("speech_segments", []) or []
+
+    title_display = ""
+    bullet_displays = {}
+
+    for seg in speech_segments:
+        kind = (seg.get("kind") or "").strip().lower()
+        display_text = compact_ws(seg.get("display_text", ""))
+        animation_target = (seg.get("animation_target") or "").strip()
+
+        if kind == "title" and display_text and not title_display:
+            title_display = display_text
+
+        if kind == "bullet" and animation_target:
+            bullet_displays[animation_target] = display_text
+
+    return {
+        "title": title_display,
+        "bullets": bullet_displays,
+    }
+
 def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
-    """Rebuild speech segments from edited UI text, supporting tagged narration in the same order as written."""
+    """Rebuild speech segments from edited UI text.
+
+    Important behavior:
+    - On initial HTML import, short narration can still be merged into display text.
+    - On later preview-editor narration changes, preserve existing title/bullet display_text
+      so narration updates do not overwrite what is shown on screen.
+    """
     from dataclasses import asdict
 
     title = compact_ws(scene.get("title", ""))
     bullets = [compact_ws(x) for x in (scene.get("bullets", []) or []) if compact_ws(x)]
     narration_text = scene.get("narration_text", "") or ""
 
+    existing_map = _get_existing_segment_display_map(scene)
+    existing_title_display = existing_map.get("title", "")
+    existing_bullet_displays = existing_map.get("bullets", {}) or {}
+
     parsed = _parse_tagged_narration(narration_text)
+
+    def preserve_display_text(new_segments: list[dict]) -> list[dict]:
+        for seg in new_segments:
+            kind = (seg.get("kind") or "").strip().lower()
+            if kind == "title":
+                if existing_title_display:
+                    seg["display_text"] = existing_title_display
+            elif kind == "bullet":
+                target = (seg.get("animation_target") or "").strip()
+                preserved = existing_bullet_displays.get(target, "")
+                if preserved:
+                    seg["display_text"] = preserved
+        return new_segments
 
     if not parsed["has_tags"]:
         parts = _split_sentences(narration_text)
@@ -3697,7 +3742,7 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
             narration_parts=parts,
             scene_index=scene_index
         )
-        scene["speech_segments"] = [asdict(s) for s in new_segments]
+        scene["speech_segments"] = preserve_display_text([asdict(s) for s in new_segments])
         return
 
     segments = []
@@ -3732,20 +3777,98 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
 
         if bucket == "title":
             title_speech = " ".join(parts).strip() or title
-            add_segment("title", title, title_speech, True, "titleReveal", "title")
+            title_display = existing_title_display or title
+            add_segment("title", title_display, title_speech, True, "titleReveal", "title")
+
         elif bucket == "bullet":
             bullet_text = bullets[idx - 1] if idx and 0 < idx <= len(bullets) else ""
             bullet_speech = " ".join(parts).strip() or bullet_text
-            bullet_display = merged_short_display_text(bullet_text, bullet_speech, max_words=10)
-            add_segment("bullet", bullet_display, bullet_speech, True, "bulletReveal", f"bullet_{idx}")
+            target = f"bullet_{idx}"
+
+            # Preserve prior visible bullet text if it already exists.
+            bullet_display = existing_bullet_displays.get(target, "")
+            if not bullet_display:
+                # Initial creation / no prior custom display text yet
+                bullet_display = merged_short_display_text(bullet_text, bullet_speech, max_words=10)
+
+            add_segment("bullet", bullet_display, bullet_speech, True, "bulletReveal", target)
+
         else:
             for part in parts:
                 add_segment("narration", "", part, False, "none", "none")
 
     if title and not any(seg.get("kind") == "title" for seg in segments):
-        add_segment("title", title, title, True, "titleReveal", "title")
+        add_segment("title", existing_title_display or title, title, True, "titleReveal", "title")
 
     scene["speech_segments"] = segments
+
+# def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
+#     """Rebuild speech segments from edited UI text, supporting tagged narration in the same order as written."""
+#     from dataclasses import asdict
+
+#     title = compact_ws(scene.get("title", ""))
+#     bullets = [compact_ws(x) for x in (scene.get("bullets", []) or []) if compact_ws(x)]
+#     narration_text = scene.get("narration_text", "") or ""
+
+#     parsed = _parse_tagged_narration(narration_text)
+
+#     if not parsed["has_tags"]:
+#         parts = _split_sentences(narration_text)
+#         new_segments = build_speech_segments(
+#             title=title,
+#             bullets=bullets,
+#             narration_parts=parts,
+#             scene_index=scene_index
+#         )
+#         scene["speech_segments"] = [asdict(s) for s in new_segments]
+#         return
+
+#     segments = []
+#     segment_index = 0
+
+#     def add_segment(kind, display_text, speech_text, show_on_screen, animation, animation_target):
+#         nonlocal segment_index
+#         speech_text = compact_ws(speech_text)
+#         display_text = compact_ws(display_text)
+
+#         if not speech_text and not display_text:
+#             return
+
+#         segment_index += 1
+#         seg_id_suffix = kind if kind != "bullet" else animation_target
+#         segments.append({
+#             "id": make_segment_id(scene_index, segment_index, seg_id_suffix),
+#             "kind": kind,
+#             "display_text": display_text,
+#             "speech_text": speech_text,
+#             "show_on_screen": show_on_screen,
+#             "animation": animation,
+#             "animation_target": animation_target,
+#             "order": segment_index,
+#         })
+
+#     sequence = parsed.get("sequence") or []
+#     for item in sequence:
+#         bucket = item.get("bucket")
+#         idx = item.get("index")
+#         parts = item.get("parts") or []
+
+#         if bucket == "title":
+#             title_speech = " ".join(parts).strip() or title
+#             add_segment("title", title, title_speech, True, "titleReveal", "title")
+#         elif bucket == "bullet":
+#             bullet_text = bullets[idx - 1] if idx and 0 < idx <= len(bullets) else ""
+#             bullet_speech = " ".join(parts).strip() or bullet_text
+#             bullet_display = merged_short_display_text(bullet_text, bullet_speech, max_words=10)
+#             add_segment("bullet", bullet_display, bullet_speech, True, "bulletReveal", f"bullet_{idx}")
+#         else:
+#             for part in parts:
+#                 add_segment("narration", "", part, False, "none", "none")
+
+#     if title and not any(seg.get("kind") == "title" for seg in segments):
+#         add_segment("title", title, title, True, "titleReveal", "title")
+
+#     scene["speech_segments"] = segments
 
 # def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
 #     """Helper to rebuild speech segments if the user edited the text in the UI."""
