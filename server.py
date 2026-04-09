@@ -3372,8 +3372,28 @@ def clear_folder(folder_path, extensions=None):
             if not extensions or file.lower().endswith(extensions):
                 os.remove(full_path)
 
-def make_segment_id(scene_index: int, segment_index: int, kind: str) -> str:
-    return f"sc{scene_index}-seg{segment_index}-{kind}"
+# def make_segment_id(scene_index: int, segment_index: int, kind: str) -> str:
+#     return f"sc{scene_index}-seg{segment_index}-{kind}"
+
+# Replace the current make_segment_id() with this
+def make_segment_id(
+    scene_index: int,
+    kind: str,
+    animation_target: str = "",
+    logical_index: int | None = None,
+) -> str:
+    safe_kind = re.sub(r"[^a-zA-Z0-9_]+", "_", (kind or "").strip().lower()).strip("_") or "segment"
+    safe_target = re.sub(r"[^a-zA-Z0-9_]+", "_", (animation_target or "").strip().lower()).strip("_")
+
+    if safe_kind == "title":
+        return f"sc{scene_index}-title"
+    if safe_kind == "subtitle":
+        return f"sc{scene_index}-subtitle"
+    if safe_kind == "bullet" and safe_target:
+        return f"sc{scene_index}-{safe_target}"
+    if logical_index is not None:
+        return f"sc{scene_index}-{safe_kind}{logical_index}"
+    return f"sc{scene_index}-{safe_kind}"
 
 def clear_old_pages():
     """Delete any existing generated page images."""
@@ -3745,11 +3765,13 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
         scene["speech_segments"] = preserve_display_text([asdict(s) for s in new_segments])
         return
 
+
     segments = []
     segment_index = 0
+    narration_index = 0
 
-    def add_segment(kind, display_text, speech_text, show_on_screen, animation, animation_target):
-        nonlocal segment_index
+    def add_segment(kind, display_text, speech_text, show_on_screen, animation, animation_target, stable_id=None):
+        nonlocal segment_index, narration_index
         speech_text = compact_ws(speech_text)
         display_text = compact_ws(display_text)
 
@@ -3757,9 +3779,19 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
             return
 
         segment_index += 1
-        seg_id_suffix = kind if kind != "bullet" else animation_target
+
+        if stable_id:
+            seg_id = stable_id
+        elif kind == "title":
+            seg_id = make_segment_id(scene_index, "title", "title")
+        elif kind == "bullet":
+            seg_id = make_segment_id(scene_index, "bullet", animation_target)
+        else:
+            narration_index += 1
+            seg_id = make_segment_id(scene_index, kind, logical_index=narration_index)
+
         segments.append({
-            "id": make_segment_id(scene_index, segment_index, seg_id_suffix),
+            "id": seg_id,
             "kind": kind,
             "display_text": display_text,
             "speech_text": speech_text,
@@ -3769,14 +3801,68 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
             "order": segment_index,
         })
 
+    # segments = []
+    # segment_index = 0
+
+    # def add_segment(kind, display_text, speech_text, show_on_screen, animation, animation_target):
+    #     nonlocal segment_index
+    #     speech_text = compact_ws(speech_text)
+    #     display_text = compact_ws(display_text)
+
+    #     if not speech_text and not display_text:
+    #         return
+
+    #     segment_index += 1
+    #     seg_id_suffix = kind if kind != "bullet" else animation_target
+    #     segments.append({
+    #         "id": make_segment_id(scene_index, segment_index, seg_id_suffix),
+    #         "kind": kind,
+    #         "display_text": display_text,
+    #         "speech_text": speech_text,
+    #         "show_on_screen": show_on_screen,
+    #         "animation": animation,
+    #         "animation_target": animation_target,
+    #         "order": segment_index,
+    #     })
+
+    # sequence = parsed.get("sequence") or []
+    # for item in sequence:
+    #     bucket = item.get("bucket")
+    #     idx = item.get("index")
+    #     parts = item.get("parts") or []
+
+    #     if bucket == "title":
+    #         title_speech = " ".join(parts).strip() or title
+    #         title_display = existing_title_display or title
+    #         add_segment("title", title_display, title_speech, True, "titleReveal", "title")
+
+    #     elif bucket == "bullet":
+    #         bullet_text = bullets[idx - 1] if idx and 0 < idx <= len(bullets) else ""
+    #         bullet_speech = " ".join(parts).strip() or bullet_text
+    #         target = f"bullet_{idx}"
+    #         bullet_display = existing_bullet_displays.get(target, "")
+    #         if not bullet_display:
+    #             bullet_display = merged_short_display_text(bullet_text, bullet_speech, max_words=10)
+    #         add_segment("bullet", bullet_display, bullet_speech, True, "bulletReveal", target)
+
+    #     else:
+    #         for part in parts:
+    #             add_segment("narration", "", part, False, "none", "none")
+
+    # if title and not any(seg.get("kind") == "title" for seg in segments):
+    #     add_segment("title", existing_title_display or title, title, True, "titleReveal", "title")
+
     sequence = parsed.get("sequence") or []
+    has_title_bucket = any((item.get("bucket") == "title") for item in sequence)
+
     for item in sequence:
         bucket = item.get("bucket")
         idx = item.get("index")
         parts = item.get("parts") or []
 
         if bucket == "title":
-            title_speech = " ".join(parts).strip() or title
+            # Blank [TITLE] should mean: show title, do NOT speak it
+            title_speech = " ".join(parts).strip()
             title_display = existing_title_display or title
             add_segment("title", title_display, title_speech, True, "titleReveal", "title")
 
@@ -3784,22 +3870,18 @@ def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
             bullet_text = bullets[idx - 1] if idx and 0 < idx <= len(bullets) else ""
             bullet_speech = " ".join(parts).strip() or bullet_text
             target = f"bullet_{idx}"
-
-            # Preserve prior visible bullet text if it already exists.
             bullet_display = existing_bullet_displays.get(target, "")
             if not bullet_display:
-                # Initial creation / no prior custom display text yet
                 bullet_display = merged_short_display_text(bullet_text, bullet_speech, max_words=10)
-
             add_segment("bullet", bullet_display, bullet_speech, True, "bulletReveal", target)
 
         else:
             for part in parts:
                 add_segment("narration", "", part, False, "none", "none")
 
-    if title and not any(seg.get("kind") == "title" for seg in segments):
+    # Only add spoken title fallback when there was NO [TITLE] tag at all
+    if title and not has_title_bucket and not any(seg.get("kind") == "title" for seg in segments):
         add_segment("title", existing_title_display or title, title, True, "titleReveal", "title")
-
     scene["speech_segments"] = segments
 
 # def _rebuild_scene_speech_segments(scene: dict, scene_index: int):
@@ -4016,7 +4098,6 @@ def build_tagged_narration_text(
         lines.append(main_text)
 
     return "\n".join(lines).strip()
-
 def _parse_tagged_narration(narration_text: str) -> dict:
     text = (narration_text or "").replace("\r\n", "\n").strip()
 
@@ -4034,27 +4115,35 @@ def _parse_tagged_narration(narration_text: str) -> dict:
 
     current_bucket = ("intro", None)
     current_lines = []
+    current_bucket_explicit = False
     tag_re = re.compile(r'^\[(TITLE|INTRO|OUTRO|B(\d+))\]\s*(.*)$', re.IGNORECASE)
 
     def flush_bucket():
-        nonlocal current_lines
+        nonlocal current_lines, current_bucket_explicit
         bucket, idx = current_bucket
-        if not current_lines:
-            return
+
         content = compact_ws(" ".join(current_lines))
         current_lines = []
-        if not content:
+
+        # keep explicitly tagged buckets in sequence even when blank
+        if not current_bucket_explicit and not content:
             return
-        parts = _split_sentences(content)
-        if bucket == "bullet":
-            parsed["bullets"].setdefault(idx, []).extend(parts)
-        else:
-            parsed[bucket].extend(parts)
+
+        parts = _split_sentences(content) if content else []
+
+        if parts:
+            if bucket == "bullet":
+                parsed["bullets"].setdefault(idx, []).extend(parts)
+            else:
+                parsed[bucket].extend(parts)
+
         parsed["sequence"].append({
             "bucket": bucket,
             "index": idx,
             "parts": parts,
         })
+
+        current_bucket_explicit = False
 
     for raw_line in text.split("\n"):
         line = raw_line.strip()
@@ -4077,6 +4166,8 @@ def _parse_tagged_narration(narration_text: str) -> dict:
             else:
                 current_bucket = ("bullet", int(m.group(2)))
 
+            current_bucket_explicit = True
+
             if rest:
                 current_lines.append(rest)
             continue
@@ -4085,6 +4176,75 @@ def _parse_tagged_narration(narration_text: str) -> dict:
 
     flush_bucket()
     return parsed
+
+# def _parse_tagged_narration(narration_text: str) -> dict:
+#     text = (narration_text or "").replace("\r\n", "\n").strip()
+
+#     parsed = {
+#         "intro": [],
+#         "title": [],
+#         "outro": [],
+#         "bullets": {},
+#         "has_tags": False,
+#         "sequence": [],
+#     }
+
+#     if not text:
+#         return parsed
+
+#     current_bucket = ("intro", None)
+#     current_lines = []
+#     tag_re = re.compile(r'^\[(TITLE|INTRO|OUTRO|B(\d+))\]\s*(.*)$', re.IGNORECASE)
+
+#     def flush_bucket():
+#         nonlocal current_lines
+#         bucket, idx = current_bucket
+#         if not current_lines:
+#             return
+#         content = compact_ws(" ".join(current_lines))
+#         current_lines = []
+#         if not content:
+#             return
+#         parts = _split_sentences(content)
+#         if bucket == "bullet":
+#             parsed["bullets"].setdefault(idx, []).extend(parts)
+#         else:
+#             parsed[bucket].extend(parts)
+#         parsed["sequence"].append({
+#             "bucket": bucket,
+#             "index": idx,
+#             "parts": parts,
+#         })
+
+#     for raw_line in text.split("\n"):
+#         line = raw_line.strip()
+#         if not line:
+#             continue
+
+#         m = tag_re.match(line)
+#         if m:
+#             parsed["has_tags"] = True
+#             flush_bucket()
+#             tag_name = m.group(1).upper()
+#             rest = (m.group(3) or "").strip()
+
+#             if tag_name == "TITLE":
+#                 current_bucket = ("title", None)
+#             elif tag_name == "INTRO":
+#                 current_bucket = ("intro", None)
+#             elif tag_name == "OUTRO":
+#                 current_bucket = ("outro", None)
+#             else:
+#                 current_bucket = ("bullet", int(m.group(2)))
+
+#             if rest:
+#                 current_lines.append(rest)
+#             continue
+
+#         current_lines.append(line)
+
+#     flush_bucket()
+#     return parsed
 def slugify(text: str) -> str:
     text = (text or "").strip().lower()
     text = re.sub(r"[^a-z0-9]+", "-", text)
@@ -4743,7 +4903,6 @@ def estimate_duration(narration_text: str, bullets: list[str]) -> float:
     bullet_bonus = max(0, len(bullets) - 1) * 0.8
     return round(max(3.0, words / 2.7 + bullet_bonus), 2)
 
-
 def build_speech_segments(title: str, bullets: list[str], narration_parts: list[str], scene_index: int) -> list[SpeechSegment]:
     segments: list[SpeechSegment] = []
     segment_index = 0
@@ -4751,7 +4910,7 @@ def build_speech_segments(title: str, bullets: list[str], narration_parts: list[
     if compact_ws(title):
         segment_index += 1
         segments.append(SpeechSegment(
-            id=make_segment_id(scene_index, segment_index, "title"),
+            id=make_segment_id(scene_index, "title", "title"),
             kind="title",
             display_text=compact_ws(title),
             speech_text=compact_ws(title),
@@ -4764,24 +4923,27 @@ def build_speech_segments(title: str, bullets: list[str], narration_parts: list[
     clean_bullets = [compact_ws(x) for x in bullets if compact_ws(x)]
     for i, bullet in enumerate(clean_bullets, start=1):
         segment_index += 1
+        target = f"bullet_{i}"
         segments.append(SpeechSegment(
-            id=make_segment_id(scene_index, segment_index, f"bullet{i}"),
+            id=make_segment_id(scene_index, "bullet", target),
             kind="bullet",
             display_text=bullet,
             speech_text=bullet,
             show_on_screen=True,
             animation="bulletReveal",
-            animation_target=f"bullet_{i}",
+            animation_target=target,
             order=segment_index,
         ))
 
+    narration_index = 0
     used = {compact_ws(title), *clean_bullets}
     for part in [compact_ws(x) for x in narration_parts if compact_ws(x)]:
         if part in used:
             continue
         segment_index += 1
+        narration_index += 1
         segments.append(SpeechSegment(
-            id=make_segment_id(scene_index, segment_index, "narration"),
+            id=make_segment_id(scene_index, "narration", logical_index=narration_index),
             kind="narration",
             display_text="",
             speech_text=part,
@@ -4792,6 +4954,55 @@ def build_speech_segments(title: str, bullets: list[str], narration_parts: list[
         ))
 
     return segments
+
+# def build_speech_segments(title: str, bullets: list[str], narration_parts: list[str], scene_index: int) -> list[SpeechSegment]:
+#     segments: list[SpeechSegment] = []
+#     segment_index = 0
+
+#     if compact_ws(title):
+#         segment_index += 1
+#         segments.append(SpeechSegment(
+#             id=make_segment_id(scene_index, segment_index, "title"),
+#             kind="title",
+#             display_text=compact_ws(title),
+#             speech_text=compact_ws(title),
+#             show_on_screen=True,
+#             animation="titleReveal",
+#             animation_target="title",
+#             order=segment_index,
+#         ))
+
+#     clean_bullets = [compact_ws(x) for x in bullets if compact_ws(x)]
+#     for i, bullet in enumerate(clean_bullets, start=1):
+#         segment_index += 1
+#         segments.append(SpeechSegment(
+#             id=make_segment_id(scene_index, segment_index, f"bullet{i}"),
+#             kind="bullet",
+#             display_text=bullet,
+#             speech_text=bullet,
+#             show_on_screen=True,
+#             animation="bulletReveal",
+#             animation_target=f"bullet_{i}",
+#             order=segment_index,
+#         ))
+
+#     used = {compact_ws(title), *clean_bullets}
+#     for part in [compact_ws(x) for x in narration_parts if compact_ws(x)]:
+#         if part in used:
+#             continue
+#         segment_index += 1
+#         segments.append(SpeechSegment(
+#             id=make_segment_id(scene_index, segment_index, "narration"),
+#             kind="narration",
+#             display_text="",
+#             speech_text=part,
+#             show_on_screen=False,
+#             animation="none",
+#             animation_target="none",
+#             order=segment_index,
+#         ))
+
+#     return segments
 
 
 # def build_speech_segments(title: str, bullets: list[str], narration_parts: list[str]) -> list[SpeechSegment]:
@@ -6117,12 +6328,22 @@ def synthesize_project_speech(project_id: str):
             audio_path = speech_root / audio_file_name
 
             # display-only segment: keep timing but do not generate TTS
+
             if not speech_text:
                 seg.pop("audio_file", None)
                 seg.pop("audio_cache_key", None)
                 seg["audio_duration_ms"] = 0
+                audio_meta.pop(seg_id, None)   # add this
                 display_only_count += 1
                 continue
+
+            # if not speech_text:
+            #     seg.pop("audio_file", None)
+            #     seg.pop("audio_cache_key", None)
+            #     seg["audio_duration_ms"] = 0
+            #     display_only_count += 1
+            #     continue
+
 
             cache_key = make_audio_cache_key(
                 speech_text,
