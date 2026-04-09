@@ -5548,8 +5548,25 @@ def project_path(project_id: str) -> Path:
     return PROJECTS_DIR / f"{project_id}.json"
 
 
-def save_project(project: VideoProject) -> None:
-    project_path(project.id).write_text(json.dumps(asdict(project), indent=2, ensure_ascii=False), encoding="utf-8")
+def save_project(project: VideoProject | dict[str, Any] | str, project_data: dict[str, Any] | None = None) -> None:
+    """Persist a composer project from either a dataclass instance or a raw dict."""
+    if project_data is not None:
+        project_id = str(project)
+        payload = project_data
+    elif isinstance(project, dict):
+        project_id = str(project.get("id") or "")
+        payload = project
+    else:
+        project_id = str(getattr(project, "id", "") or "")
+        payload = asdict(project)
+
+    if not project_id:
+        raise ValueError("Project id is required to save the project.")
+
+    project_path(project_id).write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
 
 
 def load_project(project_id: str) -> dict[str, Any]:
@@ -5644,8 +5661,21 @@ def update_project(project_id: str):
         if key in data:
             current[key] = data[key]
 
-    project_path(project_id).write_text(json.dumps(current, indent=2, ensure_ascii=False), encoding="utf-8")
-    return jsonify({"ok": True, "project": current})
+    scenes = current.get("scenes", []) or []
+    for idx, scene in enumerate(scenes, start=1):
+        _rebuild_scene_speech_segments(scene, idx)
+        scene["speech_plan"] = build_scene_speech_plan(
+            speech_segments=scene.get("speech_segments", []) or [],
+            pause_after_title_ms=450,
+            pause_between_segments_ms=200,
+            outro_hold_ms=500,
+        )
+
+    project_path(project_id).write_text(
+        json.dumps(current, indent=2, ensure_ascii=False),
+        encoding="utf-8"
+    )
+    return jsonify({"ok": True, "project": current, "message": "Project saved."})
 
 @app.post("/api/projects/<project_id>/render-plan")
 def build_render_plan(project_id: str):
@@ -5927,15 +5957,17 @@ def synthesize_project_speech(project_id: str):
     speech_root.mkdir(parents=True, exist_ok=True)
 
     narration_cfg = project.get("narration", {}) or {}
-    voice = narration_cfg.get("voice", "alloy")
+    voice = (narration_cfg.get("voice") or "alloy").strip() or "alloy"
 
-    # language = narration_cfg.get("language", "english")
-    # engine = narration_cfg.get("engine", "google")
-    # gender = narration_cfg.get("gender", "Male")
+    language = (narration_cfg.get("language") or "english").strip().lower() or "english"
+    if language == "en":
+        language = "english"
 
-    language =  "english"
-    engine =  "google"
-    gender =  "Male"
+    engine = (narration_cfg.get("engine") or "google").strip().lower() or "google"
+    if engine == "tts":
+        engine = "google"
+
+    gender = (narration_cfg.get("gender") or "Male").strip() or "Male"
 
     meta_path = speech_root / "_audio_meta.json"
     if meta_path.exists():
@@ -5946,6 +5978,10 @@ def synthesize_project_speech(project_id: str):
     else:
         audio_meta = {}
 
+    generated_count = 0
+    reused_count = 0
+    display_only_count = 0
+
     for idx, scene in enumerate(project.get("scenes", []), start=1):
         _rebuild_scene_speech_segments(scene, idx)
         speech_segments = scene.get("speech_segments", []) or []
@@ -5953,13 +5989,16 @@ def synthesize_project_speech(project_id: str):
         for seg in speech_segments:
             speech_text = compact_ws(seg.get("speech_text", ""))
             seg_id = seg.get("id") or str(uuid.uuid4())
+            seg["id"] = seg_id
             audio_file_name = f"{seg_id}.mp3"
             audio_path = speech_root / audio_file_name
 
             # display-only segment: keep timing but do not generate TTS
             if not speech_text:
                 seg.pop("audio_file", None)
+                seg.pop("audio_cache_key", None)
                 seg["audio_duration_ms"] = 0
+                display_only_count += 1
                 continue
 
             cache_key = make_audio_cache_key(
@@ -5970,10 +6009,31 @@ def synthesize_project_speech(project_id: str):
                 gender=gender,
             )
 
-            if audio_path.exists() and audio_meta.get(seg_id) == cache_key:
+            meta_entry = audio_meta.get(seg_id)
+            if isinstance(meta_entry, dict):
+                existing_cache_key = meta_entry.get("cache_key")
+                existing_duration_ms = int(meta_entry.get("audio_duration_ms") or 0)
+            else:
+                existing_cache_key = meta_entry
+                existing_duration_ms = 0
+
+            if audio_path.exists() and existing_cache_key == cache_key:
                 seg["audio_file"] = str(audio_path)
-                seg["audio_duration_ms"] = get_audio_duration_ms(audio_path)
+                seg["audio_cache_key"] = cache_key
+                seg["audio_duration_ms"] = existing_duration_ms or get_audio_duration_ms(audio_path)
+                audio_meta[seg_id] = {
+                    "cache_key": cache_key,
+                    "audio_duration_ms": int(seg.get("audio_duration_ms") or 0),
+                }
+                reused_count += 1
                 continue
+
+            temp_audio_path = Path(audio_file_name)
+            try:
+                if temp_audio_path.exists():
+                    temp_audio_path.unlink()
+            except Exception:
+                pass
 
             get_audio_file(
                 text=speech_text,
@@ -5983,23 +6043,53 @@ def synthesize_project_speech(project_id: str):
                 gender=gender,
             )
 
-            if Path(audio_file_name).resolve() != audio_path.resolve():
-                shutil.move(audio_file_name, audio_path)
+            if temp_audio_path.resolve() != audio_path.resolve():
+                if audio_path.exists():
+                    try:
+                        audio_path.unlink()
+                    except Exception:
+                        pass
+                shutil.move(str(temp_audio_path), str(audio_path))
 
             if not audio_path.exists():
                 return jsonify({
                     "ok": False,
-                    "error": "TTS adapter line needs to be connected to your existing get_audio_file() signature."
+                    "error": "TTS audio file was not created.",
                 }), 500
 
+            duration_ms = get_audio_duration_ms(audio_path)
             seg["audio_file"] = str(audio_path)
-            seg["audio_duration_ms"] = get_audio_duration_ms(audio_path)
-            audio_meta[seg_id] = cache_key
+            seg["audio_cache_key"] = cache_key
+            seg["audio_duration_ms"] = duration_ms
+            audio_meta[seg_id] = {
+                "cache_key": cache_key,
+                "audio_duration_ms": duration_ms,
+            }
+            generated_count += 1
 
-    meta_path.write_text(json.dumps(audio_meta, indent=2), encoding="utf-8")
+        speech_plan = build_scene_speech_plan(
+            speech_segments=speech_segments,
+            pause_after_title_ms=450,
+            pause_between_segments_ms=200,
+            outro_hold_ms=500,
+        )
+
+        timing = scene.get("timing", {}) or {}
+        timing["estimated_duration_sec"] = round(speech_plan["total_duration_ms"] / 1000.0, 2)
+        scene["timing"] = timing
+        scene["speech_plan"] = speech_plan
+
+    meta_path.write_text(json.dumps(audio_meta, indent=2, ensure_ascii=False), encoding="utf-8")
     save_project(project_id, project)
 
-    return jsonify({"ok": True, "project": project})
+    summary = {
+        "generated": generated_count,
+        "reused": reused_count,
+        "display_only": display_only_count,
+    }
+    message = f"TTS completed. Generated {generated_count}, reused {reused_count}."
+
+    return jsonify({"ok": True, "project": project, "summary": summary, "message": message})
 
 
 @app.post("/api/projects/<project_id>/speech-plan")
@@ -6078,13 +6168,25 @@ def build_playback_payload(project: dict) -> dict:
         speech_plan = scene.get("speech_plan", {}) or {}
         segments = speech_plan.get("segments", []) or []
 
+        if not segments:
+            raw_segments = scene.get("speech_segments", []) or []
+            if raw_segments:
+                rebuilt_plan = build_scene_speech_plan(
+                    speech_segments=raw_segments,
+                    pause_after_title_ms=450,
+                    pause_between_segments_ms=200,
+                    outro_hold_ms=500,
+                )
+                speech_plan = rebuilt_plan
+                segments = rebuilt_plan.get("segments", []) or []
+
         playback_segments = []
-        total_duration_ms = 0
+        total_duration_ms = int(speech_plan.get("total_duration_ms") or 0)
         for seg in segments:
             seg_id = seg.get("id")
             seg_kind = seg.get("kind", "narration")
             audio_url = None
-            if seg_id and seg_kind == "narration":
+            if seg_id and seg.get("speech_text", "").strip():
                 audio_url = f"/composer-speech/{project.get('id')}/{seg_id}.mp3"
 
             duration_ms = int(seg.get("duration_ms") or 0)

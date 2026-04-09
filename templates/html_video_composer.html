@@ -354,10 +354,42 @@
             background: rgba(2,6,23,0.75); padding: 12px; border-radius: 8px; font-size: 11px; overflow-x: auto; margin: 0; border: 1px solid var(--border); color:#cbd5e1; white-space:pre-wrap;
         }
 
+        .toast-viewport {
+            position: fixed;
+            top: 76px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast {
+            min-width: 260px;
+            max-width: 420px;
+            background: rgba(80, 121, 8, 0.96);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-left: 4px solid var(--accent);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            padding: 12px 14px;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity 0.22s ease, transform 0.22s ease;
+            pointer-events: auto;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.info { border-left-color: var(--accent); }
+
     </style>
 </head>
 
 <body>
+    <div id="toastViewport" class="toast-viewport"></div>
     <div class="app-shell">
         <div class="topbar">
             <div class="brand">
@@ -369,9 +401,7 @@
                 <button class="btn btn-primary" id="parseBtn">Create Project</button>
                 <div style="width: 1px; height: 24px; background: var(--border); margin: 0 8px;"></div>
                 <button class="btn btn-outline" id="saveBtn">Save</button>
-                <button class="btn btn-success" id="speechPlanBtn">Speech Plan</button>
                 <button class="btn btn-success" id="ttsBtn">Gen TTS</button>
-                <button class="btn btn-outline" id="renderPlanBtn">Render Plan</button>
                 <button class="btn btn-success" id="renderVideoBtn" style="display: none;">Render Video</button>
                 <button class="btn btn-primary" id="openPlayerBtn">Open Player</button>
                 <button class="btn btn-danger btn-sm" id="cleanupBtn" title="Cleanup All">🗑️</button>
@@ -512,8 +542,8 @@
                         <div class="details-body" style="display:flex; flex-direction:column; gap:10px;">
                             <label>Speech Plan</label>
                             <pre id="activeSceneSpeechOutput">Select a scene to inspect its speech plan.</pre>
-                            <label>Render Plan Output</label>
-                            <pre id="renderPlanOutput">No render plan yet.</pre>
+                            <label>Status / Activity</label>
+                            <pre id="renderPlanOutput">Status messages will appear here.</pre>
                         </div>
                     </details>
                     <div id="editorForm" class="hidden">
@@ -645,6 +675,7 @@
 
             activeSceneSpeechOutput: document.getElementById('activeSceneSpeechOutput'),
             renderPlanOutput: document.getElementById('renderPlanOutput'),
+            toastViewport: document.getElementById('toastViewport'),
 
             applyBgBtn: document.getElementById('applyBgBtn'),
             duplicateSceneBtn: document.getElementById('duplicateSceneBtn'),
@@ -671,6 +702,34 @@
             state.previewTimers.forEach(id => clearTimeout(id));
             state.previewTimers = [];
             state.previewRunId += 1;
+        }
+
+        function setStatusOutput(value) {
+            if (els.renderPlanOutput) {
+                els.renderPlanOutput.textContent = value;
+            }
+        }
+
+        function showToast(message, type = 'success', timeout = 2600) {
+            if (!els.toastViewport || !message) return;
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = String(message);
+            els.toastViewport.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            window.setTimeout(() => {
+                toast.classList.remove('show');
+                window.setTimeout(() => toast.remove(), 240);
+            }, timeout);
+        }
+
+        function setButtonBusy(button, isBusy, busyText = 'Working...') {
+            if (!button) return;
+            if (!button.dataset.defaultLabel) {
+                button.dataset.defaultLabel = button.textContent || '';
+            }
+            button.disabled = !!isBusy;
+            button.textContent = isBusy ? busyText : button.dataset.defaultLabel;
         }
 
         // --- Data Loading & Projects ---
@@ -729,7 +788,8 @@
             } else {
                 renderSelectedScene();
             }
-            els.renderPlanOutput.textContent = 'Project loaded.';
+            setStatusOutput('Project loaded.');
+            showToast('Project loaded.', 'success');
         }
 
         function loadSampleHtml() {
@@ -787,10 +847,17 @@
             
             syncProjectAudioForm();
             await loadProjectList(state.project?.id || '');
-            els.renderPlanOutput.textContent = 'Project created. Build render plan when ready.';
+            setStatusOutput('Project created.');
+            showToast('Project created.', 'success');
         }
 
-        async function saveProject() {
+        async function saveProject(options = {}) {
+            const {
+                toast = true,
+                statusMessage = 'Project saved.',
+                renderSpeechOutput = true,
+            } = options;
+
             if (!state.project) return alert('No project to save.');
             syncCurrentSceneFromForm();
             syncProjectAudioFromForm();
@@ -801,10 +868,13 @@
             state.project = data.project;
             ensureProjectAudioSettings();
             renderProjectSummary();
+            renderSceneList();
             syncProjectAudioForm();
             await loadProjectList(state.project?.id || '');
-            els.renderPlanOutput.textContent = 'Project saved.';
-            renderActiveSceneSpeechOutput();
+            if (statusMessage) setStatusOutput(statusMessage);
+            if (renderSpeechOutput) renderActiveSceneSpeechOutput();
+            if (toast) showToast(data.message || statusMessage, 'success');
+            return data;
         }
 
         // --- Render Audio / Speech ---
@@ -1173,6 +1243,7 @@
             state.project = data.project;
             renderSceneList();
             renderSelectedScene();
+            showToast('Background updated for this scene.', 'success');
         }   
 
         async function buildSpeechPlan() {
@@ -1184,19 +1255,32 @@
             renderProjectSummary();
             renderSceneList();
             renderSelectedScene();
-            els.renderPlanOutput.textContent = JSON.stringify((state.project.scenes || []).map(s => ({ title: s.title, speech_plan: s.speech_plan })), null, 2);
+            setStatusOutput(JSON.stringify((state.project.scenes || []).map(s => ({ title: s.title, speech_plan: s.speech_plan })), null, 2));
         }
 
         async function generateTTS() {
             if (!state.project) return alert('Create or load a project first.');
-            syncCurrentSceneFromForm();
-            await saveProject();
-            const data = await api(`/api/projects/${state.project.id}/synthesize-speech`, { method: 'POST' });
-            state.project = data.project;
-            renderProjectSummary();
-            renderSceneList();
-            renderSelectedScene();
-            els.renderPlanOutput.textContent = JSON.stringify((state.project.scenes || []).map(s => ({ title: s.title, speech_plan: s.speech_plan, speech_segments: s.speech_segments })), null, 2);
+            const ttsBtn = document.getElementById('ttsBtn');
+            setButtonBusy(ttsBtn, true, 'Generating...');
+            try {
+                await saveProject({ toast: false, statusMessage: 'Saving changes before TTS...', renderSpeechOutput: false });
+                const data = await api(`/api/projects/${state.project.id}/synthesize-speech`, { method: 'POST' });
+                state.project = data.project;
+                renderProjectSummary();
+                renderSceneList();
+                renderSelectedScene();
+                renderActiveSceneSpeechOutput();
+
+                const summary = data.summary || {};
+                setStatusOutput(JSON.stringify({
+                    message: data.message || 'TTS completed.',
+                    summary,
+                    active_scene: state.selectedSceneIndex >= 0 ? state.selectedSceneIndex + 1 : null,
+                }, null, 2));
+                showToast(data.message || 'TTS creation completed.', 'success', 3600);
+            } finally {
+                setButtonBusy(ttsBtn, false);
+            }
         }
 
         async function buildRenderPlan() {
@@ -1204,7 +1288,7 @@
             syncCurrentSceneFromForm();
             await saveProject();
             const data = await api(`/api/projects/${state.project.id}/render-plan`, { method: 'POST' });
-            els.renderPlanOutput.textContent = JSON.stringify(data, null, 2);
+            setStatusOutput(JSON.stringify(data, null, 2));
         }
 
         async function renderComposerVideo() {
@@ -1217,7 +1301,7 @@
                     outRes: state.selectedAspectRatio === '9:16' ? '1080x1920' : state.selectedAspectRatio === '1:1' ? '1080x1080' : '1920x1080'
                 }),
             });
-            els.renderPlanOutput.textContent = JSON.stringify(data, null, 2);
+            setStatusOutput(JSON.stringify(data, null, 2));
             if (data.video_url) window.open(data.video_url, '_blank');
         }
 
@@ -1230,16 +1314,22 @@
             renderProjectSummary();
             renderSceneList();
             renderSelectedScene();
-            els.renderPlanOutput.textContent = JSON.stringify(data, null, 2);
+            setStatusOutput(JSON.stringify(data, null, 2));
+            showToast(data.message || 'Cleanup completed.', 'success');
             alert(data.message || 'Cleanup completed.');
             loadProjectList();
         }
 
-        function openPlayer() {
+        // function openPlayer() {
+        //     if (!state.project?.id) return alert('Create or load a project first.');
+        //     window.open(`/html-video-composer/player/${state.project.id}?debug=0`, '_blank');
+        // }
+
+        async function openPlayer() {
             if (!state.project?.id) return alert('Create or load a project first.');
+            await saveProject({ toast: false, statusMessage: 'Saving before opening player...', renderSpeechOutput: false });
             window.open(`/html-video-composer/player/${state.project.id}?debug=0`, '_blank');
         }
-
         // --- Init & Listeners ---
         function attachGeneralListeners() {
             [
@@ -1274,16 +1364,25 @@
             attachPreviewEditorListeners();
             attachGeneralListeners();
             
-            document.getElementById('parseBtn').addEventListener('click', async () => { try { await createProjectFromHtml(); } catch(e) { alert(e.message); } });
-            document.getElementById('saveBtn').addEventListener('click', async () => { try { await saveProject(); } catch(e) { alert(e.message); } });
-            document.getElementById('speechPlanBtn').addEventListener('click', async () => { try { await buildSpeechPlan(); } catch(e) { alert(e.message); } });
-            document.getElementById('ttsBtn').addEventListener('click', async () => { try { await generateTTS(); } catch(e) { alert(e.message); } });
-            document.getElementById('renderPlanBtn').addEventListener('click', async () => { try { await buildRenderPlan(); } catch(e) { alert(e.message); } });
-            document.getElementById('renderVideoBtn').addEventListener('click', async () => { try { await renderComposerVideo(); } catch(e) { alert(e.message); } });
+            document.getElementById('parseBtn').addEventListener('click', async () => { try { await createProjectFromHtml(); } catch(e) { showToast(e.message, 'error', 4200); alert(e.message); } });
+            document.getElementById('saveBtn').addEventListener('click', async () => {
+                const btn = document.getElementById('saveBtn');
+                try {
+                    setButtonBusy(btn, true, 'Saving...');
+                    await saveProject();
+                } catch(e) {
+                    showToast(e.message, 'error', 4200);
+                    alert(e.message);
+                } finally {
+                    setButtonBusy(btn, false);
+                }
+            });
+            document.getElementById('ttsBtn').addEventListener('click', async () => { try { await generateTTS(); } catch(e) { showToast(e.message, 'error', 4200); alert(e.message); } });
+            document.getElementById('renderVideoBtn').addEventListener('click', async () => { try { await renderComposerVideo(); } catch(e) { showToast(e.message, 'error', 4200); alert(e.message); } });
             document.getElementById('openPlayerBtn').addEventListener('click', openPlayer);
-            document.getElementById('cleanupBtn').addEventListener('click', async () => { try { await cleanupAllComposerProjects(); } catch(e) { alert(e.message); } });
+            document.getElementById('cleanupBtn').addEventListener('click', async () => { try { await cleanupAllComposerProjects(); } catch(e) { showToast(e.message, 'error', 4200); alert(e.message); } });
             document.getElementById('loadSampleBtn').addEventListener('click', loadSampleHtml);
-            document.getElementById('loadProjectBtn').addEventListener('click', async () => { try { await loadExistingProject(); } catch(e) { alert(e.message); } });
+            document.getElementById('loadProjectBtn').addEventListener('click', async () => { try { await loadExistingProject(); } catch(e) { showToast(e.message, 'error', 4200); alert(e.message); } });
 
             updateFrameAspect();
             await loadThemes();

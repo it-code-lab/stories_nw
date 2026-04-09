@@ -578,14 +578,19 @@
                 return;
             }
 
+            els.segmentAudio.pause();
+            els.segmentAudio.currentTime = 0;
             els.segmentAudio.src = url;
+            els.segmentAudio.load();
+
             try {
                 await els.segmentAudio.play();
                 await new Promise(resolve => {
                     els.segmentAudio.onended = () => resolve();
                     els.segmentAudio.onerror = () => resolve();
                 });
-            } catch (_) {
+            } catch (err) {
+                console.warn('Audio play failed for', url, err);
                 if (fallbackMs > 0) await sleep(fallbackMs);
             }
         }
@@ -608,7 +613,7 @@
                 if (seg.kind === 'title') {
                     revealTitleOnLayer(layer);
                     revealSubtitleOnLayer(layer);
-                    await sleep(Math.max(120, seg.duration_ms || 0));
+                    await playAudio(seg.audio_url, Math.max(120, seg.duration_ms || 0));
                     continue;
                 }
 
@@ -617,7 +622,7 @@
                         revealBulletOnLayer(layer, seg.display_text);
                         bulletsAlreadyShown.add(seg.display_text);
                     }
-                    await sleep(Math.max(120, seg.duration_ms || 0));
+                    await playAudio(seg.audio_url, Math.max(120, seg.duration_ms || 0));
                     continue;
                 }
 
