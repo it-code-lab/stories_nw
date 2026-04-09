@@ -928,6 +928,46 @@
             }, null, 2);
         }
 
+
+        function syncSceneDisplayTextState(scene, options = {}) {
+            if (!scene) return;
+            const {
+                syncTitle = true,
+                syncBullets = true,
+            } = options;
+
+            const speechSegments = Array.isArray(scene.speech_segments) ? scene.speech_segments : [];
+            const planSegments = Array.isArray(scene?.speech_plan?.segments) ? scene.speech_plan.segments : [];
+            const bulletValues = Array.isArray(scene.bullets)
+                ? scene.bullets.map(item => String(item ?? ''))
+                : [];
+
+            const applyToSegments = (segments) => {
+                if (!Array.isArray(segments)) return;
+
+                if (syncTitle) {
+                    const titleSeg = segments.find(seg => (seg?.kind || '').toLowerCase() === 'title');
+                    if (titleSeg) {
+                        titleSeg.display_text = scene.title || '';
+                    }
+                }
+
+                if (syncBullets) {
+                    segments.forEach(seg => {
+                        if ((seg?.kind || '').toLowerCase() !== 'bullet') return;
+                        const target = String(seg?.animation_target || '');
+                        const match = target.match(/^bullet_(\d+)$/);
+                        if (!match) return;
+                        const bulletIndex = Number(match[1]) - 1;
+                        seg.display_text = bulletValues[bulletIndex] || '';
+                    });
+                }
+            };
+
+            applyToSegments(speechSegments);
+            applyToSegments(planSegments);
+        }
+
         // --- Render UI Components ---
         function renderProjectSummary() {
             if (!state.project) {
@@ -1113,8 +1153,10 @@
         function attachPreviewEditorListeners() {
             els.previewTitle.addEventListener('input', (e) => {
                 if(!state.project || state.selectedSceneIndex < 0) return;
-                state.project.scenes[state.selectedSceneIndex].title = e.target.textContent;
-                els.sceneTitle.value = state.project.scenes[state.selectedSceneIndex].title;
+                const scene = state.project.scenes[state.selectedSceneIndex];
+                scene.title = e.target.textContent;
+                els.sceneTitle.value = scene.title;
+                syncSceneDisplayTextState(scene, { syncTitle: true, syncBullets: false });
             });
             els.previewSubtitle.addEventListener('input', (e) => {
                 if(!state.project || state.selectedSceneIndex < 0) return;
@@ -1123,9 +1165,11 @@
             });
             els.previewBullets.addEventListener('input', (e) => {
                 if(!state.project || state.selectedSceneIndex < 0) return;
+                const scene = state.project.scenes[state.selectedSceneIndex];
                 const newBullets = [...els.previewBullets.querySelectorAll('li')].map(li => li.textContent);
-                state.project.scenes[state.selectedSceneIndex].bullets = newBullets;
+                scene.bullets = newBullets;
                 els.sceneBullets.value = newBullets.join('\n');
+                syncSceneDisplayTextState(scene, { syncTitle: false, syncBullets: true });
             });
             els.inlineNarration.addEventListener('input', (e) => {
                 if(!state.project || state.selectedSceneIndex < 0) return;
@@ -1145,12 +1189,25 @@
             const scene = state.project?.scenes?.[state.selectedSceneIndex];
             if (!scene) return;
             
+            const prevTitle = scene.title || '';
+            const prevBullets = Array.isArray(scene.bullets) ? scene.bullets.map(item => String(item ?? '')) : [];
+
             scene.scene_type = els.sceneType.value;
             scene.title = els.sceneTitle.value;
             scene.subtitle = els.sceneSubtitle.value;
             scene.body_text = els.sceneBody.value;
             scene.bullets = els.sceneBullets.value.split('\n');
             scene.narration_text = els.sceneNarration.value;
+
+            const titleChanged = prevTitle !== scene.title;
+            const bulletsChanged = JSON.stringify(prevBullets) !== JSON.stringify(scene.bullets);
+
+            if (titleChanged || bulletsChanged) {
+                syncSceneDisplayTextState(scene, {
+                    syncTitle: titleChanged,
+                    syncBullets: bulletsChanged,
+                });
+            }
 
             scene.layout = scene.layout || {};
             scene.layout.template = els.sceneTemplate.value;
