@@ -3447,10 +3447,12 @@ import hashlib
 
 
 BASE_DIR = Path(__file__).resolve().parent
-VID_DATA_DIR = BASE_DIR / "video_composer_data"
+VID_DATA_DIR = OUT_DIR / "video_composer_data"
 PROJECTS_DIR = VID_DATA_DIR / "projects"
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
-COMPOSER_DATA_DIR = BASE_DIR / "video_composer_data"
+
+
+COMPOSER_DATA_DIR = OUT_DIR / "video_composer_data"
 COMPOSER_PROJECTS_DIR = COMPOSER_DATA_DIR / "projects"
 COMPOSER_RENDER_DIR = OUT_DIR / "composer_renders"
 COMPOSER_SPEECH_DIR = OUT_DIR / "composer_speech"
