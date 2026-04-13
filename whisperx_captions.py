@@ -207,8 +207,78 @@ def break_into_phrases(words: List[Word], video_w: int, video_h: int) -> List[Ph
             flush()
     flush()
     return phrases
-
 def build_ass(phrases: List[Phrase], video_w: int, video_h: int, language="en") -> str:
+    portrait = (video_h >= video_w)
+    font_size = auto_font_size(video_w, video_h)
+    
+    # Modern sans-serif stack - bold weights look much more premium
+    font_name = "Montserrat Black" if not language.startswith("hi") else "Noto Sans Devanagari"
+    bottom_margin = BOTTOM_MARGIN_PORTRAIT if portrait else BOTTOM_MARGIN_LANDSCAPE
+
+    # BGR Color Constants (ASS uses AABBGGRR format)
+    BASE_COLOR = "&H00FAFAFA"     # Crisp Off-White (makes the highlight pop more)
+    HI_COLOR = "&H0000D5FF"       # Premium Golden Yellow (#FFD500)
+    OUTLINE_COLOR = "&H00000000"  # Pure Black
+    SHADOW_COLOR = "&H60000000"   # Semi-transparent black for a softer, modern shadow
+    
+    # Thickness settings for a modern creator aesthetic
+    BORDER_THICKNESS = 2.5 
+    SHADOW_DEPTH = 2.0  
+
+    header = f"""[Script Info]
+ScriptType: v4.00+
+PlayResX: {video_w}
+PlayResY: {video_h}
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Base,{font_name},{font_size},{BASE_COLOR},{BASE_COLOR},{OUTLINE_COLOR},{SHADOW_COLOR},1,0,0,0,100,100,1.0,0,1,{BORDER_THICKNESS},{SHADOW_DEPTH},2,80,80,{bottom_margin},1
+Style: Hi,{font_name},{font_size},{HI_COLOR},{HI_COLOR},{OUTLINE_COLOR},{SHADOW_COLOR},1,0,0,0,100,100,1.0,0,1,{BORDER_THICKNESS},{SHADOW_DEPTH},2,80,80,{bottom_margin},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+
+    def join_line(words: List[Word]) -> str:
+        return " ".join(ass_escape(w.text) for w in words)
+
+    def base_text_for_phrase(lines: List[List[Word]]) -> str:
+        return "\\N".join(join_line(lw) for lw in lines)
+
+    def overlay_text_for_phrase(lines: List[List[Word]], target: Word) -> str:
+        out_lines = []
+        for lw in lines:
+            parts = []
+            for i, w in enumerate(lw):
+                spacer = " " if i > 0 else ""
+                if w is target:
+                    # Removed the \fscx and \fscy tags to prevent alignment shifting.
+                    # The \alpha&H00& makes it opaque, \alpha&HFF& resets to transparent.
+                    parts.append(
+                        f"{spacer}{{\\alpha&H00&}}{ass_escape(w.text)}{{\\alpha&HFF&}}"
+                    )
+                else:
+                    parts.append(f"{spacer}{{\\alpha&HFF&}}{ass_escape(w.text)}")
+            out_lines.append("".join(parts))
+        return "\\N".join(out_lines)
+
+    events: List[str] = []
+
+    for ph in phrases:
+        # Layer 0: The full phrase (Off-White)
+        base_txt = base_text_for_phrase(ph.lines)
+        events.append(f"Dialogue: 0,{ass_time(ph.start)},{ass_time(ph.end)},Base,,0,0,0,,{base_txt}")
+
+        # Layer 1: The active word highlight (Golden Yellow)
+        for w in ph.words:
+            txt = overlay_text_for_phrase(ph.lines, w)
+            events.append(f"Dialogue: 1,{ass_time(w.start)},{ass_time(w.end)},Hi,,0,0,0,,{txt}")
+
+    return header + "\n".join(events) + "\n"
+
+def build_ass_apr12_2026(phrases: List[Phrase], video_w: int, video_h: int, language="en") -> str:
     portrait = (video_h >= video_w)
     font_size = auto_font_size(video_w, video_h)
     

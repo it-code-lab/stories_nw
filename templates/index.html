@@ -484,7 +484,21 @@
         <button type="button" id="copyButton" style="margin-top:10px;">Copy Result</button>
     </form>
     <br>
+    <form id="addAutoCaptionsToEnglistVideos">
+        <h2 style="background-color:lightgreen;">Add Captions automatically to English Video</h2>
+        <div class="infoBox">This is for English videos with clear audio. It uses OpenAI's WhisperX for generating captions with word timestamps.</div>
+        <div class="infoBox">This will process composed_video.mp4 from root folder and create output with name composed_video_captioned.mp4 </div>
 
+        <strong>Run below commands in terminal</strong>
+        <br>
+        venv_whisperx\Scripts\activate 
+        <br><br>
+        python whisperx_captions.py --video composed_video.mp4 --language en
+
+
+        <!-- <button type="submit">Add captions</button> -->
+        <div id="addAutoCaptionsToEnglistVideosResult" style="margin-top:10px;"></div>
+    </form>
     <form id="runCaptionGenerator">
         <h2 style="background-color:khaki;">5. Generate Captions</h2>
         <h3>Prestep for Audio->WordTimeStamps-Video</h3>
@@ -740,6 +754,7 @@
         <h2>HTML to Video Maker</h2>
         <a href="/html-video-composer" target="_blank">HTML to Video Maker</a>
         (Opens in new tab)
+        (tags - html-video-composer)
     </form>
   
     <br>
@@ -2102,6 +2117,26 @@
             }
         };
     </script>
+    <script>
+        document.getElementById('addAutoCaptionsToEnglistVideos').onsubmit = async function (e) {
+            e.preventDefault();
+            console.log("Processing request.addAutoCaptionsToEnglistVideos");
+
+            const formData = new FormData(this);
+            const response = await fetch('/add_auto_captions_to_english_videos', {
+                method: 'GET'
+            });
+
+            console.log("Completed addAutoCaptionsToEnglistVideos");
+            const resultText = await response.text();
+
+            const resultDiv = document.getElementById('addAutoCaptionsToEnglistVideosResult');
+            if (resultDiv) {
+                resultDiv.textContent = resultText;
+            }
+        };
+    </script>
+
     <script>
         document.getElementById('convertLandscapeImagesForm').onsubmit = async function (e) {
             e.preventDefault();

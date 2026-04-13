@@ -1076,6 +1076,58 @@ def upscale_all_videos():
 
 
 
+@app.route('/add_auto_captions_to_english_videos', methods=['GET'])
+def add_captions_to_english_video():
+    # 1. Define paths
+    venv_base = os.path.abspath("venv_whisperx")
+    venv_scripts = os.path.join(venv_base, "Scripts")
+    venv_python = os.path.join(venv_scripts, "python.exe")
+    script_path = "whisperx_captions.py"
+    video_path = "composed_video.mp4" 
+
+    # 2. Setup the "Activated" Environment
+    # We copy the current environment and prepend the whisperx Scripts folder to the PATH
+    env = os.environ.copy()
+    env["PATH"] = venv_scripts + os.pathsep + env.get("PATH", "")
+    # This ensures that when the script calls 'whisperx', it finds it in venv_whisperx/Scripts
+    
+    command = [
+        venv_python, 
+        script_path, 
+        "--video", video_path, 
+        "--language", "en"
+    ]
+
+    try:
+        result = subprocess.run(
+            command, 
+            check=True, 
+            capture_output=True, 
+            text=True,
+            encoding="utf-8", 
+            errors="replace",
+            env=env  # <--- PASS THE CUSTOM ENVIRONMENT HERE
+        )
+
+        return jsonify({
+            "status": "success",
+            "message": "Premium captions generated successfully!",
+            "logs": result.stdout
+        }), 200
+
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            "status": "error",
+            "message": "The caption script failed.",
+            "error_details": e.stderr if e.stderr else e.stdout
+        }), 500
+        
+    except FileNotFoundError:
+        return jsonify({
+            "status": "error",
+            "message": f"Could not find the Python executable at {venv_python}."
+        }), 500
+
 @app.post("/extract_audio")
 def extract_audio_route():
     """
