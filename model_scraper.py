@@ -1,4 +1,3 @@
-import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from pydub import AudioSegment
@@ -13,6 +12,7 @@ import numpy as np
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from effects import add_ken_burns_effect, create_camera_movement_clip, create_camera_movement_clip_Linear, create_camera_movement_video, create_camera_movement_video_Linear_motion
 from moviepy.video.VideoClip import VideoClip
+from http_client import http_get
 
 
 
@@ -27,7 +27,7 @@ def scrape_page_chatgpt(url):
         list of tuples: Extracted text and image URL pairs.
     """    
     print("Received scrape_page Arguments:", locals())
-    response = requests.get(url)
+    response = http_get(url)
     if response.status_code != 200:
         print(f"Failed to fetch page, status code: {response.status_code}")
         return []
@@ -91,7 +91,7 @@ def scrape_page(url):
         list of tuples: Each tuple contains extracted text and image URL pairs.
     """
     # Scrape the page
-    response = requests.get(url)
+    response = http_get(url)
     soup = BeautifulSoup(response.text, "html.parser")
 
     # Extract text-image pairs
@@ -134,7 +134,7 @@ def scrape_story_page_with_soundeffect(url):
     Returns:
         list of dict: Each dict contains details about text, audio, and images.
     """
-    response = requests.get(url)
+    response = http_get(url)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch the page, status code: {response.status_code}")
 
@@ -212,7 +212,7 @@ def scrape_page_sm(url):
         list of tuples: Each tuple contains extracted text and image URL pairs.
     """
     # Scrape the page
-    response = requests.get(url)
+    response = http_get(url)
     soup = BeautifulSoup(response.text, "html.parser")
 
     # Extract text-image pairs
@@ -329,7 +329,7 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com"):
         list[dict]: A list of elements with text, audio, image, and camera frame details.
     """
    # Scrape the page
-    response = requests.get(url)
+    response = http_get(url)
     soup = BeautifulSoup(response.text, "html.parser")
 
     # Extract text-image pairs
@@ -514,7 +514,7 @@ def download_file(url, temp_dir="temp_audio"):
         os.makedirs(temp_dir)
 
     local_filename = os.path.join(temp_dir, os.path.basename(url))
-    with requests.get(url, stream=True) as r:
+    with http_get(url, stream=True) as r:
         r.raise_for_status()
         with open(local_filename, "wb") as f:
             for chunk in r.iter_content(chunk_size=8192):

@@ -1786,6 +1786,7 @@ def assemble_videos_by_titles_if_present(
     title_sec: float = 2.0,
     add_transitions: bool = False,
     transition_sec: float = 0.5,
+    enforce_reencoding: bool = False
 ):
     """
     If order.xlsx has a Title column (B), produce one output per story group.
@@ -1824,6 +1825,7 @@ def assemble_videos_by_titles_if_present(
             clear_output_dir=False,
             use_bg_audio=False,
             video_paths_override=files,
+            enforce_reencoding=enforce_reencoding
         )
         outputs.append(out_path)
 
@@ -2024,6 +2026,7 @@ def assemble_videos(
     clear_output_dir: bool = False,
     use_bg_audio: bool = True,
     video_paths_override: list[str] | None = None,    
+    enforce_reencoding: bool = False
 ):
     """
     If bg audio exists -> match bg-audio duration (existing behavior).
@@ -2528,7 +2531,33 @@ def assemble_videos(
 
         # Multi-clip: attempt ffmpeg concat if safe (stream copy)
         if prefer_ffmpeg_concat and _bin_exists("ffmpeg"):
-            can_concat, reason = _can_safe_concat(video_paths)
+            if enforce_reencoding:
+
+                print("[Info] Bypassing raw concat to prevent audio/timebase mismatch. Using robust re-encode.")
+                
+                # 1. Get stable output dimensions from the first clip
+                v0 = _ffprobe_stream_info(video_paths[0])
+                out_w = int(v0.get("width") or 1080)
+                out_h = int(v0.get("height") or 1920)
+                
+                # 2. Build the exact duration plan
+                plan = []
+                for p in video_paths:
+                    d = _ffprobe_duration(p)
+                    if d > 0.02:
+                        plan.append((p, d, d))
+                        
+                # 3. Route through the robust filter_complex function
+                _ffmpeg_concat_reencode(
+                    plan=plan,
+                    out_path=output_path,
+                    fps=fps,
+                    w=out_w,
+                    h=out_h,
+                    keep_audio=keep_video_audio,
+                )
+                return
+
             if can_concat:
                 with tempfile.TemporaryDirectory() as td:
                     list_txt = os.path.join(td, "list.txt")

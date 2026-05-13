@@ -23,7 +23,8 @@ DEFAULT_TTS_ENGINE = "google"
 DEFAULT_TTS_TYPE = "neural"
 BG_MUSIC_FADE_OUT_SECONDS = 2.5
 
-#Below status colums are added to the excel file if not already present, and used to track the processing status and results for each row. They can be customized as needed, but should match the constants defined here for the code to work correctly.
+# Below status columns are added to the excel file if not already present, and used to track the
+# processing status and results for each row.
 STATUS_COL = "video_build_status"
 OUTPUT_VIDEO_COL = "video_output_file"
 OUTPUT_AUDIO_COL = "generated_audio_file"
@@ -32,6 +33,7 @@ UPDATED_AT_COL = "video_build_updated_at"
 NARRATION_DUR_COL = "narration_duration_sec"
 SOURCE_VIDEO_DUR_COL = "source_video_duration_sec"
 TTS_USED_COL = "tts_text_used"
+FINAL_VIDEO_DUR_COL = "final_video_duration_sec"
 
 
 def prepare_text_for_tts(text: str, language: str = "english") -> str:
@@ -184,21 +186,28 @@ def build_ffmpeg_command(
     video_duration: float,
     bg_music_path: Optional[Path],
     bg_music_volume: float,
-) -> list[str]:
+) -> tuple[list[str], float]:
+    # Keep the original video when it is longer than the narration.
+    # Only extend/freeze the last frame when narration is longer.
+    output_duration = max(video_duration, narration_duration)
     pad_seconds = max(0.0, narration_duration - video_duration)
-    filters = [f"[0:v]tpad=stop_mode=clone:stop_duration={pad_seconds:.3f},format=yuv420p[vout]"]
 
+    video_filter = f"[0:v]format=yuv420p[vout]"
+    if pad_seconds > 0:
+        video_filter = f"[0:v]tpad=stop_mode=clone:stop_duration={pad_seconds:.3f},format=yuv420p[vout]"
+
+    filters = [video_filter]
     cmd = ["ffmpeg", "-y", "-i", str(video_path), "-i", str(narration_audio)]
     audio_map = "1:a:0"
 
     if bg_music_path and bg_music_path.exists():
-        fade_start = max(0.0, narration_duration - BG_MUSIC_FADE_OUT_SECONDS)
+        fade_start = max(0.0, output_duration - BG_MUSIC_FADE_OUT_SECONDS)
         cmd.extend(["-stream_loop", "-1", "-i", str(bg_music_path)])
         filters.append(
-            f"[2:a]volume={bg_music_volume},atrim=0:{narration_duration:.3f},"
+            f"[2:a]volume={bg_music_volume},atrim=0:{output_duration:.3f},"
             f"afade=t=out:st={fade_start:.3f}:d={BG_MUSIC_FADE_OUT_SECONDS:.3f}[bgm]"
         )
-        filters.append("[1:a][bgm]amix=inputs=2:duration=first:dropout_transition=2[aout]")
+        filters.append("[1:a][bgm]amix=inputs=2:duration=longest:dropout_transition=2[aout]")
         audio_map = "[aout]"
 
     cmd.extend(
@@ -210,7 +219,7 @@ def build_ffmpeg_command(
             "-map",
             audio_map,
             "-t",
-            f"{narration_duration:.3f}",
+            f"{output_duration:.3f}",
             "-c:v",
             "libx264",
             "-preset",
@@ -226,7 +235,7 @@ def build_ffmpeg_command(
             str(output_video),
         ]
     )
-    return cmd
+    return cmd, output_duration
 
 
 def create_video(
@@ -235,7 +244,7 @@ def create_video(
     output_video: Path,
     bg_music_path: Optional[Path],
     bg_music_volume: float,
-) -> tuple[float, float]:
+) -> tuple[float, float, float]:
     if not video_path.exists():
         raise FileNotFoundError(f"Video file not found: {video_path}")
     if bg_music_path and not bg_music_path.exists():
@@ -245,7 +254,7 @@ def create_video(
     video_duration = ffprobe_duration(video_path)
 
     output_video.parent.mkdir(parents=True, exist_ok=True)
-    cmd = build_ffmpeg_command(
+    cmd, output_duration = build_ffmpeg_command(
         video_path=video_path,
         narration_audio=narration_audio,
         output_video=output_video,
@@ -255,7 +264,7 @@ def create_video(
         bg_music_volume=bg_music_volume,
     )
     subprocess.run(cmd, check=True)
-    return narration_duration, video_duration
+    return narration_duration, video_duration, output_duration
 
 
 def ensure_tracking_columns(ws) -> dict[str, int]:
@@ -274,6 +283,7 @@ def ensure_tracking_columns(ws) -> dict[str, int]:
         UPDATED_AT_COL,
         NARRATION_DUR_COL,
         SOURCE_VIDEO_DUR_COL,
+        FINAL_VIDEO_DUR_COL,
         TTS_USED_COL,
     ]
 
@@ -307,6 +317,7 @@ def update_row_status(
     error_message: str = "",
     narration_duration: str = "",
     source_video_duration: str = "",
+    final_video_duration: str = "",
     tts_used: str = "",
 ) -> None:
     ws.cell(row=row_idx, column=col_map[STATUS_COL.lower()], value=status)
@@ -316,12 +327,17 @@ def update_row_status(
     ws.cell(row=row_idx, column=col_map[UPDATED_AT_COL.lower()], value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     ws.cell(row=row_idx, column=col_map[NARRATION_DUR_COL.lower()], value=narration_duration)
     ws.cell(row=row_idx, column=col_map[SOURCE_VIDEO_DUR_COL.lower()], value=source_video_duration)
+    ws.cell(row=row_idx, column=col_map[FINAL_VIDEO_DUR_COL.lower()], value=final_video_duration)
     ws.cell(row=row_idx, column=col_map[TTS_USED_COL.lower()], value=tts_used)
 
 
-def process_excel(excel_path: Path) -> None:
-    bg_music_volume: float = 0.1
-    force_retry_failed: bool = True
+def process_excel(
+    excel_path: Path,
+    *,
+    base_dir: Optional[Path] = None,
+    bg_music_volume: float = DEFAULT_BG_MUSIC_VOLUME,
+    retry_processing_rows: bool = False,
+) -> None:
     wb = load_workbook(excel_path)
     ws = wb.active
 
@@ -330,36 +346,37 @@ def process_excel(excel_path: Path) -> None:
 
     col_map = ensure_tracking_columns(ws)
     wb.save(excel_path)
-    base_dir =  Path(__file__).resolve().parent
-    output_video_dir = base_dir / OUTPUT_VIDEO_DIR
-    audio_dir = base_dir / GENERATED_AUDIO_DIR
-    vid_input_dir = base_dir / INPUT_VIDEO_DIR
+
+    resolved_base_dir = base_dir or Path(__file__).resolve().parent
+    output_video_dir = resolved_base_dir / OUTPUT_VIDEO_DIR
+    audio_dir = resolved_base_dir / GENERATED_AUDIO_DIR
+    vid_input_dir = resolved_base_dir / INPUT_VIDEO_DIR
 
     total_rows = ws.max_row - 1
     for row_idx in range(2, ws.max_row + 1):
         row_values = row_to_dict(ws, row_idx)
-        row_number = row_idx
         current_status = (get_cell_value(row_values, [STATUS_COL]) or "").strip().lower()
 
         if current_status == "success":
-            print(f"Skipping row {row_number}/{ws.max_row}: already marked success")
+            print(f"Skipping row {row_idx - 1}/{total_rows}: already marked success")
             continue
-        if current_status == "processing" and not force_retry_failed:
-            print(f"Skipping row {row_number}/{ws.max_row}: still marked processing")
+        if current_status == "processing" and not retry_processing_rows:
+            print(f"Skipping row {row_idx - 1}/{total_rows}: still marked processing")
             continue
 
-        title = get_cell_value(row_values, ["output_file_name", "title", "youtube_title"], f"row_{row_number}") or f"row_{row_number}"
-        file_stem = safe_stem(title, f"row_{row_number}")
+        title = get_cell_value(row_values, ["output_file_name", "title", "youtube_title"], f"row_{row_idx}") or f"row_{row_idx}"
+        file_stem = safe_stem(title, f"row_{row_idx}")
         output_audio = audio_dir / f"{file_stem}_tts.mp3"
         output_video = output_video_dir / f"{file_stem}.mp4"
+        output_video_nm =  f"edit_vid_output/{file_stem}.mp4"
 
-        print(f"\nProcessing row {row_number - 1}/{total_rows}: {title}")
+        print(f"\nProcessing row {row_idx - 1}/{total_rows}: {title}")
         update_row_status(
             ws,
             col_map,
             row_idx,
             status="processing",
-            output_video=str(output_video),
+            output_video=str(output_video_nm),
             output_audio=str(output_audio),
             error_message="",
         )
@@ -371,12 +388,12 @@ def process_excel(excel_path: Path) -> None:
                 raise ValueError("No TTS text found. Add tts_text or text1..text15 columns.")
 
             source_video = resolve_video_source(row_values, vid_input_dir)
-            bg_music = resolve_bg_music(row_values, base_dir)
+            bg_music = resolve_bg_music(row_values, resolved_base_dir)
             language = get_cell_value(row_values, ["language"], DEFAULT_LANGUAGE) or DEFAULT_LANGUAGE
             gender = get_cell_value(row_values, ["gender"], DEFAULT_GENDER) or DEFAULT_GENDER
 
             cleaned_text = generate_audio(tts_text, output_audio, language, gender)
-            narration_duration, source_video_duration = create_video(
+            narration_duration, source_video_duration, final_video_duration = create_video(
                 video_path=source_video,
                 narration_audio=output_audio,
                 output_video=output_video,
@@ -389,11 +406,12 @@ def process_excel(excel_path: Path) -> None:
                 col_map,
                 row_idx,
                 status="success",
-                output_video=str(output_video),
+                output_video=str(output_video_nm),
                 output_audio=str(output_audio),
                 error_message="",
                 narration_duration=round(narration_duration, 3),
                 source_video_duration=round(source_video_duration, 3),
+                final_video_duration=round(final_video_duration, 3),
                 tts_used=cleaned_text,
             )
             wb.save(excel_path)
@@ -404,12 +422,12 @@ def process_excel(excel_path: Path) -> None:
                 col_map,
                 row_idx,
                 status="failed",
-                output_video=str(output_video),
+                output_video=str(output_video_nm),
                 output_audio=str(output_audio),
                 error_message=str(exc),
             )
             wb.save(excel_path)
-            print(f"Failed on row {row_number}: {exc}")
+            print(f"Failed on row {row_idx}: {exc}")
 
     wb.close()
     print(f"\nDone. Updated workbook: {excel_path}")
@@ -432,9 +450,12 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
+def main():
+    process_excel(
+        excel_path="bulk_video_maker_input.xlsx"
+    )
 
 if __name__ == "__main__":
-    args = parse_args()
     process_excel(
         excel_path="bulk_video_maker_input.xlsx"
     )

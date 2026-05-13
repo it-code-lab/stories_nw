@@ -5,6 +5,7 @@ import cv2
 import requests
 from io import BytesIO
 import os
+from http_client import http_get
 
 def smoothstep(t):
     """Smoothstep easing function for smooth transitions (ease-in-out)."""
@@ -22,7 +23,7 @@ def load_image(image_path):
     """
     if image_path.startswith("http://") or image_path.startswith("https://"):
         try:
-            response = requests.get(image_path, stream=True)
+            response = http_get(image_path, stream=True)
             response.raise_for_status()
             image = Image.open(BytesIO(response.content))
             return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)

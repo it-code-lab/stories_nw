@@ -450,6 +450,11 @@
             <option value="yes">yes</option>
         </select>
 
+        <label>Enforce re-encoding (Needed when parts were created with different settings)?</label>
+        <select name="enforce_reencoding" id="enforce_reencoding">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </select>
 
         <!--
         <label>Title duration (seconds)</label>
@@ -771,6 +776,10 @@
 
         <label>Website URLs (semicolon-separated):</label>
         <textarea name="urls" rows="4"></textarea>
+        
+        <label style="display: none;">HTML (**Workaround to handle error 403 with URL**):</label>
+        <textarea style="display: none;" name="html" rows="4"></textarea>
+
         If want to use prerecorded audios, place them in ready_audio folder with file name matching the title of the
         story/Short
         <label>Audio->WordTimeStamps-Video
@@ -1570,6 +1579,27 @@
         <div id="polishAudioResult" class="infoBox" style="display:none;"></div>
     </form>
 
+        <br>
+    <form id="createAudioNMergeWithVideoForm">
+        <h2 style="background:#ffe4b5;">Create TTS Audio and Merge with Video (in bulk)</h2>
+        <div class="infoBox">
+            This is used to create TTS audio from text in bulk_video_maker_input.xlsx and then merge with the video.
+            <br> <br>
+            Using the prompt in <a href="https://docs.google.com/spreadsheets/d/1_n6LscOXd4kyAC9Y-WGOW9b35x-SLTQib4MrMHm7KlI/edit?gid=0#gid=0" target="_blank">this sheet</a>, fill data in above excel.
+            <br> <br>
+            Create set of portrait videos for the page using OBS studio and provide the list in the excel above.
+            <ul><li>
+            Place the videos in edit_vid_input folder.
+            </li><li>
+            Get the list using dir *.mp4 > a.txt
+            </li><li>
+            Put the list in the excel sheet above and run this job. It will create the TTS audio and merge with the videos and place in edit_vid_output folder.
+            </li></ul>
+        </div>
+        <button type="submit">Run Jobs</button>      
+
+        <pre id="createAudioNMergeWithVideoResult"></pre>
+    </form>
 
     <br>
     <form id="createImagesForm">
@@ -3744,6 +3774,7 @@ ${JSON.stringify(meta, null, 2)}
         }
 
         runTask("createImagesForm", "/create_images", "createImagesResult");
+        runTask("createAudioNMergeWithVideoForm", "/bulk_video_maker", "createAudioNMergeWithVideoResult");
         runTask("createVideosForm", "/create_videos", "createVideosResult");
         runTask("createVectorImagesForm", "/create_vector_images", "createVectorImagesResult");
         runTask("removeBordersForm", "/remove_borders", "removeBordersResult");

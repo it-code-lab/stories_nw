@@ -281,7 +281,7 @@ def upload_video(page, video_info):
     # Show More
     #page.locator('ytcp-button:has-text("Show more")').click()
     page.locator('button:has-text("Show more")').click()
-
+    print("Clicked Show more for additional options")
     time.sleep(1)
 
     #page.get_by_role("radio", name="VIDEO_HAS_ALTERED_CONTENT_NO").click()
@@ -300,29 +300,33 @@ def upload_video(page, video_info):
 
     tags = tags[:450]
 
-
-    if tags:
-        tags_input = page.locator('input[placeholder="Add tag"]')
-        tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
-        # tags_input.fill(",".join(tags))
-        truncated_tags = []
-        current_length = 0
-
-        if tag_list:
+    try:
+        if tags:
+            tags_input = page.locator('input[placeholder="Add tag"]')
+            tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
+            # tags_input.fill(",".join(tags))
+            truncated_tags = []
             current_length = 0
-            for tag in tag_list:
-                if current_length + len(tag) + 1 <= 500:
-                    truncated_tags.append(tag)
-                    current_length += len(tag) + 1
-                else:
-                    break
-            tags_input.fill(",".join(truncated_tags))
 
-        if truncated_tags:
-            tags_input.fill(",".join(truncated_tags))
-            print(f"Entered {len(truncated_tags)} tags (limited to 500 characters).")
+            if tag_list:
+                current_length = 0
+                for tag in tag_list:
+                    if current_length + len(tag) + 1 <= 500:
+                        truncated_tags.append(tag)
+                        current_length += len(tag) + 1
+                    else:
+                        break
+                tags_input.fill(",".join(truncated_tags))
+
+            if truncated_tags:
+                tags_input.fill(",".join(truncated_tags))
+                print(f"Entered {len(truncated_tags)} tags (limited to 500 characters).")
+            else:
+                print("No tags could be added within the 500 character limit.")
         else:
-            print("No tags could be added within the 500 character limit.")
+            print("No tags provided to enter.")
+    except Exception as e:
+        print(f"Skipping tags due to error: {e}")
 
     # Add Thumbnail if available
     if "thumbnail_path" in video_info and video_info["thumbnail_path"]:

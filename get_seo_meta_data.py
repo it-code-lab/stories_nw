@@ -1,9 +1,9 @@
 import os
 import time
 import json
-import requests
 import pandas as pd
 from bs4 import BeautifulSoup
+from http_client import http_get
 
 from gemini_pool import GeminiPool  # your existing helper
 
@@ -81,7 +81,7 @@ def fetch_page_text(url: str) -> tuple[str, str]:
     text_snippet is truncated for token safety.
     """
     try:
-        resp = requests.get(url, timeout=10)
+        resp = http_get(url, timeout=10)
         resp.raise_for_status()
     except Exception as e:
         print(f"[WARN] Failed to fetch {url}: {e}")

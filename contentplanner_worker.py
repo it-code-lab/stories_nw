@@ -27,11 +27,11 @@ import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional, OrderedDict
 
-import requests
 from openpyxl import Workbook, load_workbook
 import re
 
 from assemble_from_videos import _safe_out_name   
+from http_client import http_get
 
 # =============================
 # Config
@@ -77,7 +77,7 @@ HEYGEN_BULK_BG_FILE = "heygen_bulk_bg.xlsx"
 # =============================
 def _get_json(path: str, params: dict, timeout: int = 60) -> dict:
     url = f"{BASE_URL}{path}"
-    r = requests.get(url, params=params, headers=HEADERS, timeout=timeout)
+    r = http_get(url, params=params, headers=HEADERS, timeout=timeout)
     r.raise_for_status()
     return r.json()
 

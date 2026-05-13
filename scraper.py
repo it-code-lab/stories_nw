@@ -8,6 +8,7 @@ import psutil
 import requests
 from bs4 import BeautifulSoup
 import urllib.request
+from http_client import http_get
 from add_avatar import create_avatar_video
 from audio_video_processor import create_video, resize_and_crop_image
 from caption_generator import add_captions, extract_audio, prepare_file_for_adding_captions_n_headings_thru_html
@@ -31,10 +32,6 @@ from tempfile import NamedTemporaryFile
 import pandas as pd
 from bs4 import Tag, NavigableString
 word_timestamps = []
-
-# Fetch word timestamps from the Flask server
-import requests
-
 
 def clear_folders(notebooklm="no"):
     shutil.rmtree("audios", ignore_errors=True)
@@ -81,7 +78,7 @@ def is_server_running(script_name="server.py"):
     return False
 
 def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words, fontsize, y_pos, caption_style, 
-                       selected_voice, language, gender, tts_engine, skip_puppeteer, skip_captions, pitch_age_group, disable_subscribe, notebooklm="no"):
+                       selected_voice, language, gender, tts_engine, skip_puppeteer, skip_captions, pitch_age_group, disable_subscribe, notebooklm="no", html=""):
 
     print("scrape_and_process - Received scrape_and_process Arguments:", locals())
 
@@ -116,7 +113,7 @@ def scrape_and_process(urls, excel_var, selected_size, selected_music, max_words
 
             try:
 
-                results = scrape_page_with_camera_frame(url, "https://readernook.com", notebooklm)
+                results = scrape_page_with_camera_frame(url, "https://readernook.com", notebooklm, html)
                 if not results:
                     print(f"No valid content found in {url}. Skipping.")
                 else:
@@ -836,7 +833,7 @@ def download_file(url, temp_dir="temp_audio"):
         os.makedirs(temp_dir)
 
     local_filename = os.path.join(temp_dir, os.path.basename(url))
-    with requests.get(url, stream=True) as r:
+    with http_get(url, stream=True) as r:
         r.raise_for_status()
         with open(local_filename, "wb") as f:
             for chunk in r.iter_content(chunk_size=8192):
@@ -846,7 +843,7 @@ def download_file(url, temp_dir="temp_audio"):
 
 
 
-def scrape_page_with_camera_frame(url, base_url="https://readernook.com", notebooklm="no"):
+def scrape_page_with_camera_frame(url, base_url="https://readernook.com", notebooklm="no", html=""):
     """
     Scrapes text, sound effects, and images along with camera movement properties.
 
@@ -1009,7 +1006,23 @@ def scrape_page_with_camera_frame(url, base_url="https://readernook.com", notebo
 
         return shortsObj
     
-    response = requests.get(url)
+    response = http_get(url)
+    # If getting response 403 then use html sent as parameter to the function
+    if response.status_code == 403:
+        print(f"Received 403 Forbidden for {url}. Attempting to read local HTML file as fallback.")
+        try:
+            response = type('Response', (object,), {'status_code': 200, 'headers': {}, 'text': html})()  # Mock response object
+            print("Successfully read fallback HTML file.")
+        except Exception as e:
+            print("Error reading fallback HTML")
+            return []  # Return empty if we can't read the fallback file either
+
+    print(f"Scraping URL: {url} - Status Code: {response.status_code}")
+    print(f"Response Headers: {response.headers}")
+    print(f"Response Content (truncated): {response.text[:500]}")  # Print first 500 characters for debugging
+
+
+
     soup = BeautifulSoup(response.text, "html.parser")
     shorts_sections = soup.select("div.shorts")
     process_sections = []
@@ -1283,7 +1296,7 @@ def scrape_page_with_camera_frame_DND(url, base_url="https://readernook.com"):
         list[dict]: A list of elements with text, audio, image, and camera frame details.
     """
    # Scrape the page
-    response = requests.get(url)
+    response = http_get(url)
     soup = BeautifulSoup(response.text, "html.parser")
 
     # Extract text-image pairs
@@ -1583,7 +1596,7 @@ def scrape_page(url):
         list of tuples: Each tuple contains extracted text and image URL pairs.
     """
     # Scrape the page
-    response = requests.get(url)
+    response = http_get(url)
     soup = BeautifulSoup(response.text, "html.parser")
 
     # Extract text-image pairs

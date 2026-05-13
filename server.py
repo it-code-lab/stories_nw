@@ -875,6 +875,19 @@ def create_images():
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
 
+@app.post("/bulk_video_maker")
+def bulk_video_maker():
+    """Run the bulk video maker job (images->video)."""
+    try:
+        from bulk_video_maker import main as bulkVideoMaker
+        result = bulkVideoMaker()
+        return jsonify({"ok": True, "message": "Bulk video maker completed successfully", "result": str(result)})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.post("/remove_borders")
 def remove_borders():
     try:
@@ -2487,6 +2500,7 @@ def process():
     try:
         print("Processing request...")
         urls = request.form.get('urls', '')
+        html = request.form.get('html', '')
         excel = request.form.get('excel', 'no')
         notebooklm = request.form.get('notebooklm', 'no')
         language = request.form.get('language', 'english')
@@ -2506,7 +2520,7 @@ def process():
 
         scrape_and_process(urls, excel, size, music, max_words, fontsize, y_pos,
                            style, voice, language, gender, tts,
-                           skip_puppeteer, skip_captions, pitch, disable_subscribe, notebooklm)
+                           skip_puppeteer, skip_captions, pitch, disable_subscribe, notebooklm, html)
 
         # return "✅ Processing started!"
         return "✅ Processing completed successfully!", 200
@@ -3087,6 +3101,7 @@ def assemble_clips_to_make_video_song():
         video_volume = float(request.form.get('video_volume',0.3))
         bg_volume = float(request.form.get('bg_volume',1.0))
         add_titles = request.form.get('add_titles', 'no') == 'yes'
+        enforce_reencoding = request.form.get('enforce_reencoding', 'no') == 'yes'
         input_folder = request.form.get('input_folder', 'edit_vid_input')
 
         # If input_folder is not edit_vid_input, copy order.xlsx from edit_vid_input to input_folder
@@ -3106,10 +3121,11 @@ def assemble_clips_to_make_video_song():
             keep_video_audio=(keep_video_audio == 'yes'),
             video_volume=video_volume,
             bg_volume=bg_volume,
-            add_titles=add_titles,
+            add_titles=add_titles,            
             title_sec=title_sec,
             add_transitions=add_transitions,
-            transition_sec=transition_sec
+            transition_sec=transition_sec,
+            enforce_reencoding=enforce_reencoding
         )
 
         if group_outputs:
@@ -3512,7 +3528,7 @@ def upload_pdf():
 
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
-import requests
+from http_client import http_get
 from bs4 import BeautifulSoup, NavigableString, Tag
 from PIL import Image, ImageDraw, ImageFont
 import hashlib
@@ -4764,7 +4780,7 @@ def resolve_asset_to_local_file(asset: dict) -> Path | None:
         ext = os.path.splitext(url.split("?")[0])[1].lower() or ".jpg"
         tmp_path = tmp_dir / f"{uuid.uuid4().hex}{ext}"
         try:
-            r = requests.get(url, timeout=20)
+            r = http_get(url, timeout=20)
             r.raise_for_status()
             tmp_path.write_bytes(r.content)
             return tmp_path
@@ -6001,7 +6017,7 @@ def create_project_from_url():
         return jsonify({"ok": False, "error": f"Unknown theme_id: {theme_id}"}), 400
 
     try:
-        response = requests.get(url, timeout=20)
+        response = http_get(url, timeout=20)
         response.raise_for_status()
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Failed to fetch URL: {exc}"}), 400

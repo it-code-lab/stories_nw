@@ -8,10 +8,10 @@ import shutil
 import time
 from bs4 import BeautifulSoup, Tag
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
-import requests
 import whisper
 import traceback
 import json
+from http_client import http_get
 #from scraper import safe_copy
 from settings import sizes, background_music_options, font_settings
 import csv
@@ -727,7 +727,7 @@ def extract_full_text_with_positions(url,shorts_html="", language="english"):
         responseText = shorts_html
         objClass = ".shorts"
     else:
-        response = requests.get(url)
+        response = http_get(url)
         responseText = response.text
         objClass = ".songLyrics"
 
