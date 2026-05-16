@@ -7,237 +7,75 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Base,Montserrat Black,56,&H00FAFAFA,&H00FAFAFA,&H00000000,&H60000000,1,0,0,0,100,100,1.0,0,1,2.5,2.0,2,80,80,150,1
+Style: Base,Montserrat Black,56,&H00FAFAFA,&H00FAFAFA,&H00000000,&H30000000,1,0,0,0,100,100,1.0,0,3,11.5,2.0,2,80,80,150,1
 Style: Hi,Montserrat Black,56,&H0000D5FF,&H0000D5FF,&H00000000,&H60000000,1,0,0,0,100,100,1.0,0,1,2.5,2.0,2,80,80,150,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:00.10,0:00:00.70,Base,,0,0,0,,Here is what
-Dialogue: 1,0:00:00.10,0:00:00.32,Hi,,0,0,0,,{\alpha&H00&}Here{\alpha&HFF&} {\alpha&HFF&}is {\alpha&HFF&}what
-Dialogue: 1,0:00:00.36,0:00:00.52,Hi,,0,0,0,,{\alpha&HFF&}Here {\alpha&H00&}is{\alpha&HFF&} {\alpha&HFF&}what
-Dialogue: 1,0:00:00.58,0:00:00.70,Hi,,0,0,0,,{\alpha&HFF&}Here {\alpha&HFF&}is {\alpha&H00&}what{\alpha&HFF&}
-Dialogue: 0,0:00:00.76,0:00:01.36,Base,,0,0,0,,we are building
-Dialogue: 1,0:00:00.76,0:00:00.86,Hi,,0,0,0,,{\alpha&H00&}we{\alpha&HFF&} {\alpha&HFF&}are {\alpha&HFF&}building
-Dialogue: 1,0:00:00.92,0:00:01.00,Hi,,0,0,0,,{\alpha&HFF&}we {\alpha&H00&}are{\alpha&HFF&} {\alpha&HFF&}building
-Dialogue: 1,0:00:01.04,0:00:01.36,Hi,,0,0,0,,{\alpha&HFF&}we {\alpha&HFF&}are {\alpha&H00&}building{\alpha&HFF&}
-Dialogue: 0,0:00:01.42,0:00:01.70,Base,,0,0,0,,today.
-Dialogue: 1,0:00:01.42,0:00:01.70,Hi,,0,0,0,,{\alpha&H00&}today.{\alpha&HFF&}
-Dialogue: 0,0:00:02.72,0:00:03.58,Base,,0,0,0,,An application to
-Dialogue: 1,0:00:02.72,0:00:02.80,Hi,,0,0,0,,{\alpha&H00&}An{\alpha&HFF&} {\alpha&HFF&}application {\alpha&HFF&}to
-Dialogue: 1,0:00:02.88,0:00:03.46,Hi,,0,0,0,,{\alpha&HFF&}An {\alpha&H00&}application{\alpha&HFF&} {\alpha&HFF&}to
-Dialogue: 1,0:00:03.52,0:00:03.58,Hi,,0,0,0,,{\alpha&HFF&}An {\alpha&HFF&}application {\alpha&H00&}to{\alpha&HFF&}
-Dialogue: 0,0:00:03.64,0:00:04.80,Base,,0,0,0,,create high quality
-Dialogue: 1,0:00:03.64,0:00:03.96,Hi,,0,0,0,,{\alpha&H00&}create{\alpha&HFF&} {\alpha&HFF&}high {\alpha&HFF&}quality
-Dialogue: 1,0:00:04.00,0:00:04.30,Hi,,0,0,0,,{\alpha&HFF&}create {\alpha&H00&}high{\alpha&HFF&} {\alpha&HFF&}quality
-Dialogue: 1,0:00:04.38,0:00:04.80,Hi,,0,0,0,,{\alpha&HFF&}create {\alpha&HFF&}high {\alpha&H00&}quality{\alpha&HFF&}
-Dialogue: 0,0:00:04.84,0:00:06.08,Base,,0,0,0,,thumbnails for YouTube
-Dialogue: 1,0:00:04.84,0:00:05.32,Hi,,0,0,0,,{\alpha&H00&}thumbnails{\alpha&HFF&} {\alpha&HFF&}for {\alpha&HFF&}YouTube
-Dialogue: 1,0:00:05.40,0:00:05.52,Hi,,0,0,0,,{\alpha&HFF&}thumbnails {\alpha&H00&}for{\alpha&HFF&} {\alpha&HFF&}YouTube
-Dialogue: 1,0:00:05.58,0:00:06.08,Hi,,0,0,0,,{\alpha&HFF&}thumbnails {\alpha&HFF&}for {\alpha&H00&}YouTube{\alpha&HFF&}
-Dialogue: 0,0:00:06.26,0:00:06.95,Base,,0,0,0,,or any of
-Dialogue: 1,0:00:06.26,0:00:06.34,Hi,,0,0,0,,{\alpha&H00&}or{\alpha&HFF&} {\alpha&HFF&}any {\alpha&HFF&}of
-Dialogue: 1,0:00:06.58,0:00:06.79,Hi,,0,0,0,,{\alpha&HFF&}or {\alpha&H00&}any{\alpha&HFF&} {\alpha&HFF&}of
-Dialogue: 1,0:00:06.91,0:00:06.95,Hi,,0,0,0,,{\alpha&HFF&}or {\alpha&HFF&}any {\alpha&H00&}of{\alpha&HFF&}
-Dialogue: 0,0:00:06.99,0:00:07.87,Base,,0,0,0,,your design needs.
-Dialogue: 1,0:00:06.99,0:00:07.13,Hi,,0,0,0,,{\alpha&H00&}your{\alpha&HFF&} {\alpha&HFF&}design {\alpha&HFF&}needs.
-Dialogue: 1,0:00:07.17,0:00:07.55,Hi,,0,0,0,,{\alpha&HFF&}your {\alpha&H00&}design{\alpha&HFF&} {\alpha&HFF&}needs.
-Dialogue: 1,0:00:07.59,0:00:07.87,Hi,,0,0,0,,{\alpha&HFF&}your {\alpha&HFF&}design {\alpha&H00&}needs.{\alpha&HFF&}
-Dialogue: 0,0:00:08.07,0:00:08.87,Base,,0,0,0,,You just upload
-Dialogue: 1,0:00:08.07,0:00:08.19,Hi,,0,0,0,,{\alpha&H00&}You{\alpha&HFF&} {\alpha&HFF&}just {\alpha&HFF&}upload
-Dialogue: 1,0:00:08.23,0:00:08.39,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&H00&}just{\alpha&HFF&} {\alpha&HFF&}upload
-Dialogue: 1,0:00:08.55,0:00:08.87,Hi,,0,0,0,,{\alpha&HFF&}You {\alpha&HFF&}just {\alpha&H00&}upload{\alpha&HFF&}
-Dialogue: 0,0:00:08.91,0:00:09.63,Base,,0,0,0,,or paste image
-Dialogue: 1,0:00:08.91,0:00:08.97,Hi,,0,0,0,,{\alpha&H00&}or{\alpha&HFF&} {\alpha&HFF&}paste {\alpha&HFF&}image
-Dialogue: 1,0:00:09.03,0:00:09.31,Hi,,0,0,0,,{\alpha&HFF&}or {\alpha&H00&}paste{\alpha&HFF&} {\alpha&HFF&}image
-Dialogue: 1,0:00:09.43,0:00:09.63,Hi,,0,0,0,,{\alpha&HFF&}or {\alpha&HFF&}paste {\alpha&H00&}image{\alpha&HFF&}
-Dialogue: 0,0:00:09.69,0:00:10.29,Base,,0,0,0,,on the page,
-Dialogue: 1,0:00:09.69,0:00:09.75,Hi,,0,0,0,,{\alpha&H00&}on{\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}page,
-Dialogue: 1,0:00:09.79,0:00:09.85,Hi,,0,0,0,,{\alpha&HFF&}on {\alpha&H00&}the{\alpha&HFF&} {\alpha&HFF&}page,
-Dialogue: 1,0:00:09.91,0:00:10.29,Hi,,0,0,0,,{\alpha&HFF&}on {\alpha&HFF&}the {\alpha&H00&}page,{\alpha&HFF&}
-Dialogue: 0,0:00:10.63,0:00:12.15,Base,,0,0,0,,provide title, subtitle
-Dialogue: 1,0:00:10.63,0:00:10.97,Hi,,0,0,0,,{\alpha&H00&}provide{\alpha&HFF&} {\alpha&HFF&}title, {\alpha&HFF&}subtitle
-Dialogue: 1,0:00:11.05,0:00:11.47,Hi,,0,0,0,,{\alpha&HFF&}provide {\alpha&H00&}title,{\alpha&HFF&} {\alpha&HFF&}subtitle
-Dialogue: 1,0:00:11.61,0:00:12.15,Hi,,0,0,0,,{\alpha&HFF&}provide {\alpha&HFF&}title, {\alpha&H00&}subtitle{\alpha&HFF&}
-Dialogue: 0,0:00:12.19,0:00:13.07,Base,,0,0,0,,and thumbnail is
-Dialogue: 1,0:00:12.19,0:00:12.27,Hi,,0,0,0,,{\alpha&H00&}and{\alpha&HFF&} {\alpha&HFF&}thumbnail {\alpha&HFF&}is
-Dialogue: 1,0:00:12.33,0:00:12.85,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&H00&}thumbnail{\alpha&HFF&} {\alpha&HFF&}is
-Dialogue: 1,0:00:13.01,0:00:13.07,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&HFF&}thumbnail {\alpha&H00&}is{\alpha&HFF&}
-Dialogue: 0,0:00:13.15,0:00:13.95,Base,,0,0,0,,ready to download
-Dialogue: 1,0:00:13.15,0:00:13.35,Hi,,0,0,0,,{\alpha&H00&}ready{\alpha&HFF&} {\alpha&HFF&}to {\alpha&HFF&}download
-Dialogue: 1,0:00:13.39,0:00:13.47,Hi,,0,0,0,,{\alpha&HFF&}ready {\alpha&H00&}to{\alpha&HFF&} {\alpha&HFF&}download
-Dialogue: 1,0:00:13.53,0:00:13.95,Hi,,0,0,0,,{\alpha&HFF&}ready {\alpha&HFF&}to {\alpha&H00&}download{\alpha&HFF&}
-Dialogue: 0,0:00:13.99,0:00:14.62,Base,,0,0,0,,in seconds.
-Dialogue: 1,0:00:13.99,0:00:14.07,Hi,,0,0,0,,{\alpha&H00&}in{\alpha&HFF&} {\alpha&HFF&}seconds.
-Dialogue: 1,0:00:14.21,0:00:14.62,Hi,,0,0,0,,{\alpha&HFF&}in {\alpha&H00&}seconds.{\alpha&HFF&}
-Dialogue: 0,0:00:15.50,0:00:16.28,Base,,0,0,0,,There are several
-Dialogue: 1,0:00:15.50,0:00:15.66,Hi,,0,0,0,,{\alpha&H00&}There{\alpha&HFF&} {\alpha&HFF&}are {\alpha&HFF&}several
-Dialogue: 1,0:00:15.72,0:00:15.82,Hi,,0,0,0,,{\alpha&HFF&}There {\alpha&H00&}are{\alpha&HFF&} {\alpha&HFF&}several
-Dialogue: 1,0:00:15.86,0:00:16.28,Hi,,0,0,0,,{\alpha&HFF&}There {\alpha&HFF&}are {\alpha&H00&}several{\alpha&HFF&}
-Dialogue: 0,0:00:16.34,0:00:17.20,Base,,0,0,0,,template designs to
-Dialogue: 1,0:00:16.34,0:00:16.72,Hi,,0,0,0,,{\alpha&H00&}template{\alpha&HFF&} {\alpha&HFF&}designs {\alpha&HFF&}to
-Dialogue: 1,0:00:16.74,0:00:17.08,Hi,,0,0,0,,{\alpha&HFF&}template {\alpha&H00&}designs{\alpha&HFF&} {\alpha&HFF&}to
-Dialogue: 1,0:00:17.12,0:00:17.20,Hi,,0,0,0,,{\alpha&HFF&}template {\alpha&HFF&}designs {\alpha&H00&}to{\alpha&HFF&}
-Dialogue: 0,0:00:17.26,0:00:18.08,Base,,0,0,0,,choose from. Here
-Dialogue: 1,0:00:17.26,0:00:17.48,Hi,,0,0,0,,{\alpha&H00&}choose{\alpha&HFF&} {\alpha&HFF&}from. {\alpha&HFF&}Here
-Dialogue: 1,0:00:17.54,0:00:17.72,Hi,,0,0,0,,{\alpha&HFF&}choose {\alpha&H00&}from.{\alpha&HFF&} {\alpha&HFF&}Here
-Dialogue: 1,0:00:17.88,0:00:18.08,Hi,,0,0,0,,{\alpha&HFF&}choose {\alpha&HFF&}from. {\alpha&H00&}Here{\alpha&HFF&}
-Dialogue: 0,0:00:18.18,0:00:18.90,Base,,0,0,0,,is the prompt
-Dialogue: 1,0:00:18.18,0:00:18.24,Hi,,0,0,0,,{\alpha&H00&}is{\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}prompt
-Dialogue: 1,0:00:18.30,0:00:18.40,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&H00&}the{\alpha&HFF&} {\alpha&HFF&}prompt
-Dialogue: 1,0:00:18.48,0:00:18.90,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}the {\alpha&H00&}prompt{\alpha&HFF&}
-Dialogue: 0,0:00:19.04,0:00:19.56,Base,,0,0,0,,I am giving
-Dialogue: 1,0:00:19.04,0:00:19.08,Hi,,0,0,0,,{\alpha&H00&}I{\alpha&HFF&} {\alpha&HFF&}am {\alpha&HFF&}giving
-Dialogue: 1,0:00:19.16,0:00:19.22,Hi,,0,0,0,,{\alpha&HFF&}I {\alpha&H00&}am{\alpha&HFF&} {\alpha&HFF&}giving
-Dialogue: 1,0:00:19.30,0:00:19.56,Hi,,0,0,0,,{\alpha&HFF&}I {\alpha&HFF&}am {\alpha&H00&}giving{\alpha&HFF&}
-Dialogue: 0,0:00:19.62,0:00:20.92,Base,,0,0,0,,to AI to
-Dialogue: 1,0:00:19.62,0:00:19.70,Hi,,0,0,0,,{\alpha&H00&}to{\alpha&HFF&} {\alpha&HFF&}AI {\alpha&HFF&}to
-Dialogue: 1,0:00:19.90,0:00:20.38,Hi,,0,0,0,,{\alpha&HFF&}to {\alpha&H00&}AI{\alpha&HFF&} {\alpha&HFF&}to
-Dialogue: 1,0:00:20.42,0:00:20.92,Hi,,0,0,0,,{\alpha&HFF&}to {\alpha&HFF&}AI {\alpha&H00&}to{\alpha&HFF&}
-Dialogue: 0,0:00:21.00,0:00:21.72,Base,,0,0,0,,have the code
-Dialogue: 1,0:00:21.00,0:00:21.22,Hi,,0,0,0,,{\alpha&H00&}have{\alpha&HFF&} {\alpha&HFF&}the {\alpha&HFF&}code
-Dialogue: 1,0:00:21.26,0:00:21.36,Hi,,0,0,0,,{\alpha&HFF&}have {\alpha&H00&}the{\alpha&HFF&} {\alpha&HFF&}code
-Dialogue: 1,0:00:21.44,0:00:21.72,Hi,,0,0,0,,{\alpha&HFF&}have {\alpha&HFF&}the {\alpha&H00&}code{\alpha&HFF&}
-Dialogue: 0,0:00:21.80,0:00:22.96,Base,,0,0,0,,created. I wanted
-Dialogue: 1,0:00:21.80,0:00:22.32,Hi,,0,0,0,,{\alpha&H00&}created.{\alpha&HFF&} {\alpha&HFF&}I {\alpha&HFF&}wanted
-Dialogue: 1,0:00:22.58,0:00:22.62,Hi,,0,0,0,,{\alpha&HFF&}created. {\alpha&H00&}I{\alpha&HFF&} {\alpha&HFF&}wanted
-Dialogue: 1,0:00:22.68,0:00:22.96,Hi,,0,0,0,,{\alpha&HFF&}created. {\alpha&HFF&}I {\alpha&H00&}wanted{\alpha&HFF&}
-Dialogue: 0,0:00:23.00,0:00:23.46,Base,,0,0,0,,this to be
-Dialogue: 1,0:00:23.00,0:00:23.16,Hi,,0,0,0,,{\alpha&H00&}this{\alpha&HFF&} {\alpha&HFF&}to {\alpha&HFF&}be
-Dialogue: 1,0:00:23.22,0:00:23.30,Hi,,0,0,0,,{\alpha&HFF&}this {\alpha&H00&}to{\alpha&HFF&} {\alpha&HFF&}be
-Dialogue: 1,0:00:23.34,0:00:23.46,Hi,,0,0,0,,{\alpha&HFF&}this {\alpha&HFF&}to {\alpha&H00&}be{\alpha&HFF&}
-Dialogue: 0,0:00:23.50,0:00:24.87,Base,,0,0,0,,lightweight and lightning
-Dialogue: 1,0:00:23.50,0:00:24.18,Hi,,0,0,0,,{\alpha&H00&}lightweight{\alpha&HFF&} {\alpha&HFF&}and {\alpha&HFF&}lightning
-Dialogue: 1,0:00:24.33,0:00:24.39,Hi,,0,0,0,,{\alpha&HFF&}lightweight {\alpha&H00&}and{\alpha&HFF&} {\alpha&HFF&}lightning
-Dialogue: 1,0:00:24.51,0:00:24.87,Hi,,0,0,0,,{\alpha&HFF&}lightweight {\alpha&HFF&}and {\alpha&H00&}lightning{\alpha&HFF&}
-Dialogue: 0,0:00:24.93,0:00:25.35,Base,,0,0,0,,fast.
-Dialogue: 1,0:00:24.93,0:00:25.35,Hi,,0,0,0,,{\alpha&H00&}fast.{\alpha&HFF&}
-Dialogue: 0,0:00:25.97,0:00:26.97,Base,,0,0,0,,We're talking pure
-Dialogue: 1,0:00:25.97,0:00:26.09,Hi,,0,0,0,,{\alpha&H00&}We're{\alpha&HFF&} {\alpha&HFF&}talking {\alpha&HFF&}pure
-Dialogue: 1,0:00:26.11,0:00:26.45,Hi,,0,0,0,,{\alpha&HFF&}We're {\alpha&H00&}talking{\alpha&HFF&} {\alpha&HFF&}pure
-Dialogue: 1,0:00:26.61,0:00:26.97,Hi,,0,0,0,,{\alpha&HFF&}We're {\alpha&HFF&}talking {\alpha&H00&}pure{\alpha&HFF&}
-Dialogue: 0,0:00:27.05,0:00:29.97,Base,,0,0,0,,vanilla JavaScript. HTML5.
-Dialogue: 1,0:00:27.05,0:00:27.43,Hi,,0,0,0,,{\alpha&H00&}vanilla{\alpha&HFF&} {\alpha&HFF&}JavaScript. {\alpha&HFF&}HTML5.
-Dialogue: 1,0:00:27.47,0:00:28.21,Hi,,0,0,0,,{\alpha&HFF&}vanilla {\alpha&H00&}JavaScript.{\alpha&HFF&} {\alpha&HFF&}HTML5.
-Dialogue: 1,0:00:28.45,0:00:29.97,Hi,,0,0,0,,{\alpha&HFF&}vanilla {\alpha&HFF&}JavaScript. {\alpha&H00&}HTML5.{\alpha&HFF&}
-Dialogue: 0,0:00:30.11,0:00:30.75,Base,,0,0,0,,The logic is
-Dialogue: 1,0:00:30.11,0:00:30.21,Hi,,0,0,0,,{\alpha&H00&}The{\alpha&HFF&} {\alpha&HFF&}logic {\alpha&HFF&}is
-Dialogue: 1,0:00:30.25,0:00:30.61,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&H00&}logic{\alpha&HFF&} {\alpha&HFF&}is
-Dialogue: 1,0:00:30.69,0:00:30.75,Hi,,0,0,0,,{\alpha&HFF&}The {\alpha&HFF&}logic {\alpha&H00&}is{\alpha&HFF&}
-Dialogue: 0,0:00:30.81,0:00:31.15,Base,,0,0,0,,simple.
-Dialogue: 1,0:00:30.81,0:00:31.15,Hi,,0,0,0,,{\alpha&H00&}simple.{\alpha&HFF&}
-Dialogue: 0,0:00:31.78,0:00:32.48,Base,,0,0,0,,Instead of giving
-Dialogue: 1,0:00:31.78,0:00:32.06,Hi,,0,0,0,,{\alpha&H00&}Instead{\alpha&HFF&} {\alpha&HFF&}of {\alpha&HFF&}giving
-Dialogue: 1,0:00:32.12,0:00:32.16,Hi,,0,0,0,,{\alpha&HFF&}Instead {\alpha&H00&}of{\alpha&HFF&} {\alpha&HFF&}giving
-Dialogue: 1,0:00:32.24,0:00:32.48,Hi,,0,0,0,,{\alpha&HFF&}Instead {\alpha&HFF&}of {\alpha&H00&}giving{\alpha&HFF&}
-Dialogue: 0,0:00:32.52,0:00:33.26,Base,,0,0,0,,you a thousand
-Dialogue: 1,0:00:32.52,0:00:32.62,Hi,,0,0,0,,{\alpha&H00&}you{\alpha&HFF&} {\alpha&HFF&}a {\alpha&HFF&}thousand
-Dialogue: 1,0:00:32.70,0:00:32.72,Hi,,0,0,0,,{\alpha&HFF&}you {\alpha&H00&}a{\alpha&HFF&} {\alpha&HFF&}thousand
-Dialogue: 1,0:00:32.82,0:00:33.26,Hi,,0,0,0,,{\alpha&HFF&}you {\alpha&HFF&}a {\alpha&H00&}thousand{\alpha&HFF&}
-Dialogue: 0,0:00:33.32,0:00:35.00,Base,,0,0,0,,confusing sliders it
-Dialogue: 1,0:00:33.32,0:00:33.82,Hi,,0,0,0,,{\alpha&H00&}confusing{\alpha&HFF&} {\alpha&HFF&}sliders {\alpha&HFF&}it
-Dialogue: 1,0:00:33.86,0:00:34.42,Hi,,0,0,0,,{\alpha&HFF&}confusing {\alpha&H00&}sliders{\alpha&HFF&} {\alpha&HFF&}it
-Dialogue: 1,0:00:34.94,0:00:35.00,Hi,,0,0,0,,{\alpha&HFF&}confusing {\alpha&HFF&}sliders {\alpha&H00&}it{\alpha&HFF&}
-Dialogue: 0,0:00:35.18,0:00:37.12,Base,,0,0,0,,uses smart templates.
-Dialogue: 1,0:00:35.18,0:00:35.50,Hi,,0,0,0,,{\alpha&H00&}uses{\alpha&HFF&} {\alpha&HFF&}smart {\alpha&HFF&}templates.
-Dialogue: 1,0:00:35.52,0:00:36.58,Hi,,0,0,0,,{\alpha&HFF&}uses {\alpha&H00&}smart{\alpha&HFF&} {\alpha&HFF&}templates.
-Dialogue: 1,0:00:36.64,0:00:37.12,Hi,,0,0,0,,{\alpha&HFF&}uses {\alpha&HFF&}smart {\alpha&H00&}templates.{\alpha&HFF&}
-Dialogue: 0,0:00:38.30,0:00:39.71,Base,,0,0,0,,These\Ntemplates automatically
-Dialogue: 1,0:00:38.30,0:00:38.47,Hi,,0,0,0,,{\alpha&H00&}These{\alpha&HFF&}\N{\alpha&HFF&}templates {\alpha&HFF&}automatically
-Dialogue: 1,0:00:38.54,0:00:38.95,Hi,,0,0,0,,{\alpha&HFF&}These\N{\alpha&H00&}templates{\alpha&HFF&} {\alpha&HFF&}automatically
-Dialogue: 1,0:00:39.17,0:00:39.71,Hi,,0,0,0,,{\alpha&HFF&}These\N{\alpha&HFF&}templates {\alpha&H00&}automatically{\alpha&HFF&}
-Dialogue: 0,0:00:39.79,0:00:41.47,Base,,0,0,0,,calculate\Ntypography scales
-Dialogue: 1,0:00:39.79,0:00:40.33,Hi,,0,0,0,,{\alpha&H00&}calculate{\alpha&HFF&}\N{\alpha&HFF&}typography {\alpha&HFF&}scales
-Dialogue: 1,0:00:40.37,0:00:41.05,Hi,,0,0,0,,{\alpha&HFF&}calculate\N{\alpha&H00&}typography{\alpha&HFF&} {\alpha&HFF&}scales
-Dialogue: 1,0:00:41.09,0:00:41.47,Hi,,0,0,0,,{\alpha&HFF&}calculate\N{\alpha&HFF&}typography {\alpha&H00&}scales{\alpha&HFF&}
-Dialogue: 0,0:00:41.77,0:00:42.87,Base,,0,0,0,,and layout positioning.
-Dialogue: 1,0:00:41.77,0:00:41.85,Hi,,0,0,0,,{\alpha&H00&}and{\alpha&HFF&} {\alpha&HFF&}layout {\alpha&HFF&}positioning.
-Dialogue: 1,0:00:41.91,0:00:42.25,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&H00&}layout{\alpha&HFF&} {\alpha&HFF&}positioning.
-Dialogue: 1,0:00:42.31,0:00:42.87,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&HFF&}layout {\alpha&H00&}positioning.{\alpha&HFF&}
-Dialogue: 0,0:00:42.91,0:00:43.37,Base,,0,0,0,,Whether you're on
-Dialogue: 1,0:00:42.91,0:00:43.13,Hi,,0,0,0,,{\alpha&H00&}Whether{\alpha&HFF&} {\alpha&HFF&}you're {\alpha&HFF&}on
-Dialogue: 1,0:00:43.15,0:00:43.27,Hi,,0,0,0,,{\alpha&HFF&}Whether {\alpha&H00&}you're{\alpha&HFF&} {\alpha&HFF&}on
-Dialogue: 1,0:00:43.29,0:00:43.37,Hi,,0,0,0,,{\alpha&HFF&}Whether {\alpha&HFF&}you're {\alpha&H00&}on{\alpha&HFF&}
-Dialogue: 0,0:00:43.43,0:00:44.33,Base,,0,0,0,,a desktop or
-Dialogue: 1,0:00:43.43,0:00:43.45,Hi,,0,0,0,,{\alpha&H00&}a{\alpha&HFF&} {\alpha&HFF&}desktop {\alpha&HFF&}or
-Dialogue: 1,0:00:43.51,0:00:44.09,Hi,,0,0,0,,{\alpha&HFF&}a {\alpha&H00&}desktop{\alpha&HFF&} {\alpha&HFF&}or
-Dialogue: 1,0:00:44.25,0:00:44.33,Hi,,0,0,0,,{\alpha&HFF&}a {\alpha&HFF&}desktop {\alpha&H00&}or{\alpha&HFF&}
-Dialogue: 0,0:00:44.37,0:00:45.74,Base,,0,0,0,,your phone the
-Dialogue: 1,0:00:44.37,0:00:44.53,Hi,,0,0,0,,{\alpha&H00&}your{\alpha&HFF&} {\alpha&HFF&}phone {\alpha&HFF&}the
-Dialogue: 1,0:00:44.59,0:00:44.92,Hi,,0,0,0,,{\alpha&HFF&}your {\alpha&H00&}phone{\alpha&HFF&} {\alpha&HFF&}the
-Dialogue: 1,0:00:44.96,0:00:45.74,Hi,,0,0,0,,{\alpha&HFF&}your {\alpha&HFF&}phone {\alpha&H00&}the{\alpha&HFF&}
-Dialogue: 0,0:00:45.88,0:00:46.52,Base,,0,0,0,,app handles the
-Dialogue: 1,0:00:45.88,0:00:46.02,Hi,,0,0,0,,{\alpha&H00&}app{\alpha&HFF&} {\alpha&HFF&}handles {\alpha&HFF&}the
-Dialogue: 1,0:00:46.08,0:00:46.40,Hi,,0,0,0,,{\alpha&HFF&}app {\alpha&H00&}handles{\alpha&HFF&} {\alpha&HFF&}the
-Dialogue: 1,0:00:46.46,0:00:46.52,Hi,,0,0,0,,{\alpha&HFF&}app {\alpha&HFF&}handles {\alpha&H00&}the{\alpha&HFF&}
-Dialogue: 0,0:00:46.58,0:00:47.48,Base,,0,0,0,,composition so you
-Dialogue: 1,0:00:46.58,0:00:47.22,Hi,,0,0,0,,{\alpha&H00&}composition{\alpha&HFF&} {\alpha&HFF&}so {\alpha&HFF&}you
-Dialogue: 1,0:00:47.28,0:00:47.38,Hi,,0,0,0,,{\alpha&HFF&}composition {\alpha&H00&}so{\alpha&HFF&} {\alpha&HFF&}you
-Dialogue: 1,0:00:47.40,0:00:47.48,Hi,,0,0,0,,{\alpha&HFF&}composition {\alpha&HFF&}so {\alpha&H00&}you{\alpha&HFF&}
-Dialogue: 0,0:00:47.52,0:00:48.12,Base,,0,0,0,,don't have to.
-Dialogue: 1,0:00:47.52,0:00:47.66,Hi,,0,0,0,,{\alpha&H00&}don't{\alpha&HFF&} {\alpha&HFF&}have {\alpha&HFF&}to.
-Dialogue: 1,0:00:47.70,0:00:47.90,Hi,,0,0,0,,{\alpha&HFF&}don't {\alpha&H00&}have{\alpha&HFF&} {\alpha&HFF&}to.
-Dialogue: 1,0:00:47.96,0:00:48.12,Hi,,0,0,0,,{\alpha&HFF&}don't {\alpha&HFF&}have {\alpha&H00&}to.{\alpha&HFF&}
-Dialogue: 0,0:00:48.26,0:00:48.88,Base,,0,0,0,,I've made this
-Dialogue: 1,0:00:48.26,0:00:48.42,Hi,,0,0,0,,{\alpha&H00&}I've{\alpha&HFF&} {\alpha&HFF&}made {\alpha&HFF&}this
-Dialogue: 1,0:00:48.48,0:00:48.66,Hi,,0,0,0,,{\alpha&HFF&}I've {\alpha&H00&}made{\alpha&HFF&} {\alpha&HFF&}this
-Dialogue: 1,0:00:48.74,0:00:48.88,Hi,,0,0,0,,{\alpha&HFF&}I've {\alpha&HFF&}made {\alpha&H00&}this{\alpha&HFF&}
-Dialogue: 0,0:00:48.96,0:00:50.10,Base,,0,0,0,,tool completely free
-Dialogue: 1,0:00:48.96,0:00:49.20,Hi,,0,0,0,,{\alpha&H00&}tool{\alpha&HFF&} {\alpha&HFF&}completely {\alpha&HFF&}free
-Dialogue: 1,0:00:49.28,0:00:49.76,Hi,,0,0,0,,{\alpha&HFF&}tool {\alpha&H00&}completely{\alpha&HFF&} {\alpha&HFF&}free
-Dialogue: 1,0:00:49.78,0:00:50.10,Hi,,0,0,0,,{\alpha&HFF&}tool {\alpha&HFF&}completely {\alpha&H00&}free{\alpha&HFF&}
-Dialogue: 0,0:00:50.24,0:00:51.12,Base,,0,0,0,,and live right
-Dialogue: 1,0:00:50.24,0:00:50.32,Hi,,0,0,0,,{\alpha&H00&}and{\alpha&HFF&} {\alpha&HFF&}live {\alpha&HFF&}right
-Dialogue: 1,0:00:50.40,0:00:50.74,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&H00&}live{\alpha&HFF&} {\alpha&HFF&}right
-Dialogue: 1,0:00:50.92,0:00:51.12,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&HFF&}live {\alpha&H00&}right{\alpha&HFF&}
-Dialogue: 0,0:00:51.18,0:00:51.54,Base,,0,0,0,,now. If you
-Dialogue: 1,0:00:51.18,0:00:51.34,Hi,,0,0,0,,{\alpha&H00&}now.{\alpha&HFF&} {\alpha&HFF&}If {\alpha&HFF&}you
-Dialogue: 1,0:00:51.36,0:00:51.42,Hi,,0,0,0,,{\alpha&HFF&}now. {\alpha&H00&}If{\alpha&HFF&} {\alpha&HFF&}you
-Dialogue: 1,0:00:51.44,0:00:51.54,Hi,,0,0,0,,{\alpha&HFF&}now. {\alpha&HFF&}If {\alpha&H00&}you{\alpha&HFF&}
-Dialogue: 0,0:00:51.60,0:00:52.13,Base,,0,0,0,,want to stop
-Dialogue: 1,0:00:51.60,0:00:51.72,Hi,,0,0,0,,{\alpha&H00&}want{\alpha&HFF&} {\alpha&HFF&}to {\alpha&HFF&}stop
-Dialogue: 1,0:00:51.76,0:00:51.80,Hi,,0,0,0,,{\alpha&HFF&}want {\alpha&H00&}to{\alpha&HFF&} {\alpha&HFF&}stop
-Dialogue: 1,0:00:51.86,0:00:52.13,Hi,,0,0,0,,{\alpha&HFF&}want {\alpha&HFF&}to {\alpha&H00&}stop{\alpha&HFF&}
-Dialogue: 0,0:00:52.25,0:00:53.43,Base,,0,0,0,,overthinking your design
-Dialogue: 1,0:00:52.25,0:00:52.77,Hi,,0,0,0,,{\alpha&H00&}overthinking{\alpha&HFF&} {\alpha&HFF&}your {\alpha&HFF&}design
-Dialogue: 1,0:00:52.81,0:00:52.93,Hi,,0,0,0,,{\alpha&HFF&}overthinking {\alpha&H00&}your{\alpha&HFF&} {\alpha&HFF&}design
-Dialogue: 1,0:00:52.97,0:00:53.43,Hi,,0,0,0,,{\alpha&HFF&}overthinking {\alpha&HFF&}your {\alpha&H00&}design{\alpha&HFF&}
-Dialogue: 0,0:00:53.53,0:00:54.39,Base,,0,0,0,,and start uploading
-Dialogue: 1,0:00:53.53,0:00:53.61,Hi,,0,0,0,,{\alpha&H00&}and{\alpha&HFF&} {\alpha&HFF&}start {\alpha&HFF&}uploading
-Dialogue: 1,0:00:53.67,0:00:53.91,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&H00&}start{\alpha&HFF&} {\alpha&HFF&}uploading
-Dialogue: 1,0:00:54.03,0:00:54.39,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&HFF&}start {\alpha&H00&}uploading{\alpha&HFF&}
-Dialogue: 0,0:00:54.49,0:00:55.77,Base,,0,0,0,,faster click the
-Dialogue: 1,0:00:54.49,0:00:55.09,Hi,,0,0,0,,{\alpha&H00&}faster{\alpha&HFF&} {\alpha&HFF&}click {\alpha&HFF&}the
-Dialogue: 1,0:00:55.43,0:00:55.67,Hi,,0,0,0,,{\alpha&HFF&}faster {\alpha&H00&}click{\alpha&HFF&} {\alpha&HFF&}the
-Dialogue: 1,0:00:55.71,0:00:55.77,Hi,,0,0,0,,{\alpha&HFF&}faster {\alpha&HFF&}click {\alpha&H00&}the{\alpha&HFF&}
-Dialogue: 0,0:00:55.83,0:00:56.15,Base,,0,0,0,,link in the
-Dialogue: 1,0:00:55.83,0:00:55.97,Hi,,0,0,0,,{\alpha&H00&}link{\alpha&HFF&} {\alpha&HFF&}in {\alpha&HFF&}the
-Dialogue: 1,0:00:55.99,0:00:56.07,Hi,,0,0,0,,{\alpha&HFF&}link {\alpha&H00&}in{\alpha&HFF&} {\alpha&HFF&}the
-Dialogue: 1,0:00:56.09,0:00:56.15,Hi,,0,0,0,,{\alpha&HFF&}link {\alpha&HFF&}in {\alpha&H00&}the{\alpha&HFF&}
-Dialogue: 0,0:00:56.19,0:00:57.24,Base,,0,0,0,,description or the
-Dialogue: 1,0:00:56.19,0:00:56.71,Hi,,0,0,0,,{\alpha&H00&}description{\alpha&HFF&} {\alpha&HFF&}or {\alpha&HFF&}the
-Dialogue: 1,0:00:56.75,0:00:57.10,Hi,,0,0,0,,{\alpha&HFF&}description {\alpha&H00&}or{\alpha&HFF&} {\alpha&HFF&}the
-Dialogue: 1,0:00:57.16,0:00:57.24,Hi,,0,0,0,,{\alpha&HFF&}description {\alpha&HFF&}or {\alpha&H00&}the{\alpha&HFF&}
-Dialogue: 0,0:00:57.28,0:00:58.38,Base,,0,0,0,,pinned comment. Try
-Dialogue: 1,0:00:57.28,0:00:57.50,Hi,,0,0,0,,{\alpha&H00&}pinned{\alpha&HFF&} {\alpha&HFF&}comment. {\alpha&HFF&}Try
-Dialogue: 1,0:00:57.56,0:00:58.14,Hi,,0,0,0,,{\alpha&HFF&}pinned {\alpha&H00&}comment.{\alpha&HFF&} {\alpha&HFF&}Try
-Dialogue: 1,0:00:58.16,0:00:58.38,Hi,,0,0,0,,{\alpha&HFF&}pinned {\alpha&HFF&}comment. {\alpha&H00&}Try{\alpha&HFF&}
-Dialogue: 0,0:00:58.44,0:00:58.88,Base,,0,0,0,,it out at
-Dialogue: 1,0:00:58.44,0:00:58.50,Hi,,0,0,0,,{\alpha&H00&}it{\alpha&HFF&} {\alpha&HFF&}out {\alpha&HFF&}at
-Dialogue: 1,0:00:58.60,0:00:58.70,Hi,,0,0,0,,{\alpha&HFF&}it {\alpha&H00&}out{\alpha&HFF&} {\alpha&HFF&}at
-Dialogue: 1,0:00:58.84,0:00:58.88,Hi,,0,0,0,,{\alpha&HFF&}it {\alpha&HFF&}out {\alpha&H00&}at{\alpha&HFF&}
-Dialogue: 0,0:00:58.92,0:00:59.81,Base,,0,0,0,,Reader Nook Lab
-Dialogue: 1,0:00:58.92,0:00:59.23,Hi,,0,0,0,,{\alpha&H00&}Reader{\alpha&HFF&} {\alpha&HFF&}Nook {\alpha&HFF&}Lab
-Dialogue: 1,0:00:59.29,0:00:59.47,Hi,,0,0,0,,{\alpha&HFF&}Reader {\alpha&H00&}Nook{\alpha&HFF&} {\alpha&HFF&}Lab
-Dialogue: 1,0:00:59.49,0:00:59.81,Hi,,0,0,0,,{\alpha&HFF&}Reader {\alpha&HFF&}Nook {\alpha&H00&}Lab{\alpha&HFF&}
-Dialogue: 0,0:01:00.13,0:01:00.45,Base,,0,0,0,,and let me
-Dialogue: 1,0:01:00.13,0:01:00.21,Hi,,0,0,0,,{\alpha&H00&}and{\alpha&HFF&} {\alpha&HFF&}let {\alpha&HFF&}me
-Dialogue: 1,0:01:00.25,0:01:00.35,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&H00&}let{\alpha&HFF&} {\alpha&HFF&}me
-Dialogue: 1,0:01:00.39,0:01:00.45,Hi,,0,0,0,,{\alpha&HFF&}and {\alpha&HFF&}let {\alpha&H00&}me{\alpha&HFF&}
-Dialogue: 0,0:01:00.49,0:01:01.42,Base,,0,0,0,,know which template
-Dialogue: 1,0:01:00.49,0:01:00.63,Hi,,0,0,0,,{\alpha&H00&}know{\alpha&HFF&} {\alpha&HFF&}which {\alpha&HFF&}template
-Dialogue: 1,0:01:00.65,0:01:00.94,Hi,,0,0,0,,{\alpha&HFF&}know {\alpha&H00&}which{\alpha&HFF&} {\alpha&HFF&}template
-Dialogue: 1,0:01:01.04,0:01:01.42,Hi,,0,0,0,,{\alpha&HFF&}know {\alpha&HFF&}which {\alpha&H00&}template{\alpha&HFF&}
-Dialogue: 0,0:01:01.52,0:01:02.32,Base,,0,0,0,,is your favorite.
-Dialogue: 1,0:01:01.52,0:01:01.60,Hi,,0,0,0,,{\alpha&H00&}is{\alpha&HFF&} {\alpha&HFF&}your {\alpha&HFF&}favorite.
-Dialogue: 1,0:01:01.64,0:01:01.80,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&H00&}your{\alpha&HFF&} {\alpha&HFF&}favorite.
-Dialogue: 1,0:01:01.88,0:01:02.32,Hi,,0,0,0,,{\alpha&HFF&}is {\alpha&HFF&}your {\alpha&H00&}favorite.{\alpha&HFF&}
+Dialogue: 0,0:00:00.07,0:00:00.79,Base,,0,0,0,,YOU DON'T NEED
+Dialogue: 1,0:00:00.07,0:00:00.25,Hi,,0,0,0,,{\alpha&H00&}YOU{\alpha&HFF&} {\alpha&HFF&}DON'T {\alpha&HFF&}NEED
+Dialogue: 1,0:00:00.29,0:00:00.49,Hi,,0,0,0,,{\alpha&HFF&}YOU {\alpha&H00&}DON'T{\alpha&HFF&} {\alpha&HFF&}NEED
+Dialogue: 1,0:00:00.59,0:00:00.79,Hi,,0,0,0,,{\alpha&HFF&}YOU {\alpha&HFF&}DON'T {\alpha&H00&}NEED{\alpha&HFF&}
+Dialogue: 0,0:00:00.91,0:00:01.79,Base,,0,0,0,,HOURS TO LEARN
+Dialogue: 1,0:00:00.91,0:00:01.35,Hi,,0,0,0,,{\alpha&H00&}HOURS{\alpha&HFF&} {\alpha&HFF&}TO {\alpha&HFF&}LEARN
+Dialogue: 1,0:00:01.45,0:00:01.53,Hi,,0,0,0,,{\alpha&HFF&}HOURS {\alpha&H00&}TO{\alpha&HFF&} {\alpha&HFF&}LEARN
+Dialogue: 1,0:00:01.59,0:00:01.79,Hi,,0,0,0,,{\alpha&HFF&}HOURS {\alpha&HFF&}TO {\alpha&H00&}LEARN{\alpha&HFF&}
+Dialogue: 0,0:00:01.85,0:00:02.73,Base,,0,0,0,,HINDI. WITH JUST
+Dialogue: 1,0:00:01.85,0:00:02.25,Hi,,0,0,0,,{\alpha&H00&}HINDI.{\alpha&HFF&} {\alpha&HFF&}WITH {\alpha&HFF&}JUST
+Dialogue: 1,0:00:02.35,0:00:02.47,Hi,,0,0,0,,{\alpha&HFF&}HINDI. {\alpha&H00&}WITH{\alpha&HFF&} {\alpha&HFF&}JUST
+Dialogue: 1,0:00:02.53,0:00:02.73,Hi,,0,0,0,,{\alpha&HFF&}HINDI. {\alpha&HFF&}WITH {\alpha&H00&}JUST{\alpha&HFF&}
+Dialogue: 0,0:00:02.87,0:00:03.55,Base,,0,0,0,,FIVE MINUTES A
+Dialogue: 1,0:00:02.87,0:00:03.17,Hi,,0,0,0,,{\alpha&H00&}FIVE{\alpha&HFF&} {\alpha&HFF&}MINUTES {\alpha&HFF&}A
+Dialogue: 1,0:00:03.21,0:00:03.49,Hi,,0,0,0,,{\alpha&HFF&}FIVE {\alpha&H00&}MINUTES{\alpha&HFF&} {\alpha&HFF&}A
+Dialogue: 1,0:00:03.53,0:00:03.55,Hi,,0,0,0,,{\alpha&HFF&}FIVE {\alpha&HFF&}MINUTES {\alpha&H00&}A{\alpha&HFF&}
+Dialogue: 0,0:00:03.61,0:00:04.45,Base,,0,0,0,,DAY ON HINDI
+Dialogue: 1,0:00:03.61,0:00:03.87,Hi,,0,0,0,,{\alpha&H00&}DAY{\alpha&HFF&} {\alpha&HFF&}ON {\alpha&HFF&}HINDI
+Dialogue: 1,0:00:04.01,0:00:04.09,Hi,,0,0,0,,{\alpha&HFF&}DAY {\alpha&H00&}ON{\alpha&HFF&} {\alpha&HFF&}HINDI
+Dialogue: 1,0:00:04.15,0:00:04.45,Hi,,0,0,0,,{\alpha&HFF&}DAY {\alpha&HFF&}ON {\alpha&H00&}HINDI{\alpha&HFF&}
+Dialogue: 0,0:00:04.55,0:00:05.94,Base,,0,0,0,,AKSHAR GURU, YOU
+Dialogue: 1,0:00:04.55,0:00:04.89,Hi,,0,0,0,,{\alpha&H00&}AKSHAR{\alpha&HFF&} {\alpha&HFF&}GURU, {\alpha&HFF&}YOU
+Dialogue: 1,0:00:04.91,0:00:05.33,Hi,,0,0,0,,{\alpha&HFF&}AKSHAR {\alpha&H00&}GURU,{\alpha&HFF&} {\alpha&HFF&}YOU
+Dialogue: 1,0:00:05.35,0:00:05.94,Hi,,0,0,0,,{\alpha&HFF&}AKSHAR {\alpha&HFF&}GURU, {\alpha&H00&}YOU{\alpha&HFF&}
+Dialogue: 0,0:00:05.98,0:00:06.68,Base,,0,0,0,,CAN TRACK YOUR
+Dialogue: 1,0:00:05.98,0:00:06.12,Hi,,0,0,0,,{\alpha&H00&}CAN{\alpha&HFF&} {\alpha&HFF&}TRACK {\alpha&HFF&}YOUR
+Dialogue: 1,0:00:06.18,0:00:06.50,Hi,,0,0,0,,{\alpha&HFF&}CAN {\alpha&H00&}TRACK{\alpha&HFF&} {\alpha&HFF&}YOUR
+Dialogue: 1,0:00:06.56,0:00:06.68,Hi,,0,0,0,,{\alpha&HFF&}CAN {\alpha&HFF&}TRACK {\alpha&H00&}YOUR{\alpha&HFF&}
+Dialogue: 0,0:00:06.74,0:00:08.26,Base,,0,0,0,,MASTERED LETTERS, BUILD
+Dialogue: 1,0:00:06.74,0:00:07.14,Hi,,0,0,0,,{\alpha&H00&}MASTERED{\alpha&HFF&} {\alpha&HFF&}LETTERS, {\alpha&HFF&}BUILD
+Dialogue: 1,0:00:07.18,0:00:07.52,Hi,,0,0,0,,{\alpha&HFF&}MASTERED {\alpha&H00&}LETTERS,{\alpha&HFF&} {\alpha&HFF&}BUILD
+Dialogue: 1,0:00:08.02,0:00:08.26,Hi,,0,0,0,,{\alpha&HFF&}MASTERED {\alpha&HFF&}LETTERS, {\alpha&H00&}BUILD{\alpha&HFF&}
+Dialogue: 0,0:00:08.30,0:00:09.10,Base,,0,0,0,,A DAILY LEARNING
+Dialogue: 1,0:00:08.30,0:00:08.32,Hi,,0,0,0,,{\alpha&H00&}A{\alpha&HFF&} {\alpha&HFF&}DAILY {\alpha&HFF&}LEARNING
+Dialogue: 1,0:00:08.40,0:00:08.74,Hi,,0,0,0,,{\alpha&HFF&}A {\alpha&H00&}DAILY{\alpha&HFF&} {\alpha&HFF&}LEARNING
+Dialogue: 1,0:00:08.78,0:00:09.10,Hi,,0,0,0,,{\alpha&HFF&}A {\alpha&HFF&}DAILY {\alpha&H00&}LEARNING{\alpha&HFF&}
+Dialogue: 0,0:00:09.16,0:00:10.54,Base,,0,0,0,,STREAK, AND PASS
+Dialogue: 1,0:00:09.16,0:00:10.00,Hi,,0,0,0,,{\alpha&H00&}STREAK,{\alpha&HFF&} {\alpha&HFF&}AND {\alpha&HFF&}PASS
+Dialogue: 1,0:00:10.02,0:00:10.10,Hi,,0,0,0,,{\alpha&HFF&}STREAK, {\alpha&H00&}AND{\alpha&HFF&} {\alpha&HFF&}PASS
+Dialogue: 1,0:00:10.20,0:00:10.54,Hi,,0,0,0,,{\alpha&HFF&}STREAK, {\alpha&HFF&}AND {\alpha&H00&}PASS{\alpha&HFF&}
+Dialogue: 0,0:00:10.60,0:00:11.64,Base,,0,0,0,,THE AUDIO QUIZZES.
+Dialogue: 1,0:00:10.60,0:00:10.70,Hi,,0,0,0,,{\alpha&H00&}THE{\alpha&HFF&} {\alpha&HFF&}AUDIO {\alpha&HFF&}QUIZZES.
+Dialogue: 1,0:00:10.84,0:00:11.16,Hi,,0,0,0,,{\alpha&HFF&}THE {\alpha&H00&}AUDIO{\alpha&HFF&} {\alpha&HFF&}QUIZZES.
+Dialogue: 1,0:00:11.20,0:00:11.64,Hi,,0,0,0,,{\alpha&HFF&}THE {\alpha&HFF&}AUDIO {\alpha&H00&}QUIZZES.{\alpha&HFF&}
+Dialogue: 0,0:00:11.76,0:00:13.37,Base,,0,0,0,,CONSISTENCY IS KEY.
+Dialogue: 1,0:00:11.76,0:00:12.70,Hi,,0,0,0,,{\alpha&H00&}CONSISTENCY{\alpha&HFF&} {\alpha&HFF&}IS {\alpha&HFF&}KEY.
+Dialogue: 1,0:00:12.74,0:00:12.92,Hi,,0,0,0,,{\alpha&HFF&}CONSISTENCY {\alpha&H00&}IS{\alpha&HFF&} {\alpha&HFF&}KEY.
+Dialogue: 1,0:00:13.04,0:00:13.37,Hi,,0,0,0,,{\alpha&HFF&}CONSISTENCY {\alpha&HFF&}IS {\alpha&H00&}KEY.{\alpha&HFF&}
+Dialogue: 0,0:00:14.37,0:00:14.91,Base,,0,0,0,,OPEN THE APP
+Dialogue: 1,0:00:14.37,0:00:14.57,Hi,,0,0,0,,{\alpha&H00&}OPEN{\alpha&HFF&} {\alpha&HFF&}THE {\alpha&HFF&}APP
+Dialogue: 1,0:00:14.61,0:00:14.69,Hi,,0,0,0,,{\alpha&HFF&}OPEN {\alpha&H00&}THE{\alpha&HFF&} {\alpha&HFF&}APP
+Dialogue: 1,0:00:14.79,0:00:14.91,Hi,,0,0,0,,{\alpha&HFF&}OPEN {\alpha&HFF&}THE {\alpha&H00&}APP{\alpha&HFF&}
+Dialogue: 0,0:00:14.95,0:00:15.55,Base,,0,0,0,,IN YOUR BROWSER
+Dialogue: 1,0:00:14.95,0:00:15.01,Hi,,0,0,0,,{\alpha&H00&}IN{\alpha&HFF&} {\alpha&HFF&}YOUR {\alpha&HFF&}BROWSER
+Dialogue: 1,0:00:15.03,0:00:15.15,Hi,,0,0,0,,{\alpha&HFF&}IN {\alpha&H00&}YOUR{\alpha&HFF&} {\alpha&HFF&}BROWSER
+Dialogue: 1,0:00:15.17,0:00:15.55,Hi,,0,0,0,,{\alpha&HFF&}IN {\alpha&HFF&}YOUR {\alpha&H00&}BROWSER{\alpha&HFF&}
+Dialogue: 0,0:00:15.65,0:00:16.69,Base,,0,0,0,,RIGHT NOW AND
+Dialogue: 1,0:00:15.65,0:00:15.85,Hi,,0,0,0,,{\alpha&H00&}RIGHT{\alpha&HFF&} {\alpha&HFF&}NOW {\alpha&HFF&}AND
+Dialogue: 1,0:00:15.93,0:00:16.19,Hi,,0,0,0,,{\alpha&HFF&}RIGHT {\alpha&H00&}NOW{\alpha&HFF&} {\alpha&HFF&}AND
+Dialogue: 1,0:00:16.23,0:00:16.69,Hi,,0,0,0,,{\alpha&HFF&}RIGHT {\alpha&HFF&}NOW {\alpha&H00&}AND{\alpha&HFF&}
+Dialogue: 0,0:00:16.79,0:00:17.55,Base,,0,0,0,,START YOUR LEARNING
+Dialogue: 1,0:00:16.79,0:00:17.03,Hi,,0,0,0,,{\alpha&H00&}START{\alpha&HFF&} {\alpha&HFF&}YOUR {\alpha&HFF&}LEARNING
+Dialogue: 1,0:00:17.07,0:00:17.19,Hi,,0,0,0,,{\alpha&HFF&}START {\alpha&H00&}YOUR{\alpha&HFF&} {\alpha&HFF&}LEARNING
+Dialogue: 1,0:00:17.25,0:00:17.55,Hi,,0,0,0,,{\alpha&HFF&}START {\alpha&HFF&}YOUR {\alpha&H00&}LEARNING{\alpha&HFF&}
+Dialogue: 0,0:00:17.59,0:00:18.33,Base,,0,0,0,,STREAK TODAY.
+Dialogue: 1,0:00:17.59,0:00:17.87,Hi,,0,0,0,,{\alpha&H00&}STREAK{\alpha&HFF&} {\alpha&HFF&}TODAY.
+Dialogue: 1,0:00:17.91,0:00:18.33,Hi,,0,0,0,,{\alpha&HFF&}STREAK {\alpha&H00&}TODAY.{\alpha&HFF&}

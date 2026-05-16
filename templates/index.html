@@ -316,6 +316,353 @@
             margin: 10px;
             border-radius: 5px;
         }
+
+        .caption-studio {
+            max-width: 1120px;
+            background: #101316;
+            color: #eef4f8;
+            border: 1px solid #28313a;
+            box-shadow: 0 18px 50px rgba(8, 14, 20, .28);
+        }
+
+        .caption-studio h2 {
+            margin: 0 0 8px;
+            text-align: left;
+            letter-spacing: 0;
+        }
+
+        .caption-studio .caption-intro {
+            color: #aebbc7;
+            margin: 0 0 18px;
+            line-height: 1.5;
+        }
+
+        .caption-studio label {
+            color: #dce7ef;
+        }
+
+        .caption-studio input[type="text"],
+        .caption-studio input[type="number"],
+        .caption-studio select {
+            max-width: none;
+            width: 100%;
+            background: #171d22;
+            color: #f7fbff;
+            border: 1px solid #34414b;
+        }
+
+        .caption-controls {
+            display: grid;
+            grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr);
+            gap: 14px;
+            margin: 16px 0 22px;
+        }
+
+        .caption-style-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 14px;
+        }
+
+        .caption-tuning-grid {
+            display: grid;
+            grid-template-columns: minmax(280px, 1fr) minmax(280px, 420px);
+            gap: 18px;
+            margin-top: 18px;
+            align-items: start;
+        }
+
+        .caption-control-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .caption-control-grid .wide {
+            grid-column: 1 / -1;
+        }
+
+        .caption-field-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .caption-field-row input[type="range"] {
+            flex: 1;
+        }
+
+        .caption-field-value {
+            min-width: 48px;
+            text-align: right;
+            color: #9fd8ff;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .caption-style-card {
+            display: block;
+            position: relative;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #2c3842;
+            background: #151b20;
+            transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+        }
+
+        .caption-style-card:hover {
+            transform: translateY(-2px);
+            border-color: #617487;
+        }
+
+        .caption-style-card input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .caption-style-card:has(input:checked) {
+            border-color: #9fd8ff;
+            box-shadow: 0 0 0 2px rgba(159, 216, 255, .18), 0 18px 38px rgba(0, 0, 0, .28);
+        }
+
+        .caption-style-title {
+            display: block;
+            margin-top: 10px;
+            font-weight: 700;
+            color: #f7fbff;
+        }
+
+        .caption-style-note {
+            display: block;
+            margin-top: 4px;
+            min-height: 32px;
+            color: #aebbc7;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .sample-screen {
+            display: block;
+            position: relative;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            border-radius: 7px;
+            background:
+                linear-gradient(160deg, rgba(255,255,255,.08), transparent 40%),
+                linear-gradient(20deg, #172029 0 42%, #375063 43% 58%, #d7b78f 59% 100%);
+        }
+
+        .sample-screen::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent 35%, rgba(0, 0, 0, .48));
+        }
+
+        .sample-caption {
+            position: absolute;
+            z-index: 1;
+            left: 8px;
+            right: 8px;
+            bottom: 13px;
+            text-align: center;
+            font: 900 17px/1.05 Arial, sans-serif;
+            letter-spacing: .5px;
+            color: white;
+        }
+
+        .caption-live-panel {
+            border: 1px solid #2c3842;
+            border-radius: 8px;
+            background: #151b20;
+            padding: 12px;
+        }
+
+        .caption-live-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #f7fbff;
+            font-weight: 800;
+        }
+
+        .caption-live-title select {
+            max-width: 150px;
+            margin: 0;
+        }
+
+        .caption-live-preview {
+            --preview-font: 22px;
+            --preview-margin: 18px;
+            aspect-ratio: 16 / 9;
+            min-height: 190px;
+        }
+
+        .caption-live-preview.portrait {
+            aspect-ratio: 9 / 16;
+            max-height: 520px;
+            width: min(100%, 260px);
+            margin: 0 auto;
+        }
+
+        .caption-live-preview .sample-caption {
+            font-size: var(--preview-font);
+            bottom: var(--preview-margin);
+            left: 14px;
+            right: 14px;
+            width: fit-content;
+            max-width: calc(100% - 28px);
+            margin: 0 auto;
+            padding: 0;
+            border-radius: 7px;
+        }
+
+        .caption-live-preview.preview-top .sample-caption {
+            top: var(--preview-margin);
+            bottom: auto;
+        }
+
+        .caption-live-preview.preview-middle .sample-caption {
+            top: 50%;
+            bottom: auto;
+            transform: translateY(-50%);
+        }
+
+        .caption-live-preview.transition-fade .active-word {
+            animation: captionFadePreview 1.4s ease-in-out infinite;
+        }
+
+        .caption-live-preview.transition-pop .active-word {
+            display: inline-block;
+            animation: captionPopPreview 1.15s ease-in-out infinite;
+        }
+
+        .caption-live-preview.transition-glow .active-word {
+            animation: captionGlowPreview 1.35s ease-in-out infinite;
+        }
+
+        .caption-live-preview.box-soft .sample-caption {
+            background: rgba(0, 0, 0, .42);
+            padding: 7px 12px;
+        }
+
+        .caption-live-preview.box-glass .sample-caption {
+            background: rgba(12, 19, 24, .54);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 10px 28px rgba(0,0,0,.28);
+            padding: 8px 13px;
+            backdrop-filter: blur(3px);
+        }
+
+        .caption-live-preview.box-solid .sample-caption {
+            background: rgba(0, 0, 0, .78);
+            padding: 7px 13px;
+        }
+
+        .caption-live-preview.outline-strong .sample-caption {
+            text-shadow: 0 2px 0 #000, 0 0 4px #000, 0 0 8px rgba(0,0,0,.8);
+        }
+
+        .caption-live-preview.shadow-strong .sample-caption {
+            filter: drop-shadow(0 8px 14px rgba(0,0,0,.85));
+        }
+
+        @keyframes captionFadePreview {
+            0%, 100% { opacity: .45; }
+            45%, 75% { opacity: 1; }
+        }
+
+        @keyframes captionPopPreview {
+            0%, 100% { transform: scale(1); }
+            45% { transform: scale(1.16); }
+        }
+
+        @keyframes captionGlowPreview {
+            0%, 100% { filter: drop-shadow(0 0 0 rgba(255,255,255,0)); }
+            50% { filter: drop-shadow(0 0 8px currentColor); }
+        }
+
+        .sample-caption span {
+            color: #ffd500;
+        }
+
+        .sample-clean span {
+            color: #5ad4ff;
+        }
+
+        .sample-clean {
+            text-shadow: 0 2px 8px rgba(0, 0, 0, .85), 0 0 2px #10212a;
+        }
+
+        .sample-neon {
+            text-shadow: 0 0 7px #ff00dd, 0 2px 2px #21001e;
+        }
+
+        .sample-neon span {
+            color: #fff500;
+        }
+
+        .sample-ruby {
+            text-shadow: 0 2px 0 #180611, 0 0 8px rgba(255, 76, 92, .45);
+        }
+
+        .sample-ruby span {
+            color: #ff4c5c;
+        }
+
+        .sample-editorial {
+            font-weight: 800;
+            color: #eff4f7;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, .9);
+        }
+
+        .sample-editorial span {
+            color: #6affb5;
+        }
+
+        .caption-studio button {
+            width: 100%;
+            max-width: 260px;
+            background: #f4c542;
+            color: #101316;
+            font-weight: 800;
+        }
+
+        .caption-studio button:hover {
+            background: #ffd763;
+        }
+
+        .caption-result {
+            margin-top: 14px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #171d22;
+            border: 1px solid #2c3842;
+            color: #dce7ef;
+            white-space: pre-wrap;
+        }
+
+        .caption-result a {
+            color: #9fd8ff;
+        }
+
+        @media (max-width: 720px) {
+            .caption-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .caption-tuning-grid,
+            .caption-control-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .caption-control-grid .wide {
+                grid-column: auto;
+            }
+        }
     </style>
 
 </head>
@@ -489,20 +836,173 @@
         <button type="button" id="copyButton" style="margin-top:10px;">Copy Result</button>
     </form>
     <br>
-    <form id="addAutoCaptionsToEnglistVideos">
-        <h2 style="background-color:lightgreen;">Add Captions automatically to English Video</h2>
-        <div class="infoBox">This is for English videos with clear audio. It uses OpenAI's WhisperX for generating captions with word timestamps.</div>
-        <div class="infoBox">This will process composed_video.mp4 from root folder and create output with name composed_video_captioned.mp4 </div>
+    <form id="addAutoCaptionsToEnglistVideos" class="caption-studio">
+        <h2>Auto Caption Studio</h2>
+        <p class="caption-intro">Burn WhisperX word-timed captions into a root-folder video. Default input is
+            composed_video.mp4 and the output is composed_video_captioned.mp4.</p>
 
-        <strong>Run below commands in terminal</strong>
-        <br>
-        venv_whisperx\Scripts\activate 
-        <br><br>
-        python whisperx_captions.py --video composed_video.mp4 --language en
+        <div class="caption-controls">
+            <div>
+                <label>Video file in application folder:</label>
+                <input type="text" name="video" value="composed_video.mp4">
+            </div>
+            <div>
+                <label>Language:</label>
+                <select name="language">
+                    <option value="en" selected>English</option>
+                    <option value="hi">Hindi</option>
+                    <option value="">Auto detect</option>
+                </select>
+            </div>
+        </div>
 
+        <label>Caption Style:</label>
+        <div class="caption-style-grid">
+            <label class="caption-style-card">
+                <input type="radio" name="style" value="premium-gold" checked>
+                <span class="sample-screen">
+                    <span class="sample-caption">MAKE <span>YOUR</span> STORY</span>
+                </span>
+                <span class="caption-style-title">Premium Gold</span>
+                <span class="caption-style-note">Bold creator captions with warm gold active-word emphasis.</span>
+            </label>
 
-        <!-- <button type="submit">Add captions</button> -->
-        <div id="addAutoCaptionsToEnglistVideosResult" style="margin-top:10px;"></div>
+            <label class="caption-style-card">
+                <input type="radio" name="style" value="clean-cyan">
+                <span class="sample-screen">
+                    <span class="sample-caption sample-clean">MAKE <span>YOUR</span> STORY</span>
+                </span>
+                <span class="caption-style-title">Clean Cyan</span>
+                <span class="caption-style-note">Crisp, bright and tech-modern with a cool highlight.</span>
+            </label>
+
+            <label class="caption-style-card">
+                <input type="radio" name="style" value="neon-pop">
+                <span class="sample-screen">
+                    <span class="sample-caption sample-neon">MAKE <span>YOUR</span> STORY</span>
+                </span>
+                <span class="caption-style-title">Neon Pop</span>
+                <span class="caption-style-note">High-energy short-form look with punchy contrast.</span>
+            </label>
+
+            <label class="caption-style-card">
+                <input type="radio" name="style" value="ruby-bold">
+                <span class="sample-screen">
+                    <span class="sample-caption sample-ruby">MAKE <span>YOUR</span> STORY</span>
+                </span>
+                <span class="caption-style-title">Ruby Bold</span>
+                <span class="caption-style-note">Premium red accent for dramatic story and explainer videos.</span>
+            </label>
+
+            <label class="caption-style-card">
+                <input type="radio" name="style" value="editorial-white">
+                <span class="sample-screen">
+                    <span class="sample-caption sample-editorial">MAKE <span>YOUR</span> STORY</span>
+                </span>
+                <span class="caption-style-title">Editorial White</span>
+                <span class="caption-style-note">Soft documentary-style captions with refined contrast.</span>
+            </label>
+        </div>
+
+        <div class="caption-tuning-grid">
+            <div class="caption-control-grid">
+                <div class="wide">
+                    <label>Font scale:</label>
+                    <div class="caption-field-row">
+                        <input type="range" name="font_scale" id="captionFontScale" value="100" min="50" max="180" step="5">
+                        <span class="caption-field-value" id="captionFontScaleValue">100%</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label>Exact font size:</label>
+                    <input type="number" name="font_size" id="captionFontSize" min="18" max="140" step="1"
+                        placeholder="Auto">
+                </div>
+
+                <div>
+                    <label>Words at a time:</label>
+                    <input type="number" name="words_per_phrase" id="captionWordsPerPhrase" min="1" max="12" step="1"
+                        placeholder="Auto">
+                </div>
+
+                <div>
+                    <label>Position:</label>
+                    <select name="position" id="captionPosition">
+                        <option value="bottom" selected>Bottom</option>
+                        <option value="middle">Middle</option>
+                        <option value="top">Top</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>Vertical margin:</label>
+                    <input type="number" name="margin_v" id="captionMarginV" min="0" max="500" step="5"
+                        placeholder="Auto">
+                </div>
+
+                <div class="wide">
+                    <label>Word transition:</label>
+                    <select name="word_transition" id="captionWordTransition">
+                        <option value="none" selected>None</option>
+                        <option value="fade">Fade</option>
+                        <option value="pop">Pop</option>
+                        <option value="glow">Glow</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>Text case:</label>
+                    <select name="text_case" id="captionTextCase">
+                        <option value="original" selected>Original</option>
+                        <option value="uppercase">UPPERCASE</option>
+                        <option value="title">Title Case</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>Caption background:</label>
+                    <select name="caption_box" id="captionBox">
+                        <option value="none" selected>None</option>
+                        <option value="soft">Soft box</option>
+                        <option value="glass">Glass box</option>
+                        <option value="solid">Solid contrast</option>
+                    </select>
+                </div>
+
+                <div class="wide">
+                    <label>Outline strength:</label>
+                    <div class="caption-field-row">
+                        <input type="range" name="outline_scale" id="captionOutlineScale" value="100" min="50" max="220" step="5">
+                        <span class="caption-field-value" id="captionOutlineScaleValue">100%</span>
+                    </div>
+                </div>
+
+                <div class="wide">
+                    <label>Shadow strength:</label>
+                    <div class="caption-field-row">
+                        <input type="range" name="shadow_scale" id="captionShadowScale" value="100" min="0" max="220" step="5">
+                        <span class="caption-field-value" id="captionShadowScaleValue">100%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="caption-live-panel">
+                <div class="caption-live-title">
+                    <span>Live Preview</span>
+                    <select id="captionPreviewShape" aria-label="Preview shape">
+                        <option value="landscape" selected>Landscape</option>
+                        <option value="portrait">Portrait</option>
+                    </select>
+                </div>
+                <div class="sample-screen caption-live-preview preview-bottom transition-none" id="captionLivePreview">
+                    <span class="sample-caption" id="captionPreviewText">MAKE <span class="active-word">YOUR</span> STORY</span>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit">Add Captions</button>
+        <div id="addAutoCaptionsToEnglistVideosResult" class="caption-result" hidden></div>
     </form>
     <form id="runCaptionGenerator">
         <h2 style="background-color:khaki;">5. Generate Captions</h2>
@@ -2156,21 +2656,143 @@
         };
     </script>
     <script>
+        (function initCaptionStudio() {
+            const form = document.getElementById('addAutoCaptionsToEnglistVideos');
+            if (!form) return;
+
+            const preview = document.getElementById('captionLivePreview');
+            const previewText = document.getElementById('captionPreviewText');
+            const previewShape = document.getElementById('captionPreviewShape');
+            const fontScale = document.getElementById('captionFontScale');
+            const fontScaleValue = document.getElementById('captionFontScaleValue');
+            const fontSize = document.getElementById('captionFontSize');
+            const wordsPerPhrase = document.getElementById('captionWordsPerPhrase');
+            const position = document.getElementById('captionPosition');
+            const marginV = document.getElementById('captionMarginV');
+            const transition = document.getElementById('captionWordTransition');
+            const textCase = document.getElementById('captionTextCase');
+            const captionBox = document.getElementById('captionBox');
+            const outlineScale = document.getElementById('captionOutlineScale');
+            const outlineScaleValue = document.getElementById('captionOutlineScaleValue');
+            const shadowScale = document.getElementById('captionShadowScale');
+            const shadowScaleValue = document.getElementById('captionShadowScaleValue');
+
+            const styleClasses = {
+                'premium-gold': '',
+                'clean-cyan': 'sample-clean',
+                'neon-pop': 'sample-neon',
+                'ruby-bold': 'sample-ruby',
+                'editorial-white': 'sample-editorial'
+            };
+            const sampleWords = ['make', 'your', 'story', 'stand', 'out', 'today', 'with', 'style'];
+
+            function activeStyle() {
+                const checked = form.querySelector('input[name="style"]:checked');
+                return checked ? checked.value : 'premium-gold';
+            }
+
+            function clamp(n, min, max) {
+                return Math.max(min, Math.min(max, n));
+            }
+
+            function formatPreviewWord(word) {
+                const mode = textCase?.value || 'original';
+                if (mode === 'uppercase') return word.toUpperCase();
+                if (mode === 'title') return word.charAt(0).toUpperCase() + word.slice(1);
+                return word;
+            }
+
+            function updateCaptionPreview() {
+                if (!preview || !previewText) return;
+                const shape = previewShape?.value || 'landscape';
+                const pos = position?.value || 'bottom';
+                const trans = transition?.value || 'none';
+                const box = captionBox?.value || 'none';
+                const style = activeStyle();
+                const autoWords = shape === 'portrait' ? 3 : 5;
+                const wordCount = clamp(parseInt(wordsPerPhrase?.value || autoWords, 10), 1, 8);
+                const activeIndex = Math.min(1, wordCount - 1);
+                const phrase = sampleWords.slice(0, wordCount).map((rawWord, index) => {
+                    const word = formatPreviewWord(rawWord);
+                    return index === activeIndex ? `<span class="active-word">${word}</span>` : word;
+                }).join(' ');
+
+                const scale = parseInt(fontScale?.value || '100', 10);
+                if (fontScaleValue) fontScaleValue.textContent = `${scale}%`;
+                const outline = parseInt(outlineScale?.value || '100', 10);
+                const shadow = parseInt(shadowScale?.value || '100', 10);
+                if (outlineScaleValue) outlineScaleValue.textContent = `${outline}%`;
+                if (shadowScaleValue) shadowScaleValue.textContent = `${shadow}%`;
+
+                const exactSize = parseInt(fontSize?.value || '', 10);
+                const basePreviewSize = shape === 'portrait' ? 21 : 22;
+                const previewFontSize = exactSize
+                    ? clamp(Math.round(exactSize * (shape === 'portrait' ? .42 : .48)), 13, 44)
+                    : clamp(Math.round(basePreviewSize * scale / 100), 13, 44);
+
+                const explicitMargin = parseInt(marginV?.value || '', 10);
+                const defaultMargin = pos === 'middle' ? 0 : (shape === 'portrait' ? 22 : 18);
+                const previewMargin = Number.isFinite(explicitMargin)
+                    ? clamp(Math.round(explicitMargin * (shape === 'portrait' ? .12 : .18)), 4, 90)
+                    : defaultMargin;
+
+                preview.className = [
+                    'sample-screen',
+                    'caption-live-preview',
+                    shape,
+                    `preview-${pos}`,
+                    `transition-${trans}`,
+                    `box-${box}`,
+                    outline > 135 ? 'outline-strong' : '',
+                    shadow > 135 ? 'shadow-strong' : ''
+                ].filter(Boolean).join(' ');
+                preview.style.setProperty('--preview-font', `${previewFontSize}px`);
+                preview.style.setProperty('--preview-margin', `${previewMargin}px`);
+                previewText.className = `sample-caption ${styleClasses[style] || ''}`;
+                previewText.innerHTML = phrase;
+            }
+
+            form.querySelectorAll('input[name="style"], input, select').forEach((el) => {
+                el.addEventListener('input', updateCaptionPreview);
+                el.addEventListener('change', updateCaptionPreview);
+            });
+
+            updateCaptionPreview();
+        })();
+
         document.getElementById('addAutoCaptionsToEnglistVideos').onsubmit = async function (e) {
             e.preventDefault();
             console.log("Processing request.addAutoCaptionsToEnglistVideos");
 
             const formData = new FormData(this);
+            const resultDiv = document.getElementById('addAutoCaptionsToEnglistVideosResult');
+            if (resultDiv) {
+                resultDiv.hidden = false;
+                resultDiv.textContent = "Running WhisperX captions. This can take a while...";
+            }
+
             const response = await fetch('/add_auto_captions_to_english_videos', {
-                method: 'GET'
+                method: 'POST',
+                body: formData
             });
 
             console.log("Completed addAutoCaptionsToEnglistVideos");
-            const resultText = await response.text();
+            const result = await response.json();
 
-            const resultDiv = document.getElementById('addAutoCaptionsToEnglistVideosResult');
             if (resultDiv) {
-                resultDiv.textContent = resultText;
+                if (result.ok) {
+                    resultDiv.innerHTML = [
+                        `<strong>${result.message}</strong>`,
+                        `Input: <code>${result.video}</code>`,
+                        `Output: <a href="/video/${encodeURIComponent(result.output)}" target="_blank">${result.output}</a>`,
+                        `Style: <code>${result.style}</code>`,
+                        result.settings ? `<details><summary>Settings</summary><pre>${JSON.stringify(result.settings, null, 2).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]))}</pre></details>` : "",
+                        result.logs ? `<details><summary>Logs</summary><pre>${result.logs.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]))}</pre></details>` : ""
+                    ].filter(Boolean).join("<br>");
+                } else {
+                    const details = result.error_details || result.message || "Caption generation failed.";
+                    resultDiv.textContent = details;
+                }
             }
         };
     </script>

@@ -1089,27 +1089,110 @@ def upscale_all_videos():
 
 
 
-@app.route('/add_auto_captions_to_english_videos', methods=['GET'])
+@app.route('/add_auto_captions_to_english_videos', methods=['GET', 'POST'])
 def add_captions_to_english_video():
-    # 1. Define paths
-    venv_base = os.path.abspath("venv_whisperx")
-    venv_scripts = os.path.join(venv_base, "Scripts")
-    venv_python = os.path.join(venv_scripts, "python.exe")
-    script_path = "whisperx_captions.py"
-    video_path = "composed_video.mp4" 
+    data = request.form if request.method == "POST" else request.args
+    allowed_styles = {
+        "premium-gold",
+        "clean-cyan",
+        "neon-pop",
+        "ruby-bold",
+        "editorial-white",
+    }
+    style = (data.get("style") or "premium-gold").strip()
+    language = (data.get("language") or "en").strip()
+    video_name = (data.get("video") or "composed_video.mp4").strip()
+    position = (data.get("position") or "bottom").strip()
+    word_transition = (data.get("word_transition") or "none").strip()
+    font_size = (data.get("font_size") or "").strip()
+    font_scale = (data.get("font_scale") or "100").strip()
+    margin_v = (data.get("margin_v") or "").strip()
+    words_per_phrase = (data.get("words_per_phrase") or "").strip()
+    text_case = (data.get("text_case") or "original").strip()
+    caption_box = (data.get("caption_box") or "none").strip()
+    outline_scale = (data.get("outline_scale") or "100").strip()
+    shadow_scale = (data.get("shadow_scale") or "100").strip()
 
-    # 2. Setup the "Activated" Environment
-    # We copy the current environment and prepend the whisperx Scripts folder to the PATH
+    if style not in allowed_styles:
+        return jsonify({"ok": False, "status": "error", "message": f"Unknown caption style: {style}"}), 400
+    if position not in {"top", "middle", "bottom"}:
+        return jsonify({"ok": False, "status": "error", "message": f"Unknown caption position: {position}"}), 400
+    if word_transition not in {"none", "fade", "pop", "glow"}:
+        return jsonify({"ok": False, "status": "error", "message": f"Unknown word transition: {word_transition}"}), 400
+    if text_case not in {"original", "uppercase", "title"}:
+        return jsonify({"ok": False, "status": "error", "message": f"Unknown text case: {text_case}"}), 400
+    if caption_box not in {"none", "soft", "glass", "solid"}:
+        return jsonify({"ok": False, "status": "error", "message": f"Unknown caption background: {caption_box}"}), 400
+
+    def optional_int(value, name, low, high):
+        if value == "":
+            return None
+        try:
+            parsed = int(value)
+        except ValueError:
+            raise ValueError(f"{name} must be a number.")
+        if parsed < low or parsed > high:
+            raise ValueError(f"{name} must be between {low} and {high}.")
+        return parsed
+
+    try:
+        font_size_value = optional_int(font_size, "Font size", 18, 140)
+        margin_v_value = optional_int(margin_v, "Vertical margin", 0, 500)
+        words_per_phrase_value = optional_int(words_per_phrase, "Words at a time", 1, 12)
+        font_scale_value = float(font_scale)
+        if font_scale_value < 50 or font_scale_value > 180:
+            raise ValueError("Font scale must be between 50 and 180.")
+        outline_scale_value = float(outline_scale)
+        if outline_scale_value < 50 or outline_scale_value > 220:
+            raise ValueError("Outline strength must be between 50 and 220.")
+        shadow_scale_value = float(shadow_scale)
+        if shadow_scale_value < 0 or shadow_scale_value > 220:
+            raise ValueError("Shadow strength must be between 0 and 220.")
+    except ValueError as e:
+        return jsonify({"ok": False, "status": "error", "message": str(e)}), 400
+
+    try:
+        video_path = (BASE_DIR / video_name).resolve()
+        if video_path != BASE_DIR and BASE_DIR not in video_path.parents:
+            return jsonify({"ok": False, "status": "error", "message": "Video path must stay inside the application folder."}), 400
+        if not video_path.exists() or not video_path.is_file():
+            return jsonify({"ok": False, "status": "error", "message": f"Video not found: {video_name}"}), 404
+        if video_path.suffix.lower() not in VIDEO_EXTS:
+            return jsonify({"ok": False, "status": "error", "message": f"Unsupported video type: {video_path.suffix}"}), 400
+
+        output_path = video_path.with_name(f"{video_path.stem}_captioned{video_path.suffix}")
+    except Exception as e:
+        return jsonify({"ok": False, "status": "error", "message": str(e)}), 400
+
+    venv_base = BASE_DIR / "venv_whisperx"
+    venv_scripts = venv_base / "Scripts"
+    venv_python = venv_scripts / "python.exe"
+    script_path = BASE_DIR / "whisperx_captions.py"
+
     env = os.environ.copy()
-    env["PATH"] = venv_scripts + os.pathsep + env.get("PATH", "")
-    # This ensures that when the script calls 'whisperx', it finds it in venv_whisperx/Scripts
+    env["PATH"] = str(venv_scripts) + os.pathsep + env.get("PATH", "")
     
     command = [
-        venv_python, 
-        script_path, 
-        "--video", video_path, 
-        "--language", "en"
+        str(venv_python),
+        str(script_path),
+        "--video", str(video_path),
+        "--language", language,
+        "--style", style,
+        "--font_scale", str(font_scale_value),
+        "--position", position,
+        "--word_transition", word_transition,
+        "--text_case", text_case,
+        "--caption_box", caption_box,
+        "--outline_scale", str(outline_scale_value),
+        "--shadow_scale", str(shadow_scale_value),
+        "--out", str(output_path),
     ]
+    if font_size_value is not None:
+        command += ["--font_size", str(font_size_value)]
+    if margin_v_value is not None:
+        command += ["--margin_v", str(margin_v_value)]
+    if words_per_phrase_value is not None:
+        command += ["--words_per_phrase", str(words_per_phrase_value)]
 
     try:
         result = subprocess.run(
@@ -1119,17 +1202,35 @@ def add_captions_to_english_video():
             text=True,
             encoding="utf-8", 
             errors="replace",
-            env=env  # <--- PASS THE CUSTOM ENVIRONMENT HERE
+            env=env,
+            cwd=str(BASE_DIR),
         )
 
         return jsonify({
+            "ok": True,
             "status": "success",
             "message": "Premium captions generated successfully!",
+            "style": style,
+            "settings": {
+                "font_size": font_size_value,
+                "font_scale": font_scale_value,
+                "position": position,
+                "margin_v": margin_v_value,
+                "words_per_phrase": words_per_phrase_value,
+                "word_transition": word_transition,
+                "text_case": text_case,
+                "caption_box": caption_box,
+                "outline_scale": outline_scale_value,
+                "shadow_scale": shadow_scale_value,
+            },
+            "video": str(video_path.name),
+            "output": str(output_path.name),
             "logs": result.stdout
         }), 200
 
     except subprocess.CalledProcessError as e:
         return jsonify({
+            "ok": False,
             "status": "error",
             "message": "The caption script failed.",
             "error_details": e.stderr if e.stderr else e.stdout
@@ -1137,6 +1238,7 @@ def add_captions_to_english_video():
         
     except FileNotFoundError:
         return jsonify({
+            "ok": False,
             "status": "error",
             "message": f"Could not find the Python executable at {venv_python}."
         }), 500
