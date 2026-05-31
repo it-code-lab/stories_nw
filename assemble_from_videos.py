@@ -687,12 +687,16 @@ def convert_landscape_to_portrait(
     input_path: str,
     output_path: str,
     portrait_size: str = "1080x1920",
+    fit_mode: str = "crop",           # "crop" | "pad_equal" | "pad_caption_bottom"
     focus: str = "center",            # "left" | "center" | "right"
     keep_audio: bool = True
 ):
     """
-    Crop a landscape video to 9:16 portrait by trimming left/right edges,
-    then scale to the requested resolution. Optionally keep audio.
+    Convert a video to 9:16 portrait.
+
+    - crop: fills portrait by trimming left/right edges.
+    - pad_equal: keeps the full frame with equal top/bottom padding.
+    - pad_caption_bottom: keeps the full frame and leaves more room below captions.
     """
     # Parse WxH like "1080x1920"
     try:
@@ -701,27 +705,40 @@ def convert_landscape_to_portrait(
     except Exception:
         tw, th = 1080, 1920
 
-    # Center/left/right anchor for crop X position
-    # Crop width is ih*9/16 (portrait AR) when source is landscape
-    # - center: x = (iw - ih*9/16)/2
-    # - left:   x = 0
-    # - right:  x = (iw - ih*9/16)
-    if focus == "left":
-        x_expr = "0"
-    elif focus == "right":
-        x_expr = "iw - ih*9/16"
-    else:
-        x_expr = "(iw - ih*9/16)/2"
+    fit_mode = (fit_mode or "crop").strip().lower()
+    if fit_mode not in {"crop", "pad_equal", "pad_caption_bottom"}:
+        fit_mode = "crop"
 
-    # If source is taller-than-wide (unlikely for landscape), this still behaves,
-    # but we primarily target landscape→portrait cropping.
-    crop_filter = f"crop=ih*9/16:ih:{x_expr}:0"
+    if fit_mode in {"pad_equal", "pad_caption_bottom"}:
+        y_expr = "(oh-ih)/2" if fit_mode == "pad_equal" else "(oh-ih)*0.33"
+        video_filter = (
+            f"scale={tw}:{th}:force_original_aspect_ratio=decrease:force_divisible_by=2,"
+            f"pad={tw}:{th}:(ow-iw)/2:{y_expr}:black,"
+            "setsar=1"
+        )
+    else:
+        # Center/left/right anchor for crop X position
+        # Crop width is ih*9/16 (portrait AR) when source is landscape
+        # - center: x = (iw - ih*9/16)/2
+        # - left:   x = 0
+        # - right:  x = (iw - ih*9/16)
+        if focus == "left":
+            x_expr = "0"
+        elif focus == "right":
+            x_expr = "iw - ih*9/16"
+        else:
+            x_expr = "(iw - ih*9/16)/2"
+
+        # If source is taller-than-wide (unlikely for landscape), this still behaves,
+        # but we primarily target landscape to portrait cropping.
+        crop_filter = f"crop=ih*9/16:ih:{x_expr}:0"
+        video_filter = f"{crop_filter},scale={tw}:{th},setsar=1"
 
     # Build ffmpeg cmd
     cmd = [
         "ffmpeg", "-y",
         "-i", input_path,
-        "-vf", f"{crop_filter},scale={tw}:{th}",
+        "-vf", video_filter,
     ]
 
     if keep_audio:

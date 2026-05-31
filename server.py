@@ -1,7 +1,7 @@
 from __future__ import annotations
 import shutil
 from time import time
-from flask import Flask, request, jsonify, render_template, send_from_directory, abort, url_for
+from flask import Flask, redirect, request, jsonify, render_template, send_from_directory, abort, url_for
 import subprocess, json, math
 from flask_cors import CORS
 import os
@@ -2545,7 +2545,8 @@ def flipping_book():
 
 @app.route('/portrait_website_loader')
 def portrait_website_loader():
-    return render_template('portrait_website_loader.html')
+    # return render_template('portrait_website_loader.html')
+    return redirect("https://lab.readernook.com/tools/portrait-website-loader/")
 
 @app.route('/video/<filename>')
 def serve_video(filename):
@@ -3303,21 +3304,39 @@ def splitvideotoparts():
         # new fields
         convert_portrait = (request.form.get('convert_portrait', 'no') == 'yes')
         portrait_size    = (request.form.get('portrait_size', '1080x1920') or '1080x1920')
+        portrait_layout  = (request.form.get('portrait_layout', 'crop') or 'crop')
         focus            = (request.form.get('focus', 'center') or 'center')
         keep_audio       = (request.form.get('keep_audio', 'yes') == 'yes')
 
-        # default source your UI mentions
-        # (you already inform users the input lives here)
-        in_path  = "edit_vid_output/output.mp4"
+        if portrait_layout not in {"crop", "pad_equal", "pad_caption_bottom"}:
+            portrait_layout = "crop"
+
+        out_dir = BASE_DIR / "edit_vid_output"
+        out_dir.mkdir(exist_ok=True)
+
+        uploaded_source = None
+        uploaded_video = request.files.get("split_video_file")
+        if uploaded_video and uploaded_video.filename:
+            ext = os.path.splitext(uploaded_video.filename)[1].lower()
+            if ext != ".mp4":
+                return "❌ Please upload an MP4 file.", 400
+            uploaded_source = out_dir / f"split_source_uploaded_{os.urandom(4).hex()}.mp4"
+            uploaded_video.save(str(uploaded_source))
+            in_path = str(uploaded_source)
+        else:
+            # default source your UI mentions
+            in_path = "edit_vid_output/output.mp4"
+
         work_src = in_path
 
         # Optional pre-pass: crop to 9:16 and scale
         if convert_portrait:
-            out_portrait = "edit_vid_output/output_portrait.mp4"
+            out_portrait = str(out_dir / "output_portrait.mp4")
             convert_landscape_to_portrait(
                 input_path=in_path,
                 output_path=out_portrait,
                 portrait_size=portrait_size,
+                fit_mode=portrait_layout,
                 focus=focus,
                 keep_audio=keep_audio
             )
@@ -3328,6 +3347,9 @@ def splitvideotoparts():
             input_path=work_src,
             max_duration=max_duration
         )
+
+        if uploaded_source and uploaded_source.exists():
+            uploaded_source.unlink()
 
         return "✅ splitvideotoparts completed successfully!", 200
     except Exception as e:

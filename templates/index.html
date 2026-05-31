@@ -156,6 +156,11 @@
             scroll-behavior: smooth;
         }
 
+        .redInfoBox{
+            background-color: coral;
+            padding: 10px;
+            border-radius: 10px;
+        }
         form {
             scroll-margin-top: 72px;
         }
@@ -707,6 +712,14 @@
     <br>
     <form id="generateTTSAudio">
         <h2 style="background-color:aqua;">2.Generate TTS</h2>
+        <div class="redInfoBox">TRY Kokoro TTS (Alternative).<br>
+            <ol>
+                <li>Go to C:\0.data\4.SM-WSpace\6B.Python\27.Kokoro-tts ==> cmd</li>
+                <li>.\.venv\Scripts\activate</li>
+                <li>python app.py</li>
+                <li>Use http://127.0.0.1:7860/ </li>
+            </ol>           
+        </div>
 
         <label>Enter Text:</label>
         <textarea name="ttstext" rows="20"></textarea>
@@ -838,6 +851,16 @@
     <br>
     <form id="addAutoCaptionsToEnglistVideos" class="caption-studio">
         <h2>Auto Caption Studio</h2>
+
+        <div class="redInfoBox">Can also use Promo Studio to add device demos and captions.<br>
+            <ol>
+                <li>Go to C:\0.data\4.SM-WSpace\6B.Python\21.promo-studio ==> cmd</li>
+                <li>.\.venv\Scripts\activate</li>
+                <li>python app.py</li>
+                <li>Use http://127.0.0.1:5055/ </li>
+            </ol>           
+        </div>
+
         <p class="caption-intro">Burn WhisperX word-timed captions into a root-folder video. Default input is
             composed_video.mp4 and the output is composed_video_captioned.mp4.</p>
 
@@ -1557,6 +1580,17 @@
 
     <form id="uploadToYoutube">
         <h2>Youtube Bulk Upload</h2>
+
+        <div class="redInfoBox">Can also use social video scheduler (Requires ngrok).<br>
+            <ol>
+                <li>Go to C:\0.data\4.SM-WSpace\6B.Python\25.social_video_scheduler ==> cmd</li>
+                <li>.\.venv\Scripts\activate</li>
+                <li>python app.py</li>
+                <li>Use http://localhost:5001 </li>
+            </ol>           
+        </div>
+        
+        
         <div> To be run after video created in Processed_video folder and record is added in video_records.xlsx
 
 
@@ -1919,11 +1953,14 @@
     <form id="splitVideoToParts">
         <h2>Split long video to parts </h2>
         <div> Can be used for creating shorts for upload.
-            <br><br>Picks the input from edit_vid_output/output.mp4. Parts are created in edit_vid_output folder.
+            <br><br>Choose an MP4 below, or leave it blank to use edit_vid_output/output.mp4. Parts are created in edit_vid_output folder.
 
         </div>
 
         <div style="background-color:#cfe0ff; padding:10px; margin-bottom:10px;">
+            <label>MP4 file to split:</label>
+            <input type="file" name="split_video_file" accept=".mp4,video/mp4">
+
             <label>Convert landscape → portrait 9:16?</label>
             <select name="convert_portrait">
                 <option value="no" selected>no</option>
@@ -1934,6 +1971,13 @@
             <select name="portrait_size">
                 <option value="1080x1920" selected>1080 x 1920</option>
                 <option value="720x1280">720 x 1280</option>
+            </select>
+
+            <label>Portrait layout:</label>
+            <select name="portrait_layout">
+                <option value="crop" selected>crop sides to fill portrait</option>
+                <option value="pad_equal">keep full video + equal top/bottom padding</option>
+                <option value="pad_caption_bottom">keep full video + extra bottom padding for captions</option>
             </select>
 
             <label>Horizontal focus (crop anchor):</label>
@@ -2210,7 +2254,8 @@
     <br>
     <form id="loadPortait">
         <h2 style="background:#ffe4b5;">Portrait Website Loader</h2>
-        <a href="portrait_website_loader" target="_blank">Open Portrait Website Loader</a>
+        <a href="https://lab.readernook.com/tools/portrait-website-loader/" target="_blank">Open Portrait Website Loader</a>
+        <!-- <a href="portrait_website_loader" target="_blank">Open Portrait Website Loader</a> -->
 
     </form>
     <br>
