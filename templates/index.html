@@ -36,7 +36,8 @@
         textarea,
         select,
         input[type="number"],
-        input[type="text"] {
+        input[type="text"],
+        input[type="file"] {
             width: 100%;
             max-width: 400px;
             padding: 10px;
@@ -707,6 +708,38 @@
         <div id="videoContainer" class="grid" style="min-height:110px;"></div>
         <button type="submit">Set Background Video</button>
         <div class="infoBox">Places video as bg_video.mp4 in edit_vid_input.</div>
+    </form>
+
+    <br>
+    <form id="thumbnailIntroVideoForm" enctype="multipart/form-data">
+        <h2>Video With 0.5s Thumbnail Intro</h2>
+
+        <label>Target Orientation:</label>
+        <select name="orientation">
+            <option value="landscape">landscape (1920x1080)</option>
+            <option value="portrait">portrait (1080x1920)</option>
+        </select>
+
+        <label>Video Upload:</label>
+        <input type="file" name="video_file" accept="video/*" required>
+
+        <label style="font-weight:normal;">
+            <input type="checkbox" name="crop_to_portrait" value="yes" checked style="width:auto; display:inline-block; margin-right:8px;">
+            Convert landscape video to portrait by trimming the sides
+        </label>
+
+        <label>Thumbnail Image Upload (Optional):</label>
+        <input type="file" name="thumbnail_file" accept="image/*">
+
+        <label>Output filename:</label>
+        <input type="text" name="output_name" value="thumbnail_intro_output.mp4">
+
+        <button type="submit">Create MP4</button>
+        <div class="infoBox">
+            Uploads are saved under <code>edit_vid_input/</code> and <code>edit_vid_thumbnail/</code>.
+            Output is created in <code>edit_vid_output/</code>.
+        </div>
+        <div id="thumbnailIntroVideoResult" class="infoBox" style="display:none;"></div>
     </form>
 
     <br>
@@ -4406,6 +4439,40 @@ ${JSON.stringify(meta, null, 2)}
     </script>
 
     <script>
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, function (ch) {
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+            });
+        }
+
+        document.getElementById('thumbnailIntroVideoForm')?.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const resultBox = document.getElementById('thumbnailIntroVideoResult');
+            resultBox.style.display = 'block';
+            resultBox.textContent = 'Processing video...';
+
+            try {
+                const response = await fetch('/thumbnail_intro_video', {
+                    method: 'POST',
+                    body: new FormData(this)
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data.ok) {
+                    resultBox.innerHTML = `<b>Error:</b> ${escapeHtml(data.error || 'Failed')}`;
+                    return;
+                }
+
+                resultBox.innerHTML = `
+                    <b>Done:</b> ${escapeHtml(data.output_path)}<br>
+                    <a href="${data.download}" target="_blank">Download ${escapeHtml(data.output_name)}</a>
+                `;
+            } catch (err) {
+                resultBox.innerHTML = `<b>Error:</b> ${escapeHtml(err.message || err)}`;
+            }
+        });
+
         async function runTask(formId, endpoint, resultId) {
             const form = document.getElementById(formId);
             if (!form) return;

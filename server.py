@@ -1812,9 +1812,203 @@ def serve_reg_image(filename):
 def serve_bg_video(filename):
     return send_from_directory(BASE_DIR / 'background_videos', filename)
 
+@app.route('/edit_vid_output/<path:filename>')
+def serve_edit_vid_output(filename):
+    return send_from_directory(BASE_DIR / 'edit_vid_output', filename)
+
 @app.route('/quiz/downloads/<path:filename>')
 def serve_quiz_downloads(filename):
     return send_from_directory(BASE_DIR / 'downloads', filename)
+
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+
+def _safe_media_stem(name: str, fallback: str = "thumbnail_intro_output") -> str:
+    stem = Path(name or "").stem
+    stem = re.sub(r"[^a-zA-Z0-9._-]+", "_", stem).strip("._-")
+    return stem[:100] or fallback
+
+def _target_dimensions(orientation: str) -> tuple[int, int]:
+    if orientation == "portrait":
+        return 1080, 1920
+    return 1920, 1080
+
+def _target_fit_filter(width: int, height: int, fill_frame: bool) -> str:
+    if fill_frame:
+        return (
+            f"scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height},setsar=1,fps=30,format=yuv420p"
+        )
+    return (
+        f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:black,"
+        "setsar=1,fps=30,format=yuv420p"
+    )
+
+def _run_media_command(cmd: list[str], timeout: int = 60 * 60) -> None:
+    proc = subprocess.run(
+        cmd,
+        cwd=str(BASE_DIR),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+    )
+    if proc.returncode != 0:
+        tail = (proc.stderr or proc.stdout or "").strip()[-4000:]
+        raise RuntimeError(tail or f"Command failed with exit code {proc.returncode}")
+
+def _video_has_audio(path: Path) -> bool:
+    proc = subprocess.run(
+        [
+            "ffprobe", "-v", "error",
+            "-select_streams", "a:0",
+            "-show_entries", "stream=index",
+            "-of", "csv=p=0",
+            str(path),
+        ],
+        cwd=str(BASE_DIR),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    return proc.returncode == 0 and bool(proc.stdout.strip())
+
+def _concat_file_line(path: Path) -> str:
+    return "file '" + str(path.resolve()).replace("\\", "/").replace("'", "'\\''") + "'"
+
+@app.post('/thumbnail_intro_video')
+def thumbnail_intro_video():
+    try:
+        _ensure_ffmpeg()
+
+        orientation = (request.form.get("orientation") or "landscape").strip().lower()
+        if orientation not in {"landscape", "portrait"}:
+            return jsonify({"ok": False, "error": "Orientation must be landscape or portrait."}), 400
+
+        video_file = request.files.get("video_file")
+        if not video_file or not video_file.filename:
+            return jsonify({"ok": False, "error": "Please upload a video file."}), 400
+
+        video_ext = Path(video_file.filename).suffix.lower()
+        if video_ext not in VIDEO_EXTS:
+            return jsonify({"ok": False, "error": f"Unsupported video type: {video_ext or '(none)'}"}), 400
+
+        thumb_file = request.files.get("thumbnail_file")
+        has_thumb = bool(thumb_file and thumb_file.filename)
+        if has_thumb and Path(thumb_file.filename).suffix.lower() not in IMAGE_EXTS:
+            return jsonify({"ok": False, "error": "Thumbnail must be jpg, jpeg, png, webp, or bmp."}), 400
+
+        input_dir = BASE_DIR / "edit_vid_input"
+        thumb_dir = BASE_DIR / "edit_vid_thumbnail"
+        out_dir = BASE_DIR / "edit_vid_output"
+        work_dir = BASE_DIR / "temp" / "thumbnail_intro"
+        for folder in (input_dir, thumb_dir, out_dir, work_dir):
+            folder.mkdir(parents=True, exist_ok=True)
+
+        job_id = uuid.uuid4().hex
+        input_video = input_dir / f"{job_id}_input{video_ext}"
+        video_file.save(input_video)
+
+        thumb_path = None
+        if has_thumb:
+            thumb_ext = Path(thumb_file.filename).suffix.lower()
+            thumb_path = thumb_dir / f"{job_id}_thumbnail{thumb_ext}"
+            thumb_file.save(thumb_path)
+
+        output_stem = _safe_media_stem(request.form.get("output_name"))
+        output_path = out_dir / f"{output_stem}.mp4"
+        main_clip = work_dir / f"{job_id}_main.mp4"
+        intro_clip = work_dir / f"{job_id}_intro.mp4"
+        concat_list = work_dir / f"{job_id}_concat.txt"
+
+        width, height = _target_dimensions(orientation)
+        crop_to_portrait = request.form.get("crop_to_portrait") == "yes"
+        fill_frame = orientation == "portrait" and crop_to_portrait
+        vf = _target_fit_filter(width, height, fill_frame)
+
+        main_cmd = ["ffmpeg", "-y", "-i", str(input_video)]
+        if _video_has_audio(input_video):
+            main_cmd += ["-map", "0:v:0", "-map", "0:a:0"]
+        else:
+            main_cmd += [
+                "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+                "-map", "0:v:0", "-map", "1:a:0", "-shortest",
+            ]
+        main_cmd += [
+            "-vf", vf,
+            "-r", "30",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-crf", "20",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-ar", "48000",
+            "-ac", "2",
+            "-movflags", "+faststart",
+            str(main_clip),
+        ]
+        _run_media_command(main_cmd)
+
+        if thumb_path:
+            intro_cmd = [
+                "ffmpeg", "-y",
+                "-loop", "1",
+                "-framerate", "30",
+                "-t", "0.5",
+                "-i", str(thumb_path),
+                "-f", "lavfi",
+                "-t", "0.5",
+                "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+                "-map", "0:v:0",
+                "-map", "1:a:0",
+                "-vf", vf,
+                "-r", "30",
+                "-t", "0.5",
+                "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-crf", "20",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-b:a", "192k",
+                "-ar", "48000",
+                "-ac", "2",
+                "-movflags", "+faststart",
+                str(intro_clip),
+            ]
+            _run_media_command(intro_cmd)
+
+            concat_list.write_text(
+                "\n".join([_concat_file_line(intro_clip), _concat_file_line(main_clip)]) + "\n",
+                encoding="utf-8",
+            )
+            _run_media_command([
+                "ffmpeg", "-y",
+                "-f", "concat",
+                "-safe", "0",
+                "-i", str(concat_list),
+                "-c", "copy",
+                "-movflags", "+faststart",
+                str(output_path),
+            ])
+        else:
+            shutil.copyfile(main_clip, output_path)
+
+        return jsonify({
+            "ok": True,
+            "message": "Video created successfully.",
+            "output_name": output_path.name,
+            "output_path": f"edit_vid_output/{output_path.name}",
+            "download": f"/edit_vid_output/{output_path.name}",
+            "orientation": orientation,
+            "thumbnail_added": bool(thumb_path),
+            "dimensions": {"width": width, "height": height},
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.get('/trigger_heygen_bulk_shorts')
 def trigger_heygen_bulk_shorts():
